@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NavItem from "./NavItem";
-import Button from "./Button";
+import Button from "../yoodli/Button";
+import { motion } from "framer-motion";
 
 const Nav: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,11 +22,23 @@ const Nav: React.FC = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    const navVariants = {
+        hidden: { y: -100 },
+        visible: {
+            y: 0,
+            transition: { type: "spring", stiffness: 100, damping: 20 },
+        },
+    };
+
     return (
         <>
-            <nav
-                className={`bg-white sticky top-0 z-50 px-2 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-sm"
-                    }`}
+            <motion.nav
+                className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${
+                    scrolled ? "shadow-lg" : "shadow-sm"
+                }`}
+                initial="hidden"
+                animate="visible"
+                variants={navVariants as any}
             >
                 <div className="flex items-center p-4 max-w-[1984px] mx-auto">
                     <div className="flex gap-2 items-center">
@@ -94,14 +107,32 @@ const Nav: React.FC = () => {
                             <Button
                                 text="Sign In"
                                 variant="tertiary"
+                                fontSize="16px"
+                                borderRadius="8px"
+                                paddingWidth="16px"
+                                paddingHeight="8px"
                                 onClick={() => navigate("/login")}
                             />
-                            <Button text="Get OratorAI" variant="primary" />
-                            <Button text="Talk to Sales" variant="secondary" />
+                            <Button
+                                text="Get OratorAI"
+                                variant="primary"
+                                fontSize="16px"
+                                borderRadius="8px"
+                                paddingWidth="16px"
+                                paddingHeight="8px"
+                            />
+                            <Button
+                                text="Talk to Sales"
+                                variant="secondary"
+                                fontSize="16px"
+                                borderRadius="8px"
+                                paddingWidth="16px"
+                                paddingHeight="8px"
+                            />
                         </div>
                     </div>
                 </div>
-            </nav>
+            </motion.nav>
 
             <div
                 className={`${isMenuOpen ? "translate-x-[0]" : "translate-x-[100%]"
@@ -148,13 +179,31 @@ const Nav: React.FC = () => {
                     <Button
                         text="Sign In"
                         variant="tertiary"
+                        fontSize="16px"
+                        borderRadius="8px"
+                        paddingWidth="16px"
+                        paddingHeight="8px"
                         onClick={() => {
                             setIsMenuOpen(false);
                             navigate("/login");
                         }}
                     />
-                    <Button text="Get OratorAI" variant="primary" />
-                    <Button text="Talk to Sales" variant="secondary" />
+                    <Button
+                        text="Get OratorAI"
+                        variant="primary"
+                        fontSize="16px"
+                        borderRadius="8px"
+                        paddingWidth="16px"
+                        paddingHeight="8px"
+                    />
+                    <Button
+                        text="Talk to Sales"
+                        variant="secondary"
+                        fontSize="16px"
+                        borderRadius="8px"
+                        paddingWidth="16px"
+                        paddingHeight="8px"
+                    />
                 </div>
             </div>
         </>

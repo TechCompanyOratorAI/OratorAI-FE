@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import ScrollAnimation from "./ScrollAnimation";
 
@@ -61,7 +59,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.forbes.com/profile/yoodli/?sh=2c0ffccc7ad0"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Forbes"
@@ -86,7 +85,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.inc.com/inc-masters/seattle-startups-to-watch.html"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Inc."
@@ -126,7 +126,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://cloud.google.com/blog/topics/startups/yoodli-launches-presentation-coaching-platform-with-google-cloud"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Google Cloud"
@@ -183,7 +184,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.wsj.com/articles/chatgpt-spotlights-microsofts-early-efforts-to-monetize-ai-11674964348"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="The Wall Street Journal"
@@ -208,7 +210,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://startups.microsoft.com/blog/fueling-your-startup-why-fundraising-and-investment-readiness-matter/"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Microsoft for Startups"
@@ -256,7 +259,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.youtube.com/watch?v=wyH5izRmIRY"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Komo"
@@ -313,7 +317,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.geekwire.com/2025/heres-how-ai-graded-president-trumps-inauguration-speech/"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="GeekWire"
@@ -342,7 +347,8 @@ const Featured: React.FC = () => {
                     <a
                         className="relative"
                         href="https://www.axios.com/2025/01/20/trump-inauguration-speech-words-said-most-2025"
-                        target="blank"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         data-title="Axios"

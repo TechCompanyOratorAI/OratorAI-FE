@@ -1,14 +1,12 @@
-import Nav from "@/components/yoodli/Nav";
+import Nav from "@/components/Header/Nav";
 import Hero from "@/components/yoodli/Hero";
 import Carousel from "@/components/yoodli/Carousel";
-import Cases from "@/components/yoodli/Cases";
 import Featured from "@/components/yoodli/Featured";
-import Demo from "@/components/yoodli/Demo";
 import HowToUse from "@/components/yoodli/HowToUse";
 import Roleplay from "@/components/yoodli/Roleplay";
 import Pitch from "@/components/yoodli/Pitch";
 import More from "@/components/yoodli/More";
-import Footer from "@/components/yoodli/Footer";
+import Footer from "@/components/Footer/Footer";
 
 const HomePage = () => {
   return (
@@ -17,9 +15,8 @@ const HomePage = () => {
       <main className="flex-1">
         <Hero />
         <Carousel />
-        <Cases />
         <Featured />
-        <Demo />
+
         <HowToUse />
         <Roleplay />
         <Pitch />

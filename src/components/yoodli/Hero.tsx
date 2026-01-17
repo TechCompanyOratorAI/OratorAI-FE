@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { CheckOutlined } from "@ant-design/icons";
+import { Check } from "lucide-react";
 import Button from "./Button";
+import { motion } from "framer-motion";
 
 const phrases = [
   "course presentations",
@@ -24,15 +25,26 @@ const Hero: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    if (typeof window !== "undefined") {
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener("resize", handleResize);
+      handleResize();
+      return () => window.removeEventListener("resize", handleResize);
+    }
   }, []);
+
+  // Fade in animation variants
+  const fadeInVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+    },
+  };
 
   return (
     <section
-      className="flex flex-col md:flex-row items-center justify-center px-6 md:px-20 py-8 pb-20 xl:pb-16"
+      className="flex flex-col md:flex-row items-center justify-center px-6 md:px-20 py-5 pb-25 xl:pb-15"
       style={{
         backgroundImage: "url('/hero_back.svg')",
         backgroundSize: "cover",
@@ -41,7 +53,13 @@ const Hero: React.FC = () => {
       }}
     >
       <div className="flex-1 max-w-[620px]">
-        <div className="flex flex-col sm:flex-row sm:gap-2 lg:flex-col">
+        <motion.div
+          className="flex flex-col sm:flex-row sm:gap-2 lg:flex-col"
+          initial="hidden"
+          animate="visible"
+          variants={fadeInVariants}
+          transition={{ delay: 0 * 0.2, duration: 0.5, ease: "easeOut" }}
+        >
           <h1 className="text-[26px] mt-[1px] sm:text-[32px] lg:text-[40px] font-bold w-fit lg:w-full">
             AI presentation feedback for
           </h1>
@@ -56,7 +74,9 @@ const Hero: React.FC = () => {
             >
               <div
                 style={{
-                  transform: `translateY(-${currentPhraseIndex * phraseHeight}px)`,
+                  transform: `translateY(-${
+                    currentPhraseIndex * phraseHeight
+                  }px)`,
                   transition: "transform 250ms ease-in-out",
                 }}
               >
@@ -75,13 +95,25 @@ const Hero: React.FC = () => {
               </div>
             </div>
           </h2>
-        </div>
-        <p className="mt-4 text-[16px] text-stone-900 font-[500]">
+        </motion.div>
+        <motion.p
+          className="mt-4 text-[16px] text-stone-900 font-[500]"
+          initial="hidden"
+          animate="visible"
+          variants={fadeInVariants}
+          transition={{ delay: 1 * 0.2, duration: 0.5, ease: "easeOut" }}
+        >
           Tự động ghi lại, chấm điểm và phân tích bài thuyết trình của sinh viên
           với AI – đồng bộ lời nói với từng slide, giúp giảng viên đánh giá khách
           quan hơn và sinh viên cải thiện qua từng lần luyện tập.
-        </p>
-        <div className="mt-6 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 xl:gap-6">
+        </motion.p>
+        <motion.div
+          className="mt-6 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 xl:gap-6"
+          initial="hidden"
+          animate="visible"
+          variants={fadeInVariants}
+          transition={{ delay: 2 * 0.2, duration: 0.5, ease: "easeOut" }}
+        >
           <Button
             text="Bắt đầu bài thuyết trình mẫu"
             variant="primary"
@@ -116,17 +148,29 @@ const Hero: React.FC = () => {
                   paddingHeight: "10px",
                 })}
           />
-        </div>
-        <div className="flex items-center mt-6">
-          <div className="w-4 h-4 rounded-full bg-zinc-400 flex items-center justify-center mr-3 text-white text-[10px]">
-            <CheckOutlined />
+        </motion.div>
+        <motion.div
+          className="flex items-center mt-6"
+          initial="hidden"
+          animate="visible"
+          variants={fadeInVariants}
+          transition={{ delay: 3 * 0.2, duration: 0.5, ease: "easeOut" }}
+        >
+          <div className="w-4 h-4 rounded-full bg-zinc-400 flex items-center justify-center mr-3">
+            <Check size={12} strokeWidth={3} color="white" />
           </div>
           <span className="text-[16px] text-zinc-400 font-[700]">
             Hỗ trợ phân tích song ngữ Việt – Anh, phù hợp môi trường đại học
           </span>
-        </div>
+        </motion.div>
       </div>
-      <div className="mt-8 md:mt-0 w-[400px] h-[390px] hidden lg:block">
+      <motion.div
+        className="mt-8 md:mt-0 w-[400px] h-[390px] hidden lg:block"
+        initial="hidden"
+        animate="visible"
+        variants={fadeInVariants}
+        transition={{ delay: 1 * 0.2, duration: 0.5, ease: "easeOut" }}
+      >
         <video
           src="/hero_video.webm"
           autoPlay
@@ -135,7 +179,7 @@ const Hero: React.FC = () => {
           playsInline
           className="w-[390px] h-full"
         />
-      </div>
+      </motion.div>
     </section>
   );
 };
