@@ -56,11 +56,7 @@ const Pitch: React.FC = () => {
 
       <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-center justify-center gap-8 mb-16">
         <div className="w-40 h-40 relative">
-          <ScrollAnimation>
-            <div className="w-full h-full rounded-full bg-white/10 flex items-center justify-center text-xl">
-              SOC 2
-            </div>
-          </ScrollAnimation>
+
         </div>
         <ScrollAnimation>
           <div className="text-center md:text-left">

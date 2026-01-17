@@ -6,13 +6,13 @@ const Demo: React.FC = () => {
 
   return (
     <div className="px-[32px] py-5 mt-20 h-fit">
-      <ScrollAnimation>
+      <ScrollAnimation type="slide" direction="up">
         <h2 className="text-center text-[28px] font-bold mt-10 mb-10">
           Xem thử demo chấm điểm bài thuyết trình
         </h2>
       </ScrollAnimation>
 
-      <ScrollAnimation>
+      <ScrollAnimation type="scale" threshold={0.3}>
         <div className="relative mx-auto min-mx-[32px] max-w-[800px] aspect-[16/9] w-full h-full rounded-xl shadow-lg overflow-hidden">
           {isVisible ? (
             <>

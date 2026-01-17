@@ -9,9 +9,13 @@ const presistConfig = {
   whitelist: [""],
 };
 
+// Create a dummy reducer if no reducers are provided
+const dummyReducer = (state = {}) => state;
+
 // Create a hook for using TypedUseSelectorHook
 const rootReducer = combineReducers({
   // Add your reducers here
+  app: dummyReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
