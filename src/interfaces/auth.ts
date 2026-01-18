@@ -30,6 +30,14 @@ export interface RegisterCredentials {
   lastName: string;
 }
 
+export interface RegisterInstructorCredentials {
+  username: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface LoginResponse {
   success: boolean;
   message: string;
@@ -45,6 +53,12 @@ export interface RegisterResponse {
   user: User;
 }
 
+export interface RegisterInstructorResponse {
+  success: boolean;
+  message: string;
+  user: User;
+}
+
 export interface AuthState {
   user: User | null;
   token: string | null;
@@ -53,3 +67,36 @@ export interface AuthState {
   error: string | null;
 }
 
+export interface ProfileUser {
+  userId: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  isEmailVerified: boolean;
+}
+
+export interface ProfileResponse {
+  success: boolean;
+  user: ProfileUser;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}

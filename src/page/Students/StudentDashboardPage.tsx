@@ -180,7 +180,6 @@ const StudentDashboardPage: React.FC = () => {
                         "0%": "#0ea5e9",
                         "100%": "#6366f1",
                       }}
-                      strokeWidth={6}
                       size={64}
                       showInfo={false}
                     />
@@ -219,7 +218,7 @@ const StudentDashboardPage: React.FC = () => {
                       "100%": "#6366f1",
                     }}
                     showInfo={false}
-                    strokeWidth={6}
+                    size={6}
                   />
                 </div>
                 <p className="text-xs text-gray-600">

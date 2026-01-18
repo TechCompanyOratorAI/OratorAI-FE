@@ -3,5 +3,9 @@ export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
 export const REGISTER_ENDPOINT = `${BASE_URL}/api/v1/auth/register`;
+export const REGISTER_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/auth/register-instructor`;
 export const REFRESH_TOKEN_ENDPOINT = `${BASE_URL}/api/v1/auth/refresh-token`;
 export const LOGOUT_ENDPOINT = `${BASE_URL}/api/v1/auth/logout`;
+export const PROFILE_ENDPOINT = `${BASE_URL}/api/v1/auth/profile`;
+export const CHANGE_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/change-password`;
+export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password`;
