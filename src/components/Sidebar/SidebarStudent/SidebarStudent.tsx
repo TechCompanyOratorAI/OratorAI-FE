@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,8 +9,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useAppSelector, useAppDispatch } from "@/services/store/store";
+import { logout } from "@/services/features/auth/authSlice";
 
 interface SidebarStudentProps {
   activeItem?: string;
@@ -18,7 +21,12 @@ interface SidebarStudentProps {
 
 const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved ? JSON.parse(saved) : false;
@@ -27,6 +35,36 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
+  const fullName = user
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : "User";
+  const userRole = user?.roles?.[0]?.roleName || "Student";
 
   const menuItems = [
     {
@@ -147,17 +185,107 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
             {!collapsed && <span className="lg:block hidden">Settings</span>}
           </Link>
           {!collapsed && (
-            <div className="flex items-center gap-3 pt-2 lg:block hidden">
-              <div className="w-8 h-8 rounded-full bg-gray-300"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Sarah M.</p>
-                <p className="text-xs text-gray-500">Student</p>
-              </div>
+            <div className="lg:block hidden relative" ref={userMenuRef}>
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="w-full flex items-center gap-3 pt-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-semibold text-xs">
+                    {fullName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-900">
+                    {fullName}
+                  </p>
+                  <p className="text-xs text-gray-500">{userRole}</p>
+                </div>
+              </button>
+              {isUserMenuOpen && (
+                <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                  <div className="p-3 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-sm">
+                          {fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {fullName}
+                        </p>
+                        <p className="text-xs text-gray-500">{userRole}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng Xuất</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {collapsed && (
-            <div className="lg:flex hidden justify-center pt-2">
-              <div className="w-8 h-8 rounded-full bg-gray-300"></div>
+            <div className="lg:flex hidden justify-center pt-2 relative" ref={userMenuRef}>
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center flex-shrink-0"
+              >
+                <span className="text-white font-semibold text-xs">
+                  {fullName
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </span>
+              </button>
+              {isUserMenuOpen && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                  <div className="p-3 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-sm">
+                          {fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {fullName}
+                        </p>
+                        <p className="text-xs text-gray-500">{userRole}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng Xuất</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

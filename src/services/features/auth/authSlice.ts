@@ -1,18 +1,46 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { message } from "antd";
 import axiosInstance from "../../constant/axiosInstance";
-import { LOGIN_ENDPOINT, REGISTER_ENDPOINT } from "../../constant/apiConfig";
+import {
+  LOGIN_ENDPOINT,
+  REGISTER_ENDPOINT,
+  REGISTER_INSTRUCTOR_ENDPOINT,
+  PROFILE_ENDPOINT,
+  CHANGE_PASSWORD_ENDPOINT,
+  FORGOT_PASSWORD_ENDPOINT,
+} from "../../constant/apiConfig";
 import {
   AuthState,
   LoginCredentials,
   LoginResponse,
   RegisterCredentials,
   RegisterResponse,
+  RegisterInstructorCredentials,
+  RegisterInstructorResponse,
+  User,
+  ProfileResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
 } from "../../../interfaces/auth";
+
+// Helper function to get user from localStorage
+const getUserFromStorage = (): User | null => {
+  try {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      return JSON.parse(userStr) as User;
+    }
+  } catch (error) {
+    console.error("Error parsing user from localStorage:", error);
+  }
+  return null;
+};
 
 // Initial state
 const initialState: AuthState = {
-  user: null,
+  user: getUserFromStorage(),
   token: localStorage.getItem("token"),
   isAuthenticated: !!localStorage.getItem("token"),
   loading: false,
@@ -26,11 +54,10 @@ export const loginUser = createAsyncThunk<
   { rejectValue: { message: string } }
 >("auth/loginUser", async (credentials, { rejectWithValue }) => {
   try {
-    // Determine if input is email or username
-    const isEmail = credentials.usernameOrEmail.includes("@");
-    const requestBody = isEmail
-      ? { email: credentials.usernameOrEmail, password: credentials.password }
-      : { username: credentials.usernameOrEmail, password: credentials.password };
+    const requestBody = {
+      emailOrUsername: credentials.usernameOrEmail,
+      password: credentials.password,
+    };
 
     const response = await axiosInstance.post(LOGIN_ENDPOINT, requestBody);
     return response.data;
@@ -58,6 +85,22 @@ export const registerUser = createAsyncThunk<
   }
 });
 
+export const registerInstructor = createAsyncThunk<
+  RegisterInstructorResponse,
+  RegisterInstructorCredentials,
+  { rejectValue: { message: string } }
+>("auth/registerInstructor", async (credentials, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(REGISTER_INSTRUCTOR_ENDPOINT, credentials);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as any;
+    const errorMessage =
+      error.response?.data?.message || error.message || "Đăng ký Instructor thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
 export const logoutUser = createAsyncThunk<
   { success: boolean; message: string },
   void,
@@ -73,6 +116,60 @@ export const logoutUser = createAsyncThunk<
     const error = err as any;
     const errorMessage =
       error.response?.data?.message || error.message || "Đăng xuất thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
+export const getProfile = createAsyncThunk<
+  ProfileResponse,
+  void,
+  { rejectValue: { message: string } }
+>("auth/getProfile", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(PROFILE_ENDPOINT);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as any;
+    const errorMessage =
+      error.response?.data?.message || error.message || "Lấy thông tin profile thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
+export const changePassword = createAsyncThunk<
+  ChangePasswordResponse,
+  ChangePasswordRequest,
+  { rejectValue: { message: string } }
+>("auth/changePassword", async (credentials, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      CHANGE_PASSWORD_ENDPOINT,
+      credentials
+    );
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as any;
+    const errorMessage =
+      error.response?.data?.message || error.message || "Đổi mật khẩu thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
+export const forgotPassword = createAsyncThunk<
+  ForgotPasswordResponse,
+  ForgotPasswordRequest,
+  { rejectValue: { message: string } }
+>("auth/forgotPassword", async (request, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      FORGOT_PASSWORD_ENDPOINT,
+      request
+    );
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as any;
+    const errorMessage =
+      error.response?.data?.message || error.message || "Gửi email đặt lại mật khẩu thất bại";
     return rejectWithValue({ message: errorMessage });
   }
 });
@@ -143,6 +240,26 @@ const authSlice = createSlice({
         state.error = action.payload?.message || "Đăng ký thất bại";
         message.error(state.error);
       })
+      // Register Instructor cases
+      .addCase(registerInstructor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerInstructor.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = false; // Chưa đăng nhập, cần verify email
+        state.error = null;
+        message.success(
+          action.payload.message ||
+            "Đăng ký Instructor thành công. Vui lòng kiểm tra email để xác thực."
+        );
+      })
+      .addCase(registerInstructor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Đăng ký Instructor thất bại";
+        message.error(state.error);
+      })
       // Logout cases
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
@@ -166,6 +283,62 @@ const authSlice = createSlice({
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         message.error(action.payload?.message || "Đăng xuất thất bại");
+      })
+      // Get Profile cases
+      .addCase(getProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        // Update user info if needed
+        if (state.user) {
+          state.user.firstName = action.payload.user.firstName;
+          state.user.lastName = action.payload.user.lastName;
+          state.user.email = action.payload.user.email;
+          state.user.username = action.payload.user.username;
+          state.user.isEmailVerified = action.payload.user.isEmailVerified;
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
+        state.error = null;
+      })
+      .addCase(getProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Lấy thông tin profile thất bại";
+        message.error(state.error);
+      })
+      // Change Password cases
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        message.success(action.payload.message || "Đổi mật khẩu thành công");
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Đổi mật khẩu thất bại";
+        message.error(state.error);
+      })
+      // Forgot Password cases
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        message.success(
+          action.payload.message ||
+            "Nếu tài khoản với email này tồn tại, liên kết đặt lại mật khẩu đã được gửi."
+        );
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Gửi email đặt lại mật khẩu thất bại";
+        message.error(state.error);
       });
   },
 });

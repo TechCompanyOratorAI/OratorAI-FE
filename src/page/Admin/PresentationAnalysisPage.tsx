@@ -368,7 +368,6 @@ const PresentationAnalysisPage: React.FC = () => {
                           "0%": "#0ea5e9",
                           "100%": "#6366f1",
                         }}
-                        strokeWidth={8}
                         size={128}
                         format={() => (
                           <div className="text-center">

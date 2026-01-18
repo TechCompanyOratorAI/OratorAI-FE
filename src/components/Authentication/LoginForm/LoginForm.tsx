@@ -1,23 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, UserCog, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { loginUser } from "@/services/features/auth/authSlice";
+import { loginUser, logout } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
+import { message } from "antd";
+
+type SelectedRole = "Student" | "Instructor" | "Admin" | null;
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { loading } = useAppSelector((state) => state.auth);
+  const { loading, user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Check if user is logged in and handle role selection
+  useEffect(() => {
+    if (isAuthenticated && user && selectedRole) {
+      const primaryRole = user.roles?.[0]?.roleName;
+      // If Student selects Instructor, force logout
+      if (primaryRole === "Student" && selectedRole === "Instructor") {
+        dispatch(logout());
+        message.warning("Vui lòng đăng nhập lại với tài khoản Instructor");
+        setSelectedRole(null);
+      }
+    }
+  }, [selectedRole, isAuthenticated, user, dispatch]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedRole) {
+      message.warning("Vui lòng chọn vai trò của bạn");
+      return;
+    }
 
     try {
       const resultAction = await dispatch(
@@ -28,6 +50,13 @@ const LoginForm: React.FC = () => {
         // Redirect based on user role
         const user = resultAction.payload.user;
         const primaryRole = user.roles?.[0]?.roleName;
+
+        // Verify selected role matches user's actual role
+        if (primaryRole !== selectedRole) {
+          message.error(`Bạn không có quyền truy cập với vai trò ${selectedRole}`);
+          dispatch(logout());
+          return;
+        }
 
         if (primaryRole === "Admin") {
           navigate("/admin/dashboard");
@@ -51,14 +80,70 @@ const LoginForm: React.FC = () => {
       <div className="bg-white/80 backdrop-blur border border-slate-100 shadow-xl shadow-sky-100/40 rounded-2xl p-6 md:p-8">
         <ScrollAnimation type="fade" delay={0.3}>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">
-            Đăng nhập vào hệ thống OratorAI
+            Chào mừng trở lại
           </h2>
         </ScrollAnimation>
         <ScrollAnimation type="fade" delay={0.4}>
-          <p className="text-sm text-slate-500 mb-6">
-            Sử dụng username hoặc email để đăng nhập vào hệ thống và truy cập
-            lớp học và bài thuyết trình của bạn.
+          <p className="text-sm text-slate-500 mb-4">
+            Vui lòng chọn vai trò của bạn để tiếp tục
           </p>
+        </ScrollAnimation>
+
+        {/* Role Selection */}
+        <ScrollAnimation type="fade" delay={0.45}>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <motion.button
+              type="button"
+              onClick={() => setSelectedRole("Student")}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Student"
+                ? "border-sky-500 bg-sky-50 text-sky-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <GraduationCap
+                size={24}
+                className={selectedRole === "Student" ? "text-sky-600" : "text-slate-400"}
+              />
+              <span className="text-xs font-medium">Student</span>
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={() => setSelectedRole("Instructor")}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Instructor"
+                ? "border-sky-500 bg-sky-50 text-sky-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <UserCog
+                size={24}
+                className={selectedRole === "Instructor" ? "text-sky-600" : "text-slate-400"}
+              />
+              <span className="text-xs font-medium">Instructor</span>
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={() => setSelectedRole("Admin")}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Admin"
+                ? "border-sky-500 bg-sky-50 text-sky-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Settings
+                size={24}
+                className={selectedRole === "Admin" ? "text-sky-600" : "text-slate-400"}
+              />
+              <span className="text-xs font-medium">Admin</span>
+            </motion.button>
+
+          </div>
         </ScrollAnimation>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -134,7 +219,7 @@ const LoginForm: React.FC = () => {
                 fontSize="12px"
                 paddingWidth="0px"
                 paddingHeight="0px"
-                onClick={() => {}}
+                onClick={() => navigate("/forgot-password")}
               />
             </div>
           </ScrollAnimation>
@@ -170,9 +255,9 @@ const LoginForm: React.FC = () => {
                 borderRadius="8px"
                 paddingWidth="12px"
                 paddingHeight="8px"
-                onClick={() => {}}
+                onClick={() => { }}
               />
-              
+
             </div>
           </div>
         </ScrollAnimation>
@@ -181,12 +266,21 @@ const LoginForm: React.FC = () => {
           <div className="mt-6">
             <p className="text-xs text-slate-500 text-center">
               Chưa có tài khoản?{" "}
-              <button
-                onClick={() => navigate("/register")}
-                className="text-sky-600 hover:text-sky-700 font-medium"
-              >
-                Đăng ký ngay
-              </button>
+              {selectedRole === "Instructor" ? (
+                <button
+                  onClick={() => navigate("/register-instructor")}
+                  className="text-sky-600 hover:text-sky-700 font-medium"
+                >
+                  Yêu cầu truy cập
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/register")}
+                  className="text-sky-600 hover:text-sky-700 font-medium"
+                >
+                  Đăng ký ngay
+                </button>
+              )}
             </p>
           </div>
         </ScrollAnimation>
