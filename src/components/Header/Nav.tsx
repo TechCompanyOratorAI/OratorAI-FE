@@ -41,17 +41,10 @@ const Nav: React.FC = () => {
                 variants={navVariants as any}
             >
                 <div className="flex items-center p-4 max-w-[1984px] mx-auto">
-                    <div className="flex gap-1 items-center">
-                        <img
-                            className="mt-1"
-                            src="/logo_fptoratorAI.png"
-                            alt="OratorAI Logo"
-                            width={30}
-                            height={30}
-                        />
+                    <div className="flex gap-2 items-center">
                         <img
                             className="hidden xl:block h-12 object-contain"
-                            src="/text_fptoratorAI.png"
+                            src="/text_fptoratorAI.svg"
                             alt="OratorAI"
                         />
                     </div>

@@ -41,13 +41,8 @@ const RegisterPage: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <img
-              src="/logo_fptoratorAI.png"
-              alt="OratorAI Logo"
-              className="w-24 h-24"
-            />
             <span className="font-semibold text-lg text-slate-900">
-              OratorAI
+              FPTOratorAI
             </span>
           </motion.div>
 
