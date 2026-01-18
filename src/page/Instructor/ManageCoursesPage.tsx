@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "@/components/yoodli/Button";
+import CourseModal from "@/components/Course/CourseModal";
+import Toast from "@/components/Toast/Toast";
 import {
   Search,
   Bell,
@@ -11,6 +14,14 @@ import {
   Calendar,
   Plus,
 } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import {
+  fetchCourses,
+  deleteCourse,
+  createCourse,
+  updateCourse,
+} from "@/services/features/course/courseSlice";
+import type { CourseData } from "@/services/features/course/courseSlice";
 
 interface Course {
   id: string;
@@ -42,49 +53,132 @@ interface Assignment {
 }
 
 const ManageCoursesPage: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { courses: apiCourses, loading } = useAppSelector(
+    (state) => state.course
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("Active Semesters");
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<CourseData | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
-  const courses: Course[] = [
-    {
-      id: "1",
-      title: "Intro to Computer Science",
-      semester: "Fall 2023",
-      status: "active",
-      schedule: "Mon/Wed 10:00 AM • Room 304",
+  // Fetch courses on component mount
+  useEffect(() => {
+    dispatch(fetchCourses({}));
+  }, [dispatch]);
+
+  // Transform API data to UI format
+  const transformCourseData = (apiCourse: CourseData): Course => {
+    const isActive = apiCourse.isActive;
+    return {
+      id: apiCourse.courseId.toString(),
+      title: apiCourse.courseName,
+      semester: apiCourse.semester,
+      status: isActive ? "active" : "archived",
+      schedule: `${apiCourse.startDate} to ${apiCourse.endDate}`,
       image: "/demo_thumbnail.webp",
-      pendingReviews: 12,
-      students: 45,
-      processingStatus: {
-        message: "AI processing 3 videos...",
-        type: "processing",
-      },
-    },
-    {
-      id: "2",
-      title: "Digital Marketing Strategy",
-      semester: "Fall 2023",
-      status: "active",
-      schedule: "Tue/Thu 1:00 PM • Room 102",
-      image: "/demo_thumbnail.webp",
-      pendingReviews: 0,
-      students: 32,
-      processingStatus: {
-        message: "All caught up",
-        type: "caught-up",
-      },
-    },
-    {
-      id: "3",
-      title: "Advanced Public Speaking",
-      semester: "Spring 2023",
-      status: "archived",
-      schedule: "Online Section",
-      image: "/demo_thumbnail.webp",
-      reviewsStatus: "Closed",
-      finalGrade: "A- Avg",
-    },
-  ];
+      pendingReviews: isActive ? Math.floor(Math.random() * 15) : undefined,
+      students: isActive ? Math.floor(Math.random() * 50) : undefined,
+      processingStatus: isActive
+        ? {
+            message:
+              Math.random() > 0.5
+                ? "AI processing 3 videos..."
+                : "All caught up",
+            type: Math.random() > 0.5 ? "processing" : "caught-up",
+          }
+        : undefined,
+      reviewsStatus: !isActive ? "Closed" : undefined,
+      finalGrade: !isActive ? "A- Avg" : undefined,
+    };
+  };
+
+  const courses: Course[] = apiCourses.map(transformCourseData);
+
+  // Filter courses based on selected filter and search query
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch =
+      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (selectedFilter === "Active Semesters") {
+      return matchesSearch && course.status === "active";
+    } else if (selectedFilter === "Archived") {
+      return matchesSearch && course.status === "archived";
+    } else if (selectedFilter === "By Department") {
+      return matchesSearch;
+    }
+
+    return matchesSearch;
+  });
+
+  const handleDeleteCourse = async (courseId: number) => {
+    try {
+      await dispatch(deleteCourse(courseId)).unwrap();
+      setDeleteConfirm(null);
+      setToast({
+        message: "Course deleted successfully!",
+        type: "success",
+      });
+      // Reload courses list
+      dispatch(fetchCourses({}));
+    } catch (error) {
+      setToast({
+        message: "Failed to delete course. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleCourseModalOpen = (course?: CourseData) => {
+    if (course) {
+      setEditingCourse(course);
+    } else {
+      setEditingCourse(null);
+    }
+    setCourseModalOpen(true);
+  };
+
+  const handleCourseModalClose = () => {
+    setCourseModalOpen(false);
+    setEditingCourse(null);
+  };
+
+  const handleCourseSubmit = async (courseData: any) => {
+    try {
+      if (editingCourse) {
+        await dispatch(updateCourse({
+          courseId: editingCourse.courseId,
+          data: courseData,
+        })).unwrap();
+        setToast({
+          message: "Course updated successfully!",
+          type: "success",
+        });
+      } else {
+        await dispatch(createCourse(courseData)).unwrap();
+        setToast({
+          message: "Course created successfully!",
+          type: "success",
+        });
+      }
+      handleCourseModalClose();
+      // Reload courses list
+      dispatch(fetchCourses({}));
+    } catch (error) {
+      setToast({
+        message: `Failed to ${editingCourse ? "update" : "create"} course. Please try again.`,
+        type: "error",
+      });
+    }
+  };
 
   const assignments: Assignment[] = [
     {
@@ -180,7 +274,7 @@ const ManageCoursesPage: React.FC = () => {
                 paddingHeight="10px"
                 icon={<Plus className="w-5 h-5 text-white" />}
                 iconPosition="left"
-                onClick={() => {}}
+                onClick={() => handleCourseModalOpen()}
               />
             </div>
           </div>
@@ -243,14 +337,37 @@ const ManageCoursesPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Loading and Error States */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading courses...</p>
+              </div>
+            </div>
+          )}
+
+          
+
           {/* Content Grid */}
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Course Cards */}
-            <div className="flex-1 space-y-6">
-              {courses.map((course) => (
+          {!loading && (
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Course Cards */}
+              <div className="flex-1 space-y-6">
+                {filteredCourses.length === 0 ? (
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <p className="text-gray-600">
+                      {searchQuery
+                        ? "No courses found matching your search"
+                        : "No courses available"}
+                    </p>
+                  </div>
+                ) : (
+                  filteredCourses.map((course) => (
                 <div
                   key={course.id}
-                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/instructor/course/${course.id}`)}
                 >
                   <div className="flex flex-col sm:flex-row">
                     {/* Course Image */}
@@ -288,8 +405,35 @@ const ManageCoursesPage: React.FC = () => {
                             {course.schedule}
                           </p>
                         </div>
-                        <button className="p-1 hover:bg-gray-100 rounded">
+                        <button 
+                          className="p-1 hover:bg-gray-100 rounded relative group"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreVertical className="w-5 h-5 text-gray-600" />
+                          {/* Dropdown menu */}
+                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const courseData = apiCourses.find(c => c.courseId === parseInt(course.id));
+                                if (courseData) {
+                                  handleCourseModalOpen(courseData);
+                                }
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                            >
+                              Edit Course
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirm(parseInt(course.id));
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                            >
+                              Delete Course
+                            </button>
+                          </div>
                         </button>
                       </div>
 
@@ -345,43 +489,50 @@ const ManageCoursesPage: React.FC = () => {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           {course.status === "active" ? (
                             <>
-                              <Button
-                                text="Grade"
-                                variant="secondary"
-                                fontSize="14px"
-                                borderRadius="6px"
-                                paddingWidth="12px"
-                                paddingHeight="6px"
-                                onClick={() => {}}
-                              />
-                              <Button
-                                text="View Class"
-                                variant="secondary"
-                                fontSize="14px"
-                                borderRadius="6px"
-                                paddingWidth="12px"
-                                paddingHeight="6px"
-                                onClick={() => {}}
-                              />
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  text="Grade"
+                                  variant="secondary"
+                                  fontSize="14px"
+                                  borderRadius="6px"
+                                  paddingWidth="12px"
+                                  paddingHeight="6px"
+                                  onClick={() => {}}
+                                />
+                              </div>
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  text="View Class"
+                                  variant="secondary"
+                                  fontSize="14px"
+                                  borderRadius="6px"
+                                  paddingWidth="12px"
+                                  paddingHeight="6px"
+                                  onClick={() => {}}
+                                />
+                              </div>
                             </>
                           ) : (
-                            <Button
-                              text="View Archive"
-                              variant="secondary"
-                              fontSize="14px"
-                              borderRadius="6px"
-                              paddingWidth="12px"
-                              paddingHeight="6px"
-                              onClick={() => {}}
-                            />
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                text="View Archive"
+                                variant="secondary"
+                                fontSize="14px"
+                                borderRadius="6px"
+                                paddingWidth="12px"
+                                paddingHeight="6px"
+                                onClick={() => {}}
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
 
             {/* Sidebar */}
             <div className="w-full lg:w-[389px] space-y-6 flex-shrink-0">
@@ -492,8 +643,64 @@ const ManageCoursesPage: React.FC = () => {
                   ></div>
                 </div>
               </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Course Modal */}
+          <CourseModal
+            isOpen={courseModalOpen}
+            onClose={handleCourseModalClose}
+            onSubmit={handleCourseSubmit}
+            initialData={editingCourse || undefined}
+            isLoading={loading}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          {deleteConfirm !== null && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 rounded-lg">
+              <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+                <h2 className="text-lg font-bold text-gray-900 mb-2">
+                  Delete Course
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete this course? This action
+                  cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    text="Cancel"
+                    variant="secondary"
+                    fontSize="14px"
+                    borderRadius="6px"
+                    paddingWidth="16px"
+                    paddingHeight="8px"
+                    onClick={() => setDeleteConfirm(null)}
+                  />
+                  <Button
+                    text="Delete"
+                    variant="primary"
+                    fontSize="14px"
+                    borderRadius="6px"
+                    paddingWidth="16px"
+                    paddingHeight="8px"
+                    onClick={() => handleDeleteCourse(deleteConfirm)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed top-4 right-4 z-50 max-w-md">
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            </div>
+          )}
         </div>
       </main>
     </div>

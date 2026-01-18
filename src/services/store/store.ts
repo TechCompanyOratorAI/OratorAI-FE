@@ -3,6 +3,7 @@ import { TypedUseSelectorHook, useSelector, useDispatch } from "react-redux";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import authReducer from "../features/auth/authSlice";
+import courseReducer from "../features/course/courseSlice";
 
 const presistConfig = {
   key: "root",
@@ -13,6 +14,7 @@ const presistConfig = {
 // Create a hook for using TypedUseSelectorHook
 const rootReducer = combineReducers({
   auth: authReducer,
+  course: courseReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);

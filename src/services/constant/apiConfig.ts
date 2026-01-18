@@ -9,3 +9,7 @@ export const LOGOUT_ENDPOINT = `${BASE_URL}/api/v1/auth/logout`;
 export const PROFILE_ENDPOINT = `${BASE_URL}/api/v1/auth/profile`;
 export const CHANGE_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/change-password`;
 export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password`;
+
+// Course endpoints
+export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;
+export const COURSE_DETAIL_ENDPOINT = (courseId: string) => `${BASE_URL}/api/v1/courses/${courseId}`;

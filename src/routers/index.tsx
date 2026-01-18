@@ -5,6 +5,7 @@ import InstructorRegisterPage from "@/page/Authentication/InstructorRegisterPage
 import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotPasswordPage";
 import { Route, Routes } from "react-router-dom";
 import ManageCoursesPage from "@/page/Instructor/ManageCoursesPage";
+import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
@@ -22,6 +23,7 @@ const AppRouter = () => {
       <Route path="/register-instructor" element={<InstructorRegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/instructor/manage-courses" element={<ManageCoursesPage />} />
+      <Route path="/instructor/course/:courseId" element={<CourseDetailPage />} />
       <Route path="/student/dashboard" element={<StudentDashboardPage />} />
       <Route path="/student/feedback" element={<FeedbackPage />} />
       <Route path="/student/settings" element={<SettingsPage />} />
