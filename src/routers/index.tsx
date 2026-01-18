@@ -1,5 +1,6 @@
 import HomePage from "@/page/HomePage/HomePage";
-import LoginPage from "@/page/Authentication/LoginPage";
+import LoginPage from "@/page/Authentication/LoginPage/LoginPage";
+import RegisterPage from "@/page/Authentication/RegisterPage/RegisterPage";
 import { Route, Routes } from "react-router-dom";
 import ManageCoursesPage from "@/page/Instructor/ManageCoursesPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
@@ -15,6 +16,7 @@ const AppRouter = () => {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/instructor/manage-courses" element={<ManageCoursesPage />} />
       <Route path="/student/dashboard" element={<StudentDashboardPage />} />
       <Route path="/student/feedback" element={<FeedbackPage />} />

@@ -4,7 +4,7 @@ import ScrollAnimation from "./ScrollAnimation";
 import { motion, AnimatePresence } from "framer-motion";
 
 const HowToUse: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("GTM Enablement");
+  const [activeTab, setActiveTab] = useState("Đại học / Học viện");
 
   const getBullets = (tab: string) => {
     switch (tab) {
