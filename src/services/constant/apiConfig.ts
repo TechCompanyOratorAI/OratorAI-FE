@@ -13,3 +13,7 @@ export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password
 // Course endpoints
 export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;
 export const COURSE_DETAIL_ENDPOINT = (courseId: string) => `${BASE_URL}/api/v1/courses/${courseId}`;
+
+
+//Admin endpoints
+export const GET_ALL_USERS_ENDPOINT = `${BASE_URL}/api/v1/users`;

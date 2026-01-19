@@ -126,7 +126,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
@@ -134,7 +134,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded-full transition"
           >
             <X className="w-6 h-6 text-gray-600" />
           </button>
@@ -153,7 +153,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
               value={formData.courseCode}
               onChange={handleChange}
               placeholder="e.g., SE101"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                 errors.courseCode ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -173,7 +173,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
               value={formData.courseName}
               onChange={handleChange}
               placeholder="e.g., Software Engineering Fundamentals"
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                 errors.courseName ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -193,7 +193,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
               onChange={handleChange}
               placeholder="Enter course description..."
               rows={3}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
                 errors.description ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -213,7 +213,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 name="semester"
                 value={formData.semester}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   errors.semester ? "border-red-500" : "border-gray-300"
                 }`}
               >
@@ -241,7 +241,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 value={formData.academicYear}
                 onChange={handleChange}
                 placeholder="2026"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
           </div>
@@ -258,7 +258,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   errors.startDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -277,7 +277,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -293,16 +293,16 @@ const CourseModal: React.FC<CourseModalProps> = ({
               text="Cancel"
               variant="secondary"
               fontSize="14px"
-              borderRadius="6px"
-              paddingWidth="16px"
-              paddingHeight="8px"
+              borderRadius="999px"
+              paddingWidth="18px"
+              paddingHeight="10px"
               onClick={() => onClose()}
             />
             <button
               type="submit"
               onClick={handleSubmit}
               disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
               {isLoading ? "Saving..." : "Save Course"}
             </button>

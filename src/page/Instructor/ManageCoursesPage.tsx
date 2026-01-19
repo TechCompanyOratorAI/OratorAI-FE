@@ -232,6 +232,9 @@ const ManageCoursesPage: React.FC = () => {
                 Courses
               </a>
               <a href="#" className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                Topics
+              </a>
+              <a href="#" className="text-sm font-medium text-gray-600 whitespace-nowrap">
                 Analytics
               </a>
               <a href="#" className="text-sm font-medium text-gray-600 whitespace-nowrap">
@@ -280,7 +283,7 @@ const ManageCoursesPage: React.FC = () => {
           </div>
 
           {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4 ">
             {/* Search */}
             <div className="relative flex-1 w-full sm:max-w-[448px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
@@ -289,14 +292,14 @@ const ManageCoursesPage: React.FC = () => {
                 placeholder="Search for courses (e.g. CS101)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               />
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0 ">
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-lg border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
                   selectedFilter === "Active Semesters"
                     ? "bg-gray-100 border-gray-300"
                     : "bg-white border-gray-300"
@@ -309,7 +312,7 @@ const ManageCoursesPage: React.FC = () => {
                 <ChevronDown className="w-4 h-4 text-gray-600" />
               </button>
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-lg border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
                   selectedFilter === "Archived"
                     ? "bg-gray-100 border-gray-300"
                     : "bg-white border-gray-300"
@@ -322,7 +325,7 @@ const ManageCoursesPage: React.FC = () => {
                 <ChevronDown className="w-4 h-4 text-gray-600" />
               </button>
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-lg border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
                   selectedFilter === "By Department"
                     ? "bg-gray-100 border-gray-300"
                     : "bg-white border-gray-300"
@@ -355,7 +358,7 @@ const ManageCoursesPage: React.FC = () => {
               {/* Course Cards */}
               <div className="flex-1 space-y-6">
                 {filteredCourses.length === 0 ? (
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
                     <p className="text-gray-600">
                       {searchQuery
                         ? "No courses found matching your search"
@@ -366,7 +369,7 @@ const ManageCoursesPage: React.FC = () => {
                   filteredCourses.map((course) => (
                 <div
                   key={course.id}
-                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => navigate(`/instructor/course/${course.id}`)}
                 >
                   <div className="flex flex-col sm:flex-row">
@@ -411,7 +414,7 @@ const ManageCoursesPage: React.FC = () => {
                         >
                           <MoreVertical className="w-5 h-5 text-gray-600" />
                           {/* Dropdown menu */}
-                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -420,7 +423,7 @@ const ManageCoursesPage: React.FC = () => {
                                   handleCourseModalOpen(courseData);
                                 }
                               }}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl"
                             >
                               Edit Course
                             </button>
@@ -429,7 +432,7 @@ const ManageCoursesPage: React.FC = () => {
                                 e.stopPropagation();
                                 setDeleteConfirm(parseInt(course.id));
                               }}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl"
                             >
                               Delete Course
                             </button>
@@ -439,7 +442,7 @@ const ManageCoursesPage: React.FC = () => {
 
                       {/* Stats */}
                       <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="flex-1 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
                           <p className="text-xs text-gray-600 mb-1">
                             {course.pendingReviews !== undefined
                               ? "Pending Reviews"
@@ -451,7 +454,7 @@ const ManageCoursesPage: React.FC = () => {
                               : course.reviewsStatus}
                           </p>
                         </div>
-                        <div className="flex-1 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
                           <p className="text-xs text-gray-600 mb-1">
                             {course.students !== undefined
                               ? "Students"
@@ -537,7 +540,7 @@ const ManageCoursesPage: React.FC = () => {
             {/* Sidebar */}
             <div className="w-full lg:w-[389px] space-y-6 flex-shrink-0">
               {/* Upcoming Assignments */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">
                     Upcoming Assignments
@@ -551,7 +554,7 @@ const ManageCoursesPage: React.FC = () => {
                   {assignments.map((assignment) => (
                     <div
                       key={assignment.id}
-                      className="p-3 border border-gray-200 rounded-lg"
+                      className="p-3 border border-gray-200 rounded-xl"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
@@ -623,7 +626,7 @@ const ManageCoursesPage: React.FC = () => {
               </div>
 
               {/* AI Analysis */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-white" />
@@ -659,7 +662,7 @@ const ManageCoursesPage: React.FC = () => {
           {/* Delete Confirmation Dialog */}
           {deleteConfirm !== null && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 rounded-lg">
-              <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+              <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
                 <h2 className="text-lg font-bold text-gray-900 mb-2">
                   Delete Course
                 </h2>
