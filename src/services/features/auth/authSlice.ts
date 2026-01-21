@@ -60,6 +60,13 @@ export const loginUser = createAsyncThunk<
     };
 
     const response = await axiosInstance.post(LOGIN_ENDPOINT, requestBody);
+    // Nếu backend trả về 200 nhưng success = false thì coi như lỗi
+    if (response.data && response.data.success === false) {
+      const errorMessage =
+        response.data.message || "Đăng nhập thất bại";
+      return rejectWithValue({ message: errorMessage });
+    }
+
     return response.data;
   } catch (err: unknown) {
     const error = err as any;

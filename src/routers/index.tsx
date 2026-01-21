@@ -13,26 +13,46 @@ import UserManagementPage from "@/page/Admin/UserManagementPage";
 import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
 import SettingsPage from "@/page/Admin/SettingsPage";
 import FeedbackPage from "@/page/Students/FeedbackPage";
+import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
+import ForbiddenPage from "@/page/Error/ForbiddenPage";
+import NotFoundPage from "@/page/Error/NotFoundPage";
 
 const AppRouter = () => {
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register-instructor" element={<InstructorRegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/instructor/manage-courses" element={<ManageCoursesPage />} />
-      <Route path="/instructor/course/:courseId" element={<CourseDetailPage />} />
-      <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-      <Route path="/student/feedback" element={<FeedbackPage />} />
-      <Route path="/student/settings" element={<SettingsPage />} />
-      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-      <Route path="/admin/presentation-analysis" element={<PresentationAnalysisPage />} />
-      <Route path="/admin/analysis-logs" element={<PresentationAnalysisPage />} />
-      <Route path="/admin/user-management" element={<UserManagementPage />} />
-      <Route path="/admin/ai-configuration" element={<AIConfigurationPage />} />
-      <Route path="/admin/settings" element={<SettingsPage />} />
+
+      {/* Protected Instructor routes */}
+      <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>
+        <Route path="/instructor/manage-courses" element={<ManageCoursesPage />} />
+        <Route path="/instructor/course/:courseId" element={<CourseDetailPage />} />
+      </Route>
+
+      {/* Protected Student routes */}
+      <Route element={<ProtectedRoute allowedRoles={["Student"]} />}>
+        <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+        <Route path="/student/feedback" element={<FeedbackPage />} />
+        <Route path="/student/settings" element={<SettingsPage />} />
+      </Route>
+
+      {/* Protected Admin routes */}
+      <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/presentation-analysis" element={<PresentationAnalysisPage />} />
+        <Route path="/admin/analysis-logs" element={<PresentationAnalysisPage />} />
+        <Route path="/admin/user-management" element={<UserManagementPage />} />
+        <Route path="/admin/ai-configuration" element={<AIConfigurationPage />} />
+        <Route path="/admin/settings" element={<SettingsPage />} />
+      </Route>
+
+      {/* Error / fallback routes */}
+      <Route path="/unauthorized" element={<ForbiddenPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };
