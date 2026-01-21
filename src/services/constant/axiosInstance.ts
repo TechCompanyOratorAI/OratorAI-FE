@@ -1,5 +1,10 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import { BASE_URL, REFRESH_TOKEN_ENDPOINT } from "./apiConfig";
+import {
+  BASE_URL,
+  REFRESH_TOKEN_ENDPOINT,
+  LOGIN_ENDPOINT,
+  REGISTER_ENDPOINT,
+} from "./apiConfig";
 
 // Track if we're currently refreshing token to avoid multiple concurrent refresh calls
 let isRefreshing = false;
@@ -91,7 +96,14 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Không cố refresh token cho các request auth cơ bản (login/register/refresh-token)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== LOGIN_ENDPOINT &&
+      originalRequest.url !== REGISTER_ENDPOINT &&
+      originalRequest.url !== REFRESH_TOKEN_ENDPOINT
+    ) {
       if (isRefreshing) {
         // If a refresh is already in progress, wait for it to complete
         return new Promise((resolve) => {

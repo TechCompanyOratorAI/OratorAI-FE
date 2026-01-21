@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -10,7 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import { logout } from "@/services/features/auth/authSlice";
 
 interface SidebarAdminProps {
   activeItem?: string;
@@ -18,15 +20,34 @@ interface SidebarAdminProps {
 
 const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarAdminCollapsed");
     return saved ? JSON.parse(saved) : false;
   });
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem("sidebarAdminCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const menuItems = [
     {
@@ -61,6 +82,28 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
     },
   ];
 
+  const userInitial =
+    user?.firstName?.[0]?.toUpperCase() ||
+    user?.username?.[0]?.toUpperCase() ||
+    "A";
+
+  const userDisplayName =
+    (user
+      ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+        user.username ||
+        "Admin"
+      : "Admin") || "Admin";
+
+  const userRoleLabel =
+    user?.roles && user.roles.length > 0
+      ? user.roles[0].roleName
+      : "Super Admin";
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
   const isActive = (itemId: string) => {
     if (activeItem) {
       return activeItem === itemId;
@@ -92,11 +135,9 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen overflow-y-auto transform transition-all duration-300 ease-in-out ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${
-          collapsed ? "lg:w-20" : "lg:w-64"
-        }`}
+        } ${collapsed ? "lg:w-20" : "lg:w-64"}`}
       >
         {/* Logo */}
         <div className={`p-4 ${collapsed ? "lg:p-4" : ""}`}>
@@ -125,11 +166,10 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
                 key={item.id}
                 to={item.path}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
-                  active
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                } ${collapsed ? "lg:justify-center" : ""}`}
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${active
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-700 hover:bg-gray-100"
+                  } ${collapsed ? "lg:justify-center" : ""}`}
               >
                 <Icon className="w-6 h-6 flex-shrink-0" />
                 {!collapsed && <span className="lg:block hidden">{item.label}</span>}
@@ -139,19 +179,55 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
         </nav>
 
         {/* User Profile */}
-        <div className={`p-4 border-t border-gray-200 ${collapsed ? "lg:px-2" : ""}`}>
+        <div
+          ref={userMenuRef}
+          className={`relative p-4 border-t border-gray-200 ${
+            collapsed ? "lg:px-2" : ""
+          }`}
+        >
           {!collapsed && (
-            <div className="flex items-center gap-3 lg:block hidden">
-              <div className="w-10 h-10 rounded-full bg-gray-300"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Alex Morgan</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen((prev) => !prev)}
+              className="lg:flex hidden items-center gap-3 w-full text-left hover:bg-gray-50 rounded-lg px-2 py-1.5"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
+                {userInitial}
               </div>
-            </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {userDisplayName}
+                </p>
+                <p className="text-xs text-gray-500">{userRoleLabel}</p>
+              </div>
+            </button>
           )}
           {collapsed && (
-            <div className="lg:flex hidden justify-center">
-              <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen((prev) => !prev)}
+              className="lg:flex hidden justify-center w-full hover:bg-gray-50 rounded-lg px-2 py-1.5"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
+                {userInitial}
+              </div>
+            </button>
+          )}
+
+          {isUserMenuOpen && (
+            <div className="absolute left-4 right-4 bottom-20 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <p className="text-sm font-semibold text-gray-900">
+                  {userDisplayName}
+                </p>
+                <p className="text-xs text-gray-500">{userRoleLabel}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Logout
+              </button>
             </div>
           )}
         </div>
