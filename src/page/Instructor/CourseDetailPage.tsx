@@ -1,9 +1,12 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, User, BookOpen, Clock, CheckCircle2, Info } from "lucide-react";
+import { ArrowLeft, Calendar, User, BookOpen, Clock, CheckCircle2, Info, Plus } from "lucide-react";
 import Button from "@/components/yoodli/Button";
+import TopicModal from "@/components/Topic/TopicModal";
+import Toast from "@/components/Toast/Toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
+import { createTopic, CreateTopicData } from "@/services/features/topic/topicSlice";
 
 const CourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -12,6 +15,12 @@ const CourseDetailPage: React.FC = () => {
   const { selectedCourse: course, loading, error } = useAppSelector(
     (state) => state.course
   );
+  const { loading: topicLoading } = useAppSelector((state) => state.topic);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
   useEffect(() => {
     if (courseId) {
@@ -61,8 +70,27 @@ const CourseDetailPage: React.FC = () => {
 
   const courseDuration = Math.ceil(
     (new Date(course.endDate).getTime() - new Date(course.startDate).getTime()) /
-      (1000 * 60 * 60 * 24)
+    (1000 * 60 * 60 * 24)
   );
+
+  const handleTopicSubmit = async (topicData: CreateTopicData) => {
+    if (!courseId) return;
+    try {
+      await dispatch(createTopic({ courseId: parseInt(courseId), topicData })).unwrap();
+      setToast({
+        message: "Topic created successfully!",
+        type: "success",
+      });
+      setTopicModalOpen(false);
+      // Refresh course detail to get updated topics
+      dispatch(fetchCourseDetail(parseInt(courseId)));
+    } catch (error: any) {
+      setToast({
+        message: error || "Failed to create topic. Please try again.",
+        type: "error",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
@@ -91,11 +119,10 @@ const CourseDetailPage: React.FC = () => {
               <div className="space-y-3 max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide shadow-sm ${
-                      course.isActive
-                        ? "bg-white/20 text-white border border-white/30"
-                        : "bg-slate-900/30 text-white border border-white/20"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide shadow-sm ${course.isActive
+                      ? "bg-white/20 text-white border border-white/30"
+                      : "bg-slate-900/30 text-white border border-white/20"
+                      }`}
                   >
                     {course.isActive ? "Active" : "Archived"}
                   </span>
@@ -120,7 +147,7 @@ const CourseDetailPage: React.FC = () => {
                   <div className="font-semibold">Course Code</div>
                   <div className="text-white/90">{course.courseCode}</div>
                 </div>
-                
+
               </div>
             </div>
 
@@ -242,7 +269,7 @@ const CourseDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                 
+
                 </div>
               </div>
 
@@ -279,6 +306,17 @@ const CourseDetailPage: React.FC = () => {
                   <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Learning modules</p>
                   <h3 className="text-xl font-bold text-slate-900">Topic list ({course.topics?.length || 0})</h3>
                 </div>
+                <Button
+                  text="Create Topic"
+                  variant="primary"
+                  fontSize="14px"
+                  borderRadius="8px"
+                  paddingWidth="16px"
+                  paddingHeight="8px"
+                  icon={<Plus className="w-4 h-4 text-white" />}
+                  iconPosition="left"
+                  onClick={() => setTopicModalOpen(true)}
+                />
               </div>
 
               {course.topics && course.topics.length > 0 ? (
@@ -286,7 +324,8 @@ const CourseDetailPage: React.FC = () => {
                   {course.topics.map((topic) => (
                     <div
                       key={topic.topicId}
-                      className="rounded-xl border border-slate-200 hover:border-sky-200 hover:shadow transition bg-slate-50/60"
+                      onClick={() => navigate(`/instructor/topic/${topic.topicId}`)}
+                      className="rounded-xl border border-slate-200 hover:border-sky-200 hover:shadow transition bg-slate-50/60 cursor-pointer"
                     >
                       <div className="p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex items-start gap-3">
@@ -339,65 +378,92 @@ const CourseDetailPage: React.FC = () => {
                   <h3 className="text-lg font-bold text-slate-900">Faculty profile</h3>
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 mx-auto flex items-center justify-center text-white text-xl font-bold">
-                  {course.instructor.firstName?.charAt(0)}
-                  {course.instructor.lastName?.charAt(0)}
+              {course.instructor ? (
+                <>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 mx-auto flex items-center justify-center text-white text-xl font-bold">
+                      {course.instructor.firstName?.charAt(0)}
+                      {course.instructor.lastName?.charAt(0)}
+                    </div>
+                    <h4 className="mt-3 text-lg font-semibold text-slate-900">
+                      {course.instructor.firstName} {course.instructor.lastName}
+                    </h4>
+                    <p className="text-sm text-slate-600">@{course.instructor.username}</p>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600">Instructor ID</span>
+                      <span className="font-semibold text-slate-900">{course.instructor.userId}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600">Email</span>
+                      <span className="font-semibold text-slate-900 break-all text-right">{course.instructor.email}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                  <p className="text-slate-600">Instructor information not available</p>
                 </div>
-                <h4 className="mt-3 text-lg font-semibold text-slate-900">
-                  {course.instructor.firstName} {course.instructor.lastName}
-                </h4>
-                <p className="text-sm text-slate-600">@{course.instructor.username}</p>
+              )}
+              <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+                Respond to questions within 24 hours and refresh materials after each session.
               </div>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Instructor ID</span>
-                  <span className="font-semibold text-slate-900">{course.instructor.userId}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Email</span>
-                  <span className="font-semibold text-slate-900 break-all text-right">{course.instructor.email}</span>
-                </div>
-                <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
-                  Respond to questions within 24 hours and refresh materials after each session.
-                </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="w-5 h-5 text-indigo-600" />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Academic info</p>
+                <h3 className="text-lg font-bold text-slate-900">Governance & support</h3>
+              </div>
+            </div>
+            <div className="space-y-3 text-sm text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+                Course is {course.isActive ? "active and visible to students" : "currently archived"}.
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" aria-hidden />
+                Last updated: {formatDate(course.updatedAt)}.
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Info className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Academic info</p>
-                  <h3 className="text-lg font-bold text-slate-900">Governance & support</h3>
-                </div>
-              </div>
-              <div className="space-y-3 text-sm text-slate-700">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-                  Course is {course.isActive ? "active and visible to students" : "currently archived"}.
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" aria-hidden />
-                  Last updated: {formatDate(course.updatedAt)}.
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <Button
-                  text="Return to list"
-                  variant="secondary"
-                  fontSize="14px"
-                  borderRadius="10px"
-                  paddingWidth="14px"
-                  paddingHeight="10px"
-                  onClick={() => navigate(-1)}
-                />
-              </div>
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <Button
+                text="Return to list"
+                variant="secondary"
+                fontSize="14px"
+                borderRadius="10px"
+                paddingWidth="14px"
+                paddingHeight="10px"
+                onClick={() => navigate(-1)}
+              />
             </div>
           </div>
         </section>
       </main>
+
+      {/* Topic Modal */}
+      <TopicModal
+        isOpen={topicModalOpen}
+        onClose={() => setTopicModalOpen(false)}
+        onSubmit={handleTopicSubmit}
+        isLoading={topicLoading}
+      />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };

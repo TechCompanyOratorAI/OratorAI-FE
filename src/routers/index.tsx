@@ -6,6 +6,7 @@ import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotP
 import { Route, Routes } from "react-router-dom";
 import ManageCoursesPage from "@/page/Instructor/ManageCoursesPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
+import TopicDetailPage from "@/page/Instructor/TopicDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
@@ -31,6 +32,7 @@ const AppRouter = () => {
       <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>
         <Route path="/instructor/manage-courses" element={<ManageCoursesPage />} />
         <Route path="/instructor/course/:courseId" element={<CourseDetailPage />} />
+        <Route path="/instructor/topic/:topicId" element={<TopicDetailPage />} />
       </Route>
 
       {/* Protected Student routes */}

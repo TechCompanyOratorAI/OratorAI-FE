@@ -32,11 +32,12 @@ export interface CourseData {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  instructor: Instructor;
-  topics: Topic[];
+  instructor?: Instructor;
+  topics?: Topic[];
 }
 
 export interface CoursesResponse {
+  success: boolean;
   data: CourseData[];
   pagination: {
     total: number;
