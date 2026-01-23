@@ -25,7 +25,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
     requirements: "",
   });
 
-  const [errors, setErrors] = useState<Partial<CreateTopicData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateTopicData, string>>>({});
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -43,7 +43,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
   }, [isOpen]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CreateTopicData> = {};
+    const newErrors: Partial<Record<keyof CreateTopicData, string>> = {};
 
     if (!formData.topicName.trim()) {
       newErrors.topicName = "Topic name is required";
@@ -94,7 +94,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
         // If it's in datetime-local format (YYYY-MM-DDTHH:mm), convert to ISO
         dueDateISO = new Date(formData.dueDate).toISOString();
       }
-      
+
       const submitData: CreateTopicData = {
         ...formData,
         dueDate: dueDateISO,
@@ -133,9 +133,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
               value={formData.topicName}
               onChange={handleChange}
               placeholder="e.g., Agile Development Methodology"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.topicName ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.topicName && (
               <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
@@ -153,9 +152,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
               onChange={handleChange}
               placeholder="Enter topic description..."
               rows={4}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
-                errors.description ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${errors.description ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.description && (
               <p className="text-red-600 text-sm mt-1">{errors.description}</p>
@@ -175,9 +173,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
                 value={formData.sequenceNumber}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.sequenceNumber ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.sequenceNumber ? "border-red-500" : "border-gray-300"
+                  }`}
               />
               {errors.sequenceNumber && (
                 <p className="text-red-600 text-sm mt-1">
@@ -197,9 +194,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
                 value={formData.maxDurationMinutes}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
+                  }`}
               />
               {errors.maxDurationMinutes && (
                 <p className="text-red-600 text-sm mt-1">
@@ -219,9 +215,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.dueDate ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.dueDate && (
               <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
