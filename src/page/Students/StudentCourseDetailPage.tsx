@@ -381,6 +381,15 @@ const StudentCourseDetailPage: React.FC = () => {
                             disabled={enrollingTopicId === topic.topicId || enrollmentLoading}
                           />
                         )}
+                        <Button
+                          text="View Topic"
+                          variant="secondary"
+                          fontSize="14px"
+                          borderRadius="6px"
+                          paddingWidth="16px"
+                          paddingHeight="8px"
+                          onClick={() => navigate(`/student/topic/${topic.topicId}`)}
+                        />
                       </div>
                     </div>
                   </div>
