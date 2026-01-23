@@ -12,6 +12,7 @@ type ButtonProp = {
     type?: "button" | "submit" | "reset";
     icon?: React.ReactNode;
     iconPosition?: "left" | "right";
+    disabled?: boolean;
 };
 
 const Button: React.FC<ButtonProp> = ({
@@ -25,6 +26,7 @@ const Button: React.FC<ButtonProp> = ({
     type = "button",
     icon,
     iconPosition = "left",
+    disabled = false,
 }) => {
     const baseClasses = "font-poppins relative inline-block";
     const customStyle: React.CSSProperties = {};
@@ -44,12 +46,17 @@ const Button: React.FC<ButtonProp> = ({
         return (
             <motion.button
                 type={type}
-                onClick={onClick}
-                className={`${baseClasses} w-full lg:w-fit secondary text-[16px] font-[600] px-4 py-2 rounded-md cursor-pointer duration-200 hover:brightness-90 flex items-center gap-2`}
+                onClick={disabled ? undefined : onClick}
+                disabled={disabled}
+                className={`${baseClasses} w-full lg:w-fit secondary text-[16px] font-[600] px-4 py-2 rounded-md duration-200 flex items-center gap-2 ${
+                    disabled 
+                        ? "opacity-50 cursor-not-allowed" 
+                        : "cursor-pointer hover:brightness-90"
+                }`}
                 data-content={text}
                 style={customStyle}
-                whileHover="hover"
-                whileTap="tap"
+                whileHover={disabled ? undefined : "hover"}
+                whileTap={disabled ? undefined : "tap"}
                 variants={buttonVariants}
             >
                 {icon && iconPosition === "left" && icon}
@@ -69,11 +76,16 @@ const Button: React.FC<ButtonProp> = ({
     return (
         <motion.button
             type={type}
-            onClick={onClick}
-            className={`${baseClasses} ${variantClasses[variant]} w-full lg:w-fit text-[16px] font-[600] px-4 py-2 rounded-md cursor-pointer duration-200 hover:brightness-90 flex items-center gap-2`}
+            onClick={disabled ? undefined : onClick}
+            disabled={disabled}
+            className={`${baseClasses} ${variantClasses[variant]} w-full lg:w-fit text-[16px] font-[600] px-4 py-2 rounded-md duration-200 flex items-center gap-2 ${
+                disabled 
+                    ? "opacity-50 cursor-not-allowed" 
+                    : "cursor-pointer hover:brightness-90"
+            }`}
             style={customStyle}
-            whileHover="hover"
-            whileTap="tap"
+            whileHover={disabled ? undefined : "hover"}
+            whileTap={disabled ? undefined : "tap"}
             variants={buttonVariants}
         >
             {icon && iconPosition === "left" && icon}

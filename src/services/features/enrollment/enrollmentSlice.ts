@@ -3,8 +3,10 @@ import axiosInstance from "../../constant/axiosInstance";
 import { 
   ENROLL_COURSE_ENDPOINT, 
   GET_ENROLLED_COURSES_ENDPOINT,
+  DROP_COURSE_ENDPOINT,
   ENROLL_TOPIC_ENDPOINT,
-  GET_ENROLLED_TOPICS_ENDPOINT
+  GET_ENROLLED_TOPICS_ENDPOINT,
+  DROP_TOPIC_ENDPOINT
 } from "../../constant/apiConfig";
 
 export interface EnrolledCourse {
@@ -71,6 +73,16 @@ export interface EnrollTopicResponse {
 export interface EnrolledTopicsResponse {
   success: boolean;
   topics: EnrolledTopic[];
+}
+
+export interface DropCourseResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface DropTopicResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface EnrollmentState {
@@ -159,6 +171,40 @@ export const fetchEnrolledTopics = createAsyncThunk(
   }
 );
 
+// Drop course (unenroll from course)
+export const dropCourse = createAsyncThunk(
+  "enrollment/dropCourse",
+  async (courseId: number, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete<DropCourseResponse>(
+        DROP_COURSE_ENDPOINT(courseId.toString())
+      );
+      return courseId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to drop course"
+      );
+    }
+  }
+);
+
+// Drop topic (unenroll from topic)
+export const dropTopic = createAsyncThunk(
+  "enrollment/dropTopic",
+  async (topicId: number, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete<DropTopicResponse>(
+        DROP_TOPIC_ENDPOINT(topicId.toString())
+      );
+      return topicId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to drop topic"
+      );
+    }
+  }
+);
+
 const enrollmentSlice = createSlice({
   name: "enrollment",
   initialState,
@@ -232,6 +278,50 @@ const enrollmentSlice = createSlice({
         state.enrolledTopicIds = action.payload.map((topic) => topic.topicId);
       })
       .addCase(fetchEnrolledTopics.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Drop course
+    builder
+      .addCase(dropCourse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(dropCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove courseId from enrolledCourseIds
+        state.enrolledCourseIds = state.enrolledCourseIds.filter(
+          (id) => id !== action.payload
+        );
+        // Remove course from enrolledCourses
+        state.enrolledCourses = state.enrolledCourses.filter(
+          (course) => course.courseId !== action.payload
+        );
+      })
+      .addCase(dropCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Drop topic
+    builder
+      .addCase(dropTopic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(dropTopic.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove topicId from enrolledTopicIds
+        state.enrolledTopicIds = state.enrolledTopicIds.filter(
+          (id) => id !== action.payload
+        );
+        // Remove topic from enrolledTopics
+        state.enrolledTopics = state.enrolledTopics.filter(
+          (topic) => topic.topicId !== action.payload
+        );
+      })
+      .addCase(dropTopic.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

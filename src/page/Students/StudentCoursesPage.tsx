@@ -112,9 +112,12 @@ const StudentCoursesPage: React.FC = () => {
         message: "Successfully enrolled in course!",
         type: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || "Failed to enroll in course";
       setToast({
-        message: error || "Failed to enroll in course",
+        message: errorMessage,
         type: "error",
       });
     } finally {

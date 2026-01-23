@@ -26,5 +26,7 @@ export const GET_ALL_USERS_ENDPOINT = `${BASE_URL}/api/v1/users`;
 // Enrollment endpoints
 export const ENROLL_COURSE_ENDPOINT = (courseId: string) => `${BASE_URL}/api/v1/enrollments/courses/${courseId}`;
 export const GET_ENROLLED_COURSES_ENDPOINT = `${BASE_URL}/api/v1/enrollments/courses`;
+export const DROP_COURSE_ENDPOINT = (courseId: string) => `${BASE_URL}/api/v1/enrollments/courses/${courseId}`;
 export const ENROLL_TOPIC_ENDPOINT = (topicId: string) => `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
 export const GET_ENROLLED_TOPICS_ENDPOINT = `${BASE_URL}/api/v1/enrollments/topics`;
+export const DROP_TOPIC_ENDPOINT = (topicId: string) => `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;

@@ -5,7 +5,7 @@ import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
 import { Search, BookOpen, User, Calendar, CheckCircle2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { fetchEnrolledCourses } from "@/services/features/enrollment/enrollmentSlice";
+import { fetchEnrolledCourses, dropCourse } from "@/services/features/enrollment/enrollmentSlice";
 import type { EnrolledCourse } from "@/services/features/enrollment/enrollmentSlice";
 
 const StudentMyCoursesPage: React.FC = () => {
@@ -20,6 +20,8 @@ const StudentMyCoursesPage: React.FC = () => {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [droppingCourseId, setDroppingCourseId] = useState<number | null>(null);
+  const [dropConfirmCourseId, setDropConfirmCourseId] = useState<number | null>(null);
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -50,6 +52,30 @@ const StudentMyCoursesPage: React.FC = () => {
 
   const handleViewCourse = (courseId: number) => {
     navigate(`/student/course/${courseId}`);
+  };
+
+  const handleDropCourse = async (courseId: number) => {
+    try {
+      setDroppingCourseId(courseId);
+      await dispatch(dropCourse(courseId)).unwrap();
+      // Refresh enrolled courses list
+      await dispatch(fetchEnrolledCourses());
+      setToast({
+        message: "Successfully dropped course!",
+        type: "success",
+      });
+      setDropConfirmCourseId(null);
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string'
+        ? error
+        : (error as Error)?.message || "Failed to drop course";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setDroppingCourseId(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -141,89 +167,132 @@ const StudentMyCoursesPage: React.FC = () => {
                     >
                       {/* Course Info */}
                       <div className="p-5">
-                          {/* Header */}
-                          <div className="mb-4">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span className="text-xs font-medium">Enrolled</span>
-                              </div>
-                              <span
-                                className={`px-2 py-1 rounded text-xs font-medium ${
-                                  course.isActive
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-gray-100 text-gray-700"
+                        {/* Header */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">Enrolled</span>
+                            </div>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${course.isActive
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
                                 }`}
-                              >
-                                {course.isActive ? "Active" : "Archived"}
-                              </span>
-                              <span className="text-sm text-gray-600">
-                                {course.semester} • {course.academicYear}
-                              </span>
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">
-                              {course.courseName}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {course.courseCode}
+                            >
+                              {course.isActive ? "Active" : "Archived"}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {course.semester} • {course.academicYear}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-1">
+                            {course.courseName}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {course.courseCode}
+                          </p>
+                          {course.description && (
+                            <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                              {course.description}
                             </p>
-                            {course.description && (
-                              <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-                                {course.description}
+                          )}
+                          <p className="text-xs text-gray-500">
+                            Enrolled on {formatDate(course.enrolledAt)}
+                          </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <User className="w-4 h-4 text-gray-600" />
+                            <div>
+                              <p className="text-xs text-gray-600">Instructor</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {instructorName(course)}
                               </p>
-                            )}
-                            <p className="text-xs text-gray-500">
-                              Enrolled on {formatDate(course.enrolledAt)}
-                            </p>
+                            </div>
                           </div>
+                          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <Calendar className="w-4 h-4 text-gray-600" />
+                            <div>
+                              <p className="text-xs text-gray-600">Start Date</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatDate(course.startDate)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <Calendar className="w-4 h-4 text-gray-600" />
+                            <div>
+                              <p className="text-xs text-gray-600">End Date</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatDate(course.endDate)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                          {/* Stats */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                              <User className="w-4 h-4 text-gray-600" />
-                              <div>
-                                <p className="text-xs text-gray-600">Instructor</p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {instructorName(course)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                              <Calendar className="w-4 h-4 text-gray-600" />
-                              <div>
-                                <p className="text-xs text-gray-600">Start Date</p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {formatDate(course.startDate)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                              <Calendar className="w-4 h-4 text-gray-600" />
-                              <div>
-                                <p className="text-xs text-gray-600">End Date</p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {formatDate(course.endDate)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Action Button */}
-                          <div className="flex items-center justify-end pt-4 border-t border-gray-200">
-                            <Button
-                              text="View Course"
-                              variant="primary"
-                              fontSize="14px"
-                              borderRadius="6px"
-                              paddingWidth="16px"
-                              paddingHeight="8px"
-                              onClick={() => handleViewCourse(course.courseId)}
-                            />
-                          </div>
+                        {/* Action Button */}
+                        <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
+                          <Button
+                            text="View Course"
+                            variant="primary"
+                            fontSize="14px"
+                            borderRadius="6px"
+                            paddingWidth="16px"
+                            paddingHeight="8px"
+                            onClick={() => handleViewCourse(course.courseId)}
+                          />
+                          <Button
+                            text={droppingCourseId === course.courseId ? "Dropping..." : "Drop Course"}
+                            variant="secondary"
+                            fontSize="14px"
+                            borderRadius="6px"
+                            paddingWidth="16px"
+                            paddingHeight="8px"
+                            onClick={() => setDropConfirmCourseId(course.courseId)}
+                            disabled={droppingCourseId === course.courseId}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {/* Drop Course Confirmation Dialog */}
+            {dropConfirmCourseId !== null && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+                  <h2 className="text-lg font-bold text-gray-900 mb-2">
+                    Drop Course
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    Are you sure you want to drop this course? This action cannot be undone.
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      text="Cancel"
+                      variant="secondary"
+                      fontSize="14px"
+                      borderRadius="6px"
+                      paddingWidth="16px"
+                      paddingHeight="8px"
+                      onClick={() => setDropConfirmCourseId(null)}
+                    />
+                    <Button
+                      text="Drop Course"
+                      variant="primary"
+                      fontSize="14px"
+                      borderRadius="6px"
+                      paddingWidth="16px"
+                      paddingHeight="8px"
+                      onClick={() => handleDropCourse(dropConfirmCourseId)}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
