@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, BookOpen, User, FileText, CheckCircle2, XCircle, Info } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, BookOpen, FileText, CheckCircle2, Info } from "lucide-react";
 import Button from "@/components/yoodli/Button";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
