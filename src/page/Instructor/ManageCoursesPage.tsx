@@ -6,7 +6,7 @@ import Toast from "@/components/Toast/Toast";
 import { Search, Bell, ChevronDown, MoreVertical, Sparkles, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
-  fetchCourses,
+  fetchMyCourses,
   deleteCourse,
   createCourse,
   updateCourse,
@@ -21,7 +21,6 @@ interface Course {
   semester: string;
   status: "active" | "archived";
   schedule: string;
-  image: string;
   instructorName: string;
   topicsCount: number;
 }
@@ -48,7 +47,7 @@ const ManageCoursesPage: React.FC = () => {
 
   // Fetch courses on component mount
   useEffect(() => {
-    dispatch(fetchCourses({}));
+    dispatch(fetchMyCourses({}));
   }, [dispatch]);
 
   // Close user dropdown when clicking outside
@@ -79,7 +78,6 @@ const ManageCoursesPage: React.FC = () => {
       semester: `${apiCourse.semester} • ${apiCourse.academicYear}`,
       status: isActive ? "active" : "archived",
       schedule: `${apiCourse.startDate} to ${apiCourse.endDate}`,
-      image: "/demo_thumbnail.webp",
       instructorName,
       topicsCount: apiCourse.topics?.length ?? 0,
     };
@@ -122,7 +120,7 @@ const ManageCoursesPage: React.FC = () => {
         type: "success",
       });
       // Reload courses list
-      dispatch(fetchCourses({}));
+      dispatch(fetchMyCourses({}));
     } catch {
       setToast({
         message: "Failed to delete course. Please try again.",
@@ -164,7 +162,7 @@ const ManageCoursesPage: React.FC = () => {
         });
       }
       handleCourseModalClose();
-      dispatch(fetchCourses({}));
+      dispatch(fetchMyCourses({}));
     } catch {
       setToast({
         message: `Failed to ${editingCourse ? "update" : "create"} course. Please try again.`,
@@ -362,126 +360,92 @@ const ManageCoursesPage: React.FC = () => {
                       className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => navigate(`/instructor/course/${course.id}`)}
                     >
-                      <div className="flex flex-col sm:flex-row">
-                        {/* Course Image */}
-                        <div className="w-full sm:w-64 h-48 sm:h-[278px] bg-gradient-to-br from-sky-100 to-indigo-100 flex-shrink-0">
-                          <img
-                            src={course.image}
-                            alt={course.title}
-                            className="w-full h-full object-cover"
-                          />
+                      {/* Course Info */}
+                      <div className="p-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${course.status === "active"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                                  }`}
+                              >
+                                {course.status === "active" ? "Active" : "Archived"}
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                {course.semester}
+                              </span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">
+                              {course.title}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {course.courseCode} • {course.schedule}
+                            </p>
+                          </div>
+                          <div
+                            className="p-1 hover:bg-gray-100 rounded relative group cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="w-5 h-5 text-gray-600" />
+                            {/* Dropdown menu */}
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const courseData = apiCourses.find(c => c.courseId === parseInt(course.id));
+                                  if (courseData) {
+                                    handleCourseModalOpen(courseData);
+                                  }
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl"
+                              >
+                                Edit Course
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm(parseInt(course.id));
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl"
+                              >
+                                Delete Course
+                              </button>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Course Info */}
-                        <div className="flex-1 p-5">
-                          {/* Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <div className="flex items-center gap-3 mb-2">
-                                <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${course.status === "active"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-gray-100 text-gray-700"
-                                    }`}
-                                >
-                                  {course.status === "active" ? "Active" : "Archived"}
-                                </span>
-                                <span className="text-sm text-gray-600">
-                                  {course.semester}
-                                </span>
-                              </div>
-                              <h3 className="text-xl font-bold text-gray-900 mb-1">
-                                {course.title}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                {course.courseCode} • {course.schedule}
-                              </p>
-                            </div>
-                            <div
-                              className="p-1 hover:bg-gray-100 rounded relative group cursor-pointer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-5 h-5 text-gray-600" />
-                              {/* Dropdown menu */}
-                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const courseData = apiCourses.find(c => c.courseId === parseInt(course.id));
-                                    if (courseData) {
-                                      handleCourseModalOpen(courseData);
-                                    }
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl"
-                                >
-                                  Edit Course
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirm(parseInt(course.id));
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl"
-                                >
-                                  Delete Course
-                                </button>
-                              </div>
-                            </div>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">
+                              Instructor
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {course.instructorName}
+                            </p>
                           </div>
-
-                          {/* Stats */}
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                              <p className="text-xs text-gray-600 mb-1">
-                                Instructor
-                              </p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {course.instructorName}
-                              </p>
-                            </div>
-                            <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                              <p className="text-xs text-gray-600 mb-1">
-                                Topics
-                              </p>
-                              <p className="text-2xl font-bold text-gray-900">
-                                {course.topicsCount}
-                              </p>
-                            </div>
+                          <div className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-1">
+                              Topics
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {course.topicsCount}
+                            </p>
                           </div>
+                        </div>
 
-                          {/* Status and Actions */}
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 pt-4 border-t border-gray-200">
-                            {/* Có thể thêm info khác nếu cần */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                              {course.status === "active" ? (
-                                <>
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      text="Grade"
-                                      variant="secondary"
-                                      fontSize="14px"
-                                      borderRadius="6px"
-                                      paddingWidth="12px"
-                                      paddingHeight="6px"
-                                      onClick={() => { }}
-                                    />
-                                  </div>
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      text="View Class"
-                                      variant="secondary"
-                                      fontSize="14px"
-                                      borderRadius="6px"
-                                      paddingWidth="12px"
-                                      paddingHeight="6px"
-                                      onClick={() => { }}
-                                    />
-                                  </div>
-                                </>
-                              ) : (
+                        {/* Status and Actions */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 pt-4 border-t border-gray-200">
+                          {/* Có thể thêm info khác nếu cần */}
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            {course.status === "active" ? (
+                              <>
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <Button
-                                    text="View Archive"
+                                    text="Grade"
                                     variant="secondary"
                                     fontSize="14px"
                                     borderRadius="6px"
@@ -490,8 +454,31 @@ const ManageCoursesPage: React.FC = () => {
                                     onClick={() => { }}
                                   />
                                 </div>
-                              )}
-                            </div>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <Button
+                                    text="View Class"
+                                    variant="secondary"
+                                    fontSize="14px"
+                                    borderRadius="6px"
+                                    paddingWidth="12px"
+                                    paddingHeight="6px"
+                                    onClick={() => { }}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  text="View Archive"
+                                  variant="secondary"
+                                  fontSize="14px"
+                                  borderRadius="6px"
+                                  paddingWidth="12px"
+                                  paddingHeight="6px"
+                                  onClick={() => { }}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
