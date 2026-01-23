@@ -69,6 +69,9 @@ const ManageCoursesPage: React.FC = () => {
   // Transform API data to UI format
   const transformCourseData = (apiCourse: CourseData): Course => {
     const isActive = apiCourse.isActive;
+    const instructorName = apiCourse.instructor
+      ? `${apiCourse.instructor.firstName || ""} ${apiCourse.instructor.lastName || ""}`.trim() || apiCourse.instructor.username || "Unknown Instructor"
+      : "Unknown Instructor";
     return {
       id: apiCourse.courseId.toString(),
       title: apiCourse.courseName,
@@ -77,7 +80,7 @@ const ManageCoursesPage: React.FC = () => {
       status: isActive ? "active" : "archived",
       schedule: `${apiCourse.startDate} to ${apiCourse.endDate}`,
       image: "/demo_thumbnail.webp",
-      instructorName: `${apiCourse.instructor.firstName} ${apiCourse.instructor.lastName}`.trim(),
+      instructorName,
       topicsCount: apiCourse.topics?.length ?? 0,
     };
   };
@@ -193,9 +196,6 @@ const ManageCoursesPage: React.FC = () => {
                 className="text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1 whitespace-nowrap"
               >
                 Courses
-              </a>
-              <a href="#" className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                Topics
               </a>
               <a href="#" className="text-sm font-medium text-gray-600 whitespace-nowrap">
                 Analytics
@@ -397,8 +397,8 @@ const ManageCoursesPage: React.FC = () => {
                                 {course.courseCode} • {course.schedule}
                               </p>
                             </div>
-                            <button
-                              className="p-1 hover:bg-gray-100 rounded relative group"
+                            <div
+                              className="p-1 hover:bg-gray-100 rounded relative group cursor-pointer"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <MoreVertical className="w-5 h-5 text-gray-600" />
@@ -426,7 +426,7 @@ const ManageCoursesPage: React.FC = () => {
                                   Delete Course
                                 </button>
                               </div>
-                            </button>
+                            </div>
                           </div>
 
                           {/* Stats */}

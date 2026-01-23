@@ -5,6 +5,7 @@ import storage from "redux-persist/lib/storage";
 import authReducer from "../features/auth/authSlice";
 import courseReducer from "../features/course/courseSlice";
 import adminReducer from "../features/admin/adminSlice";
+import topicReducer from "../features/topic/topicSlice";
 
 const presistConfig = {
   key: "root",
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   course: courseReducer,
   admin: adminReducer,
+  topic: topicReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
