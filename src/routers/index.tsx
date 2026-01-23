@@ -12,6 +12,7 @@ import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import StudentCoursesPage from "@/page/Students/StudentCoursesPage";
 import StudentMyCoursesPage from "@/page/Students/StudentMyCoursesPage";
 import StudentCourseDetailPage from "@/page/Students/StudentCourseDetailPage";
+import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
 import UserManagementPage from "@/page/Admin/UserManagementPage";
 import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
@@ -43,6 +44,7 @@ const AppRouter = () => {
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
         <Route path="/student/courses" element={<StudentCoursesPage />} />
         <Route path="/student/course/:courseId" element={<StudentCourseDetailPage />} />
+        <Route path="/student/topic/:topicId" element={<StudentTopicDetailPage />} />
         <Route path="/student/my-courses" element={<StudentMyCoursesPage />} />
         <Route path="/student/feedback" element={<FeedbackPage />} />
         <Route path="/student/settings" element={<SettingsPage />} />
