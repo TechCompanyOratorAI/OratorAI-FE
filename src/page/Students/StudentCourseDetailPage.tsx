@@ -6,7 +6,7 @@ import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
-import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
+import { enrollTopic, fetchEnrolledTopics, dropCourse, dropTopic, fetchEnrolledCourses, enrollCourse } from "@/services/features/enrollment/enrollmentSlice";
 
 const StudentCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -15,7 +15,7 @@ const StudentCourseDetailPage: React.FC = () => {
   const { selectedCourse: course, loading, error } = useAppSelector(
     (state) => state.course
   );
-  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector(
+  const { enrolledTopicIds, enrolledCourseIds, loading: enrollmentLoading } = useAppSelector(
     (state) => state.enrollment
   );
 
@@ -24,13 +24,42 @@ const StudentCourseDetailPage: React.FC = () => {
     type: "success" | "error" | "info";
   } | null>(null);
   const [enrollingTopicId, setEnrollingTopicId] = useState<number | null>(null);
+  const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(null);
+  const [droppingTopicId, setDroppingTopicId] = useState<number | null>(null);
+  const [droppingCourseId, setDroppingCourseId] = useState<number | null>(null);
+  const [dropConfirmCourseId, setDropConfirmCourseId] = useState<number | null>(null);
+  const [dropConfirmTopicId, setDropConfirmTopicId] = useState<number | null>(null);
 
   useEffect(() => {
     if (courseId) {
       dispatch(fetchCourseDetail(parseInt(courseId)));
       dispatch(fetchEnrolledTopics());
+      dispatch(fetchEnrolledCourses());
     }
   }, [courseId, dispatch]);
+
+  const handleEnrollCourse = async (courseId: number) => {
+    try {
+      setEnrollingCourseId(courseId);
+      await dispatch(enrollCourse(courseId)).unwrap();
+      // Refresh enrolled courses list
+      await dispatch(fetchEnrolledCourses());
+      setToast({
+        message: "Successfully enrolled in course!",
+        type: "success",
+      });
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || "Failed to enroll in course";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setEnrollingCourseId(null);
+    }
+  };
 
   const handleEnrollTopic = async (topicId: number) => {
     try {
@@ -42,9 +71,12 @@ const StudentCourseDetailPage: React.FC = () => {
         message: "Successfully enrolled in topic!",
         type: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || "Failed to enroll in topic";
       setToast({
-        message: error || "Failed to enroll in topic",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -54,6 +86,60 @@ const StudentCourseDetailPage: React.FC = () => {
 
   const isTopicEnrolled = (topicId: number): boolean => {
     return enrolledTopicIds.includes(topicId);
+  };
+
+  const isCourseEnrolled = (courseId: number): boolean => {
+    return enrolledCourseIds.includes(courseId);
+  };
+
+  const handleDropCourse = async (courseId: number) => {
+    try {
+      setDroppingCourseId(courseId);
+      await dispatch(dropCourse(courseId)).unwrap();
+      // Refresh enrolled courses list
+      await dispatch(fetchEnrolledCourses());
+      setToast({
+        message: "Successfully dropped course!",
+        type: "success",
+      });
+      setDropConfirmCourseId(null);
+      // Navigate back to courses page
+      navigate("/student/my-courses");
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || "Failed to drop course";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setDroppingCourseId(null);
+    }
+  };
+
+  const handleDropTopic = async (topicId: number) => {
+    try {
+      setDroppingTopicId(topicId);
+      await dispatch(dropTopic(topicId)).unwrap();
+      // Refresh enrolled topics list
+      await dispatch(fetchEnrolledTopics());
+      setToast({
+        message: "Successfully dropped topic!",
+        type: "success",
+      });
+      setDropConfirmTopicId(null);
+    } catch (error: unknown) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || "Failed to drop topic";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setDroppingTopicId(null);
+    }
   };
 
   if (loading) {
@@ -128,7 +214,7 @@ const StudentCourseDetailPage: React.FC = () => {
           {/* Course Header */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
@@ -142,6 +228,12 @@ const StudentCourseDetailPage: React.FC = () => {
                   <span className="text-sm text-gray-600">
                     {course.semester} • {course.academicYear}
                   </span>
+                  {courseId && isCourseEnrolled(parseInt(courseId)) && (
+                    <div className="flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Enrolled</span>
+                    </div>
+                  )}
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   {course.courseName}
@@ -155,6 +247,33 @@ const StudentCourseDetailPage: React.FC = () => {
                   </p>
                 )}
               </div>
+              {courseId && (
+                <div className="flex items-center gap-2">
+                  {isCourseEnrolled(parseInt(courseId)) ? (
+                    <Button
+                      text={droppingCourseId === parseInt(courseId) ? "Dropping..." : "Drop Course"}
+                      variant="secondary"
+                      fontSize="14px"
+                      borderRadius="6px"
+                      paddingWidth="16px"
+                      paddingHeight="8px"
+                      onClick={() => setDropConfirmCourseId(parseInt(courseId))}
+                      disabled={droppingCourseId === parseInt(courseId)}
+                    />
+                  ) : (
+                    <Button
+                      text={enrollingCourseId === parseInt(courseId) ? "Enrolling..." : "Enroll Course"}
+                      variant="primary"
+                      fontSize="14px"
+                      borderRadius="6px"
+                      paddingWidth="16px"
+                      paddingHeight="8px"
+                      onClick={() => handleEnrollCourse(parseInt(courseId))}
+                      disabled={enrollingCourseId === parseInt(courseId) || enrollmentLoading}
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
@@ -229,11 +348,27 @@ const StudentCourseDetailPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {isTopicEnrolled(topic.topicId) ? (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full border border-green-200">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-sm font-medium">Enrolled</span>
+                        {!courseId || !isCourseEnrolled(parseInt(courseId)) ? (
+                          <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-200">
+                            <span className="text-sm font-medium">Enroll in course first</span>
                           </div>
+                        ) : isTopicEnrolled(topic.topicId) ? (
+                          <>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full border border-green-200">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span className="text-sm font-medium">Enrolled</span>
+                            </div>
+                            <Button
+                              text={droppingTopicId === topic.topicId ? "Dropping..." : "Drop Topic"}
+                              variant="secondary"
+                              fontSize="14px"
+                              borderRadius="6px"
+                              paddingWidth="16px"
+                              paddingHeight="8px"
+                              onClick={() => setDropConfirmTopicId(topic.topicId)}
+                              disabled={droppingTopicId === topic.topicId}
+                            />
+                          </>
                         ) : (
                           <Button
                             text={enrollingTopicId === topic.topicId ? "Enrolling..." : "Enroll Topic"}
@@ -292,6 +427,74 @@ const StudentCourseDetailPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Drop Course Confirmation Dialog */}
+      {dropConfirmCourseId !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">
+              Drop Course
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to drop this course? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                text="Cancel"
+                variant="secondary"
+                fontSize="14px"
+                borderRadius="6px"
+                paddingWidth="16px"
+                paddingHeight="8px"
+                onClick={() => setDropConfirmCourseId(null)}
+              />
+              <Button
+                text="Drop Course"
+                variant="primary"
+                fontSize="14px"
+                borderRadius="6px"
+                paddingWidth="16px"
+                paddingHeight="8px"
+                onClick={() => handleDropCourse(dropConfirmCourseId)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drop Topic Confirmation Dialog */}
+      {dropConfirmTopicId !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">
+              Drop Topic
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to drop this topic? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                text="Cancel"
+                variant="secondary"
+                fontSize="14px"
+                borderRadius="6px"
+                paddingWidth="16px"
+                paddingHeight="8px"
+                onClick={() => setDropConfirmTopicId(null)}
+              />
+              <Button
+                text="Drop Topic"
+                variant="primary"
+                fontSize="14px"
+                borderRadius="6px"
+                paddingWidth="16px"
+                paddingHeight="8px"
+                onClick={() => handleDropTopic(dropConfirmTopicId)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (
