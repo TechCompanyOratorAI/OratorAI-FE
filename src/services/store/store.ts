@@ -6,6 +6,7 @@ import authReducer from "../features/auth/authSlice";
 import courseReducer from "../features/course/courseSlice";
 import adminReducer from "../features/admin/adminSlice";
 import topicReducer from "../features/topic/topicSlice";
+import enrollmentReducer from "../features/enrollment/enrollmentSlice";
 
 const presistConfig = {
   key: "root",
@@ -19,6 +20,7 @@ const rootReducer = combineReducers({
   course: courseReducer,
   admin: adminReducer,
   topic: topicReducer,
+  enrollment: enrollmentReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);

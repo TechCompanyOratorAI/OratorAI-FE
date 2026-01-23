@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
-import { COURSES_ENDPOINT, COURSE_DETAIL_ENDPOINT } from "../../constant/apiConfig";
+import { COURSES_ENDPOINT, MY_COURSES_ENDPOINT, COURSE_DETAIL_ENDPOINT } from "../../constant/apiConfig";
 
 export interface Topic {
   topicId: number;
@@ -34,6 +34,7 @@ export interface CourseData {
   updatedAt: string;
   instructor?: Instructor;
   topics?: Topic[];
+  enrollmentCount?: number;
 }
 
 export interface CoursesResponse {
@@ -45,6 +46,7 @@ export interface CoursesResponse {
     limit: number;
     totalPages: number;
   };
+  instructor?: Instructor; // Only present in my-courses response
 }
 
 export interface CourseState {
@@ -91,6 +93,29 @@ export const fetchCourses = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch courses"
+      );
+    }
+  }
+);
+
+// Fetch instructor's courses
+export const fetchMyCourses = createAsyncThunk(
+  "course/fetchMyCourses",
+  async (
+    params: { page?: number; limit?: number } = {},
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axiosInstance.get<CoursesResponse>(
+        MY_COURSES_ENDPOINT,
+        {
+          params: params,
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch my courses"
       );
     }
   }
@@ -203,6 +228,22 @@ const courseSlice = createSlice({
         state.pagination = action.payload.pagination;
       })
       .addCase(fetchCourses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch instructor's courses
+    builder
+      .addCase(fetchMyCourses.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyCourses.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses = action.payload.data;
+        state.pagination = action.payload.pagination;
+      })
+      .addCase(fetchMyCourses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

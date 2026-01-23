@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  GraduationCap,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/services/store/store";
@@ -78,6 +79,12 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
       label: "Courses",
       icon: BookOpen,
       path: "/student/courses",
+    },
+    {
+      id: "my-courses",
+      label: "My Courses",
+      icon: GraduationCap,
+      path: "/student/my-courses",
     },
     {
       id: "library",
