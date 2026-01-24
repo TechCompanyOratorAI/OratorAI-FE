@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
-import { TOPICS_ENDPOINT, TOPIC_DETAIL_ENDPOINT } from "../../constant/apiConfig";
+import {
+  TOPICS_ENDPOINT,
+  TOPIC_DETAIL_ENDPOINT,
+} from "../../constant/apiConfig";
 
 export interface Presentation {
   presentationId: number;
@@ -64,21 +67,63 @@ export const createTopic = createAsyncThunk(
   "topic/createTopic",
   async (
     { courseId, topicData }: { courseId: number; topicData: CreateTopicData },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.post(
         TOPICS_ENDPOINT(courseId.toString()),
-        topicData
+        topicData,
       );
       // API returns { success: true, topic: {...} }
       return response.data.topic || response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create topic"
+        error.response?.data?.message || "Failed to create topic",
       );
     }
-  }
+  },
+);
+//Update topic
+export const updateTopic = createAsyncThunk(
+  "topic/updateTopic",
+  async (
+    {
+      topicId,
+      topicData,
+    }: { topicId: number; topicData: Partial<CreateTopicData> },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await axiosInstance.patch(
+        TOPIC_DETAIL_ENDPOINT(topicId.toString()),
+        topicData,
+      );
+      // API returns { success: true, topic: {...} }
+      return response.data.topic || response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update topic",
+      );
+    }
+  },
+);
+
+//Delete topic
+export const deleteTopic = createAsyncThunk(
+  "topic/deleteTopic",
+  async (topicId: number, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.delete(
+        TOPIC_DETAIL_ENDPOINT(topicId.toString()),
+      );
+      // API returns { success: true, message: "Topic deleted successfully" }
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete topic",
+      );
+    }
+  },
 );
 
 // Fetch topic detail
@@ -87,16 +132,16 @@ export const fetchTopicDetail = createAsyncThunk(
   async (topicId: number, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get(
-        TOPIC_DETAIL_ENDPOINT(topicId.toString())
+        TOPIC_DETAIL_ENDPOINT(topicId.toString()),
       );
       // API returns { success: true, topic: {...} }
       return response.data.topic || response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch topic detail"
+        error.response?.data?.message || "Failed to fetch topic detail",
       );
     }
-  }
+  },
 );
 
 const topicSlice = createSlice({
@@ -137,6 +182,34 @@ const topicSlice = createSlice({
         state.selectedTopic = action.payload;
       })
       .addCase(fetchTopicDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    // Update topic
+    builder
+      .addCase(updateTopic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTopic.fulfilled, (state) => {
+        state.loading = false;
+        // Topic update doesn't set selectedTopic, it's handled by refetching course
+      })
+      .addCase(updateTopic.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    // Delete topic
+    builder
+      .addCase(deleteTopic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTopic.fulfilled, (state) => {
+        state.loading = false;
+        // Topic deletion doesn't set selectedTopic, it's handled by refetching course
+      })
+      .addCase(deleteTopic.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

@@ -20,6 +20,7 @@ export const TOPICS_ENDPOINT = (courseId: string) => `${BASE_URL}/api/v1/courses
 export const TOPIC_DETAIL_ENDPOINT = (topicId: string) => `${BASE_URL}/api/v1/topics/${topicId}`;
 
 
+
 //Admin endpoints
 export const GET_ALL_USERS_ENDPOINT = `${BASE_URL}/api/v1/users`;
 
