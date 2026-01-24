@@ -25,7 +25,9 @@ const TopicModal: React.FC<TopicModalProps> = ({
     requirements: "",
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateTopicData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CreateTopicData, string>>
+  >({});
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -66,14 +68,16 @@ const TopicModal: React.FC<TopicModalProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]:
         name === "sequenceNumber" || name === "maxDurationMinutes"
-          ? parseInt(value) || 0
+          ? value === ""
+            ? 0
+            : parseInt(value, 10)
           : value,
     }));
     // Clear error for this field
@@ -90,7 +94,11 @@ const TopicModal: React.FC<TopicModalProps> = ({
     if (validateForm()) {
       // Convert datetime-local format to ISO string
       let dueDateISO = formData.dueDate;
-      if (formData.dueDate && !formData.dueDate.includes('Z') && !formData.dueDate.includes('+')) {
+      if (
+        formData.dueDate &&
+        !formData.dueDate.includes("Z") &&
+        !formData.dueDate.includes("+")
+      ) {
         // If it's in datetime-local format (YYYY-MM-DDTHH:mm), convert to ISO
         dueDateISO = new Date(formData.dueDate).toISOString();
       }
@@ -133,8 +141,9 @@ const TopicModal: React.FC<TopicModalProps> = ({
               value={formData.topicName}
               onChange={handleChange}
               placeholder="e.g., Agile Development Methodology"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.topicName ? "border-red-500" : "border-gray-300"
+              }`}
             />
             {errors.topicName && (
               <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
@@ -152,8 +161,9 @@ const TopicModal: React.FC<TopicModalProps> = ({
               onChange={handleChange}
               placeholder="Enter topic description..."
               rows={4}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${errors.description ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
+                errors.description ? "border-red-500" : "border-gray-300"
+              }`}
             />
             {errors.description && (
               <p className="text-red-600 text-sm mt-1">{errors.description}</p>
@@ -170,11 +180,12 @@ const TopicModal: React.FC<TopicModalProps> = ({
               <input
                 type="number"
                 name="sequenceNumber"
-                value={formData.sequenceNumber}
+                value={formData.sequenceNumber || ""}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.sequenceNumber ? "border-red-500" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  errors.sequenceNumber ? "border-red-500" : "border-gray-300"
+                }`}
               />
               {errors.sequenceNumber && (
                 <p className="text-red-600 text-sm mt-1">
@@ -194,8 +205,11 @@ const TopicModal: React.FC<TopicModalProps> = ({
                 value={formData.maxDurationMinutes}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  errors.maxDurationMinutes
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
               {errors.maxDurationMinutes && (
                 <p className="text-red-600 text-sm mt-1">
@@ -215,8 +229,9 @@ const TopicModal: React.FC<TopicModalProps> = ({
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.dueDate ? "border-red-500" : "border-gray-300"
+              }`}
             />
             {errors.dueDate && (
               <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
