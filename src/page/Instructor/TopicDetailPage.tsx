@@ -1,7 +1,15 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, BookOpen, FileText, CheckCircle2, Info } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  BookOpen,
+  FileText,
+  CheckCircle2,
+  Info,
+} from "lucide-react";
+// Button is unused after removing sidebar; clean up import
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
 
@@ -9,9 +17,11 @@ const TopicDetailPage: React.FC = () => {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { selectedTopic: topic, loading, error } = useAppSelector(
-    (state) => state.topic
-  );
+  const {
+    selectedTopic: topic,
+    loading,
+    error,
+  } = useAppSelector((state) => state.topic);
 
   useEffect(() => {
     if (topicId) {
@@ -70,7 +80,10 @@ const TopicDetailPage: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+    const statusConfig: Record<
+      string,
+      { bg: string; text: string; icon: React.ReactNode }
+    > = {
       draft: {
         bg: "bg-gray-100 text-gray-700",
         text: "Draft",
@@ -90,7 +103,9 @@ const TopicDetailPage: React.FC = () => {
 
     const config = statusConfig[status.toLowerCase()] || statusConfig.draft;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${config.bg}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${config.bg}`}
+      >
         {config.icon}
         {config.text}
       </span>
@@ -109,16 +124,19 @@ const TopicDetailPage: React.FC = () => {
             Back to course
           </button>
           <div className="flex items-center gap-2 text-sm text-slate-500">
-            <BookOpen className="w-4 h-4" />
-            Topic overview
+            <Info className="w-4 h-4" />
+            Instructor topic overview
           </div>
         </div>
       </header>
 
       <main className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
         {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white shadow-lg">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.12),transparent_30%)]" aria-hidden />
+        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-600 via-sky-500 to-indigo-500 text-white shadow-lg">
+          <div
+            className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.12),transparent_30%)]"
+            aria-hidden
+          />
           <div className="relative p-6 sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3 max-w-3xl">
@@ -130,55 +148,108 @@ const TopicDetailPage: React.FC = () => {
                     Topic #{topic.sequenceNumber}
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold">{topic.topicName}</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold">
+                  {topic.topicName}
+                </h1>
                 <p className="text-white/90 text-lg">{topic.description}</p>
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   {topic.dueDate && (
                     <div className="flex items-center gap-2 text-white/90">
                       <Calendar className="w-5 h-5" />
-                      <span className="font-medium">Due: {formatDate(topic.dueDate)}</span>
+                      <span className="font-medium">
+                        Due: {formatDate(topic.dueDate)}
+                      </span>
                     </div>
                   )}
                   {topic.maxDurationMinutes && (
                     <div className="flex items-center gap-2 text-white/90">
                       <Clock className="w-5 h-5" />
-                      <span className="font-medium">{topic.maxDurationMinutes} minutes</span>
+                      <span className="font-medium">
+                        {topic.maxDurationMinutes} minutes
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              {[
+                {
+                  label: "Due date",
+                  value: topic.dueDate
+                    ? formatDate(topic.dueDate)
+                    : "No deadline",
+                  Icon: Calendar,
+                },
+                {
+                  label: "Duration",
+                  value: `${topic.maxDurationMinutes || 0} minutes`,
+                  Icon: Clock,
+                },
+                {
+                  label: "Presentations",
+                  value: `${topic.presentations.length} submitted`,
+                  Icon: FileText,
+                },
+                {
+                  label: "Course",
+                  value: topic.course.courseName,
+                  Icon: BookOpen,
+                },
+              ].map(({ label, value, Icon }, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-3xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3"
+                >
+                  <span className="rounded-full bg-white/20 p-2">
+                    <Icon className="w-5 h-5 text-white" />
+                  </span>
+                  <div>
+                    <p className="text-white/80 text-xs uppercase tracking-wide font-semibold">
+                      {label}
+                    </p>
+                    <p className="font-semibold truncate max-w-[180px]">
+                      {value}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Course Info */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-lg bg-sky-100 p-2">
+                <div className="rounded-2xl bg-sky-100 p-2">
                   <BookOpen className="w-5 h-5 text-sky-700" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Course</p>
-                  <h3 className="text-lg font-bold text-slate-900">{topic.course.courseName}</h3>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                    Course
+                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {topic.course.courseName}
+                  </h3>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Course Code</span>
-                  <span className="font-semibold text-slate-900">{topic.course.courseCode}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Instructor</span>
+                <div className="flex items-center justify-between"></div>
+                <div className="flex items-center justify-start gap-2">
+                  <span className="text-slate-600">Instructor:</span>
                   <span className="font-semibold text-slate-900">
-                    {topic.course.instructor.firstName} {topic.course.instructor.lastName}
+                    {topic.course.instructor.firstName}{" "}
+                    {topic.course.instructor.lastName}
                   </span>
                 </div>
                 <button
-                  onClick={() => navigate(`/instructor/course/${topic.courseId}`)}
-                  className="w-full mt-4 text-left px-4 py-2 text-sm text-sky-600 hover:bg-sky-50 rounded-lg transition"
+                  onClick={() =>
+                    navigate(`/instructor/course/${topic.courseId}`)
+                  }
+                  className="w-full mt-4 text-left px-4 py-2 text-sm text-sky-600 hover:bg-sky-50 rounded-3xl transition"
                 >
                   View Course Details →
                 </button>
@@ -187,18 +258,22 @@ const TopicDetailPage: React.FC = () => {
 
             {/* Requirements */}
             {topic.requirements && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="rounded-lg bg-amber-100 p-2">
+                  <div className="rounded-2xl bg-amber-100 p-2">
                     <FileText className="w-5 h-5 text-amber-700" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Requirements</p>
-                    <h3 className="text-lg font-bold text-slate-900">Topic Requirements</h3>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                      Requirements
+                    </p>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Topic Requirements
+                    </h3>
                   </div>
                 </div>
-                <div className="prose prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <div className="prose prose-sm max-w-none ">
+                  <pre className=" whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-2xl border border-slate-200">
                     {topic.requirements}
                   </pre>
                 </div>
@@ -206,11 +281,16 @@ const TopicDetailPage: React.FC = () => {
             )}
 
             {/* Presentations */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="rounded-2xl bg-indigo-100 p-2">
+                  <FileText className="w-5 h-5 text-indigo-700" />
+                </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Student Submissions</p>
-                  <h3 className="text-xl font-bold text-slate-900">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                    Student Submissions
+                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">
                     Presentations ({topic.presentations.length})
                   </h3>
                 </div>
@@ -221,12 +301,14 @@ const TopicDetailPage: React.FC = () => {
                   {topic.presentations.map((presentation) => (
                     <div
                       key={presentation.presentationId}
-                      className="rounded-xl border border-slate-200 hover:border-sky-200 hover:shadow transition bg-slate-50/60 p-4"
+                      className="rounded-3xl overflow-hidden border border-slate-200 hover:border-sky-200 hover:shadow transition bg-slate-50/60 p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold text-slate-900">{presentation.title}</h4>
+                            <h4 className="font-semibold text-slate-900">
+                              {presentation.title}
+                            </h4>
                             {getStatusBadge(presentation.status)}
                           </div>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
@@ -234,7 +316,8 @@ const TopicDetailPage: React.FC = () => {
                             {presentation.submissionDate && (
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                Submitted: {formatDateOnly(presentation.submissionDate)}
+                                Submitted:{" "}
+                                {formatDateOnly(presentation.submissionDate)}
                               </span>
                             )}
                           </div>
@@ -244,59 +327,11 @@ const TopicDetailPage: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                <div className="rounded-3xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
                   <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                   <p>No presentations submitted yet.</p>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Topic Info */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Info className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Topic info</p>
-                  <h3 className="text-lg font-bold text-slate-900">Details</h3>
-                </div>
-              </div>
-              <div className="space-y-3 text-sm text-slate-700">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-indigo-500" aria-hidden />
-                  Sequence: {topic.sequenceNumber}
-                </div>
-                {topic.dueDate && (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" aria-hidden />
-                    Due: {formatDateOnly(topic.dueDate)}
-                  </div>
-                )}
-                {topic.maxDurationMinutes && (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" aria-hidden />
-                    Duration: {topic.maxDurationMinutes} minutes
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-                  Created: {formatDateOnly(topic.createdAt)}
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <Button
-                  text="Return to course"
-                  variant="secondary"
-                  fontSize="14px"
-                  borderRadius="10px"
-                  paddingWidth="14px"
-                  paddingHeight="10px"
-                  onClick={() => navigate(`/instructor/course/${topic.courseId}`)}
-                />
-              </div>
             </div>
           </div>
         </div>
