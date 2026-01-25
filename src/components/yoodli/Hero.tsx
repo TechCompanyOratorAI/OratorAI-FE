@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import Button from "./Button";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const phrases = [
   "course presentations",
@@ -16,6 +17,7 @@ const phraseHeight = 50;
 const Hero: React.FC = () => {
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState<number>(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -117,6 +119,7 @@ const Hero: React.FC = () => {
           <Button
             text="Bắt đầu bài thuyết trình mẫu"
             variant="primary"
+            onClick={() => navigate("/login")}
             {...(windowWidth < 700
               ? {
                   fontSize: "16px",

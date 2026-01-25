@@ -5,7 +5,6 @@ import Featured from "@/components/yoodli/Featured";
 import HowToUse from "@/components/yoodli/HowToUse";
 import Roleplay from "@/components/yoodli/Roleplay";
 import Pitch from "@/components/yoodli/Pitch";
-import More from "@/components/yoodli/More";
 import Footer from "@/components/Footer/Footer";
 
 const HomePage = () => {
@@ -20,7 +19,7 @@ const HomePage = () => {
         <HowToUse />
         <Roleplay />
         <Pitch />
-        <More />
+        {/* <More /> */}
       </main>
       <Footer />
     </div>

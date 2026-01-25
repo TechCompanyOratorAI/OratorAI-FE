@@ -188,23 +188,7 @@ const Roleplay: React.FC = () => {
                         backgroundPositionX: "50%",
                     }}
                 >
-                    <ScrollAnimation
-                        type="slide"
-                        direction="up"
-                        delay={0.1}
-                        duration={0.5}
-                    >
-                        <div className="mt-20">
-                            <Button
-                                text={"Start roleplaying"}
-                                variant={"primary"}
-                                fontSize="20px"
-                                borderRadius="25px"
-                                paddingWidth="25px"
-                                paddingHeight="10px"
-                            />
-                        </div>
-                    </ScrollAnimation>
+
                 </div>
             </div>
         </>

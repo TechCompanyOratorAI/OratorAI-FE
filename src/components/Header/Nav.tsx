@@ -61,7 +61,7 @@ const Nav: React.FC = () => {
                     </button>
 
                     <div className="hidden lg:flex items-center w-full">
-                        <div className="flex space-x-6 lg:space-x-12 ml-10">
+                        {/* <div className="flex space-x-6 lg:space-x-12 ml-10">
                             <NavItem
                                 text="FOR BUSINESS"
                                 more={[
@@ -97,7 +97,7 @@ const Nav: React.FC = () => {
                                     "Trust Center",
                                 ]}
                             />
-                        </div>
+                        </div> */}
                         <div className="flex space-x-2 lg:space-x-4 ml-auto">
                             <Button
                                 text="Sign In"
@@ -115,14 +115,7 @@ const Nav: React.FC = () => {
                                 borderRadius="8px"
                                 paddingWidth="16px"
                                 paddingHeight="8px"
-                            />
-                            <Button
-                                text="Talk to Sales"
-                                variant="secondary"
-                                fontSize="16px"
-                                borderRadius="8px"
-                                paddingWidth="16px"
-                                paddingHeight="8px"
+                                onClick={() => navigate("/login")}
                             />
                         </div>
                     </div>

@@ -64,7 +64,7 @@ const InstructorRegisterPage: React.FC = () => {
           <div className="space-y-6">
             <ScrollAnimation type="slide" direction="right" delay={0.1}>
               <p className="inline-flex items-center text-xs font-semibold tracking-wide text-sky-600 uppercase bg-sky-50 border border-sky-100 rounded-full px-3 py-1 w-fit">
-                Hệ thống AI đánh giá bài thuyết trình OratorAI
+                OratorAI • AI đánh giá thuyết trình
               </p>
             </ScrollAnimation>
 
@@ -79,18 +79,15 @@ const InstructorRegisterPage: React.FC = () => {
 
             <ScrollAnimation type="slide" direction="up" delay={0.3}>
               <p className="text-slate-600 text-sm md:text-base">
-                Tham gia cùng hàng nghìn giảng viên đang sử dụng OratorAI để quản lý khóa học,
-                đánh giá và phân tích bài thuyết trình của sinh viên một cách tự động và hiệu quả.
+                Dành cho giảng viên quản lý lớp và chấm điểm nhanh hơn.
               </p>
             </ScrollAnimation>
 
             <ScrollAnimation type="slide" direction="up" delay={0.4}>
               <ul className="space-y-2 text-sm text-slate-700">
                 {[
-                  "Quản lý khóa học và lớp học dễ dàng",
-                  "Đánh giá và chấm điểm bài thuyết trình tự động",
-                  "Theo dõi tiến bộ của từng sinh viên qua dashboard",
-                  "Nhận báo cáo phân tích chi tiết về bài thuyết trình",
+                  "Quản lý khóa học & lớp học",
+                  "Chấm điểm & báo cáo",
                 ].map((item, index) => (
                   <motion.li
                     key={index}
