@@ -80,12 +80,12 @@ const LoginForm: React.FC = () => {
       <div className="bg-white/80 backdrop-blur border border-slate-100 shadow-xl shadow-sky-100/40 rounded-2xl p-6 md:p-8">
         <ScrollAnimation type="fade" delay={0.3}>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">
-            Chào mừng trở lại
+            Chào bạn
           </h2>
         </ScrollAnimation>
         <ScrollAnimation type="fade" delay={0.4}>
           <p className="text-sm text-slate-500 mb-4">
-            Vui lòng chọn vai trò của bạn để tiếp tục
+            Chọn vai trò để tiếp tục
           </p>
         </ScrollAnimation>
 
@@ -225,16 +225,18 @@ const LoginForm: React.FC = () => {
           </ScrollAnimation>
 
           <ScrollAnimation type="fade" delay={0.8}>
-            <div className="pt-2">
-              <Button
-                text={loading ? "Đang đăng nhập..." : "Đăng nhập"}
-                variant="primary"
-                paddingHeight="10px"
-                paddingWidth="16px"
-                fontSize="14px"
-                borderRadius="12px"
-                type="submit"
-              />
+            <div className="pt-2 flex justify-center">
+              <div className="w-full max-w-sm flex justify-center">
+                <Button
+                  text={loading ? "Đang đăng nhập..." : "Đăng nhập"}
+                  variant="primary"
+                  paddingHeight="10px"
+                  paddingWidth="16px"
+                  fontSize="14px"
+                  borderRadius="12px"
+                  type="submit"
+                />
+              </div>
             </div>
           </ScrollAnimation>
         </form>
@@ -247,17 +249,18 @@ const LoginForm: React.FC = () => {
               <span className="flex-1 h-px bg-slate-200" />
             </div>
 
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 ">
-              <Button
-                text="Đăng nhập với Google"
-                variant="secondary"
-                fontSize="12px"
-                borderRadius="8px"
-                paddingWidth="12px"
-                paddingHeight="8px"
-                onClick={() => { }}
-              />
-
+            <div className="mt-4 flex justify-center">
+              <div className="w-full max-w-sm flex justify-center">
+                <Button
+                  text="Đăng nhập với Google"
+                  variant="secondary"
+                  fontSize="12px"
+                  borderRadius="8px"
+                  paddingWidth="12px"
+                  paddingHeight="8px"
+                  onClick={() => { }}
+                />
+              </div>
             </div>
           </div>
         </ScrollAnimation>

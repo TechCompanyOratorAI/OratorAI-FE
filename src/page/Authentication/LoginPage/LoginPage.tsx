@@ -82,33 +82,30 @@ const LoginPage: React.FC = () => {
           <div className="space-y-6">
             <ScrollAnimation type="slide" direction="right" delay={0.1}>
               <p className="inline-flex items-center text-xs font-semibold tracking-wide text-sky-600 uppercase bg-sky-50 border border-sky-100 rounded-full px-3 py-1 w-fit">
-                Hệ thống AI đánh giá bài thuyết trình OratorAI
+                OratorAI • AI đánh giá thuyết trình
               </p>
             </ScrollAnimation>
 
             <ScrollAnimation type="slide" direction="up" delay={0.2}>
               <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">
-                Đăng nhập để{" "}
+                Đăng nhập{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-500">
-                  quản lý và đánh giá thuyết trình
+                  OratorAI
                 </span>
               </h1>
             </ScrollAnimation>
 
             <ScrollAnimation type="slide" direction="up" delay={0.3}>
               <p className="text-slate-600 text-sm md:text-base">
-                Dành cho giảng viên, sinh viên và đơn vị đào tạo muốn tự động hoá việc
-                ghi lại, chấm điểm và phân tích mức độ bám sát slide của từng bài
-                thuyết trình.
+                Ghi âm, chấm điểm và phân tích bài thuyết trình nhanh hơn.
               </p>
             </ScrollAnimation>
 
             <ScrollAnimation type="slide" direction="up" delay={0.4}>
               <ul className="space-y-2 text-sm text-slate-700">
                 {[
-                  "Chuyển đổi giọng nói thành transcript song ngữ Việt – Anh",
-                  "Đánh giá độ liên quan giữa lời nói và nội dung từng trang slide",
-                  "Dashboard theo dõi tiến bộ cho từng sinh viên, lớp học và khoá học",
+                  "Transcript Việt – Anh",
+                  "Chấm điểm & báo cáo",
                 ].map((item, index) => (
                   <motion.li
                     key={index}
