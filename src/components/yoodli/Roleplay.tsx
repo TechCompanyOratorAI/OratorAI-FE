@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import ScrollAnimation from "./ScrollAnimation";
-import Button from "./Button";
 
 const Roleplay: React.FC = () => {
     const [activeCard, setActiveCard] = useState(-1);
