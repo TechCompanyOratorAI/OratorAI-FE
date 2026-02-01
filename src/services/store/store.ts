@@ -5,6 +5,7 @@ import storage from "redux-persist/lib/storage";
 import authReducer from "../features/auth/authSlice";
 import courseReducer from "../features/course/courseSlice";
 import adminReducer from "../features/admin/adminSlice";
+import classReducer from "../features/admin/classSlice";
 import topicReducer from "../features/topic/topicSlice";
 import enrollmentReducer from "../features/enrollment/enrollmentSlice";
 
@@ -19,6 +20,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   course: courseReducer,
   admin: adminReducer,
+  class: classReducer,
   topic: topicReducer,
   enrollment: enrollmentReducer,
 });
