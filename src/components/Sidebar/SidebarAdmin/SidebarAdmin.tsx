@@ -7,6 +7,7 @@ import {
   Cog,
   Menu,
   X,
+  Shapes,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -73,6 +74,12 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
       label: "Analysis Logs",
       icon: FileText,
       path: "/admin/analysis-logs",
+    },
+    {
+      id: "manage-classes",
+      label: "Manage Classes",
+      icon: Shapes,
+      path: "/admin/manage-classes",
     },
     {
       id: "settings",
