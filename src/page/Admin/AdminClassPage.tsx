@@ -23,7 +23,7 @@ import {
   ClassData,
   InstructorInfo,
 } from "@/services/features/admin/classSlice";
-import { fetchAllUsers } from "@/services/features/admin/adminSlice";
+import { fetchInstructorByClass } from "@/services/features/admin/adminSlice";
 import { fetchCourses } from "@/services/features/course/courseSlice";
 import { RootState, AppDispatch } from "@/services/store/store";
 
@@ -52,7 +52,6 @@ const AdminClassPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchClasses({ page: 1, limit: 20 }));
-    dispatch(fetchAllUsers());
     dispatch(fetchCourses({ page: 1, limit: 100 }));
   }, [dispatch]);
 
@@ -124,9 +123,11 @@ const AdminClassPage: React.FC = () => {
     setSelectedClass(undefined);
   };
 
-  const handleManageInstructors = (classData: ClassData) => {
+  const handleManageInstructors = async (classData: ClassData) => {
     setSelectedClass(classData);
     setIsInstructorModalOpen(true);
+    // Fetch instructors for this specific class
+    await dispatch(fetchInstructorByClass(classData.classId.toString()));
   };
 
   const handleAddInstructor = async (userId: number) => {
@@ -158,6 +159,8 @@ const AdminClassPage: React.FC = () => {
           message: "Instructor added successfully",
           type: "success",
         });
+        // Reload page after successful add
+        setTimeout(() => window.location.reload(), 500);
       } else {
         setToast({
           message: "Failed to add instructor",
@@ -196,6 +199,8 @@ const AdminClassPage: React.FC = () => {
           message: "Instructor removed successfully",
           type: "success",
         });
+        // Reload page after successful remove
+        setTimeout(() => window.location.reload(), 500);
       } else {
         setToast({
           message: "Failed to remove instructor",
@@ -241,23 +246,15 @@ const AdminClassPage: React.FC = () => {
     return { total, active, totalStudents };
   }, [classes]);
 
-  // Get available instructors (exclude already assigned ones)
+  // Get available instructors from users (populated by fetchInstructorByClass API)
   const getAvailableInstructors = (): InstructorInfo[] => {
-    return users
-      .filter((user: any) =>
-        user.userRoles?.some(
-          (role: any) =>
-            role.role?.roleName?.toLowerCase() === "instructor" ||
-            role.role?.roleName?.toLowerCase() === "admin",
-        ),
-      )
-      .map((user: any) => ({
-        userId: user.userId,
-        username: user.username,
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.email,
-      }));
+    return users.map((user: any) => ({
+      userId: user.userId,
+      username: user.username,
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email,
+    }));
   };
 
   return (

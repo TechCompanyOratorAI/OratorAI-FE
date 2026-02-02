@@ -23,6 +23,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
 }) => {
   const [selectedInstructor, setSelectedInstructor] = useState<number>(0);
   const [instructorList, setInstructorList] = useState<InstructorInfo[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     setInstructorList(currentInstructors);
@@ -59,7 +60,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
@@ -74,31 +75,51 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {/* Add Instructor Section */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Add Instructor
             </h3>
             <div className="flex gap-3">
-              <select
-                value={selectedInstructor}
-                onChange={(e) => setSelectedInstructor(Number(e.target.value))}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
-                disabled={isLoading || availableForSelection.length === 0}
-              >
-                <option value={0}>
-                  {availableForSelection.length === 0
-                    ? "No instructors available"
-                    : "Select instructor"}
-                </option>
-                {availableForSelection.map((instructor) => (
-                  <option key={instructor.userId} value={instructor.userId}>
-                    {instructor.firstName} {instructor.lastName} (
-                    {instructor.email})
-                  </option>
-                ))}
-              </select>
+              <div className="flex-1 relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  disabled={isLoading || availableForSelection.length === 0}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-left bg-white hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  {selectedInstructor === 0
+                    ? availableForSelection.length === 0
+                      ? "No instructors available"
+                      : "Select instructor"
+                    : availableForSelection.find(
+                          (i) => i.userId === selectedInstructor,
+                        )
+                      ? `${availableForSelection.find((i) => i.userId === selectedInstructor)?.firstName} ${availableForSelection.find((i) => i.userId === selectedInstructor)?.lastName}`
+                      : "Select instructor"}
+                </button>
+                {isDropdownOpen && availableForSelection.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border border-gray-300 rounded-xl bg-white shadow-lg z-10 max-h-64 overflow-y-auto">
+                    {availableForSelection.map((instructor) => (
+                      <div
+                        key={instructor.userId}
+                        onClick={() => {
+                          setSelectedInstructor(instructor.userId);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="px-4 py-3 hover:bg-sky-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900">
+                          {instructor.firstName} {instructor.lastName}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {instructor.email}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleAddInstructor}
                 disabled={
