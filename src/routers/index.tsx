@@ -22,6 +22,7 @@ import FeedbackPage from "@/page/Students/FeedbackPage";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
+import AdminCoursePage from "@/page/Admin/AdminCoursePage";
 
 const AppRouter = () => {
   return (
@@ -80,6 +81,7 @@ const AppRouter = () => {
         />
         <Route path="/admin/user-management" element={<UserManagementPage />} />
         <Route path="/admin/manage-classes" element={<AdminClassPage />} />
+        <Route path="/admin/manage-courses" element={<AdminCoursePage />} />
         <Route
           path="/admin/ai-configuration"
           element={<AIConfigurationPage />}

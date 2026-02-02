@@ -10,6 +10,7 @@ import {
   Shapes,
   ChevronLeft,
   ChevronRight,
+  Book,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -80,6 +81,12 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
       label: "Manage Classes",
       icon: Shapes,
       path: "/admin/manage-classes",
+    },
+    {
+      id: "manage-courses",
+      label: "Manage Courses",
+      icon: Book,
+      path: "/admin/manage-courses",
     },
     {
       id: "settings",

@@ -1,6 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
-import { COURSES_ENDPOINT, MY_COURSES_ENDPOINT, COURSE_DETAIL_ENDPOINT } from "../../constant/apiConfig";
+import {
+  COURSES_ENDPOINT,
+  MY_COURSES_ENDPOINT,
+  COURSE_DETAIL_ENDPOINT,
+} from "../../constant/apiConfig";
 
 export interface Topic {
   topicId: number;
@@ -22,6 +26,7 @@ export interface Instructor {
 export interface CourseData {
   courseId: number;
   courseCode: string;
+  majorCode: string;
   courseName: string;
   description: string;
   instructorId: number;
@@ -33,6 +38,7 @@ export interface CourseData {
   createdAt: string;
   updatedAt: string;
   instructor?: Instructor;
+  instructors?: Instructor[];
   topics?: Topic[];
   enrollmentCount?: number;
 }
@@ -80,22 +86,22 @@ export const fetchCourses = createAsyncThunk(
   "course/fetchCourses",
   async (
     params: { page?: number; limit?: number } = {},
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.get<CoursesResponse>(
         COURSES_ENDPOINT,
         {
           params: params,
-        }
+        },
       );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch courses"
+        error.response?.data?.message || "Failed to fetch courses",
       );
     }
-  }
+  },
 );
 
 // Fetch instructor's courses
@@ -103,22 +109,22 @@ export const fetchMyCourses = createAsyncThunk(
   "course/fetchMyCourses",
   async (
     params: { page?: number; limit?: number } = {},
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.get<CoursesResponse>(
         MY_COURSES_ENDPOINT,
         {
           params: params,
-        }
+        },
       );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch my courses"
+        error.response?.data?.message || "Failed to fetch my courses",
       );
     }
-  }
+  },
 );
 
 // Fetch course detail
@@ -127,16 +133,16 @@ export const fetchCourseDetail = createAsyncThunk(
   async (courseId: number, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get(
-        COURSE_DETAIL_ENDPOINT(courseId.toString())
+        COURSE_DETAIL_ENDPOINT(courseId.toString()),
       );
       // API returns { success: true, course: {...} }
       return response.data.course || response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch course detail"
+        error.response?.data?.message || "Failed to fetch course detail",
       );
     }
-  }
+  },
 );
 
 // Create course
@@ -144,21 +150,22 @@ export const createCourse = createAsyncThunk(
   "course/createCourse",
   async (
     courseData: Omit<CourseData, "courseId" | "createdAt" | "updatedAt">,
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
-      const response = await axiosInstance.post(
-        COURSES_ENDPOINT,
-        courseData
-      );
+      const response = await axiosInstance.post(COURSES_ENDPOINT, courseData);
       // API returns { success: true, course: {...} }
-      return response.data.course || response.data;
+      const createdCourse = response.data.course || response.data;
+      return {
+        ...createdCourse,
+        majorCode: createdCourse.majorCode ?? courseData.majorCode,
+      };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create course"
+        error.response?.data?.message || "Failed to create course",
       );
     }
-  }
+  },
 );
 
 // Update course
@@ -172,21 +179,25 @@ export const updateCourse = createAsyncThunk(
       courseId: number;
       data: Partial<CourseData>;
     },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.patch(
         COURSE_DETAIL_ENDPOINT(courseId.toString()),
-        data
+        data,
       );
       // API returns { success: true, course: {...} }
-      return response.data.course || response.data;
+      const updatedCourse = response.data.course || response.data;
+      return {
+        ...updatedCourse,
+        majorCode: updatedCourse.majorCode ?? data.majorCode,
+      };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update course"
+        error.response?.data?.message || "Failed to update course",
       );
     }
-  }
+  },
 );
 
 // Delete course
@@ -198,10 +209,10 @@ export const deleteCourse = createAsyncThunk(
       return courseId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete course"
+        error.response?.data?.message || "Failed to delete course",
       );
     }
-  }
+  },
 );
 
 const courseSlice = createSlice({
@@ -287,7 +298,7 @@ const courseSlice = createSlice({
       .addCase(updateCourse.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.courses.findIndex(
-          (course) => course.courseId === action.payload.courseId
+          (course) => course.courseId === action.payload.courseId,
         );
         if (index !== -1) {
           state.courses[index] = action.payload;
@@ -313,7 +324,7 @@ const courseSlice = createSlice({
       .addCase(deleteCourse.fulfilled, (state, action) => {
         state.loading = false;
         state.courses = state.courses.filter(
-          (course) => course.courseId !== action.payload
+          (course) => course.courseId !== action.payload,
         );
         if (
           state.selectedCourse &&
