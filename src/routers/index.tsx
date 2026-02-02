@@ -5,6 +5,7 @@ import InstructorRegisterPage from "@/page/Authentication/InstructorRegisterPage
 import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotPasswordPage";
 import { Route, Routes } from "react-router-dom";
 import ManageCoursesPage from "@/page/Instructor/ManageCoursesPage";
+import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
 import TopicDetailPage from "@/page/Instructor/TopicDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
@@ -12,12 +13,12 @@ import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import StudentCoursesPage from "@/page/Students/StudentCoursesPage";
 import StudentMyCoursesPage from "@/page/Students/StudentMyCoursesPage";
 import StudentCourseDetailPage from "@/page/Students/StudentCourseDetailPage";
-import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
 import AdminClassPage from "@/page/Admin/AdminClassPage";
 import UserManagementPage from "@/page/Admin/UserManagementPage";
 import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
 import SettingsPage from "@/page/Admin/SettingsPage";
+import StudentSettingsPage from "@/page/Students/StudentSettingsPage";
 import FeedbackPage from "@/page/Students/FeedbackPage";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import ForbiddenPage from "@/page/Error/ForbiddenPage";
@@ -36,6 +37,7 @@ const AppRouter = () => {
 
       {/* Protected Instructor routes */}
       <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>
+        <Route path="/instructor/dashboard" element={<InstructorDashboardPage />} />
         <Route
           path="/instructor/manage-courses"
           element={<ManageCoursesPage />}
@@ -58,13 +60,11 @@ const AppRouter = () => {
           path="/student/course/:courseId"
           element={<StudentCourseDetailPage />}
         />
-        <Route
-          path="/student/topic/:topicId"
-          element={<StudentTopicDetailPage />}
-        />
-        <Route path="/student/my-courses" element={<StudentMyCoursesPage />} />
+
+        <Route path="/student/my-class" element={<StudentMyCoursesPage />} />
+        <Route path="/student/class/:classId" element={<StudentCourseDetailPage />} />
         <Route path="/student/feedback" element={<FeedbackPage />} />
-        <Route path="/student/settings" element={<SettingsPage />} />
+        <Route path="/student/settings" element={<StudentSettingsPage />} />
       </Route>
 
       {/* Protected Admin routes */}

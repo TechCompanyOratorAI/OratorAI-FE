@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
-import { 
-  ENROLL_COURSE_ENDPOINT, 
+import {
+  ENROLL_COURSE_ENDPOINT,
   GET_ENROLLED_COURSES_ENDPOINT,
   DROP_COURSE_ENDPOINT,
   ENROLL_TOPIC_ENDPOINT,
   GET_ENROLLED_TOPICS_ENDPOINT,
-  DROP_TOPIC_ENDPOINT
+  DROP_TOPIC_ENDPOINT,
+  GET_ENROLLED_CLASSES_ENDPOINT
 } from "../../constant/apiConfig";
 
 export interface EnrolledCourse {
@@ -28,6 +29,56 @@ export interface EnrolledCourse {
     lastName: string;
     email: string;
   };
+}
+
+export interface EnrolledClass {
+  enrollmentId: number;
+  studentId: number;
+  classId: number;
+  enrolledAt: string;
+  status: string;
+  finalGrade: string | null;
+  createdAt: string;
+  updatedAt: string;
+  class: {
+    classId: number;
+    courseId: number;
+    classCode: string;
+    className: string;
+    description: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    maxStudents: number;
+    createdBy: number;
+    createdAt: string;
+    updatedAt: string;
+    course: {
+      courseId: number;
+      courseCode: string;
+      courseName: string;
+      majorCode: string;
+      description: string;
+      semester: string;
+      academicYear: number;
+      startDate: string;
+      endDate: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+    instructors: {
+      userId: number;
+      username: string;
+      firstName: string;
+      lastName: string;
+    }[];
+  };
+}
+
+export interface EnrolledClassesResponse {
+  success: boolean;
+  data: EnrolledClass[];
 }
 
 export interface EnrollCourseResponse {
@@ -88,6 +139,8 @@ export interface DropTopicResponse {
 export interface EnrollmentState {
   enrolledCourses: EnrolledCourse[];
   enrolledCourseIds: number[]; // For quick lookup
+  enrolledClasses: EnrolledClass[];
+  enrolledClassIds: number[]; // For quick lookup
   enrolledTopics: EnrolledTopic[];
   enrolledTopicIds: number[]; // For quick lookup
   loading: boolean;
@@ -97,6 +150,8 @@ export interface EnrollmentState {
 const initialState: EnrollmentState = {
   enrolledCourses: [],
   enrolledCourseIds: [],
+  enrolledClasses: [],
+  enrolledClassIds: [],
   enrolledTopics: [],
   enrolledTopicIds: [],
   loading: false,
@@ -132,6 +187,23 @@ export const fetchEnrolledCourses = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch enrolled courses"
+      );
+    }
+  }
+);
+
+// Fetch enrolled classes
+export const fetchEnrolledClasses = createAsyncThunk(
+  "enrollment/fetchEnrolledClasses",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<EnrolledClassesResponse>(
+        GET_ENROLLED_CLASSES_ENDPOINT
+      );
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch enrolled classes"
       );
     }
   }
@@ -244,6 +316,22 @@ const enrollmentSlice = createSlice({
         state.enrolledCourseIds = action.payload.map((course) => course.courseId);
       })
       .addCase(fetchEnrolledCourses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch enrolled classes
+    builder
+      .addCase(fetchEnrolledClasses.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEnrolledClasses.fulfilled, (state, action) => {
+        state.loading = false;
+        state.enrolledClasses = action.payload;
+        state.enrolledClassIds = action.payload.map((cls) => cls.classId);
+      })
+      .addCase(fetchEnrolledClasses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

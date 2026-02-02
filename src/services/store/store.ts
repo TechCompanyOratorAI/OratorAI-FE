@@ -8,6 +8,7 @@ import adminReducer from "../features/admin/adminSlice";
 import classReducer from "../features/admin/classSlice";
 import topicReducer from "../features/topic/topicSlice";
 import enrollmentReducer from "../features/enrollment/enrollmentSlice";
+import presentationReducer from "../features/presentation/presentationSlice";
 
 const presistConfig = {
   key: "root",
@@ -23,6 +24,7 @@ const rootReducer = combineReducers({
   class: classReducer,
   topic: topicReducer,
   enrollment: enrollmentReducer,
+  presentation: presentationReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);

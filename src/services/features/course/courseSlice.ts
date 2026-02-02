@@ -52,7 +52,7 @@ export interface CoursesResponse {
     limit: number;
     totalPages: number;
   };
-  instructor?: Instructor; // Only present in my-courses response
+  instructor?: Instructor; // Only present in my-class response
 }
 
 export interface CourseState {
