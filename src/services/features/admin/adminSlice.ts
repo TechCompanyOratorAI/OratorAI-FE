@@ -1,91 +1,183 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { api } from "@/services/constant/axiosInstance";
-import { GET_ALL_USERS_ENDPOINT } from "@/services/constant/apiConfig";
+import {
+  FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT,
+  FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT,
+  GET_ALL_USERS_ENDPOINT,
+} from "@/services/constant/apiConfig";
 
 export type UserRoleName = "Student" | "Instructor" | string;
 
 export interface UserRole {
-	userRoleId: number;
-	userId: number;
-	roleId: number;
-	assignedAt?: string;
-	createdAt?: string;
-	updatedAt?: string;
-	role?: {
-		roleId: number;
-		roleName: UserRoleName;
-		description?: string;
-		createdAt?: string;
-		updatedAt?: string;
-	};
+  userRoleId: number;
+  userId: number;
+  roleId: number;
+  assignedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  role?: {
+    roleId: number;
+    roleName: UserRoleName;
+    description?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
 }
 
 export interface AdminUser {
-	userId: number;
-	username: string;
-	email: string;
-	firstName?: string | null;
-	lastName?: string | null;
-	isActive: boolean;
-	isEmailVerified: boolean;
-	lastLoginAt?: string | null;
-	createdAt?: string;
-	updatedAt?: string;
-	userRoles?: UserRole[];
-	avatar?: string | null;
+  userId: number;
+  username: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  userRoles?: UserRole[];
+  avatar?: string | null;
 }
 
 export interface AdminState {
-	users: AdminUser[];
-	loading: boolean;
-	error: string | null;
+  users: AdminUser[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: AdminState = {
-	users: [],
-	loading: false,
-	error: null,
+  users: [],
+  loading: false,
+  error: null,
 };
 
 export const fetchAllUsers = createAsyncThunk<AdminUser[]>(
-	"admin/fetchAllUsers",
-	async (_, { rejectWithValue }) => 
-		api
-			.get(GET_ALL_USERS_ENDPOINT)
-			.then((res) => {
-				const raw = res.data as unknown;
-				// Normalize possible API shapes: array or { data: [...] }
-				if (Array.isArray(raw)) return raw as AdminUser[];
-				if (raw && typeof raw === "object" && Array.isArray((raw as any).data)) {
-					return (raw as any).data as AdminUser[];
-				}
-				return [] as AdminUser[];
-			})
-			.catch((err) => rejectWithValue(err.response?.data?.message || "Failed to load users"))
+  "admin/fetchAllUsers",
+  async (_, { rejectWithValue }) =>
+    api
+      .get(GET_ALL_USERS_ENDPOINT)
+      .then((res) => {
+        const raw = res.data as unknown;
+        // Normalize possible API shapes: array or { data: [...] }
+        if (Array.isArray(raw)) return raw as AdminUser[];
+        if (
+          raw &&
+          typeof raw === "object" &&
+          Array.isArray((raw as any).data)
+        ) {
+          return (raw as any).data as AdminUser[];
+        }
+        return [] as AdminUser[];
+      })
+      .catch((err) =>
+        rejectWithValue(err.response?.data?.message || "Failed to load users"),
+      ),
+);
+export const fetchInstructorByCourse = createAsyncThunk<AdminUser[], string>(
+  "admin/fetchInstructorByCourse",
+  async (courseId, { rejectWithValue }) =>
+    api
+      .get(FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT(courseId))
+      .then((res) => {
+        const raw = res.data as unknown;
+        // Normalize possible API shapes: array or { data: [...] }
+        if (Array.isArray(raw)) return raw as AdminUser[];
+        if (
+          raw &&
+          typeof raw === "object" &&
+          Array.isArray((raw as any).data)
+        ) {
+          return (raw as any).data as AdminUser[];
+        }
+        return [] as AdminUser[];
+      })
+      .catch((err) =>
+        rejectWithValue(
+          err.response?.data?.message || "Failed to load instructors",
+        ),
+      ),
+);
+export const fetchInstructorByClass = createAsyncThunk<AdminUser[], string>(
+  "admin/fetchInstructorByClass",
+  async (classId, { rejectWithValue }) =>
+    api
+      .get(FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT(classId))
+      .then((res) => {
+        const raw = res.data as unknown;
+        // Normalize possible API shapes: array or { data: [...] }
+        if (Array.isArray(raw)) return raw as AdminUser[];
+        if (
+          raw &&
+          typeof raw === "object" &&
+          Array.isArray((raw as any).data)
+        ) {
+          return (raw as any).data as AdminUser[];
+        }
+        return [] as AdminUser[];
+      })
+      .catch((err) =>
+        rejectWithValue(
+          err.response?.data?.message || "Failed to load instructors",
+        ),
+      ),
 );
 
 const adminSlice = createSlice({
-	name: "admin",
-	initialState,
-	reducers: {},
-	extraReducers: (builder) => {
-		builder
-			.addCase(fetchAllUsers.pending, (state) => {
-				state.loading = true;
-				state.error = null;
-			})
-			.addCase(
-				fetchAllUsers.fulfilled,
-				(state, action: PayloadAction<AdminUser[]>) => {
-					state.loading = false;
-					state.users = action.payload;
-				}
-			)
-			.addCase(fetchAllUsers.rejected, (state, action) => {
-				state.loading = false;
-				state.error = (action.payload as string) || "Failed to load users";
-			});
-	},
+  name: "admin",
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchAllUsers.fulfilled,
+        (state, action: PayloadAction<AdminUser[]>) => {
+          state.loading = false;
+          state.users = action.payload;
+        },
+      )
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to load users";
+      });
+    builder
+      .addCase(fetchInstructorByCourse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchInstructorByCourse.fulfilled,
+        (state, action: PayloadAction<AdminUser[]>) => {
+          state.loading = false;
+          state.users = action.payload;
+        },
+      )
+      .addCase(fetchInstructorByCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to load instructors";
+      });
+    builder
+      .addCase(fetchInstructorByClass.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchInstructorByClass.fulfilled,
+        (state, action: PayloadAction<AdminUser[]>) => {
+          state.loading = false;
+          state.users = action.payload;
+        },
+      )
+      .addCase(fetchInstructorByClass.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to load instructors";
+      });
+  },
 });
 
 export default adminSlice.reducer;

@@ -8,7 +8,7 @@ import {
   deleteCourse,
   CourseData,
 } from "@/services/features/course/courseSlice";
-import { fetchAllUsers } from "@/services/features/admin/adminSlice";
+import { fetchInstructorByCourse } from "@/services/features/admin/adminSlice";
 import CourseModal from "@/components/Course/CourseModal";
 import InstructorModal from "@/components/Course/InstructorModal";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
@@ -26,7 +26,10 @@ import {
   BookOpen,
 } from "lucide-react";
 import axiosInstance from "@/services/constant/axiosInstance";
-import { ADD_INSTRUCTOR_TO_COURSE_ENDPOINT } from "@/services/constant/apiConfig";
+import {
+  ADD_INSTRUCTOR_TO_COURSE_ENDPOINT,
+  REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT,
+} from "@/services/constant/apiConfig";
 
 const AdminCoursePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -52,7 +55,6 @@ const AdminCoursePage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchCourses({ page: 1, limit: 100 }));
-    dispatch(fetchAllUsers());
   }, [dispatch]);
 
   const handleCreateCourse = () => {
@@ -105,9 +107,11 @@ const AdminCoursePage: React.FC = () => {
     }
   };
 
-  const handleManageInstructors = (course: CourseData) => {
+  const handleManageInstructors = async (course: CourseData) => {
     setSelectedCourse(course);
     setIsInstructorModalOpen(true);
+    // Fetch available instructors for this specific course
+    await dispatch(fetchInstructorByCourse(course.courseId.toString()));
   };
 
   const handleAddInstructor = async (userId: number) => {
@@ -122,7 +126,9 @@ const AdminCoursePage: React.FC = () => {
         message: "Instructor added successfully",
         type: "success",
       });
-      dispatch(fetchCourses({ page: 1, limit: 100 }));
+      await dispatch(fetchCourses({ page: 1, limit: 100 }));
+      // Reload page after successful add
+      setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       console.error("Failed to add instructor:", error);
       setToast({
@@ -133,14 +139,30 @@ const AdminCoursePage: React.FC = () => {
   };
 
   const handleRemoveInstructor = async (userId: number) => {
-    // Implement remove instructor logic if needed
-    console.log("Remove instructor:", userId);
-  };
+    if (!selectedCourse) return;
 
-  // Get instructors from users list
-  const instructors = users.filter((user) =>
-    user.userRoles?.some((role) => role.role?.roleName === "Instructor"),
-  );
+    try {
+      await axiosInstance.delete(
+        REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT(
+          selectedCourse.courseId.toString(),
+          userId.toString(),
+        ),
+      );
+      setToast({
+        message: "Instructor removed successfully",
+        type: "success",
+      });
+      await dispatch(fetchCourses({ page: 1, limit: 100 }));
+      // Reload page after successful remove
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      console.error("Failed to remove instructor:", error);
+      setToast({
+        message: "Failed to remove instructor. Please try again.",
+        type: "error",
+      });
+    }
+  };
 
   const currentInstructors = selectedCourse?.instructors?.length
     ? selectedCourse.instructors.map((instructor) => ({
@@ -162,7 +184,8 @@ const AdminCoursePage: React.FC = () => {
         ]
       : [];
 
-  const availableInstructors = instructors.map((user) => ({
+  // Use instructors from API (when InstructorModal is open, users contains available instructors)
+  const availableInstructors = users.map((user) => ({
     userId: user.userId,
     username: user.username,
     email: user.email,

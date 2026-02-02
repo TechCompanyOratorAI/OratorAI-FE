@@ -18,6 +18,10 @@ export const DELETE_COURSE_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}`;
 export const ADD_INSTRUCTOR_TO_COURSE_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
+export const REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT = (
+  courseId: string,
+  userId: string,
+) => `${BASE_URL}/api/v1/courses/${courseId}/instructors/${userId}`;
 export const MY_COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses/my-courses`;
 export const COURSE_DETAIL_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}`;
@@ -44,6 +48,12 @@ export const REMOVE_INSTRUCTOR_FROM_CLASS_ENDPOINT = (
   classId: string,
   userId: string,
 ) => `${BASE_URL}/api/v1/classes/${classId}/instructors/${userId}`;
+
+// Filter for admin endpoints
+export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>
+  `${BASE_URL}/api/v1/courses/${courseId}/available-instructors`;
+export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/instructors`;
 
 // Enrollment endpoints
 export const ENROLL_COURSE_ENDPOINT = (courseId: string) =>
