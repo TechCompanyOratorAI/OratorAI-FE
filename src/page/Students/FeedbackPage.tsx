@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import SidebarStudent from "@/components/Sidebar/SidebarStudent/SidebarStudent";
+import React, { useState, useEffect, useRef } from "react";
 import Button from "@/components/yoodli/Button";
 import {
   Download,
@@ -22,8 +21,16 @@ import {
   Italic,
   Underline,
   MessageSquare,
+  Bell,
+  Menu,
+  X,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { Progress, Slider, Checkbox } from "antd";
+import { useNavigate, Link } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import { logout } from "@/services/features/auth/authSlice";
 
 interface FeedbackEntry {
   id: string;
@@ -32,6 +39,10 @@ interface FeedbackEntry {
 }
 
 const FeedbackPage: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime] = useState(315); // 5:15 in seconds
   const [totalDuration] = useState(900); // 15:00 in seconds
@@ -53,6 +64,29 @@ const FeedbackPage: React.FC = () => {
       text: "Slight hesitation here. Try to maintain eye contact with the camera instead of looking at your notes.",
     },
   ]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -101,13 +135,152 @@ const FeedbackPage: React.FC = () => {
     });
   };
 
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
+  const fullName = user
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : "Student";
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      <SidebarStudent activeItem="feedback" />
-      <main className="flex-1 overflow-y-auto lg:ml-0">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Simple Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">E</span>
+              </div>
+              <span className="text-lg font-semibold text-gray-900">OratorAI</span>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              <Link
+                to="/student/dashboard"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                My Learning
+              </Link>
+              <Link
+                to="/student/my-class"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                My Classes
+              </Link>
+              <Link
+                to="/student/feedback"
+                className="text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
+              >
+                My Presentations
+              </Link>
+            </nav>
+
+            {/* User Actions */}
+            <div className="flex items-center gap-4">
+              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                <Bell className="w-5 h-5 text-gray-600" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center">
+                    <span className="text-white font-semibold text-xs">
+                      {fullName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-600" />
+                </button>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {fullName}
+                      </p>
+                      <p className="text-xs text-gray-500">Student</p>
+                    </div>
+                    <Link
+                      to="/student/settings"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Đăng Xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <Menu className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <nav className="px-4 py-3 space-y-1">
+              <Link
+                to="/student/dashboard"
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+              >
+                My Learning
+              </Link>
+              <Link
+                to="/student/my-class"
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+              >
+                My Classes
+              </Link>
+              <Link
+                to="/student/feedback"
+                className="block px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg"
+              >
+                My Presentations
+              </Link>
+              <Link
+                to="/student/settings"
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+              >
+                Settings
+              </Link>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
@@ -155,10 +328,8 @@ const FeedbackPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <div className="p-4 sm:p-6 lg:p-8">
+          {/* Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_621px] gap-6">
             {/* Left Column - Video & Transcript */}
             <div className="space-y-6">
@@ -215,33 +386,30 @@ const FeedbackPage: React.FC = () => {
                 <div className="flex border-b border-gray-200 overflow-x-auto">
                   <button
                     onClick={() => setActiveTab("transcript")}
-                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      activeTab === "transcript"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === "transcript"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                      }`}
                   >
                     <FileText className="w-5 h-5" />
                     Transcript
                   </button>
                   <button
                     onClick={() => setActiveTab("insights")}
-                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      activeTab === "insights"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === "insights"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                      }`}
                   >
                     <Sparkles className="w-5 h-5" />
                     AI Insights
                   </button>
                   <button
                     onClick={() => setActiveTab("resources")}
-                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
-                      activeTab === "resources"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === "resources"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                      }`}
                   >
                     <BookOpen className="w-5 h-5" />
                     Resources
@@ -269,11 +437,10 @@ const FeedbackPage: React.FC = () => {
                         {transcriptEntries.map((entry, index) => (
                           <div
                             key={index}
-                            className={`${
-                              entry.hasFiller
-                                ? "bg-blue-50 border-l-4 border-blue-500 p-4 rounded"
-                                : ""
-                            }`}
+                            className={`${entry.hasFiller
+                              ? "bg-blue-50 border-l-4 border-blue-500 p-4 rounded"
+                              : ""
+                              }`}
                           >
                             <p className="text-xs font-medium text-gray-500 mb-2">
                               {entry.timestamp}
@@ -376,31 +543,28 @@ const FeedbackPage: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setVisualAidsLevel("low")}
-                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${
-                          visualAidsLevel === "low"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${visualAidsLevel === "low"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
                       >
                         Low
                       </button>
                       <button
                         onClick={() => setVisualAidsLevel("med")}
-                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${
-                          visualAidsLevel === "med"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${visualAidsLevel === "med"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
                       >
                         Med
                       </button>
                       <button
                         onClick={() => setVisualAidsLevel("high")}
-                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${
-                          visualAidsLevel === "high"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                        className={`flex-1 py-2 px-4 rounded text-sm font-medium transition-colors ${visualAidsLevel === "high"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
                       >
                         High
                       </button>
@@ -536,4 +700,3 @@ const FeedbackPage: React.FC = () => {
 };
 
 export default FeedbackPage;
-

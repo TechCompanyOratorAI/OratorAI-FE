@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, User, BookOpen, Clock, CheckCircle2, Info } from "lucide-react";
-import SidebarStudent from "@/components/Sidebar/SidebarStudent/SidebarStudent";
+import { ArrowLeft, Calendar, User, BookOpen, Clock, CheckCircle2, Info, Bell, Menu, X, LogOut, GraduationCap } from "lucide-react";
 import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
 import { enrollTopic, fetchEnrolledTopics, dropCourse, dropTopic, fetchEnrolledCourses, enrollCourse } from "@/services/features/enrollment/enrollmentSlice";
+import { logout } from "@/services/features/auth/authSlice";
 
 const StudentCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -18,6 +18,7 @@ const StudentCourseDetailPage: React.FC = () => {
   const { enrolledTopicIds, enrolledCourseIds, loading: enrollmentLoading } = useAppSelector(
     (state) => state.enrollment
   );
+  const { user } = useAppSelector((state) => state.auth);
 
   const [toast, setToast] = useState<{
     message: string;
@@ -29,6 +30,9 @@ const StudentCourseDetailPage: React.FC = () => {
   const [droppingCourseId, setDroppingCourseId] = useState<number | null>(null);
   const [dropConfirmCourseId, setDropConfirmCourseId] = useState<number | null>(null);
   const [dropConfirmTopicId, setDropConfirmTopicId] = useState<number | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (courseId) {
@@ -38,19 +42,32 @@ const StudentCourseDetailPage: React.FC = () => {
     }
   }, [courseId, dispatch]);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleEnrollCourse = async (courseId: number) => {
     try {
       setEnrollingCourseId(courseId);
       await dispatch(enrollCourse(courseId)).unwrap();
-      // Refresh enrolled courses list
       await dispatch(fetchEnrolledCourses());
       setToast({
         message: "Successfully enrolled in course!",
         type: "success",
       });
     } catch (error: unknown) {
-      const errorMessage = typeof error === 'string' 
-        ? error 
+      const errorMessage = typeof error === 'string'
+        ? error
         : (error as Error)?.message || "Failed to enroll in course";
       setToast({
         message: errorMessage,
@@ -65,15 +82,14 @@ const StudentCourseDetailPage: React.FC = () => {
     try {
       setEnrollingTopicId(topicId);
       await dispatch(enrollTopic(topicId)).unwrap();
-      // Refresh enrolled topics list
       await dispatch(fetchEnrolledTopics());
       setToast({
         message: "Successfully enrolled in topic!",
         type: "success",
       });
     } catch (error: unknown) {
-      const errorMessage = typeof error === 'string' 
-        ? error 
+      const errorMessage = typeof error === 'string'
+        ? error
         : (error as Error)?.message || "Failed to enroll in topic";
       setToast({
         message: errorMessage,
@@ -96,18 +112,16 @@ const StudentCourseDetailPage: React.FC = () => {
     try {
       setDroppingCourseId(courseId);
       await dispatch(dropCourse(courseId)).unwrap();
-      // Refresh enrolled courses list
       await dispatch(fetchEnrolledCourses());
       setToast({
         message: "Successfully dropped course!",
         type: "success",
       });
       setDropConfirmCourseId(null);
-      // Navigate back to courses page
-      navigate("/student/my-courses");
+      navigate("/student/my-class");
     } catch (error: unknown) {
-      const errorMessage = typeof error === 'string' 
-        ? error 
+      const errorMessage = typeof error === 'string'
+        ? error
         : (error as Error)?.message || "Failed to drop course";
       setToast({
         message: errorMessage,
@@ -122,7 +136,6 @@ const StudentCourseDetailPage: React.FC = () => {
     try {
       setDroppingTopicId(topicId);
       await dispatch(dropTopic(topicId)).unwrap();
-      // Refresh enrolled topics list
       await dispatch(fetchEnrolledTopics());
       setToast({
         message: "Successfully dropped topic!",
@@ -130,8 +143,8 @@ const StudentCourseDetailPage: React.FC = () => {
       });
       setDropConfirmTopicId(null);
     } catch (error: unknown) {
-      const errorMessage = typeof error === 'string' 
-        ? error 
+      const errorMessage = typeof error === 'string'
+        ? error
         : (error as Error)?.message || "Failed to drop topic";
       setToast({
         message: errorMessage,
@@ -142,40 +155,51 @@ const StudentCourseDetailPage: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
+  const userInitial =
+    user?.firstName?.[0]?.toUpperCase() ||
+    user?.username?.[0]?.toUpperCase() ||
+    "S";
+
+  const userDisplayName =
+    user
+      ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+      user.username ||
+      "Student"
+      : "Student";
+
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <SidebarStudent activeItem="courses" />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading course details...</p>
-          </div>
-        </main>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading course details...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !course) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <SidebarStudent activeItem="courses" />
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back
-            </button>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-700 font-medium">
-                {error || "Course not found"}
-              </p>
-            </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <p className="text-red-700 font-medium">
+              {error || "Course not found"}
+            </p>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -198,10 +222,77 @@ const StudentCourseDetailPage: React.FC = () => {
     : "Unknown Instructor";
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <SidebarStudent activeItem="courses" />
-      <main className="flex-1 overflow-y-auto lg:ml-0">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">OratorAI</span>
+            </div>
+
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                <Bell className="w-5 h-5 text-gray-600" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+
+              {/* User Menu */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">
+                      {userInitial}
+                    </span>
+                  </div>
+                </button>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {userDisplayName}
+                      </p>
+                      <p className="text-xs text-gray-500">Student</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <Menu className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <button
             onClick={() => navigate(-1)}
@@ -217,11 +308,10 @@ const StudentCourseDetailPage: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      course.isActive
+                    className={`px-2 py-1 rounded text-xs font-medium ${course.isActive
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {course.isActive ? "Active" : "Archived"}
                   </span>

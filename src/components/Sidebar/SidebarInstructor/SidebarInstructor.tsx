@@ -2,25 +2,25 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   BookOpen,
-  Library,
-  MessageSquare,
+  Users,
+  BarChart3,
   Settings,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  GraduationCap,
+  FileText,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
 
-interface SidebarStudentProps {
+interface SidebarInstructorProps {
   activeItem?: string;
 }
 
-const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
+const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -29,12 +29,12 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(() => {
-    const saved = localStorage.getItem("sidebarCollapsed");
+    const saved = localStorage.getItem("sidebarInstructorCollapsed");
     return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
-    localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
+    localStorage.setItem("sidebarInstructorCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
   // Close user menu when clicking outside
@@ -64,39 +64,39 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
 
   const fullName = user
     ? `${user.firstName} ${user.lastName}`.trim()
-    : "User";
-  const userRole = user?.roles?.[0]?.roleName || "Student";
+    : "Instructor";
+  const userRole = user?.roles?.[0]?.roleName || "Instructor";
 
   const menuItems = [
     {
       id: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      path: "/student/dashboard",
+      path: "/instructor/dashboard",
     },
     {
-      id: "courses",
-      label: "Courses",
-      icon: BookOpen,
-      path: "/student/courses",
-    },
-    {
-      id: "my-class",
+      id: "manage-courses",
       label: "My Classes",
-      icon: GraduationCap,
-      path: "/student/my-class",
+      icon: BookOpen,
+      path: "/instructor/manage-courses",
     },
     {
-      id: "library",
-      label: "Library",
-      icon: Library,
-      path: "/student/library",
+      id: "students",
+      label: "Students",
+      icon: Users,
+      path: "/instructor/students",
     },
     {
-      id: "feedback",
-      label: "Feedback",
-      icon: MessageSquare,
-      path: "/student/feedback",
+      id: "presentations",
+      label: "Presentations",
+      icon: FileText,
+      path: "/instructor/presentations",
+    },
+    {
+      id: "analytics",
+      label: "Analytics",
+      icon: BarChart3,
+      path: "/instructor/analytics",
     },
   ];
 
@@ -146,7 +146,7 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
                 <h1 className="text-base font-semibold text-gray-900">
                   EduSpeak AI
                 </h1>
-                <p className="text-xs text-gray-500">Student Portal</p>
+                <p className="text-xs text-gray-500">Instructor Portal</p>
               </div>
             )}
           </div>
@@ -177,7 +177,7 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
         {/* Settings and User Profile */}
         <div className={`p-4 border-t border-gray-200 space-y-4 ${collapsed ? "lg:px-2" : ""}`}>
           <Link
-            to="/student/settings"
+            to="/instructor/settings"
             title={collapsed ? "Settings" : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${isActive("settings")
               ? "text-blue-600 bg-blue-50"
@@ -282,7 +282,7 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-center gap-3-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Đăng Xuất</span>
@@ -312,5 +312,4 @@ const SidebarStudent: React.FC<SidebarStudentProps> = ({ activeItem }) => {
   );
 };
 
-export default SidebarStudent;
-
+export default SidebarInstructor;

@@ -22,7 +22,7 @@ export const REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT = (
   courseId: string,
   userId: string,
 ) => `${BASE_URL}/api/v1/courses/${courseId}/instructors/${userId}`;
-export const MY_COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses/my-courses`;
+export const MY_COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses/my-class`;
 export const COURSE_DETAIL_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}`;
 
@@ -66,3 +66,17 @@ export const ENROLL_TOPIC_ENDPOINT = (topicId: string) =>
 export const GET_ENROLLED_TOPICS_ENDPOINT = `${BASE_URL}/api/v1/enrollments/topics`;
 export const DROP_TOPIC_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
+
+// Enrolled Classes endpoints
+export const GET_ENROLLED_CLASSES_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/classes`;
+
+// Presentation endpoints
+export const PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/presentations`;
+export const PRESENTATION_DETAIL_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}`;
+export const PRESENTATION_SLIDES_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/slides`;
+export const PRESENTATION_MEDIA_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/media`;
+export const PRESENTATION_SUBMIT_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/submit`;
