@@ -13,6 +13,7 @@ interface CourseModalProps {
 
 interface CourseFormData {
   courseCode: string;
+  majorCode: string;
   courseName: string;
   description: string;
   semester: string;
@@ -30,6 +31,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<CourseFormData>({
     courseCode: "",
+    majorCode: "",
     courseName: "",
     description: "",
     semester: "",
@@ -45,6 +47,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (initialData) {
       setFormData({
         courseCode: initialData.courseCode,
+        majorCode: initialData.majorCode,
         courseName: initialData.courseName,
         description: initialData.description,
         semester: initialData.semester,
@@ -55,6 +58,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     } else {
       setFormData({
         courseCode: "",
+        majorCode: "",
         courseName: "",
         description: "",
         semester: "",
@@ -72,6 +76,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (!formData.courseCode.trim()) {
       newErrors.courseCode = "Course code is required";
     }
+    if (!formData.majorCode.trim()) {
+      newErrors.majorCode = "Major code is required";
+    }
     if (!formData.courseName.trim()) {
       newErrors.courseName = "Course name is required";
     }
@@ -87,7 +94,11 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (!formData.endDate) {
       newErrors.endDate = "End date is required";
     }
-    if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+    if (
+      formData.startDate &&
+      formData.endDate &&
+      formData.startDate > formData.endDate
+    ) {
       newErrors.endDate = "End date must be after start date";
     }
 
@@ -96,7 +107,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -162,6 +175,25 @@ const CourseModal: React.FC<CourseModalProps> = ({
             )}
           </div>
 
+          {/* Major Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Major Code
+            </label>
+            <input
+              type="text"
+              name="majorCode"
+              value={formData.majorCode}
+              onChange={handleChange}
+              placeholder="e.g., SE"
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.majorCode ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.majorCode && (
+              <p className="text-red-500 text-sm mt-1">{errors.majorCode}</p>
+            )}
+          </div>
           {/* Course Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

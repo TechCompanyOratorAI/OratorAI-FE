@@ -7,6 +7,7 @@ import {
   Users,
   RefreshCw,
   BookOpen,
+  AlertCircle,
 } from "lucide-react";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import ClassModal from "@/components/Course/ClassModal";
@@ -28,7 +29,7 @@ import { RootState, AppDispatch } from "@/services/store/store";
 
 const AdminClassPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { classes, loading } = useSelector(
+  const { classes, loading, error } = useSelector(
     (state: RootState) => state.class,
   );
   const { users } = useSelector((state: RootState) => state.admin);
@@ -45,6 +46,9 @@ const AdminClassPage: React.FC = () => {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     dispatch(fetchClasses({ page: 1, limit: 20 }));
@@ -63,22 +67,20 @@ const AdminClassPage: React.FC = () => {
   };
 
   const handleDeleteClass = async (classId: number) => {
-    if (window.confirm("Are you sure you want to delete this class?")) {
-      const result = await dispatch(deleteClass(classId));
-      if (deleteClass.fulfilled.match(result)) {
-        // Refresh the list after deletion
-        await dispatch(fetchClasses({ page: 1, limit: 20 }));
-        setToast({
-          message: "Class deleted successfully",
-          type: "success",
-        });
-      } else {
-        setToast({
-          message: "Failed to delete class",
-          type: "error",
-        });
-      }
+    const result = await dispatch(deleteClass(classId));
+    if (deleteClass.fulfilled.match(result)) {
+      await dispatch(fetchClasses({ page: 1, limit: 20 }));
+      setToast({
+        message: "Class deleted successfully",
+        type: "success",
+      });
+    } else {
+      setToast({
+        message: "Failed to delete class",
+        type: "error",
+      });
     }
+    setShowDeleteConfirm(null);
   };
 
   const handleSubmitClass = async (formData: any) => {
@@ -287,10 +289,10 @@ const AdminClassPage: React.FC = () => {
               <button
                 onClick={handleCreateClass}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
-                Create Class
+                New Class
               </button>
             </div>
           </div>
@@ -398,7 +400,26 @@ const AdminClassPage: React.FC = () => {
             </div>
 
             {/* Table Content */}
-            
+            {loading ? (
+              <div className="px-6 py-10 text-center text-slate-500">
+                <div className="mx-auto mb-3 h-10 w-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
+                Loading classes...
+              </div>
+            ) : error ? (
+              <div className="px-6 py-8 flex items-center gap-3 text-rose-600">
+                <AlertCircle className="w-5 h-5" />
+                {error}
+              </div>
+            ) : filteredClasses.length === 0 ? (
+              <div className="px-6 py-12 text-center text-slate-500 flex flex-col items-center gap-3">
+                <BookOpen className="w-10 h-10 text-slate-300" />
+                <p>
+                  {searchTerm || filterStatus !== "all"
+                    ? "No classes found matching your filters"
+                    : "No classes available. Create your first class to get started."}
+                </p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wide">
@@ -465,8 +486,26 @@ const AdminClassPage: React.FC = () => {
                         <td className="px-6 py-4 text-slate-700">
                           {classItem.enrollmentCount} / {classItem.maxStudents}
                         </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {classItem.instructors?.length ?? 0}
+                        <td className="px-6 py-4">
+                          {classItem.instructors &&
+                          classItem.instructors.length > 0 ? (
+                            <div className="space-y-2">
+                              {classItem.instructors.map((instructor) => (
+                                <div key={instructor.userId}>
+                                  <div className="font-semibold text-slate-900">
+                                    {instructor.firstName} {instructor.lastName}
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {instructor.email}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">
+                              No instructor assigned
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-slate-700">
                           {new Date(classItem.startDate).toLocaleDateString()}
@@ -489,7 +528,7 @@ const AdminClassPage: React.FC = () => {
                             </button>
                             <button
                               onClick={() =>
-                                handleDeleteClass(classItem.classId)
+                                setShowDeleteConfirm(classItem.classId)
                               }
                               title="Delete"
                               className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition"
@@ -503,10 +542,42 @@ const AdminClassPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-            
+            )}
           </section>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="rounded-full bg-rose-100 p-2">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Delete Class</h3>
+            </div>
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to delete this class? This action cannot be
+              undone and will affect enrolled students.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteClass(showDeleteConfirm)}
+                className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors"
+              >
+                Delete Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Class Modal */}
       <ClassModal

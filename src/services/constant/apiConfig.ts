@@ -12,6 +12,12 @@ export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password
 
 // Course endpoints
 export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;
+export const UPDATE_COURSE_ENDPOINT = (courseId: string) =>
+  `${BASE_URL}/api/v1/courses/${courseId}`;
+export const DELETE_COURSE_ENDPOINT = (courseId: string) =>
+  `${BASE_URL}/api/v1/courses/${courseId}`;
+export const ADD_INSTRUCTOR_TO_COURSE_ENDPOINT = (courseId: string) =>
+  `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
 export const MY_COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses/my-courses`;
 export const COURSE_DETAIL_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}`;
