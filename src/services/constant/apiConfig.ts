@@ -48,6 +48,11 @@ export const REMOVE_INSTRUCTOR_FROM_CLASS_ENDPOINT = (
   classId: string,
   userId: string,
 ) => `${BASE_URL}/api/v1/classes/${classId}/instructors/${userId}`;
+export const CLASS_DETAIL_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}`;
+
+//get class by instructor 
+export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
 // Filter for admin endpoints
 export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>

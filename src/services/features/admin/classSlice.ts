@@ -7,11 +7,17 @@ import {
   DELETE_CLASS_ENDPOINT,
   ADD_INSTRUCTOR_TO_CLASS_ENDPOINT,
   REMOVE_INSTRUCTOR_FROM_CLASS_ENDPOINT,
+  GET_CLASSES_BY_INSTRUCTOR_ENDPOINT,
+  CLASS_DETAIL_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
   keyId: number;
   isActive: boolean;
+  keyValue?: string;
+  expiresAt?: string;
+  maxUses?: number;
+  usedCount?: number;
 }
 
 export interface Enrollment {
@@ -22,6 +28,8 @@ export interface CourseInfo {
   courseId: number;
   courseCode: string;
   courseName: string;
+  semester?: string;
+  academicYear?: number;
 }
 
 export interface InstructorInfo {
@@ -49,6 +57,7 @@ export interface ClassData {
   instructors?: InstructorInfo[];
   enrollments?: Enrollment[];
   enrollKeys?: EnrollKey[];
+  activeKeys?: EnrollKey[];
   enrollmentCount?: number;
   activeKeyCount?: number;
 }
@@ -89,6 +98,43 @@ const initialState: ClassState = {
     totalPages: 0,
   },
 };
+//Fetch classes by instructor
+export const fetchClassesByInstructor = createAsyncThunk(
+  "class/fetchClassesByInstructor",
+  async (
+    params: { page?: number; limit?: number } = {},
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.get<ClassResponse>(
+        GET_CLASSES_BY_INSTRUCTOR_ENDPOINT,
+        { params },
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch classes by instructor",
+      );
+    }
+  },
+);
+
+// Fetch class detail
+export const fetchClassDetail = createAsyncThunk(
+  "class/fetchClassDetail",
+  async (classId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(CLASS_DETAIL_ENDPOINT(classId.toString()));
+      const data = response.data;
+      return data?.class || data?.data || data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch class detail",
+      );
+    }
+  },
+);
 
 // Fetch all classes
 export const fetchClasses = createAsyncThunk(
@@ -388,6 +434,48 @@ const classSlice = createSlice({
         state.error =
           (action.payload as string) ||
           "Failed to remove instructor from class";
+      });
+    // Fetch classes by instructor
+    builder
+      .addCase(fetchClassesByInstructor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchClassesByInstructor.fulfilled,
+        (state, action: PayloadAction<ClassResponse>) => {
+          state.loading = false;
+          const data = Array.isArray(action.payload.data)
+            ? action.payload.data
+            : [action.payload.data];
+          state.classes = data;
+          if (action.payload.pagination) {
+            state.pagination = action.payload.pagination;
+          }
+        },
+      )
+      .addCase(fetchClassesByInstructor.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to fetch classes by instructor";
+      });
+    // Fetch class detail
+    builder
+      .addCase(fetchClassDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchClassDetail.fulfilled,
+        (state, action: PayloadAction<ClassData | null>) => {
+          state.loading = false;
+          state.selectedClass = action.payload || null;
+        },
+      )
+      .addCase(fetchClassDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to fetch class detail";
       });
   },
 });

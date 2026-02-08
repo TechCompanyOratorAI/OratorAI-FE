@@ -516,14 +516,13 @@ const AdminCoursePage: React.FC = () => {
               </div>
             )}
             {!loading && !error && pagination.total > 0 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-200">
-                <div className="text-sm text-slate-600">
-                  Page {pagination.page} of {pagination.totalPages} • Total {""}
-                  {pagination.total} courses
-                </div>
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+                
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <span>Rows per page</span>
+                    <div className="text-sm text-slate-600">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </div>
                     <select
                       value={pageSize}
                       onChange={(e) => {
