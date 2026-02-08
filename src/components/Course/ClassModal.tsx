@@ -88,12 +88,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
     if (!formData.classCode.trim()) {
       newErrors.classCode = "Class code is required";
     }
-    if (!formData.className.trim()) {
-      newErrors.className = "Class name is required";
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
-    }
     if (!formData.startDate) {
       newErrors.startDate = "Start date is required";
     }
@@ -223,46 +217,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
             />
             {errors.classCode && (
               <p className="text-red-600 text-sm mt-1">{errors.classCode}</p>
-            )}
-          </div>
-
-          {/* Class Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Class Name
-            </label>
-            <input
-              type="text"
-              name="className"
-              value={formData.className}
-              onChange={handleChange}
-              placeholder="e.g., Section A - Monday 8AM"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.className ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.className && (
-              <p className="text-red-600 text-sm mt-1">{errors.className}</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Enter class description..."
-              rows={3}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
-                errors.description ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.description && (
-              <p className="text-red-600 text-sm mt-1">{errors.description}</p>
             )}
           </div>
 

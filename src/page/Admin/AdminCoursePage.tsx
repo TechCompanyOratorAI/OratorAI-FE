@@ -33,7 +33,7 @@ import {
 
 const AdminCoursePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses, loading, error } = useSelector(
+  const { courses, loading, error, pagination } = useSelector(
     (state: RootState) => state.course,
   );
   const { users } = useSelector((state: RootState) => state.admin);
@@ -52,10 +52,12 @@ const AdminCoursePage: React.FC = () => {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    dispatch(fetchCourses({ page: 1, limit: 100 }));
-  }, [dispatch]);
+    dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
 
   const handleCreateCourse = () => {
     setSelectedCourse(undefined);
@@ -126,7 +128,7 @@ const AdminCoursePage: React.FC = () => {
         message: "Instructor added successfully",
         type: "success",
       });
-      await dispatch(fetchCourses({ page: 1, limit: 100 }));
+      await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
       // Reload page after successful add
       setTimeout(() => window.location.reload(), 500);
     } catch (error) {
@@ -152,7 +154,7 @@ const AdminCoursePage: React.FC = () => {
         message: "Instructor removed successfully",
         type: "success",
       });
-      await dispatch(fetchCourses({ page: 1, limit: 100 }));
+      await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
       // Reload page after successful remove
       setTimeout(() => window.location.reload(), 500);
     } catch (error) {
@@ -243,7 +245,9 @@ const AdminCoursePage: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => dispatch(fetchCourses({ page: 1, limit: 100 }))}
+                onClick={() =>
+                  dispatch(fetchCourses({ page: currentPage, limit: pageSize }))
+                }
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-200 hover:text-sky-700"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -509,6 +513,52 @@ const AdminCoursePage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {!loading && !error && pagination.total > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-200">
+                <div className="text-sm text-slate-600">
+                  Page {pagination.page} of {pagination.totalPages} • Total {""}
+                  {pagination.total} courses
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span>Rows per page</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={pagination.page <= 1}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1),
+                      )
+                    }
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </section>
