@@ -48,7 +48,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
     endDate: "",
   });
 
-  const [errors, setErrors] = useState<Partial<CourseFormData>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CourseFormData, string>>
+  >({});
 
   // Populate form with initial data when editing
   useEffect(() => {
@@ -79,7 +81,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
   }, [initialData, isOpen]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CourseFormData> = {};
+    const newErrors: Partial<Record<keyof CourseFormData, string>> = {};
     const todayISO = getTodayISO();
 
     if (!formData.courseCode.trim()) {
