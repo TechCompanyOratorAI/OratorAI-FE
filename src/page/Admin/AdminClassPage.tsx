@@ -29,7 +29,7 @@ import { RootState, AppDispatch } from "@/services/store/store";
 
 const AdminClassPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { classes, loading, error } = useSelector(
+  const { classes, loading, error, pagination } = useSelector(
     (state: RootState) => state.class,
   );
   const { users } = useSelector((state: RootState) => state.admin);
@@ -49,13 +49,18 @@ const AdminClassPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const reloadAfterAction = () => {
     setTimeout(() => window.location.reload(), 500);
   };
 
   useEffect(() => {
-    dispatch(fetchClasses({ page: 1, limit: 20 }));
+    dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage]);
+
+  useEffect(() => {
     dispatch(fetchCourses({ page: 1, limit: 100 }));
   }, [dispatch]);
 
@@ -72,7 +77,7 @@ const AdminClassPage: React.FC = () => {
   const handleDeleteClass = async (classId: number) => {
     const result = await dispatch(deleteClass(classId));
     if (deleteClass.fulfilled.match(result)) {
-      await dispatch(fetchClasses({ page: 1, limit: 20 }));
+      await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
       setToast({
         message: "Class deleted successfully",
         type: "success",
@@ -96,7 +101,7 @@ const AdminClassPage: React.FC = () => {
       );
       if (updateClass.fulfilled.match(result)) {
         // Refresh the list after update
-        await dispatch(fetchClasses({ page: 1, limit: 20 }));
+        await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
         setToast({
           message: "Class updated successfully",
           type: "success",
@@ -111,7 +116,7 @@ const AdminClassPage: React.FC = () => {
       const result = await dispatch(createClass(formData));
       if (createClass.fulfilled.match(result)) {
         // Refresh the list after creation
-        await dispatch(fetchClasses({ page: 1, limit: 20 }));
+        await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
         setToast({
           message: "Class created successfully",
           type: "success",
@@ -146,7 +151,7 @@ const AdminClassPage: React.FC = () => {
       if (addInstructorToClass.fulfilled.match(result)) {
         // Refresh class data after adding instructor
         const refreshResult = await dispatch(
-          fetchClasses({ page: 1, limit: 20 }),
+          fetchClasses({ page: currentPage, limit: pageSize }),
         );
         if (fetchClasses.fulfilled.match(refreshResult)) {
           // Update selected class with new data
@@ -184,7 +189,7 @@ const AdminClassPage: React.FC = () => {
       if (removeInstructorFromClass.fulfilled.match(result)) {
         // Refresh class data after removing instructor
         const refreshResult = await dispatch(
-          fetchClasses({ page: 1, limit: 20 }),
+          fetchClasses({ page: currentPage, limit: pageSize }),
         );
         if (fetchClasses.fulfilled.match(refreshResult)) {
           // Update selected class with new data
@@ -278,7 +283,9 @@ const AdminClassPage: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => dispatch(fetchClasses({ page: 1, limit: 20 }))}
+                onClick={() =>
+                  dispatch(fetchClasses({ page: currentPage, limit: pageSize }))
+                }
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-200 hover:text-sky-700"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -455,9 +462,6 @@ const AdminClassPage: React.FC = () => {
                           <div className="font-semibold text-slate-900">
                             {classItem.classCode}
                           </div>
-                          <div className="text-xs text-slate-500">
-                            {classItem.className}
-                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-medium text-slate-900">
@@ -539,6 +543,52 @@ const AdminClassPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {!loading && !error && pagination.total > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="text-sm text-slate-600">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </div>
+
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={pagination.page <= 1}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1),
+                      )
+                    }
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </section>
