@@ -30,6 +30,14 @@ const ClassModal: React.FC<ClassModalProps> = ({
   isLoading = false,
   courses = [],
 }) => {
+  const getTodayISO = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState<ClassFormData>({
     courseId: 0,
     classCode: "",
@@ -37,7 +45,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     description: "",
     startDate: "",
     endDate: "",
-    maxStudents: 30,
+    maxStudents: 35,
   });
 
   const [errors, setErrors] = useState<
@@ -64,7 +72,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         description: "",
         startDate: "",
         endDate: "",
-        maxStudents: 30,
+        maxStudents: 35,
       });
     }
     setErrors({});
@@ -72,6 +80,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ClassFormData, string>> = {};
+    const todayISO = getTodayISO();
 
     if (formData.courseId <= 0) {
       newErrors.courseId = "Please select a course";
@@ -91,6 +100,9 @@ const ClassModal: React.FC<ClassModalProps> = ({
     if (!formData.endDate) {
       newErrors.endDate = "End date is required";
     }
+    if (formData.endDate && formData.endDate < todayISO) {
+      newErrors.endDate = "End date cannot be in the past";
+    }
     if (
       formData.startDate &&
       formData.endDate &&
@@ -98,7 +110,9 @@ const ClassModal: React.FC<ClassModalProps> = ({
     ) {
       newErrors.endDate = "End date must be after start date";
     }
-    if (formData.maxStudents <= 0) {
+    if (!formData.maxStudents || Number.isNaN(formData.maxStudents)) {
+      newErrors.maxStudents = "Max students is required";
+    } else if (formData.maxStudents <= 0) {
       newErrors.maxStudents = "Max students must be greater than 0";
     }
 
@@ -136,6 +150,12 @@ const ClassModal: React.FC<ClassModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const todayISO = getTodayISO();
+  const minEndDate =
+    formData.startDate && formData.startDate > todayISO
+      ? formData.startDate
+      : todayISO;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -256,7 +276,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               name="maxStudents"
               value={formData.maxStudents}
               onChange={handleChange}
-              placeholder="30"
+              placeholder="e.g., 35"
               min="1"
               className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                 errors.maxStudents ? "border-red-500" : "border-gray-300"
@@ -298,6 +318,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
+                min={minEndDate}
                 className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}
