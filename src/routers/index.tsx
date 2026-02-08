@@ -4,10 +4,10 @@ import RegisterPage from "@/page/Authentication/RegisterPage/RegisterPage";
 import InstructorRegisterPage from "@/page/Authentication/InstructorRegisterPage/InstructorRegisterPage";
 import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotPasswordPage";
 import { Route, Routes } from "react-router-dom";
-import ManageCoursesPage from "@/page/Instructor/ManageCoursesPage";
 import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
 import TopicDetailPage from "@/page/Instructor/TopicDetailPage";
+import ClassDetailPage from "@/page/Instructor/ClassDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import StudentCoursesPage from "@/page/Students/StudentCoursesPage";
@@ -24,6 +24,7 @@ import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
 import AdminCoursePage from "@/page/Admin/AdminCoursePage";
+import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
 
 const AppRouter = () => {
   return (
@@ -37,14 +38,21 @@ const AppRouter = () => {
 
       {/* Protected Instructor routes */}
       <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>
-        <Route path="/instructor/dashboard" element={<InstructorDashboardPage />} />
         <Route
-          path="/instructor/manage-courses"
-          element={<ManageCoursesPage />}
+          path="/instructor/dashboard"
+          element={<InstructorDashboardPage />}
+        />
+        <Route
+          path="/instructor/manage-classes"
+          element={<ManageClassesPage />}
         />
         <Route
           path="/instructor/course/:courseId"
           element={<CourseDetailPage />}
+        />
+        <Route
+          path="/instructor/class/:classId"
+          element={<ClassDetailPage />}
         />
         <Route
           path="/instructor/topic/:topicId"
@@ -62,7 +70,10 @@ const AppRouter = () => {
         />
 
         <Route path="/student/my-class" element={<StudentMyCoursesPage />} />
-        <Route path="/student/class/:classId" element={<StudentCourseDetailPage />} />
+        <Route
+          path="/student/class/:classId"
+          element={<StudentCourseDetailPage />}
+        />
         <Route path="/student/feedback" element={<FeedbackPage />} />
         <Route path="/student/settings" element={<StudentSettingsPage />} />
       </Route>

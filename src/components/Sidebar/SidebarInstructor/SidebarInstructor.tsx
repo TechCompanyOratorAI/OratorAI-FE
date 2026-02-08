@@ -75,10 +75,10 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
       path: "/instructor/dashboard",
     },
     {
-      id: "manage-courses",
+      id: "manage-classes",
       label: "My Classes",
       icon: BookOpen,
-      path: "/instructor/manage-courses",
+      path: "/instructor/manage-classes",
     },
     {
       id: "students",

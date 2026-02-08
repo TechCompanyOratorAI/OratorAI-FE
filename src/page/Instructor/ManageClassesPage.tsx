@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@/components/yoodli/Button";
-import CourseModal from "@/components/Course/CourseModal";
+import ClassModal from "@/components/Course/ClassModal";
 import Toast from "@/components/Toast/Toast";
 import {
   Search,
@@ -10,7 +10,6 @@ import {
   Plus,
   Users,
   Clock,
-  FileText,
   Calendar,
   BookOpen,
 } from "lucide-react";
@@ -18,18 +17,20 @@ import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
-  fetchMyCourses,
-  deleteCourse,
-  createCourse,
-  updateCourse,
-} from "@/services/features/course/courseSlice";
-import type { CourseData } from "@/services/features/course/courseSlice";
+  fetchClassesByInstructor,
+  createClass,
+  updateClass,
+  deleteClass,
+  ClassData,
+} from "@/services/features/admin/classSlice";
+import { fetchCourses } from "@/services/features/course/courseSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 
-interface Course {
+interface ClassCard {
   id: string;
   title: string;
   courseCode: string;
+  courseName: string;
   semester: string;
   academicYear: number;
   status: "active" | "archived";
@@ -38,6 +39,10 @@ interface Course {
   topicsCount: number;
   studentsCount: number;
   isActive: boolean;
+  startDate: string;
+  endDate: string;
+  maxStudents: number;
+  enrollKey: string;
 }
 
 interface PendingSubmission {
@@ -49,53 +54,82 @@ interface PendingSubmission {
   status: "pending" | "reviewed";
 }
 
-const ManageCoursesPage: React.FC = () => {
+const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { courses: apiCourses, loading } = useAppSelector(
-    (state) => state.course
-  );
+  const {
+    classes: apiClasses,
+    loading,
+    pagination,
+  } = useAppSelector((state) => state.class);
+  const { courses } = useAppSelector((state) => state.course);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "archived">("all");
+  const [selectedFilter, setSelectedFilter] = useState<
+    "all" | "active" | "archived"
+  >("all");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [courseModalOpen, setCourseModalOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<CourseData | null>(null);
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<ClassData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
 
-  // Fetch courses on component mount
+  // Fetch classes and courses
   useEffect(() => {
-    dispatch(fetchMyCourses({}));
+    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
+
+  useEffect(() => {
+    dispatch(fetchCourses({ page: 1, limit: 100 }));
   }, [dispatch]);
 
   // Transform API data to UI format
-  const transformCourseData = (apiCourse: CourseData): Course => {
-    const isActive = apiCourse.isActive;
-    const instructorName = apiCourse.instructor
-      ? `${apiCourse.instructor.firstName || ""} ${apiCourse.instructor.lastName || ""}`.trim() || apiCourse.instructor.username || "Unknown Instructor"
+  const transformClassData = (apiClass: ClassData): ClassCard => {
+    const isActive = apiClass.status === "active";
+    const instructorName = apiClass.instructors?.length
+      ? apiClass.instructors
+          .map((inst) =>
+            `${inst.firstName || ""} ${inst.lastName || ""}`.trim(),
+          )
+          .filter(Boolean)
+          .join(", ") ||
+        apiClass.instructors[0]?.username ||
+        "Unknown Instructor"
       : "Unknown Instructor";
+    const enrollKeyValue =
+      (apiClass as { activeKeys?: Array<{ keyValue?: string }> })
+        .activeKeys?.[0]?.keyValue ||
+      (apiClass.enrollKeys as Array<{ keyValue?: string }> | undefined)?.[0]
+        ?.keyValue ||
+      "";
     return {
-      id: apiCourse.courseId.toString(),
-      title: apiCourse.courseName,
-      courseCode: apiCourse.courseCode,
-      semester: apiCourse.semester,
-      academicYear: apiCourse.academicYear,
+      id: apiClass.classId.toString(),
+      title: apiClass.classCode,
+      courseCode: apiClass.course?.courseCode || "",
+      courseName: apiClass.course?.courseName || "",
+      semester: apiClass.course?.semester || "",
+      academicYear: apiClass.course?.academicYear || 0,
       status: isActive ? "active" : "archived",
-      schedule: `${apiCourse.startDate} to ${apiCourse.endDate}`,
+      schedule: `${apiClass.startDate} to ${apiClass.endDate}`,
       instructorName,
-      topicsCount: apiCourse.topics?.length ?? 0,
-      studentsCount: Math.floor(Math.random() * 40) + 10, // Mock data
+      topicsCount: 0,
+      studentsCount: apiClass.enrollmentCount ?? 0,
       isActive,
+      startDate: apiClass.startDate,
+      endDate: apiClass.endDate,
+      maxStudents: apiClass.maxStudents,
+      enrollKey: enrollKeyValue,
     };
   };
 
-  const courses: Course[] = apiCourses.map(transformCourseData);
+  const classes: ClassCard[] = apiClasses.map(transformClassData);
 
   // Filter courses based on selected filter and search query
-  const filteredCourses = courses.filter((course) => {
+  const filteredCourses = classes.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
@@ -109,60 +143,67 @@ const ManageCoursesPage: React.FC = () => {
     return matchesSearch;
   });
 
-  const handleDeleteCourse = async (courseId: number) => {
+  const handleDeleteCourse = async (classId: number) => {
     try {
-      await dispatch(deleteCourse(courseId)).unwrap();
+      await dispatch(deleteClass(classId)).unwrap();
       setDeleteConfirm(null);
       setToast({
-        message: "Course deleted successfully!",
+        message: "Class deleted successfully!",
         type: "success",
       });
-      dispatch(fetchMyCourses({}));
+      dispatch(
+        fetchClassesByInstructor({ page: currentPage, limit: pageSize }),
+      );
     } catch {
       setToast({
-        message: "Failed to delete course. Please try again.",
+        message: "Failed to delete class. Please try again.",
         type: "error",
       });
     }
   };
 
-  const handleCourseModalOpen = (course?: CourseData) => {
-    if (course) {
-      setEditingCourse(course);
+  const handleCourseModalOpen = (classItem?: ClassData) => {
+    if (classItem) {
+      setEditingClass(classItem);
     } else {
-      setEditingCourse(null);
+      setEditingClass(null);
     }
-    setCourseModalOpen(true);
+    setClassModalOpen(true);
   };
 
   const handleCourseModalClose = () => {
-    setCourseModalOpen(false);
-    setEditingCourse(null);
+    setClassModalOpen(false);
+    setEditingClass(null);
   };
 
-  const handleCourseSubmit = async (courseData: CourseData) => {
+  const handleCourseSubmit = async (classData: any) => {
     try {
-      if (editingCourse) {
-        await dispatch(updateCourse({
-          courseId: editingCourse.courseId,
-          data: courseData,
-        })).unwrap();
+      if (editingClass) {
+        await dispatch(
+          updateClass({
+            classId: editingClass.classId,
+            classData: classData,
+          }),
+        ).unwrap();
         setToast({
-          message: "Course updated successfully!",
+          message: "Class updated successfully!",
           type: "success",
         });
       } else {
-        await dispatch(createCourse(courseData)).unwrap();
+        await dispatch(createClass(classData)).unwrap();
         setToast({
-          message: "Course created successfully!",
+          message: "Class created successfully!",
           type: "success",
         });
+        setTimeout(() => window.location.reload(), 500);
       }
       handleCourseModalClose();
-      dispatch(fetchMyCourses({}));
+      dispatch(
+        fetchClassesByInstructor({ page: currentPage, limit: pageSize }),
+      );
     } catch {
       setToast({
-        message: `Failed to ${editingCourse ? "update" : "create"} course. Please try again.`,
+        message: `Failed to ${editingClass ? "update" : "create"} class. Please try again.`,
         type: "error",
       });
     }
@@ -205,7 +246,12 @@ const ManageCoursesPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
             <span className="text-indigo-700 font-semibold text-xs">
-              {text.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+              {text
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2)}
             </span>
           </div>
           <span className="text-sm font-medium text-gray-900">{text}</span>
@@ -216,23 +262,30 @@ const ManageCoursesPage: React.FC = () => {
       title: "Topic",
       dataIndex: "topic",
       key: "topic",
-      render: (text: string) => <span className="text-sm text-gray-900">{text}</span>,
+      render: (text: string) => (
+        <span className="text-sm text-gray-900">{text}</span>
+      ),
     },
     {
       title: "Submitted",
       dataIndex: "submittedAt",
       key: "submittedAt",
-      render: (text: string) => <span className="text-sm text-gray-500">{text}</span>,
+      render: (text: string) => (
+        <span className="text-sm text-gray-500">{text}</span>
+      ),
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status === "pending"
-            ? "bg-amber-50 text-amber-700 border border-amber-200"
-            : "bg-green-50 text-green-700 border border-green-200"
-          }`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            status === "pending"
+              ? "bg-amber-50 text-amber-700 border border-amber-200"
+              : "bg-green-50 text-green-700 border border-green-200"
+          }`}
+        >
           {status === "pending" ? "Pending" : "Reviewed"}
         </span>
       ),
@@ -255,8 +308,11 @@ const ManageCoursesPage: React.FC = () => {
   ];
 
   // Calculate stats
-  const totalStudents = filteredCourses.reduce((acc, course) => acc + course.studentsCount, 0);
-  const activeCourses = filteredCourses.filter(c => c.isActive).length;
+  const totalStudents = filteredCourses.reduce(
+    (acc, course) => acc + course.studentsCount,
+    0,
+  );
+  const activeCourses = filteredCourses.filter((c) => c.isActive).length;
   const pendingReviews = 3;
 
   return (
@@ -298,24 +354,36 @@ const ManageCoursesPage: React.FC = () => {
                   <span className="text-sm text-gray-600">Total Students</span>
                   <Users className="w-5 h-5 text-blue-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{totalStudents}</span>
-                <p className="text-xs text-gray-500 mt-1">Across {filteredCourses.length} classes</p>
+                <span className="text-3xl font-bold text-gray-900">
+                  {totalStudents}
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  Across {filteredCourses.length} classes
+                </p>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-gray-600">Active Classes</span>
                   <BookOpen className="w-5 h-5 text-green-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{activeCourses}</span>
-                <p className="text-xs text-gray-500 mt-1">{filteredCourses.length} total classes</p>
+                <span className="text-3xl font-bold text-gray-900">
+                  {activeCourses}
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  {filteredCourses.length} total classes
+                </p>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-gray-600">Pending Reviews</span>
                   <Clock className="w-5 h-5 text-amber-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{pendingReviews}</span>
-                <p className="text-xs text-gray-500 mt-1">Presentations awaiting feedback</p>
+                <span className="text-3xl font-bold text-gray-900">
+                  {pendingReviews}
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  Presentations awaiting feedback
+                </p>
               </div>
             </div>
 
@@ -337,28 +405,31 @@ const ManageCoursesPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedFilter("all")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${selectedFilter === "all"
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    selectedFilter === "all"
                       ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                    }`}
+                  }`}
                 >
                   All Classes
                 </button>
                 <button
                   onClick={() => setSelectedFilter("active")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${selectedFilter === "active"
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    selectedFilter === "active"
                       ? "bg-green-50 text-green-600 border border-green-200"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                    }`}
+                  }`}
                 >
                   Active
                 </button>
                 <button
                   onClick={() => setSelectedFilter("archived")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${selectedFilter === "archived"
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    selectedFilter === "archived"
                       ? "bg-gray-100 text-gray-700 border border-gray-300"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                    }`}
+                  }`}
                 >
                   Archived
                 </button>
@@ -402,30 +473,33 @@ const ManageCoursesPage: React.FC = () => {
                       <div
                         key={course.id}
                         className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer"
-                        onClick={() => navigate(`/instructor/course/${course.id}`)}
+                        onClick={() =>
+                          navigate(`/instructor/class/${course.id}`)
+                        }
                       >
-                        <div className="p-5">
+                        <div className="p-6">
                           {/* Header */}
-                          <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start justify-between gap-4">
                             <div>
-                              <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center gap-2 mb-2">
                                 <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${course.isActive
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-gray-100 text-gray-700"
-                                    }`}
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                    course.isActive
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : "bg-slate-50 text-slate-700 border-slate-200"
+                                  }`}
                                 >
                                   {course.isActive ? "Active" : "Archived"}
                                 </span>
-                                <span className="text-sm text-gray-600">
-                                  {course.semester} • {course.academicYear}
+                                <span className="text-xs text-gray-500">
+                                  {course.courseCode}
                                 </span>
                               </div>
-                              <h3 className="text-xl font-bold text-gray-900 mb-1">
+                              <h3 className="text-xl font-bold text-gray-900">
                                 {course.title}
                               </h3>
                               <p className="text-sm text-gray-600">
-                                {course.courseCode}
+                                {course.courseName || "Course"}
                               </p>
                             </div>
                             <div
@@ -437,9 +511,11 @@ const ManageCoursesPage: React.FC = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const courseData = apiCourses.find(c => c.courseId === parseInt(course.id));
-                                    if (courseData) {
-                                      handleCourseModalOpen(courseData);
+                                    const classData = apiClasses.find(
+                                      (c) => c.classId === parseInt(course.id),
+                                    );
+                                    if (classData) {
+                                      handleCourseModalOpen(classData);
                                     }
                                   }}
                                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl"
@@ -459,53 +535,134 @@ const ManageCoursesPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                              <Users className="w-4 h-4 text-gray-600" />
+                          {/* Info Grid */}
+                          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                              <Calendar className="w-4 h-4 text-indigo-500" />
                               <div>
-                                <p className="text-xs text-gray-600">Students</p>
-                                <p className="text-sm font-semibold text-gray-900">{course.studentsCount}</p>
+                                <p className="text-xs text-gray-500">
+                                  Duration
+                                </p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {new Date(
+                                    course.startDate,
+                                  ).toLocaleDateString()}{" "}
+                                  - {""}
+                                  {new Date(
+                                    course.endDate,
+                                  ).toLocaleDateString()}
+                                </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                              <FileText className="w-4 h-4 text-gray-600" />
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                              <Users className="w-4 h-4 text-sky-500" />
                               <div>
-                                <p className="text-xs text-gray-600">Topics</p>
-                                <p className="text-sm font-semibold text-gray-900">{course.topicsCount}</p>
+                                <p className="text-xs text-gray-500">
+                                  Enrollment
+                                </p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {course.studentsCount} / {course.maxStudents}
+                                </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                              <Calendar className="w-4 h-4 text-gray-600" />
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                              <BookOpen className="w-4 h-4 text-emerald-500" />
                               <div>
-                                <p className="text-xs text-gray-600">Duration</p>
-                                <p className="text-sm font-semibold text-gray-900">{course.schedule.split(' to ')[0]}</p>
+                                <p className="text-xs text-gray-500">
+                                  Semester
+                                </p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {course.semester || "N/A"}
+                                  {course.academicYear
+                                    ? ` • ${course.academicYear}`
+                                    : ""}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                              <BookOpen className="w-4 h-4 text-emerald-500" />
+                              <div>
+                                <p className="text-xs text-gray-500">
+                                  Enroll Key
+                                </p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {course.enrollKey || "N/A"}
+                                </p>
                               </div>
                             </div>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                            <span className="text-sm text-gray-500">
-                              {course.instructorName}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                text="View Class"
-                                variant="primary"
-                                fontSize="14px"
-                                borderRadius="6px"
-                                paddingWidth="16px"
-                                paddingHeight="8px"
-                                onClick={() => {
-                                  navigate(`/instructor/course/${course.id}`);
-                                }}
-                              />
+                          <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-gray-200 pt-4">
+                            <div className="text-sm text-gray-600">
+                              Instructor:{" "}
+                              <span className="font-semibold text-gray-900">
+                                {course.instructorName}
+                              </span>
                             </div>
+                            <Button
+                              text="View Class"
+                              variant="primary"
+                              fontSize="14px"
+                              borderRadius="999px"
+                              paddingWidth="18px"
+                              paddingHeight="8px"
+                              onClick={() => {
+                                navigate(`/instructor/class/${course.id}`);
+                              }}
+                            />
                           </div>
                         </div>
                       </div>
                     ))
+                  )}
+
+                  {!loading && pagination.total > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="text-sm text-gray-600">
+                        Page {pagination.page} of {pagination.totalPages} •
+                        Total {""}
+                        {pagination.total} classes
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span>Rows per page</span>
+                          <select
+                            value={pageSize}
+                            onChange={(e) => {
+                              const nextSize = parseInt(e.target.value);
+                              setPageSize(nextSize);
+                              setCurrentPage(1);
+                            }}
+                            className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                          >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
+                          disabled={pagination.page <= 1}
+                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(pagination.totalPages, prev + 1),
+                            )
+                          }
+                          disabled={pagination.page >= pagination.totalPages}
+                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -545,17 +702,23 @@ const ManageCoursesPage: React.FC = () => {
                         <h4 className="text-base font-bold text-gray-900">
                           AI Processing
                         </h4>
-                        <p className="text-xs text-gray-500">Auto-grading presentations</p>
+                        <p className="text-xs text-gray-500">
+                          Auto-grading presentations
+                        </p>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Processing</span>
-                        <span className="font-medium text-gray-900">3 presentations</span>
+                        <span className="font-medium text-gray-900">
+                          3 presentations
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Estimated time</span>
-                        <span className="font-medium text-gray-900">~5 minutes</span>
+                        <span className="font-medium text-gray-900">
+                          ~5 minutes
+                        </span>
                       </div>
                       <div className="w-full bg-gray-100 rounded-full h-2">
                         <div
@@ -563,7 +726,9 @@ const ManageCoursesPage: React.FC = () => {
                           style={{ width: "33%" }}
                         ></div>
                       </div>
-                      <p className="text-xs text-gray-500 text-center">33% complete</p>
+                      <p className="text-xs text-gray-500 text-center">
+                        33% complete
+                      </p>
                     </div>
                   </div>
 
@@ -575,29 +740,50 @@ const ManageCoursesPage: React.FC = () => {
                     <div className="space-y-4">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-gray-600">Average Score</span>
-                          <span className="text-sm font-medium text-gray-900">85/100</span>
+                          <span className="text-sm text-gray-600">
+                            Average Score
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            85/100
+                          </span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: "85%" }}></div>
+                          <div
+                            className="bg-green-500 h-2 rounded-full"
+                            style={{ width: "85%" }}
+                          ></div>
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-gray-600">Review Completion</span>
-                          <span className="text-sm font-medium text-gray-900">78%</span>
+                          <span className="text-sm text-gray-600">
+                            Review Completion
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            78%
+                          </span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: "78%" }}></div>
+                          <div
+                            className="bg-blue-500 h-2 rounded-full"
+                            style={{ width: "78%" }}
+                          ></div>
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-gray-600">Student Engagement</span>
-                          <span className="text-sm font-medium text-gray-900">92%</span>
+                          <span className="text-sm text-gray-600">
+                            Student Engagement
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            92%
+                          </span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div className="bg-purple-500 h-2 rounded-full" style={{ width: "92%" }}></div>
+                          <div
+                            className="bg-purple-500 h-2 rounded-full"
+                            style={{ width: "92%" }}
+                          ></div>
                         </div>
                       </div>
                     </div>
@@ -606,13 +792,14 @@ const ManageCoursesPage: React.FC = () => {
               </div>
             )}
 
-            {/* Course Modal */}
-            <CourseModal
-              isOpen={courseModalOpen}
+            {/* Class Modal */}
+            <ClassModal
+              isOpen={classModalOpen}
               onClose={handleCourseModalClose}
               onSubmit={handleCourseSubmit}
-              initialData={editingCourse || undefined}
+              initialData={editingClass || undefined}
               isLoading={loading}
+              courses={courses}
             />
 
             {/* Delete Confirmation Dialog */}
@@ -620,10 +807,11 @@ const ManageCoursesPage: React.FC = () => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
                   <h2 className="text-lg font-bold text-gray-900 mb-2">
-                    Delete Course
+                    Delete Class
                   </h2>
                   <p className="text-gray-600 mb-6">
-                    Are you sure you want to delete this course? This action cannot be undone.
+                    Are you sure you want to delete this class? This action
+                    cannot be undone.
                   </p>
                   <div className="flex gap-3 justify-end">
                     <Button
@@ -666,4 +854,4 @@ const ManageCoursesPage: React.FC = () => {
   );
 };
 
-export default ManageCoursesPage;
+export default ManageClassesPage;

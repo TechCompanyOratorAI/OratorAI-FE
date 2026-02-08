@@ -15,11 +15,12 @@ interface ClassModalProps {
 interface ClassFormData {
   courseId: number;
   classCode: string;
-  className: string;
-  description: string;
   startDate: string;
   endDate: string;
   maxStudents: number;
+  enrollKey: string;
+  keyExpiresAt: string;
+  keyMaxUses: number;
 }
 
 const ClassModal: React.FC<ClassModalProps> = ({
@@ -38,14 +39,27 @@ const ClassModal: React.FC<ClassModalProps> = ({
     return `${year}-${month}-${day}`;
   };
 
+  const toLocalDateTimeInput = (iso?: string) => {
+    if (!iso) return "";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState<ClassFormData>({
     courseId: 0,
     classCode: "",
-    className: "",
-    description: "",
     startDate: "",
     endDate: "",
     maxStudents: 35,
+    enrollKey: "",
+    keyExpiresAt: "",
+    keyMaxUses: 0,
   });
 
   const [errors, setErrors] = useState<
@@ -55,24 +69,28 @@ const ClassModal: React.FC<ClassModalProps> = ({
   // Populate form with initial data when editing
   useEffect(() => {
     if (initialData) {
+      const keySource =
+        initialData.activeKeys?.[0] || initialData.enrollKeys?.[0];
       setFormData({
         courseId: initialData.courseId,
         classCode: initialData.classCode,
-        className: initialData.className,
-        description: initialData.description,
         startDate: initialData.startDate,
         endDate: initialData.endDate,
         maxStudents: initialData.maxStudents,
+        enrollKey: keySource?.keyValue || "",
+        keyExpiresAt: toLocalDateTimeInput(keySource?.expiresAt),
+        keyMaxUses: keySource?.maxUses || 0,
       });
     } else {
       setFormData({
         courseId: courses.length > 0 ? courses[0].courseId : 0,
         classCode: "",
-        className: "",
-        description: "",
         startDate: "",
         endDate: "",
         maxStudents: 35,
+        enrollKey: "",
+        keyExpiresAt: "",
+        keyMaxUses: 0,
       });
     }
     setErrors({});
@@ -109,6 +127,20 @@ const ClassModal: React.FC<ClassModalProps> = ({
     } else if (formData.maxStudents <= 0) {
       newErrors.maxStudents = "Max students must be greater than 0";
     }
+    const enrollKeyTrimmed = formData.enrollKey.trim();
+    if (!enrollKeyTrimmed) {
+      newErrors.enrollKey = "Enroll key is required";
+    } else if (enrollKeyTrimmed.length < 6 || enrollKeyTrimmed.length > 50) {
+      newErrors.enrollKey = "Enroll key must be 6-50 characters";
+    }
+    if (!formData.keyExpiresAt) {
+      newErrors.keyExpiresAt = "Key expiry is required";
+    }
+    if (!formData.keyMaxUses || Number.isNaN(formData.keyMaxUses)) {
+      newErrors.keyMaxUses = "Key max uses is required";
+    } else if (formData.keyMaxUses <= 0) {
+      newErrors.keyMaxUses = "Key max uses must be greater than 0";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -123,8 +155,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
     setFormData((prev) => ({
       ...prev,
       [name]:
-        name === "maxStudents" || name === "courseId"
-          ? parseInt(value) || 0
+        name === "maxStudents" || name === "courseId" || name === "keyMaxUses"
+          ? parseInt(value)
           : value,
     }));
     // Clear error for this field
@@ -139,7 +171,13 @@ const ClassModal: React.FC<ClassModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      const payload = {
+        ...formData,
+        keyExpiresAt: formData.keyExpiresAt
+          ? new Date(formData.keyExpiresAt).toISOString()
+          : formData.keyExpiresAt,
+      };
+      onSubmit(payload);
     }
   };
 
@@ -279,6 +317,68 @@ const ClassModal: React.FC<ClassModalProps> = ({
               />
               {errors.endDate && (
                 <p className="text-red-600 text-sm mt-1">{errors.endDate}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Enroll Key */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Enroll Key
+            </label>
+            <input
+              type="text"
+              name="enrollKey"
+              value={formData.enrollKey}
+              onChange={handleChange}
+              placeholder="e.g., SE1025"
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.enrollKey ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.enrollKey && (
+              <p className="text-red-600 text-sm mt-1">{errors.enrollKey}</p>
+            )}
+          </div>
+
+          {/* Key Expiry and Max Uses */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Key Expires At
+              </label>
+              <input
+                type="datetime-local"
+                name="keyExpiresAt"
+                value={formData.keyExpiresAt}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  errors.keyExpiresAt ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.keyExpiresAt && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors.keyExpiresAt}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Key Max Uses
+              </label>
+              <input
+                type="number"
+                name="keyMaxUses"
+                value={formData.keyMaxUses}
+                onChange={handleChange}
+                placeholder="e.g., 50"
+                min="1"
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  errors.keyMaxUses ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.keyMaxUses && (
+                <p className="text-red-600 text-sm mt-1">{errors.keyMaxUses}</p>
               )}
             </div>
           </div>
