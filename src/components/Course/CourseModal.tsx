@@ -29,6 +29,14 @@ const CourseModal: React.FC<CourseModalProps> = ({
   initialData,
   isLoading = false,
 }) => {
+  const getTodayISO = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState<CourseFormData>({
     courseCode: "",
     majorCode: "",
@@ -40,7 +48,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
     endDate: "",
   });
 
-  const [errors, setErrors] = useState<Partial<CourseFormData>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CourseFormData, string>>
+  >({});
 
   // Populate form with initial data when editing
   useEffect(() => {
@@ -71,7 +81,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
   }, [initialData, isOpen]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CourseFormData> = {};
+    const newErrors: Partial<Record<keyof CourseFormData, string>> = {};
+    const todayISO = getTodayISO();
 
     if (!formData.courseCode.trim()) {
       newErrors.courseCode = "Course code is required";
@@ -88,11 +99,19 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (!formData.semester.trim()) {
       newErrors.semester = "Semester is required";
     }
+    if (!formData.academicYear || Number.isNaN(formData.academicYear)) {
+      newErrors.academicYear = "Academic year is required";
+    } else if (formData.academicYear <= 0) {
+      newErrors.academicYear = "Academic year must be greater than 0";
+    }
     if (!formData.startDate) {
       newErrors.startDate = "Start date is required";
     }
     if (!formData.endDate) {
       newErrors.endDate = "End date is required";
+    }
+    if (formData.endDate && formData.endDate < todayISO) {
+      newErrors.endDate = "End date cannot be in the past";
     }
     if (
       formData.startDate &&
@@ -114,10 +133,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        name === "academicYear"
-          ? parseInt(value) || new Date().getFullYear()
-          : value,
+      [name]: name === "academicYear" ? parseInt(value) || 0 : value,
     }));
     // Clear error for this field
     if (errors[name as keyof CourseFormData]) {
@@ -136,6 +152,12 @@ const CourseModal: React.FC<CourseModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const todayISO = getTodayISO();
+  const minEndDate =
+    formData.startDate && formData.startDate > todayISO
+      ? formData.startDate
+      : todayISO;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -273,8 +295,15 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 value={formData.academicYear}
                 onChange={handleChange}
                 placeholder="2026"
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  errors.academicYear ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.academicYear && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors.academicYear}
+                </p>
+              )}
             </div>
           </div>
 
@@ -309,6 +338,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
+                min={minEndDate}
                 className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}

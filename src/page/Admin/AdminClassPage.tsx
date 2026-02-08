@@ -50,6 +50,10 @@ const AdminClassPage: React.FC = () => {
     null,
   );
 
+  const reloadAfterAction = () => {
+    setTimeout(() => window.location.reload(), 500);
+  };
+
   useEffect(() => {
     dispatch(fetchClasses({ page: 1, limit: 20 }));
     dispatch(fetchCourses({ page: 1, limit: 100 }));
@@ -112,6 +116,7 @@ const AdminClassPage: React.FC = () => {
           message: "Class created successfully",
           type: "success",
         });
+        reloadAfterAction();
       } else {
         setToast({
           message: "Failed to create class",
@@ -159,8 +164,6 @@ const AdminClassPage: React.FC = () => {
           message: "Instructor added successfully",
           type: "success",
         });
-        // Reload page after successful add
-        setTimeout(() => window.location.reload(), 500);
       } else {
         setToast({
           message: "Failed to add instructor",
@@ -199,8 +202,6 @@ const AdminClassPage: React.FC = () => {
           message: "Instructor removed successfully",
           type: "success",
         });
-        // Reload page after successful remove
-        setTimeout(() => window.location.reload(), 500);
       } else {
         setToast({
           message: "Failed to remove instructor",
@@ -561,13 +562,13 @@ const AdminClassPage: React.FC = () => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-full border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteClass(showDeleteConfirm)}
-                className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors"
+                className="px-4 py-2 rounded-full bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors"
               >
                 Delete Class
               </button>
