@@ -50,6 +50,10 @@ export const REMOVE_INSTRUCTOR_FROM_CLASS_ENDPOINT = (
 ) => `${BASE_URL}/api/v1/classes/${classId}/instructors/${userId}`;
 export const CLASS_DETAIL_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}`;
+//Enroll class endpoints
+export const ENROLL_CLASS_BY_KEY_ENDPOINT = `${BASE_URL}/api/v1/enrollments/join`;
+
+
 
 //get class by instructor 
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;

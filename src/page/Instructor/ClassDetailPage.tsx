@@ -281,12 +281,7 @@ const ClassDetailPage: React.FC = () => {
                     {selectedClass.maxStudents} students
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Enroll key:</span>
-                  <span className="font-semibold text-slate-900">
-                    {enrollKeyValue}
-                  </span>
-                </div>
+                
               </div>
             </div>
 

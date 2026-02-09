@@ -2,7 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
-import { Search, Users, Calendar, BookOpen, CheckCircle2, Bell, Menu, X, LogOut, ChevronDown } from "lucide-react";
+import {
+  Search,
+  Users,
+  Calendar,
+  BookOpen,
+  CheckCircle2,
+  Bell,
+  Menu,
+  X,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
 import { logout } from "@/services/features/auth/authSlice";
@@ -11,7 +22,7 @@ const StudentMyClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { enrolledClasses, loading, error } = useAppSelector(
-    (state) => state.enrollment
+    (state) => state.enrollment,
   );
   const { user } = useAppSelector((state) => state.auth);
 
@@ -65,9 +76,10 @@ const StudentMyClassesPage: React.FC = () => {
     const classCode = cls.class.classCode?.toLowerCase() || "";
     const courseName = cls.class.course?.courseName?.toLowerCase() || "";
     const courseCode = cls.class.course?.courseCode?.toLowerCase() || "";
-    const instructorName = cls.class.instructors
-      ?.map((i) => `${i.firstName} ${i.lastName}`.toLowerCase())
-      .join(" ") || "";
+    const instructorName =
+      cls.class.instructors
+        ?.map((i) => `${i.firstName} ${i.lastName}`.toLowerCase())
+        .join(" ") || "";
 
     const searchLower = searchQuery.toLowerCase();
 
@@ -92,7 +104,7 @@ const StudentMyClassesPage: React.FC = () => {
     });
   };
 
-  const getInstructorNames = (cls: typeof enrolledClasses[0]) => {
+  const getInstructorNames = (cls: (typeof enrolledClasses)[0]) => {
     if (!cls.class.instructors || cls.class.instructors.length === 0) {
       return "No instructor assigned";
     }
@@ -144,7 +156,9 @@ const StudentMyClassesPage: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">E</span>
               </div>
-              <span className="text-lg font-semibold text-gray-900">OratorAI</span>
+              <span className="text-lg font-semibold text-gray-900">
+                OratorAI
+              </span>
             </div>
 
             {/* Desktop Navigation */}
@@ -280,7 +294,7 @@ const StudentMyClassesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Search */}
+          {/* Search + Action */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
             <div className="relative flex-1 w-full sm:max-w-[448px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -290,6 +304,17 @@ const StudentMyClassesPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+            <div className="w-full sm:w-auto">
+              <Button
+                text="Browse Classes"
+                variant="primary"
+                fontSize="14px"
+                borderRadius="6px"
+                paddingWidth="16px"
+                paddingHeight="8px"
+                onClick={() => navigate("/student/classes")}
               />
             </div>
           </div>
@@ -320,17 +345,6 @@ const StudentMyClassesPage: React.FC = () => {
                       ? "Try adjusting your search terms"
                       : "Browse available classes and enroll to get started"}
                   </p>
-                  {!searchQuery && (
-                    <Button
-                      text="Browse Classes"
-                      variant="primary"
-                      fontSize="14px"
-                      borderRadius="6px"
-                      paddingWidth="16px"
-                      paddingHeight="8px"
-                      onClick={() => navigate("/student/courses")}
-                    />
-                  )}
                 </div>
               ) : (
                 filteredClasses.map((cls) => (
@@ -345,18 +359,22 @@ const StudentMyClassesPage: React.FC = () => {
                         <div className="flex items-center gap-3 mb-2">
                           <div className="flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span className="text-xs font-medium">Enrolled</span>
+                            <span className="text-xs font-medium">
+                              Enrolled
+                            </span>
                           </div>
                           {getStatusBadge(cls.class.status)}
                           <span className="text-sm text-gray-600">
-                            {cls.class.course?.semester} • {cls.class.course?.academicYear}
+                            {cls.class.course?.semester} •{" "}
+                            {cls.class.course?.academicYear}
                           </span>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-1">
                           {cls.class.className}
                         </h3>
                         <p className="text-sm text-gray-600 mb-2">
-                          {cls.class.course?.courseCode} - {cls.class.course?.courseName}
+                          {cls.class.course?.courseCode} -{" "}
+                          {cls.class.course?.courseName}
                         </p>
                         {cls.class.description && (
                           <p className="text-sm text-gray-700 mb-3 line-clamp-2">

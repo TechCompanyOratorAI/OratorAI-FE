@@ -128,6 +128,11 @@ const ManageClassesPage: React.FC = () => {
 
   const classes: ClassCard[] = apiClasses.map(transformClassData);
 
+  const totalRecords = pagination.total || apiClasses.length;
+  const totalPages =
+    pagination.totalPages || Math.max(1, Math.ceil(totalRecords / pageSize));
+  const currentPageLabel = pagination.page || currentPage;
+
   // Filter courses based on selected filter and search query
   const filteredCourses = classes.filter((course) => {
     const matchesSearch =
@@ -402,10 +407,10 @@ const ManageClassesPage: React.FC = () => {
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ">
                 <button
                   onClick={() => setSelectedFilter("all")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     selectedFilter === "all"
                       ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
@@ -415,7 +420,7 @@ const ManageClassesPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setSelectedFilter("active")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     selectedFilter === "active"
                       ? "bg-green-50 text-green-600 border border-green-200"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
@@ -425,7 +430,7 @@ const ManageClassesPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setSelectedFilter("archived")}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     selectedFilter === "archived"
                       ? "bg-gray-100 text-gray-700 border border-gray-300"
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
@@ -616,54 +621,6 @@ const ManageClassesPage: React.FC = () => {
                       </div>
                     ))
                   )}
-
-                  {!loading && pagination.total > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <div className="text-sm text-gray-600">
-                        Page {pagination.page} of {pagination.totalPages} •
-                        Total {""}
-                        {pagination.total} classes
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span>Rows per page</span>
-                          <select
-                            value={pageSize}
-                            onChange={(e) => {
-                              const nextSize = parseInt(e.target.value);
-                              setPageSize(nextSize);
-                              setCurrentPage(1);
-                            }}
-                            className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-                          >
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                          </select>
-                        </div>
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(1, prev - 1))
-                          }
-                          disabled={pagination.page <= 1}
-                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Previous
-                        </button>
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(pagination.totalPages, prev + 1),
-                            )
-                          }
-                          disabled={pagination.page >= pagination.totalPages}
-                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Right Sidebar */}
@@ -788,6 +745,50 @@ const ManageClassesPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {!loading && apiClasses.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 flex flex-col sm:flex-row items-center justify-end gap-3 mt-6">
+                <div className="text-sm text-gray-600">
+                  Page {currentPageLabel} of {totalPages} 
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPageLabel <= 1}
+                    className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPageLabel >= totalPages}
+                    className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             )}

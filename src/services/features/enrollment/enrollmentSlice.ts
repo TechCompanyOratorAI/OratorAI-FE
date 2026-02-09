@@ -7,7 +7,8 @@ import {
   ENROLL_TOPIC_ENDPOINT,
   GET_ENROLLED_TOPICS_ENDPOINT,
   DROP_TOPIC_ENDPOINT,
-  GET_ENROLLED_CLASSES_ENDPOINT
+  GET_ENROLLED_CLASSES_ENDPOINT,
+  ENROLL_CLASS_BY_KEY_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface EnrolledCourse {
@@ -164,15 +165,15 @@ export const enrollCourse = createAsyncThunk(
   async (courseId: number, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post<EnrollCourseResponse>(
-        ENROLL_COURSE_ENDPOINT(courseId.toString())
+        ENROLL_COURSE_ENDPOINT(courseId.toString()),
       );
       return { courseId, enrollmentId: response.data.enrollmentId };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to enroll in course"
+        error.response?.data?.message || "Failed to enroll in course",
       );
     }
-  }
+  },
 );
 
 // Fetch enrolled courses
@@ -181,15 +182,35 @@ export const fetchEnrolledCourses = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get<EnrolledCoursesResponse>(
-        GET_ENROLLED_COURSES_ENDPOINT
+        GET_ENROLLED_COURSES_ENDPOINT,
       );
       return response.data.courses;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch enrolled courses"
+        error.response?.data?.message || "Failed to fetch enrolled courses",
       );
     }
-  }
+  },
+);
+//Enroll class by Key
+export const enrollClassByKey = createAsyncThunk(
+  "enrollment/enrollClassByKey",
+  async (
+    { classId, enrollKey }: { classId: number; enrollKey: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await axiosInstance.post<EnrollCourseResponse>(
+        ENROLL_CLASS_BY_KEY_ENDPOINT,
+        { classId, enrollKey },
+      );
+      return { enrollmentId: response.data.enrollmentId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to enroll in class with key",
+      );
+    }
+  },
 );
 
 // Fetch enrolled classes
@@ -198,15 +219,15 @@ export const fetchEnrolledClasses = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get<EnrolledClassesResponse>(
-        GET_ENROLLED_CLASSES_ENDPOINT
+        GET_ENROLLED_CLASSES_ENDPOINT,
       );
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch enrolled classes"
+        error.response?.data?.message || "Failed to fetch enrolled classes",
       );
     }
-  }
+  },
 );
 
 // Enroll in a topic
@@ -215,15 +236,15 @@ export const enrollTopic = createAsyncThunk(
   async (topicId: number, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post<EnrollTopicResponse>(
-        ENROLL_TOPIC_ENDPOINT(topicId.toString())
+        ENROLL_TOPIC_ENDPOINT(topicId.toString()),
       );
       return { topicId, topicEnrollmentId: response.data.topicEnrollmentId };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to enroll in topic"
+        error.response?.data?.message || "Failed to enroll in topic",
       );
     }
-  }
+  },
 );
 
 // Fetch enrolled topics
@@ -232,15 +253,15 @@ export const fetchEnrolledTopics = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get<EnrolledTopicsResponse>(
-        GET_ENROLLED_TOPICS_ENDPOINT
+        GET_ENROLLED_TOPICS_ENDPOINT,
       );
       return response.data.topics;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch enrolled topics"
+        error.response?.data?.message || "Failed to fetch enrolled topics",
       );
     }
-  }
+  },
 );
 
 // Drop course (unenroll from course)
@@ -249,15 +270,15 @@ export const dropCourse = createAsyncThunk(
   async (courseId: number, { rejectWithValue }) => {
     try {
       await axiosInstance.delete<DropCourseResponse>(
-        DROP_COURSE_ENDPOINT(courseId.toString())
+        DROP_COURSE_ENDPOINT(courseId.toString()),
       );
       return courseId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to drop course"
+        error.response?.data?.message || "Failed to drop course",
       );
     }
-  }
+  },
 );
 
 // Drop topic (unenroll from topic)
@@ -266,15 +287,15 @@ export const dropTopic = createAsyncThunk(
   async (topicId: number, { rejectWithValue }) => {
     try {
       await axiosInstance.delete<DropTopicResponse>(
-        DROP_TOPIC_ENDPOINT(topicId.toString())
+        DROP_TOPIC_ENDPOINT(topicId.toString()),
       );
       return topicId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to drop topic"
+        error.response?.data?.message || "Failed to drop topic",
       );
     }
-  }
+  },
 );
 
 const enrollmentSlice = createSlice({
@@ -303,6 +324,20 @@ const enrollmentSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+    // Enroll class by key
+    builder
+      .addCase(enrollClassByKey.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(enrollClassByKey.fulfilled, (state) => {
+        state.loading = false;
+        // No specific state update needed here unless you want to track by enrollmentId
+      })
+      .addCase(enrollClassByKey.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
 
     // Fetch enrolled courses
     builder
@@ -313,7 +348,9 @@ const enrollmentSlice = createSlice({
       .addCase(fetchEnrolledCourses.fulfilled, (state, action) => {
         state.loading = false;
         state.enrolledCourses = action.payload;
-        state.enrolledCourseIds = action.payload.map((course) => course.courseId);
+        state.enrolledCourseIds = action.payload.map(
+          (course) => course.courseId,
+        );
       })
       .addCase(fetchEnrolledCourses.rejected, (state, action) => {
         state.loading = false;
@@ -380,11 +417,11 @@ const enrollmentSlice = createSlice({
         state.loading = false;
         // Remove courseId from enrolledCourseIds
         state.enrolledCourseIds = state.enrolledCourseIds.filter(
-          (id) => id !== action.payload
+          (id) => id !== action.payload,
         );
         // Remove course from enrolledCourses
         state.enrolledCourses = state.enrolledCourses.filter(
-          (course) => course.courseId !== action.payload
+          (course) => course.courseId !== action.payload,
         );
       })
       .addCase(dropCourse.rejected, (state, action) => {
@@ -402,11 +439,11 @@ const enrollmentSlice = createSlice({
         state.loading = false;
         // Remove topicId from enrolledTopicIds
         state.enrolledTopicIds = state.enrolledTopicIds.filter(
-          (id) => id !== action.payload
+          (id) => id !== action.payload,
         );
         // Remove topic from enrolledTopics
         state.enrolledTopics = state.enrolledTopics.filter(
-          (topic) => topic.topicId !== action.payload
+          (topic) => topic.topicId !== action.payload,
         );
       })
       .addCase(dropTopic.rejected, (state, action) => {
