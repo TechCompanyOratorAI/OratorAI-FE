@@ -18,6 +18,7 @@ interface ClassFormData {
   startDate: string;
   endDate: string;
   maxStudents: number;
+  maxGroupMembers: number | null;
   enrollKey: string;
   keyExpiresAt: string;
   keyMaxUses: number;
@@ -57,6 +58,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     startDate: "",
     endDate: "",
     maxStudents: 35,
+    maxGroupMembers: null,
     enrollKey: "",
     keyExpiresAt: "",
     keyMaxUses: 0,
@@ -77,6 +79,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         startDate: initialData.startDate,
         endDate: initialData.endDate,
         maxStudents: initialData.maxStudents,
+        maxGroupMembers: initialData.maxGroupMembers ?? null,
         enrollKey: keySource?.keyValue || "",
         keyExpiresAt: toLocalDateTimeInput(keySource?.expiresAt),
         keyMaxUses: keySource?.maxUses || 0,
@@ -88,6 +91,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         startDate: "",
         endDate: "",
         maxStudents: 35,
+        maxGroupMembers: null,
         enrollKey: "",
         keyExpiresAt: "",
         keyMaxUses: 0,
@@ -157,7 +161,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
       [name]:
         name === "maxStudents" || name === "courseId" || name === "keyMaxUses"
           ? parseInt(value)
-          : value,
+          : name === "maxGroupMembers"
+            ? value === ""
+              ? null
+              : parseInt(value)
+            : value,
     }));
     // Clear error for this field
     if (errors[name as keyof ClassFormData]) {
@@ -277,6 +285,22 @@ const ClassModal: React.FC<ClassModalProps> = ({
             {errors.maxStudents && (
               <p className="text-red-600 text-sm mt-1">{errors.maxStudents}</p>
             )}
+          </div>
+
+          {/* Max Group Members */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Max Group Members
+            </label>
+            <input
+              type="number"
+              name="maxGroupMembers"
+              value={formData.maxGroupMembers ?? ""}
+              onChange={handleChange}
+              placeholder="e.g., 5"
+              min="1"
+              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 border-gray-300"
+            />
           </div>
 
           {/* Start Date and End Date */}

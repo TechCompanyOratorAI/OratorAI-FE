@@ -50,6 +50,7 @@ export interface ClassData {
   startDate: string;
   endDate: string;
   maxStudents: number;
+  maxGroupMembers: number | null;
   createdBy: number;
   createdAt: string;
   updatedAt: string;

@@ -10,9 +10,9 @@ import TopicDetailPage from "@/page/Instructor/TopicDetailPage";
 import ClassDetailPage from "@/page/Instructor/ClassDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
-import StudentCoursesPage from "@/page/Students/StudentCoursesPage";
-import StudentMyCoursesPage from "@/page/Students/StudentMyCoursesPage";
-import StudentCourseDetailPage from "@/page/Students/StudentCourseDetailPage";
+import StudentClassesPage from "@/page/Students/StudentClassesPage";
+import StudentMyCoursesPage from "@/page/Students/StudentMyClassesPage";
+import StudentCourseDetailPage from "@/page/Students/StudentClassDetailPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
 import AdminClassPage from "@/page/Admin/AdminClassPage";
 import UserManagementPage from "@/page/Admin/UserManagementPage";
@@ -63,7 +63,7 @@ const AppRouter = () => {
       {/* Protected Student routes */}
       <Route element={<ProtectedRoute allowedRoles={["Student"]} />}>
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-        <Route path="/student/courses" element={<StudentCoursesPage />} />
+        <Route path="/student/classes" element={<StudentClassesPage />} />
         <Route
           path="/student/course/:courseId"
           element={<StudentCourseDetailPage />}
