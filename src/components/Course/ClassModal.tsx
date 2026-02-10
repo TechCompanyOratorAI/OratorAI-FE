@@ -229,7 +229,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           {/* Course Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course
+              Course <span className="text-red-500">*</span>
             </label>
             <select
               name="courseId"
@@ -260,7 +260,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           {/* Class Code */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Class Code
+              Class Code <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -280,7 +280,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           {/* Max Students */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Students
+              Max Students <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -301,7 +301,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           {/* Max Group Members */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Group Members
+              Max Group Members <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -319,7 +319,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
             {/* Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Start Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -338,7 +338,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
             {/* End Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                End Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -359,7 +359,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           {/* Enroll Key */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Enroll Key
+              Enroll Key <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -380,7 +380,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Key Expires At
+                Key Expires At <span className="text-red-500">*</span>
               </label>
               <input
                 type="datetime-local"
@@ -399,7 +399,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Key Max Uses
+                Key Max Uses <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
