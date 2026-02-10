@@ -52,6 +52,25 @@ export const CLASS_DETAIL_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}`;
 //Enroll class endpoints
 export const ENROLL_CLASS_BY_KEY_ENDPOINT = `${BASE_URL}/api/v1/enrollments/join`;
+//Group endpoints
+export const GET_ALL_GROUPS_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/groups/classes/${classId}`;
+export const CREATE_GROUP_ENDPOINT = `${BASE_URL}/api/v1/groups`;
+export const UPDATE_GROUP_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}`;
+export const DELETE_GROUP_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}`;
+export const GET_MY_GROUP_ENDPOINT = `${BASE_URL}/api/v1/groups/my`;
+export const JOIN_GROUP_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/join`;
+export const LEAVE_GROUP_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/leave`;
+export const REMOVE_MEMBER_FROM_GROUP_ENDPOINT = (
+  groupId: string,
+  userId: string,
+) => `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/remove`;
+export const CHANGE_LEADER_OF_GROUP_ENDPOINT = (groupId: string, userId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/promote`;
 
 
 
