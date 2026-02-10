@@ -180,7 +180,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           {/* Course Code */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Code
+              Course Code <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -200,7 +200,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           {/* Major Code */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Major Code
+              Major Code <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -219,7 +219,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           {/* Course Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Name
+              Course Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -239,7 +239,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               name="description"
@@ -261,7 +261,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
             {/* Semester */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Semester
+                Semester <span className="text-red-500">*</span>
               </label>
               <select
                 name="semester"
@@ -271,7 +271,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   errors.semester ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value="">Select Semester</option>
+                <option value="">Select Semester </option>
                 <option value="Fall 2026">Fall 2026</option>
                 <option value="Spring 2026">Spring 2026</option>
                 <option value="Summer 2026">Summer 2026</option>
@@ -287,7 +287,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
             {/* Academic Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Academic Year
+                Academic Year <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -312,7 +312,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
             {/* Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Start Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -331,7 +331,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
             {/* End Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                End Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
