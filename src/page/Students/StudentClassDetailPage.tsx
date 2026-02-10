@@ -18,7 +18,6 @@ import {
 import Toast from "@/components/Toast/Toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
-import { fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
 import { logout } from "@/services/features/auth/authSlice";
 import {
   fetchGroupsByClass,
@@ -41,7 +40,6 @@ const StudentClassDetailPage: React.FC = () => {
     loading,
     error,
   } = useAppSelector((state) => state.class);
-  const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
   const { user } = useAppSelector((state) => state.auth);
   const {
     groups,
@@ -71,7 +69,6 @@ const StudentClassDetailPage: React.FC = () => {
   useEffect(() => {
     if (classIdNumber) {
       dispatch(fetchClassDetail(classIdNumber));
-      dispatch(fetchEnrolledClasses());
       dispatch(fetchGroupsByClass(classIdNumber));
       dispatch(fetchMyGroup());
     }
@@ -92,7 +89,13 @@ const StudentClassDetailPage: React.FC = () => {
   }, []);
 
   const isClassEnrolled = (targetClassId: number): boolean => {
-    return enrolledClassIds.includes(targetClassId);
+    if (!classDetail || !user?.userId) return false;
+    return (
+      classDetail.classId === targetClassId &&
+      !!classDetail.enrollments?.some(
+        (enrollment: any) => enrollment.studentId === user.userId,
+      )
+    );
   };
 
   const handleLogout = () => {
@@ -375,11 +378,16 @@ const StudentClassDetailPage: React.FC = () => {
   const courseInfo = classDetail.course;
   const classTitle = classDetail.className || classDetail.classCode;
   const enrollmentCount =
-    classDetail.enrollments?.length ?? classDetail.enrollmentCount ?? 0;
+    classDetail.totalStudents ??
+    classDetail.enrollmentCount ??
+    classDetail.enrollments?.length ??
+    0;
   const groupLimit =
     classDetail.maxGroupMembers ?? groupClassInfo?.maxGroupMembers ?? null;
 
   const groupsCount = groups.length;
+  const topics =
+    classDetail.topics ?? classDetail.course?.topics ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 relative">
@@ -536,7 +544,7 @@ const StudentClassDetailPage: React.FC = () => {
                     </div>
                     <div className="rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-sm">
                       <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
-                        Enrolled
+                        Enrolled students
                       </p>
                       <div className="flex items-center gap-2 text-slate-900 font-semibold">
                         <BookOpen className="w-4 h-4 text-amber-600" />
@@ -557,6 +565,82 @@ const StudentClassDetailPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="bg-white/95 rounded-3xl border border-sky-100/80 shadow-lg shadow-sky-100/40 p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-sky-600" />
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                        Presentation topics
+                      </p>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Topics for this class
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="text-xs font-semibold text-sky-700 bg-sky-50 rounded-full px-3 py-1">
+                    {topics.length} topics
+                  </div>
+                </div>
+
+                {topics.length > 0 ? (
+                  <div className="space-y-3">
+                    {topics.map((topic) => (
+                      <div
+                        key={topic.topicId}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:px-5 sm:py-4"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                              {topic.sequenceNumber}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Topic {topic.sequenceNumber}
+                              </p>
+                              <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
+                                {topic.topicName}
+                              </h4>
+                              {topic.description && (
+                                <p className="mt-1 text-sm text-slate-600 max-w-3xl">
+                                  {topic.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                            {topic.dueDate && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
+                                <Calendar className="w-3 h-3" />
+                                Due{" "}
+                                {new Date(topic.dueDate).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  },
+                                )}
+                              </span>
+                            )}
+                            {topic.maxDurationMinutes && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
+                                {topic.maxDurationMinutes} mins
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600 bg-slate-50">
+                    No topics have been assigned yet. Your instructor will add
+                    presentation topics here when ready.
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/95 rounded-3xl border border-sky-100/80 shadow-lg shadow-sky-100/40 p-6">
@@ -678,6 +762,8 @@ const StudentClassDetailPage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+
             </div>
 
             <div className="space-y-6">
@@ -755,6 +841,12 @@ const StudentClassDetailPage: React.FC = () => {
                       {classDetail.maxStudents
                         ? `/${classDetail.maxStudents}`
                         : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-slate-700">
+                    <span>Topics</span>
+                    <span className="font-semibold text-slate-900">
+                      {classDetail.topics?.length || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-slate-700">

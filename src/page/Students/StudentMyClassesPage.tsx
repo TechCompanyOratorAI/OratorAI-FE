@@ -167,7 +167,7 @@ const StudentMyClassesPage: React.FC = () => {
                 to="/student/dashboard"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900"
               >
-                My Learning
+                Courses
               </Link>
               <Link
                 to="/student/my-class"
@@ -246,15 +246,15 @@ const StudentMyClassesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white">
             <nav className="px-4 py-3 space-y-1">
               <Link
                 to="/student/dashboard"
                 className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
               >
-                My Learning
+                Courses
               </Link>
               <Link
                 to="/student/my-class"
@@ -294,8 +294,8 @@ const StudentMyClassesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Search + Action */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+          {/* Search */}
+          <div className="flex mb-8">
             <div className="relative flex-1 w-full sm:max-w-[448px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -304,17 +304,6 @@ const StudentMyClassesPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Button
-                text="Browse Classes"
-                variant="primary"
-                fontSize="14px"
-                borderRadius="6px"
-                paddingWidth="16px"
-                paddingHeight="8px"
-                onClick={() => navigate("/student/classes")}
               />
             </div>
           </div>
@@ -343,7 +332,7 @@ const StudentMyClassesPage: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-4">
                     {searchQuery
                       ? "Try adjusting your search terms"
-                      : "Browse available classes and enroll to get started"}
+                      : "Go to the Courses tab to find classes and enroll to get started."}
                   </p>
                 </div>
               ) : (

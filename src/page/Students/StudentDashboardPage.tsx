@@ -2,82 +2,30 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
-import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import {
-  Upload,
+  Search,
+  GraduationCap,
+  BookOpen,
+  Calendar,
+  Users,
   CheckCircle2,
-  FileText,
-  Clock,
-  ArrowRight,
   Menu,
   X,
   LogOut,
   Bell,
   ChevronDown,
-  Loader2,
 } from "lucide-react";
-import { Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
-import {
-  fetchPresentations,
-  setCurrentPresentation,
-} from "@/services/features/presentation/presentationSlice";
-
-// Interfaces based on API response
-interface Topic {
-  topicId: number;
-  topicName: string;
-  courseId?: number;
-}
-
-interface AudioRecord {
-  audioId: number;
-  presentationId: number;
-  filePath: string;
-  fileName: string;
-  fileFormat: string;
-  fileSizeBytes: number;
-  durationSeconds: number | null;
-  sampleRate: number | null;
-  recordingMethod: string;
-  uploadedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Presentation {
-  presentationId: number;
-  studentId: number;
-  courseId: number;
-  classId: number | null;
-  topicId: number;
-  groupCode: string | null;
-  title: string;
-  description: string;
-  submissionDate: string | null;
-  status: "draft" | "processing" | "submitted" | "analyzed";
-  durationSeconds: number | null;
-  visibility: string;
-  versionNumber: number;
-  createdAt: string;
-  updatedAt: string;
-  topic?: Topic;
-  audioRecord?: AudioRecord;
-}
-
-interface Recording extends Presentation {
-  key: string;
-  courseName: string;
-}
+import { fetchCourses } from "@/services/features/course/courseSlice";
+// Enrollment by course is no longer used for students
 
 const StudentDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const { presentations, loading, error } = useAppSelector(
-    (state) => state.presentation
+  const { courses, loading, error, pagination } = useAppSelector(
+    (state) => state.course,
   );
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -89,17 +37,13 @@ const StudentDashboardPage: React.FC = () => {
     type: "success" | "error" | "info";
   } | null>(null);
 
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch presentations on mount
   useEffect(() => {
-    dispatch(fetchPresentations())
-      .unwrap()
-      .catch((err: string) => {
-        setToast({ message: err, type: "error" });
-      });
-  }, [dispatch]);
+    dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -124,141 +68,31 @@ const StudentDashboardPage: React.FC = () => {
     ? `${user.firstName} ${user.lastName}`.trim()
     : "Student";
 
-  const handlePresentationClick = (presentation: Presentation) => {
-    setSelectedPresentation(presentation);
-    dispatch(setCurrentPresentation(presentation));
-    setIsUploadModalOpen(true);
-  };
+  const filteredCourses = courses.filter((course) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const instructorNames = (course.instructors || course.instructor
+      ? (course.instructors || [course.instructor])
+          .filter(Boolean)
+          .map(
+            (inst) =>
+              `${inst?.firstName || ""} ${inst?.lastName || ""}`.toLowerCase(),
+          )
+          .join(" ")
+      : ""
+    ).toLowerCase();
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+    return (
+      course.courseName.toLowerCase().includes(query) ||
+      course.courseCode.toLowerCase().includes(query) ||
+      (course.majorCode || "").toLowerCase().includes(query) ||
+      instructorNames.includes(query)
+    );
+  });
 
-  const getStatusConfig = (status: string) => {
-    const configs: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-      draft: {
-        color: "bg-gray-50 text-gray-700 border-gray-200",
-        icon: <FileText className="w-3.5 h-3.5" />,
-        label: "Draft",
-      },
-      processing: {
-        color: "bg-orange-50 text-orange-700 border-orange-200",
-        icon: <Clock className="w-3.5 h-3.5 animate-spin" />,
-        label: "Processing",
-      },
-      submitted: {
-        color: "bg-blue-50 text-blue-700 border-blue-200",
-        icon: <Clock className="w-3.5 h-3.5" />,
-        label: "Submitted",
-      },
-      analyzed: {
-        color: "bg-green-50 text-green-700 border-green-200",
-        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-        label: "Analyzed",
-      },
-    };
-    return configs[status] || configs.draft;
-  };
-
-  const columns: ColumnsType<Recording> = [
-    {
-      title: "Presentation Title",
-      dataIndex: "title",
-      key: "title",
-      width: 300,
-      render: (text: string, record: Recording) => (
-        <div
-          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 -mx-3 px-3 py-2 rounded-lg transition-colors"
-          onClick={() => handlePresentationClick(record)}
-        >
-          <div className="w-9 h-9 bg-gray-100 rounded flex items-center justify-center">
-            <FileText className="w-5 h-5 text-gray-600" />
-          </div>
-          <div>
-            <span className="text-sm text-gray-900 block">{text}</span>
-            {record.topic && (
-              <span className="text-xs text-gray-500">{record.topic.topicName}</span>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Course",
-      dataIndex: "courseName",
-      key: "courseName",
-      width: 150,
-      render: (text: string) => (
-        <span className="text-sm text-gray-700">{text || "N/A"}</span>
-      ),
-    },
-    {
-      title: "Date",
-      dataIndex: "createdAt",
-      key: "date",
-      width: 130,
-      render: (date: string) => (
-        <span className="text-sm text-gray-700">{formatDate(date)}</span>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      width: 140,
-      render: (status: string) => {
-        const config = getStatusConfig(status);
-        return (
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded border ${config.color}`}>
-            {config.icon}
-            <span className="text-xs font-medium">{config.label}</span>
-          </div>
-        );
-      },
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: 180,
-      align: "right",
-      render: (_, record) => (
-        <div className="flex justify-end">
-          <Button
-            text={record.status === "analyzed" ? "View Report" : record.status === "draft" ? "Upload" : "Check Status"}
-            variant={record.status === "analyzed" ? "primary" : record.status === "draft" ? "primary" : "secondary"}
-            fontSize="14px"
-            borderRadius="6px"
-            paddingWidth="12px"
-            paddingHeight="6px"
-            onClick={() => {
-              handlePresentationClick(record);
-            }}
-          />
-        </div>
-      ),
-    },
-  ];
-
-  // Transform presentations to table data
-  const tableData: Recording[] = presentations.map((presentation) => ({
-    ...presentation,
-    key: presentation.presentationId.toString(),
-    courseName: presentation.topic?.courseId
-      ? `Course ${presentation.topic.courseId}`
-      : "N/A",
-  }));
-
-  // Calculate statistics
   const stats = {
-    total: presentations.length,
-    analyzed: presentations.filter((p) => p.status === "analyzed").length,
-    processing: presentations.filter((p) => p.status === "processing" || p.status === "submitted").length,
-    draft: presentations.filter((p) => p.status === "draft").length,
+    total: courses.length,
+    active: courses.filter((c) => c.isActive).length,
   };
 
   return (
@@ -272,7 +106,9 @@ const StudentDashboardPage: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">E</span>
               </div>
-              <span className="text-lg font-semibold text-gray-900">OratorAI</span>
+              <span className="text-lg font-semibold text-gray-900">
+                OratorAI
+              </span>
             </div>
 
             {/* Desktop Navigation */}
@@ -281,7 +117,7 @@ const StudentDashboardPage: React.FC = () => {
                 to="/student/dashboard"
                 className="text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
               >
-                My Learning
+                Courses
               </Link>
               <Link
                 to="/student/my-class"
@@ -368,7 +204,7 @@ const StudentDashboardPage: React.FC = () => {
                 to="/student/dashboard"
                 className="block px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg"
               >
-                My Learning
+                Courses
               </Link>
               <Link
                 to="/student/my-class"
@@ -394,91 +230,72 @@ const StudentDashboardPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.firstName || "Student"}!
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Track your learning progress and improve your presentation skills.
-            </p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <Button
-              text="Upload New Presentation"
-              variant="primary"
-              fontSize="14px"
-              borderRadius="8px"
-              paddingWidth="20px"
-              paddingHeight="10px"
-              icon={<Upload className="w-5 h-5" />}
-              iconPosition="left"
-              onClick={() => {
-                // For now, redirect to feedback page where user can see all presentations
-                navigate("/student/feedback");
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600">Total Presentations</span>
-              <FileText className="w-5 h-5 text-blue-500" />
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                Find your course
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600">
+                Browse available courses and enroll in the ones that fit you.
+              </p>
             </div>
-            <span className="text-3xl font-bold text-gray-900">{stats.total}</span>
-            <p className="text-xs text-gray-500 mt-2">All time submissions</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600">Analyzed</span>
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900">{stats.analyzed}</span>
-            <p className="text-xs text-green-600 mt-2">Completed analysis</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600">Processing</span>
-              <Clock className="w-5 h-5 text-orange-500" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900">{stats.processing}</span>
-            <p className="text-xs text-orange-600 mt-2">In progress</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600">Drafts</span>
-              <FileText className="w-5 h-5 text-gray-400" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900">{stats.draft}</span>
-            <p className="text-xs text-gray-500 mt-2">Pending upload</p>
-          </div>
-        </div>
-
-        {/* Recent Recordings */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Recent Presentations</h2>
-            <Link
-              to="/student/feedback"
-              className="text-sm text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
-            >
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
 
+          {/* Search and Stats */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+            {/* Search */}
+            <div className="relative flex-1 w-full lg:max-w-[448px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by course name, code, major, or instructor..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4 text-sky-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Courses</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {stats.total}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Active Courses</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {stats.active}
+                  </p>
+                </div>
+              </div>
+              {/* Enrolled courses card removed because course enrollment is no longer used */}
+            </div>
+          </div>
+
+          {/* Course List */}
           {loading ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 flex flex-col items-center justify-center">
-              <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-4" />
-              <p className="text-gray-600">Loading presentations...</p>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-600">Loading courses...</p>
+              </div>
             </div>
           ) : error ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 flex flex-col items-center justify-center">
+            <div className="bg-white rounded-2xl border border-red-200 p-6 text-center">
               <p className="text-red-600 mb-4">{error}</p>
               <Button
                 text="Retry"
@@ -487,56 +304,176 @@ const StudentDashboardPage: React.FC = () => {
                 borderRadius="8px"
                 paddingWidth="16px"
                 paddingHeight="8px"
-                onClick={() => dispatch(fetchPresentations())}
+                onClick={() =>
+                  dispatch(fetchCourses({ page: currentPage, limit: pageSize }))
+                }
               />
             </div>
-          ) : presentations.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 flex flex-col items-center justify-center">
-              <FileText className="w-16 h-16 text-gray-300 mb-4" />
-              <p className="text-gray-600 mb-2">No presentations yet</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Upload your first presentation to get started
+          ) : filteredCourses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium text-gray-900 mb-2">
+                No courses found
               </p>
-              <Button
-                text="Upload Presentation"
-                variant="primary"
-                fontSize="14px"
-                borderRadius="8px"
-                paddingWidth="20px"
-                paddingHeight="10px"
-                onClick={() => navigate("/student/feedback")}
-              />
+              <p className="text-sm text-gray-600">
+                Try adjusting your search keywords.
+              </p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-              <Table
-                columns={columns}
-                dataSource={tableData}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-                className="[&_.ant-table-thead>tr>th]:bg-gray-50 [&_.ant-table-thead>tr>th]:text-gray-700 [&_.ant-table-thead>tr>th]:font-semibold [&_.ant-table-thead>tr>th]:text-sm [&_.ant-table-thead>tr>th]:border-b [&_.ant-table-thead>tr>th]:px-3 [&_.ant-table-thead>tr>th]:sm:px-6 [&_.ant-table-thead>tr>th]:py-3 [&_.ant-table-thead>tr>th]:sm:py-4 [&_.ant-table-tbody>tr>td]:px-3 [&_.ant-table-tbody>tr>td]:sm:px-6 [&_.ant-table-tbody>tr>td]:py-3 [&_.ant-table-tbody>tr>td]:sm:py-4 [&_.ant-table-tbody>tr]:border-b [&_.ant-table-tbody>tr]:border-gray-100 [&_.ant-table-tbody>tr:hover]:bg-gray-50"
-                onRow={(record) => ({
-                  onClick: () => handlePresentationClick(record),
-                  style: { cursor: "pointer" },
-                })}
-              />
+            <div className="space-y-6">
+              {filteredCourses.map((course) => {
+                const instructorNames = course.instructors?.length
+                  ? course.instructors
+                      .map(
+                        (inst) =>
+                          `${inst.firstName || ""} ${inst.lastName || ""}`.trim() ||
+                          inst.username,
+                      )
+                      .join(", ")
+                  : course.instructor
+                    ? `${course.instructor.firstName || ""} ${
+                        course.instructor.lastName || ""
+                      }`.trim() || course.instructor.username
+                    : "No instructor assigned";
+
+                return (
+                  <div
+                    key={course.courseId}
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <div className="p-5">
+                      {/* Header */}
+                      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                course.isActive
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {course.isActive ? "Active" : "Inactive"}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {course.semester} • {course.academicYear}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-1">
+                            {course.courseName}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {course.courseCode} • Major: {course.majorCode}
+                          </p>
+                          {course.description && (
+                            <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                              {course.description}
+                            </p>
+                          )}
+                        </div>
+                        {/* Enrolled chip removed: students enroll at class level only */}
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <Users className="w-4 h-4 text-gray-600" />
+                          <div>
+                            <p className="text-xs text-gray-600">Instructor</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {instructorNames}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <BookOpen className="w-4 h-4 text-gray-600" />
+                          <div>
+                            <p className="text-xs text-gray-600">Enrollments</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {course.enrollmentCount ?? 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <Calendar className="w-4 h-4 text-gray-600" />
+                          <div>
+                            <p className="text-xs text-gray-600">Schedule</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(course.startDate).toLocaleDateString()}{" "}
+                              -{" "}
+                              {new Date(course.endDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                        <Button
+                          text="View Classes"
+                          variant="primary"
+                          fontSize="14px"
+                          borderRadius="6px"
+                          paddingWidth="16px"
+                          paddingHeight="8px"
+                          onClick={() =>
+                            navigate(`/student/classes?courseId=${course.courseId}`)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && !error && pagination.total > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-8 px-4 py-4 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="text-sm text-gray-600">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </div>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const nextSize = parseInt(e.target.value);
+                      setPageSize(nextSize);
+                      setCurrentPage(1);
+                    }}
+                    className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={pagination.page <= 1}
+                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(pagination.totalPages, prev + 1),
+                    )
+                  }
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
       </main>
-
-      {/* Upload Modal */}
-      {selectedPresentation && (
-        <PresentationUploadModal
-          isOpen={isUploadModalOpen}
-          onClose={() => {
-            setIsUploadModalOpen(false);
-            setSelectedPresentation(null);
-          }}
-          presentationId={selectedPresentation.presentationId}
-          presentationTitle={selectedPresentation.title}
-        />
-      )}
 
       {/* Toast Notification */}
       {toast && (

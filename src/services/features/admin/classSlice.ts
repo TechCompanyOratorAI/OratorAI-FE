@@ -9,6 +9,7 @@ import {
   REMOVE_INSTRUCTOR_FROM_CLASS_ENDPOINT,
   GET_CLASSES_BY_INSTRUCTOR_ENDPOINT,
   CLASS_DETAIL_ENDPOINT,
+  GET_CLASSES_BY_COURSE_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
@@ -30,6 +31,7 @@ export interface CourseInfo {
   courseName: string;
   semester?: string;
   academicYear?: number;
+  topics?: TopicInfo[];
 }
 
 export interface InstructorInfo {
@@ -38,6 +40,15 @@ export interface InstructorInfo {
   firstName?: string;
   lastName?: string;
   email?: string;
+}
+
+export interface TopicInfo {
+  topicId: number;
+  topicName: string;
+  description?: string;
+  sequenceNumber: number;
+  dueDate?: string;
+  maxDurationMinutes?: number;
 }
 
 export interface ClassData {
@@ -61,6 +72,8 @@ export interface ClassData {
   activeKeys?: EnrollKey[];
   enrollmentCount?: number;
   activeKeyCount?: number;
+  totalStudents?: number;
+  topics?: TopicInfo[];
 }
 
 export interface ClassResponse {
@@ -116,6 +129,24 @@ export const fetchClassesByInstructor = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           "Failed to fetch classes by instructor",
+      );
+    }
+  },
+);
+
+// Fetch classes by course (for students viewing classes of a selected course)
+export const fetchClassesByCourse = createAsyncThunk(
+  "class/fetchClassesByCourse",
+  async (courseId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get<ClassResponse>(
+        GET_CLASSES_BY_COURSE_ENDPOINT(courseId.toString()),
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch classes for this course",
       );
     }
   },
@@ -316,6 +347,37 @@ const classSlice = createSlice({
       .addCase(fetchClasses.rejected, (state, action) => {
         state.loading = false;
         state.error = (action.payload as string) || "Failed to fetch classes";
+      });
+
+    // Fetch classes by course
+    builder
+      .addCase(fetchClassesByCourse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchClassesByCourse.fulfilled,
+        (state, action: PayloadAction<ClassResponse>) => {
+          state.loading = false;
+          const data = Array.isArray(action.payload.data)
+            ? action.payload.data
+            : [action.payload.data];
+          state.classes = data;
+          // Course-specific classes API does not return pagination;
+          // set a simple single-page pagination state.
+          state.pagination = {
+            total: data.length,
+            page: 1,
+            limit: data.length || 1,
+            totalPages: 1,
+          };
+        },
+      )
+      .addCase(fetchClassesByCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) ||
+          "Failed to fetch classes for this course";
       });
 
     // Create class
