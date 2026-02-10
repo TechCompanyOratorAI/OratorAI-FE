@@ -131,7 +131,7 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out lg:sticky lg:top-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           } ${collapsed ? "lg:w-20" : "lg:w-64"
           }`}
       >

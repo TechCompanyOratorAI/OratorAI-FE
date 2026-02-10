@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
 import {
@@ -16,7 +16,10 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { fetchClasses } from "@/services/features/admin/classSlice";
+import {
+  fetchClasses,
+  fetchClassesByCourse,
+} from "@/services/features/admin/classSlice";
 import {
   enrollClassByKey,
   fetchEnrolledClasses,
@@ -42,6 +45,7 @@ interface ClassItem {
 const StudentClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     classes: apiClasses,
     loading,
@@ -67,11 +71,19 @@ const StudentClassesPage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  // Fetch All Classes and enrolled courses on component mount
+  const courseIdFilter = searchParams.get("courseId");
+  const courseIdNumber = courseIdFilter ? parseInt(courseIdFilter, 10) : null;
+
+  // Fetch classes: either all classes or classes of a specific course,
+  // and enrolled classes for the current student.
   useEffect(() => {
-    dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
+    if (courseIdNumber) {
+      dispatch(fetchClassesByCourse(courseIdNumber));
+    } else {
+      dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
+    }
     dispatch(fetchEnrolledClasses());
-  }, [dispatch, currentPage, pageSize]);
+  }, [dispatch, currentPage, pageSize, courseIdNumber]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -235,13 +247,21 @@ const StudentClassesPage: React.FC = () => {
             <nav className="hidden md:flex items-center gap-8">
               <Link
                 to="/student/dashboard"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className={
+                  courseIdNumber
+                    ? "text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
+                    : "text-sm font-medium text-gray-600 hover:text-gray-900"
+                }
               >
-                My Learning
+                Courses
               </Link>
               <Link
                 to="/student/my-class"
-                className="text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
+                className={
+                  courseIdNumber
+                    ? "text-sm font-medium text-gray-600 hover:text-gray-900"
+                    : "text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
+                }
               >
                 My Classes
               </Link>
@@ -315,13 +335,27 @@ const StudentClassesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                All Classes
+                {courseIdNumber ? "Classes in this course" : "All Classes"}
               </h1>
               <p className="text-sm sm:text-base text-gray-600">
-                Browse and explore available classes to improve your
-                presentation skills.
+                {courseIdNumber
+                  ? "These are classes that belong to the selected course."
+                  : "Browse and explore available classes to improve your presentation skills."}
               </p>
             </div>
+            {courseIdNumber && (
+              <div className="w-full sm:w-auto">
+                <Button
+                  text="View all classes"
+                  variant="secondary"
+                  fontSize="14px"
+                  borderRadius="6px"
+                  paddingWidth="16px"
+                  paddingHeight="8px"
+                  onClick={() => navigate("/student/classes")}
+                />
+              </div>
+            )}
           </div>
 
           {/* Search and Filters */}
