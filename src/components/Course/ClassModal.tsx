@@ -110,6 +110,17 @@ const ClassModal: React.FC<ClassModalProps> = ({
     if (!formData.classCode.trim()) {
       newErrors.classCode = "Class code is required";
     }
+    if (formData.maxStudents < 1 || formData.maxStudents > 35) {
+      newErrors.maxStudents = "Max students must be between 1 and 35";
+    }
+    
+    if (
+      formData.maxGroupMembers !== null &&  
+      (formData.maxGroupMembers <= 0 || Number.isNaN(formData.maxGroupMembers))
+    ) {
+      newErrors.maxGroupMembers = "Max group members must be greater than 0";
+    }
+    
     if (!formData.startDate) {
       newErrors.startDate = "Start date is required";
     }
