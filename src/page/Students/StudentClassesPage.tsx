@@ -46,12 +46,15 @@ const StudentClassesPage: React.FC = () => {
     classes: apiClasses,
     loading,
     error,
+    pagination,
   } = useAppSelector((state) => state.class);
   const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
   const { user } = useAppSelector((state) => state.auth);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All Classes");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -66,9 +69,13 @@ const StudentClassesPage: React.FC = () => {
 
   // Fetch All Classes and enrolled courses on component mount
   useEffect(() => {
-    dispatch(fetchClasses({}));
+    dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
     dispatch(fetchEnrolledClasses());
-  }, [dispatch]);
+  }, [dispatch, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedFilter]);
 
   // Show error toast if there's an error
   useEffect(() => {
@@ -503,6 +510,51 @@ const StudentClassesPage: React.FC = () => {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {!loading && !error && pagination.total > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-8 px-4 py-4 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="text-sm text-gray-600">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </div>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const nextSize = parseInt(e.target.value);
+                      setPageSize(nextSize);
+                      setCurrentPage(1);
+                    }}
+                    className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={pagination.page <= 1}
+                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(pagination.totalPages, prev + 1),
+                    )
+                  }
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
 
