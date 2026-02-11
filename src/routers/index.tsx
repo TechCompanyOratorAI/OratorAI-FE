@@ -27,6 +27,7 @@ import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
 import AdminCoursePage from "@/page/Admin/AdminCoursePage";
 import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
+import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 
 const AppRouter = () => {
   return (
@@ -106,6 +107,7 @@ const AppRouter = () => {
         <Route path="/admin/user-management" element={<UserManagementPage />} />
         <Route path="/admin/manage-classes" element={<AdminClassPage />} />
         <Route path="/admin/manage-courses" element={<AdminCoursePage />} />
+        <Route path="/admin/manage-departments" element={<AdminDepartmentPage />} />
         <Route
           path="/admin/ai-configuration"
           element={<AIConfigurationPage />}

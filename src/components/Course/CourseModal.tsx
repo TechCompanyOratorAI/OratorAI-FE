@@ -9,12 +9,17 @@ interface CourseModalProps {
   onSubmit: (courseData: any) => void;
   initialData?: CourseData;
   isLoading?: boolean;
+  departments?: Array<{
+    departmentId: number;
+    departmentCode: string;
+    departmentName: string;
+  }>;
 }
 
 interface CourseFormData {
   courseCode: string;
-  majorCode: string;
   courseName: string;
+  departmentId: number;
   description: string;
   semester: string;
   academicYear: number;
@@ -28,6 +33,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
   onSubmit,
   initialData,
   isLoading = false,
+  departments = [],
 }) => {
   const getTodayISO = () => {
     const now = new Date();
@@ -39,8 +45,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
 
   const [formData, setFormData] = useState<CourseFormData>({
     courseCode: "",
-    majorCode: "",
     courseName: "",
+    departmentId: 0,
     description: "",
     semester: "",
     academicYear: new Date().getFullYear(),
@@ -57,8 +63,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (initialData) {
       setFormData({
         courseCode: initialData.courseCode,
-        majorCode: initialData.majorCode,
         courseName: initialData.courseName,
+        departmentId: initialData.departmentId,
         description: initialData.description,
         semester: initialData.semester,
         academicYear: initialData.academicYear,
@@ -68,8 +74,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
     } else {
       setFormData({
         courseCode: "",
-        majorCode: "",
         courseName: "",
+        departmentId: departments.length > 0 ? departments[0].departmentId : 0,
         description: "",
         semester: "",
         academicYear: new Date().getFullYear(),
@@ -78,7 +84,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
       });
     }
     setErrors({});
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, departments]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof CourseFormData, string>> = {};
@@ -87,8 +93,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
     if (!formData.courseCode.trim()) {
       newErrors.courseCode = "Course code is required";
     }
-    if (!formData.majorCode.trim()) {
-      newErrors.majorCode = "Major code is required";
+    if (!formData.departmentId || Number.isNaN(formData.departmentId)) {
+      newErrors.departmentId = "Department is required";
     }
     if (!formData.courseName.trim()) {
       newErrors.courseName = "Course name is required";
@@ -133,7 +139,10 @@ const CourseModal: React.FC<CourseModalProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "academicYear" ? parseInt(value) || 0 : value,
+      [name]:
+        name === "academicYear" || name === "departmentId"
+          ? parseInt(value) || 0
+          : value,
     }));
     // Clear error for this field
     if (errors[name as keyof CourseFormData]) {
@@ -197,23 +206,31 @@ const CourseModal: React.FC<CourseModalProps> = ({
             )}
           </div>
 
-          {/* Major Code */}
+          {/* Department */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Major Code <span className="text-red-500">*</span>
+              Department <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              name="majorCode"
-              value={formData.majorCode}
+            <select
+              name="departmentId"
+              value={formData.departmentId}
               onChange={handleChange}
-              placeholder="e.g., SE"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.majorCode ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white ${
+                errors.departmentId ? "border-red-500" : "border-gray-300"
               }`}
-            />
-            {errors.majorCode && (
-              <p className="text-red-500 text-sm mt-1">{errors.majorCode}</p>
+            >
+              <option value={0}>Select department</option>
+              {departments.map((department) => (
+                <option
+                  key={department.departmentId}
+                  value={department.departmentId}
+                >
+                  {department.departmentCode} - {department.departmentName}
+                </option>
+              ))}
+            </select>
+            {errors.departmentId && (
+              <p className="text-red-500 text-sm mt-1">{errors.departmentId}</p>
             )}
           </div>
           {/* Course Name */}

@@ -490,10 +490,11 @@ const StudentClassDetailPage: React.FC = () => {
                 <div className="relative flex flex-col gap-6">
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${classDetail.status === "active"
-                        ? "bg-sky-100 text-sky-700"
-                        : "bg-slate-100 text-slate-600"
-                        }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                        classDetail.status === "active"
+                          ? "bg-sky-100 text-sky-700"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
                     >
                       {classDetail.status === "active" ? "Active" : "Inactive"}
                     </span>
@@ -580,7 +581,9 @@ const StudentClassDetailPage: React.FC = () => {
                 {topics.length > 0 ? (
                   <div className="space-y-3">
                     {topics.map((topic) => {
-                      const isTopicEnrolled = enrolledTopicIds.includes(topic.topicId);
+                      const isTopicEnrolled = enrolledTopicIds.includes(
+                        topic.topicId,
+                      );
                       return (
                         <div
                           key={topic.topicId}
@@ -628,9 +631,7 @@ const StudentClassDetailPage: React.FC = () => {
                               {/* Enroll Button */}
                               {isGroupEnrolled ? (
                                 isTopicEnrolled ? (
-                                  <span
-                                    className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2 text-xs font-semibold border border-emerald-200 cursor-default"
-                                  >
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2 text-xs font-semibold border border-emerald-200 cursor-default">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                     Enrolled
                                   </span>
@@ -658,7 +659,8 @@ const StudentClassDetailPage: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setToast({
-                                      message: "You need to enroll in this class first before enrolling in topics.",
+                                      message:
+                                        "You need to enroll in this class first before enrolling in topics.",
                                       type: "info",
                                     });
                                   }}
@@ -671,7 +673,9 @@ const StudentClassDetailPage: React.FC = () => {
                               {/* View Details Button */}
                               <button
                                 onClick={() =>
-                                  navigate(`/student/class/${classId}/topic/${topic.topicId}`)
+                                  navigate(
+                                    `/student/class/${classId}/topic/${topic.topicId}`,
+                                  )
                                 }
                                 className="inline-flex items-center gap-1 rounded-full bg-sky-50 text-sky-700 px-3 py-2 text-xs font-semibold border border-sky-200 hover:bg-sky-100 transition"
                               >
@@ -726,7 +730,9 @@ const StudentClassDetailPage: React.FC = () => {
                       <button
                         onClick={() => {
                           if (myGroupForClass.groupId) {
-                            dispatch(fetchGroupDetail(Number(myGroupForClass.groupId)));
+                            dispatch(
+                              fetchGroupDetail(Number(myGroupForClass.groupId)),
+                            );
                           }
                           setShowGroupDetail(true);
                         }}
@@ -746,7 +752,6 @@ const StudentClassDetailPage: React.FC = () => {
                   </div>
                 )}
 
-
                 <div className="grid gap-4 sm:grid-cols-2">
                   {groupLoading ? (
                     <p className="text-sm text-slate-600">Loading groups...</p>
@@ -761,10 +766,9 @@ const StudentClassDetailPage: React.FC = () => {
                       return (
                         <div
                           key={`${groupId ?? group.name}`}
-                          className={`flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg ${isMyGroup
-                            ? "ring-1 ring-emerald-200"
-                            : ""
-                            }`}
+                          className={`flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                            isMyGroup ? "ring-1 ring-emerald-200" : ""
+                          }`}
                           onClick={() => {
                             if (isMyGroup) {
                               dispatch(fetchGroupDetail(Number(groupId)));
@@ -790,13 +794,14 @@ const StudentClassDetailPage: React.FC = () => {
                                 )}
                               </div>
                               {/* Join/Full/Joined Status */}
-                              {!myGroupForClass && (
-                                group.isMember ? (
+                              {!myGroupForClass &&
+                                (group.isMember ? (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-200">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                     Joined
                                   </span>
-                                ) : memberCount >= (group.maxGroupMembers || groupLimit || 0) ? (
+                                ) : memberCount >=
+                                  (group.maxGroupMembers || groupLimit || 0) ? (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold border border-red-200">
                                     Full
                                   </span>
@@ -815,8 +820,7 @@ const StudentClassDetailPage: React.FC = () => {
                                   >
                                     Join
                                   </button>
-                                )
-                              )}
+                                ))}
                             </div>
                             {group.description && (
                               <p className="text-sm text-slate-600 mt-1">
@@ -841,8 +845,6 @@ const StudentClassDetailPage: React.FC = () => {
                   )}
                 </div>
               </div>
-
-
             </div>
 
             <div className="space-y-6">
@@ -857,6 +859,13 @@ const StudentClassDetailPage: React.FC = () => {
                       Details
                     </h3>
                   </div>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="font-semibold text-slate-900">
+                    {courseInfo?.courseCode && courseInfo?.courseName
+                      ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
+                      : "N/A"}
+                  </span>
                 </div>
                 <div className="space-y-3 text-sm text-slate-700">
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
@@ -889,14 +898,6 @@ const StudentClassDetailPage: React.FC = () => {
                     <span className="text-slate-600">Class Code</span>
                     <span className="font-semibold text-slate-900">
                       {classDetail.classCode}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-slate-600">Course</span>
-                    <span className="font-semibold text-slate-900">
-                      {courseInfo?.courseCode && courseInfo?.courseName
-                        ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
-                        : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -976,7 +977,7 @@ const StudentClassDetailPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-semibold text-slate-700">
-                  Group name
+                  Group name <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={groupName}

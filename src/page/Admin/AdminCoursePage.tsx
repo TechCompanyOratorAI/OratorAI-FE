@@ -8,7 +8,11 @@ import {
   deleteCourse,
   CourseData,
 } from "@/services/features/course/courseSlice";
-import { fetchInstructorByCourse } from "@/services/features/admin/adminSlice";
+import {
+  fetchInstructorByCourse,
+  fetchDepartments,
+  Department,
+} from "@/services/features/admin/adminSlice";
 import CourseModal from "@/components/Course/CourseModal";
 import InstructorModal from "@/components/Course/InstructorModal";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
@@ -36,7 +40,7 @@ const AdminCoursePage: React.FC = () => {
   const { courses, loading, error, pagination } = useSelector(
     (state: RootState) => state.course,
   );
-  const { users } = useSelector((state: RootState) => state.admin);
+  const { users, departments } = useSelector((state: RootState) => state.admin);
 
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isInstructorModalOpen, setIsInstructorModalOpen] = useState(false);
@@ -58,6 +62,10 @@ const AdminCoursePage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
   }, [dispatch, currentPage, pageSize]);
+
+  useEffect(() => {
+    dispatch(fetchDepartments());
+  }, [dispatch]);
 
   const handleCreateCourse = () => {
     setSelectedCourse(undefined);
@@ -196,20 +204,33 @@ const AdminCoursePage: React.FC = () => {
   }));
 
   // Filter courses
+  const departmentLookup = useMemo(() => {
+    return departments.reduce(
+      (acc, department) => {
+        acc[department.departmentId] = department;
+        return acc;
+      },
+      {} as Record<number, Department>,
+    );
+  }, [departments]);
+
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
+      const department = departmentLookup[course.departmentId];
+      const departmentText = department
+        ? `${department.departmentCode} ${department.departmentName}`
+        : "";
       const matchesSearch =
         course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (course.majorCode || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        departmentText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.departmentId.toString().includes(searchTerm.toLowerCase());
       const matchesSemester = filterSemester
         ? course.semester === filterSemester
         : true;
       return matchesSearch && matchesSemester;
     });
-  }, [courses, searchTerm, filterSemester]);
+  }, [courses, searchTerm, filterSemester, departmentLookup]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -420,7 +441,10 @@ const AdminCoursePage: React.FC = () => {
                             {course.courseCode}
                           </div>
                           <div className="text-xs text-slate-500">
-                            Major: {course.majorCode}
+                            Department:{" "}
+                            {departmentLookup[course.departmentId]
+                              ? `${departmentLookup[course.departmentId].departmentCode} - ${departmentLookup[course.departmentId].departmentName}`
+                              : course.departmentId}
                           </div>
                           <div className="text-slate-700 font-medium">
                             {course.courseName}
@@ -517,7 +541,6 @@ const AdminCoursePage: React.FC = () => {
             )}
             {!loading && !error && pagination.total > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
-                
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <div className="text-sm text-slate-600">
@@ -604,6 +627,7 @@ const AdminCoursePage: React.FC = () => {
         onSubmit={handleSubmitCourse}
         initialData={selectedCourse}
         isLoading={loading}
+        departments={departments}
       />
 
       {/* Instructor Modal */}

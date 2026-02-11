@@ -137,7 +137,7 @@ const AdminClassPage: React.FC = () => {
     setSelectedClass(classData);
     setIsInstructorModalOpen(true);
     // Fetch instructors for this specific class
-    await dispatch(fetchInstructorByClass(classData.classId.toString()));
+    await dispatch(fetchInstructorByClass(classData.courseId.toString()));
   };
 
   const handleAddInstructor = async (userId: number) => {
