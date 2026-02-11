@@ -1,6 +1,6 @@
-export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-// export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
 
 // Auth endpoints
@@ -60,6 +60,10 @@ export const ENROLL_CLASS_BY_KEY_ENDPOINT = `${BASE_URL}/api/v1/enrollments/join
 //Group endpoints
 export const GET_ALL_GROUPS_BY_CLASS_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/groups/classes/${classId}`;
+export const GET_MY_GROUP_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/groups/classes/${classId}/my-group`;
+export const GROUP_DETAIL_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}`;
 export const CREATE_GROUP_ENDPOINT = `${BASE_URL}/api/v1/groups`;
 export const UPDATE_GROUP_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}`;
@@ -91,7 +95,7 @@ export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (classId: string) =>
 // Enrollment endpoints (course-level enrollment removed; students enroll at class or topic level only)
 export const ENROLL_TOPIC_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
-export const GET_ENROLLED_TOPICS_ENDPOINT = `${BASE_URL}/api/v1/enrollments/topics`;
+export const GET_ENROLLED_TOPICS_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/topics`;
 export const DROP_TOPIC_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
 
@@ -100,6 +104,9 @@ export const GET_ENROLLED_CLASSES_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/
 
 // Presentation endpoints
 export const PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/presentations`;
+export const PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT = (classId: string, topicId: string) =>
+  `${BASE_URL}/api/v1/presentations?classId=${classId}&topicId=${topicId}`;
+export const CREATE_PRESENTATION_ENDPOINT = `${BASE_URL}/api/v1/presentations`;
 export const PRESENTATION_DETAIL_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}`;
 export const PRESENTATION_SLIDES_ENDPOINT = (presentationId: string) =>
@@ -108,3 +115,5 @@ export const PRESENTATION_MEDIA_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/media`;
 export const PRESENTATION_SUBMIT_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/submit`;
+export const TOPIC_PRESENTATIONS_ENDPOINT = (topicId: string) =>
+  `${BASE_URL}/api/v1/topics/${topicId}/presentations`;

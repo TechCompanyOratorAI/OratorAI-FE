@@ -20,6 +20,8 @@ import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
 import SettingsPage from "@/page/Admin/SettingsPage";
 import StudentSettingsPage from "@/page/Students/StudentSettingsPage";
 import FeedbackPage from "@/page/Students/FeedbackPage";
+import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
+import PresentationDetailPage from "@/page/Students/PresentationDetailPage";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
@@ -68,14 +70,25 @@ const AppRouter = () => {
           path="/student/course/:courseId"
           element={<StudentCourseDetailPage />}
         />
-
         <Route path="/student/my-class" element={<StudentMyCoursesPage />} />
         <Route
           path="/student/class/:classId"
           element={<StudentCourseDetailPage />}
         />
+        <Route
+          path="/student/topic/:topicId"
+          element={<StudentTopicDetailPage />}
+        />
+        <Route
+          path="/student/class/:classId/topic/:topicId"
+          element={<StudentTopicDetailPage />}
+        />
         <Route path="/student/feedback" element={<FeedbackPage />} />
         <Route path="/student/settings" element={<StudentSettingsPage />} />
+        <Route
+          path="/student/presentation/:presentationId"
+          element={<PresentationDetailPage />}
+        />
       </Route>
 
       {/* Protected Admin routes */}
