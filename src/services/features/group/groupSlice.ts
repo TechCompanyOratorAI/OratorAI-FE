@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
 import {
   GET_ALL_GROUPS_BY_CLASS_ENDPOINT,
+  GET_MY_GROUP_BY_CLASS_ENDPOINT,
   CREATE_GROUP_ENDPOINT,
   UPDATE_GROUP_ENDPOINT,
   DELETE_GROUP_ENDPOINT,
@@ -10,6 +11,7 @@ import {
   LEAVE_GROUP_ENDPOINT,
   REMOVE_MEMBER_FROM_GROUP_ENDPOINT,
   CHANGE_LEADER_OF_GROUP_ENDPOINT,
+  GROUP_DETAIL_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface GroupStudentMeta {
@@ -44,6 +46,7 @@ export interface Group {
   description?: string | null;
   students?: GroupStudent[];
   memberCount?: number;
+  maxGroupMembers?: number | null;
   isMember?: boolean;
   myRole?: string | null;
   class?: GroupClassInfo;
@@ -52,6 +55,8 @@ export interface Group {
 export interface GroupState {
   groups: Group[];
   myGroup: Group | null;
+  myGroupForClass: Group | null;
+  groupDetail: Group | null;
   classInfo: GroupClassInfo | null;
   isEnrolled: boolean;
   loading: boolean;
@@ -62,6 +67,8 @@ export interface GroupState {
 const initialState: GroupState = {
   groups: [],
   myGroup: null,
+  myGroupForClass: null,
+  groupDetail: null,
   classInfo: null,
   isEnrolled: false,
   loading: false,
@@ -126,6 +133,49 @@ export const fetchMyGroup = createAsyncThunk<
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || "Failed to fetch my group",
+    );
+  }
+});
+
+export const fetchMyGroupByClass = createAsyncThunk<
+  Group | null,
+  number,
+  { rejectValue: string }
+>("group/fetchMyGroupByClass", async (classId, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(
+      GET_MY_GROUP_BY_CLASS_ENDPOINT(classId.toString()),
+    );
+    const payload = response.data;
+    // API trả về {success, group: null, message} khi chưa có nhóm
+    // Hoặc {success, group: {...}} khi đã có nhóm
+    if (payload?.group === null) {
+      return null;
+    }
+    const data = payload?.data ?? payload?.group ?? payload;
+    return data || null;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch my group",
+    );
+  }
+});
+
+export const fetchGroupDetail = createAsyncThunk<
+  Group | null,
+  number,
+  { rejectValue: string }
+>("group/fetchGroupDetail", async (groupId, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(
+      GROUP_DETAIL_ENDPOINT(groupId.toString()),
+    );
+    const payload = response.data;
+    const data = payload?.data ?? payload?.group ?? payload;
+    return data || null;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch group detail",
     );
   }
 });
@@ -206,15 +256,15 @@ export const joinGroup = createAsyncThunk<
 });
 
 export const leaveGroup = createAsyncThunk<
-  Group | null,
+  { message: string } | null,
   string | number,
   { rejectValue: string }
 >("group/leaveGroup", async (groupId, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post(
+    const response = await axiosInstance.post<{ message: string }>(
       LEAVE_GROUP_ENDPOINT(groupId.toString()),
     );
-    return extractGroup(response.data);
+    return { message: response.data.message };
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || "Failed to leave group",
@@ -299,6 +349,32 @@ const groupSlice = createSlice({
       .addCase(fetchMyGroup.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch my group";
+      })
+      // Fetch my group by class
+      .addCase(fetchMyGroupByClass.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyGroupByClass.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myGroupForClass = action.payload;
+      })
+      .addCase(fetchMyGroupByClass.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch my group for class";
+      })
+      // Fetch group detail
+      .addCase(fetchGroupDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupDetail.fulfilled, (state, action) => {
+        state.loading = false;
+        state.groupDetail = action.payload;
+      })
+      .addCase(fetchGroupDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch group detail";
       })
       .addCase(createGroup.pending, (state) => {
         state.actionLoading = true;
@@ -387,6 +463,7 @@ const groupSlice = createSlice({
       .addCase(leaveGroup.fulfilled, (state) => {
         state.actionLoading = false;
         state.myGroup = null;
+        state.myGroupForClass = null;
       })
       .addCase(leaveGroup.rejected, (state, action) => {
         state.actionLoading = false;

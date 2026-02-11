@@ -58,6 +58,20 @@ export interface EnrolledClassesResponse {
   data: EnrolledClass[];
 }
 
+export interface EnrolledTopicInstructor {
+  userId: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface EnrolledTopicCourse {
+  courseId: number;
+  courseCode: string;
+  courseName: string;
+  instructors: EnrolledTopicInstructor[];
+}
+
 export interface EnrolledTopic {
   topicEnrollmentId: number;
   topicId: number;
@@ -67,18 +81,7 @@ export interface EnrolledTopic {
   dueDate: string;
   maxDurationMinutes: number;
   enrolledAt: string;
-  course: {
-    courseId: number;
-    courseCode: string;
-    courseName: string;
-    instructor: {
-      userId: number;
-      username: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-    };
-  };
+  course: EnrolledTopicCourse;
 }
 
 export interface EnrollClassResponse {

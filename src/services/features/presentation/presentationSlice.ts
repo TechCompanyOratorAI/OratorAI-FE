@@ -1,4 +1,4 @@
-import { PRESENTATIONS_ENDPOINT, PRESENTATION_MEDIA_ENDPOINT, PRESENTATION_SLIDES_ENDPOINT, PRESENTATION_SUBMIT_ENDPOINT } from "@/services/constant/apiConfig";
+import { PRESENTATIONS_ENDPOINT, CREATE_PRESENTATION_ENDPOINT, TOPIC_PRESENTATIONS_ENDPOINT, PRESENTATION_MEDIA_ENDPOINT, PRESENTATION_SLIDES_ENDPOINT, PRESENTATION_SUBMIT_ENDPOINT, PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT, PRESENTATION_DETAIL_ENDPOINT } from "@/services/constant/apiConfig";
 import axiosInstance from "@/services/constant/axiosInstance";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
@@ -47,6 +47,11 @@ interface Course {
   courseName: string;
 }
 
+interface Class {
+  classId: number;
+  classCode: string;
+}
+
 interface Presentation {
   presentationId: number;
   studentId: number;
@@ -68,6 +73,7 @@ interface Presentation {
   slides?: Slide[];
   student?: Student;
   course?: Course;
+  class?: Class;
 }
 
 interface PresentationResponse {
@@ -76,6 +82,24 @@ interface PresentationResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+interface CreatePresentationResponse {
+  success: boolean;
+  presentation: Presentation;
+}
+
+interface PresentationDetailResponse {
+  success: boolean;
+  presentation: Presentation;
+}
+
+interface CreatePresentationData {
+  classId: number;
+  topicId: number;
+  title: string;
+  description?: string;
+  groupCode?: string;
 }
 
 interface SlideResponse {
@@ -119,6 +143,8 @@ interface PresentationState {
   uploadProgress: number;
   error: string | null;
   currentPresentation: Presentation | null;
+  currentPresentationDetail: Presentation | null;
+  detailLoading: boolean;
 }
 
 const initialState: PresentationState = {
@@ -129,6 +155,8 @@ const initialState: PresentationState = {
   uploadProgress: 0,
   error: null,
   currentPresentation: null,
+  currentPresentationDetail: null,
+  detailLoading: false,
 };
 
 // Thunk to fetch presentations
@@ -140,6 +168,67 @@ export const fetchPresentations = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to fetch presentations");
+    }
+  }
+);
+
+// Thunk to fetch presentations by topic
+export const fetchPresentationsByTopic = createAsyncThunk(
+  "presentation/fetchPresentationsByTopic",
+  async (topicId: number, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<PresentationResponse>(
+        TOPIC_PRESENTATIONS_ENDPOINT(topicId.toString())
+      );
+      return { topicId, ...response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch presentations");
+    }
+  }
+);
+
+// Thunk to fetch presentations by classId and topicId
+export const fetchPresentationsByClassAndTopic = createAsyncThunk(
+  "presentation/fetchPresentationsByClassAndTopic",
+  async ({ classId, topicId }: { classId: number; topicId: number }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<PresentationResponse>(
+        PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT(classId.toString(), topicId.toString())
+      );
+      return response.data;
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : "Failed to fetch presentations");
+    }
+  }
+);
+
+// Thunk to fetch presentation detail
+export const fetchPresentationDetail = createAsyncThunk(
+  "presentation/fetchPresentationDetail",
+  async (presentationId: number, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<PresentationDetailResponse>(
+        PRESENTATION_DETAIL_ENDPOINT(presentationId.toString())
+      );
+      return response.data.presentation;
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : "Failed to fetch presentation detail");
+    }
+  }
+);
+
+// Thunk to create presentation
+export const createPresentation = createAsyncThunk(
+  "presentation/createPresentation",
+  async (data: CreatePresentationData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post<CreatePresentationResponse>(
+        CREATE_PRESENTATION_ENDPOINT,
+        data
+      );
+      return response.data.presentation;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to create presentation");
     }
   }
 );
@@ -223,8 +312,8 @@ const presentationSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Fetch presentations
     builder
-      // Fetch presentations
       .addCase(fetchPresentations.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -235,6 +324,62 @@ const presentationSlice = createSlice({
         state.total = action.payload.total;
       })
       .addCase(fetchPresentations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch presentations by topic
+      .addCase(fetchPresentationsByTopic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPresentationsByTopic.fulfilled, (state, action) => {
+        state.loading = false;
+        state.presentations = action.payload.presentations;
+        state.total = action.payload.total;
+      })
+      .addCase(fetchPresentationsByTopic.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch presentations by classId and topicId
+      .addCase(fetchPresentationsByClassAndTopic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPresentationsByClassAndTopic.fulfilled, (state, action) => {
+        state.loading = false;
+        state.presentations = action.payload.presentations;
+        state.total = action.payload.total;
+      })
+      .addCase(fetchPresentationsByClassAndTopic.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch presentation detail
+      .addCase(fetchPresentationDetail.pending, (state) => {
+        state.detailLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPresentationDetail.fulfilled, (state, action) => {
+        state.detailLoading = false;
+        state.currentPresentationDetail = action.payload;
+      })
+      .addCase(fetchPresentationDetail.rejected, (state, action) => {
+        state.detailLoading = false;
+        state.error = action.payload as string;
+      })
+      // Create presentation
+      .addCase(createPresentation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPresentation.fulfilled, (state, action) => {
+        state.loading = false;
+        state.presentations.push(action.payload);
+        state.total += 1;
+        state.currentPresentation = action.payload;
+      })
+      .addCase(createPresentation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

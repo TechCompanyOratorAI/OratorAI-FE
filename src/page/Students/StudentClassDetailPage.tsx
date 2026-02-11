@@ -14,17 +14,20 @@ import {
   LogOut,
   GraduationCap,
   Plus,
+  Loader2,
 } from "lucide-react";
 import Toast from "@/components/Toast/Toast";
+import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import { logout } from "@/services/features/auth/authSlice";
+import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
 import {
   fetchGroupsByClass,
-  fetchMyGroup,
+  fetchMyGroupByClass,
+  fetchGroupDetail,
   createGroup,
   joinGroup,
-  leaveGroup,
   updateGroup,
   removeMemberFromGroup,
   changeLeaderOfGroup,
@@ -43,12 +46,17 @@ const StudentClassDetailPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const {
     groups,
-    myGroup,
+    myGroupForClass,
     loading: groupLoading,
     actionLoading: groupActionLoading,
     classInfo: groupClassInfo,
     isEnrolled: isGroupEnrolled,
   } = useAppSelector((state) => state.group);
+
+  const {
+    enrolledTopicIds,
+    loading: enrollmentLoading,
+  } = useAppSelector((state) => state.enrollment);
 
   const [toast, setToast] = useState<{
     message: string;
@@ -63,6 +71,7 @@ const StudentClassDetailPage: React.FC = () => {
   const [editGroupDescription, setEditGroupDescription] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showGroupDetail, setShowGroupDetail] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const classIdNumber = classId ? parseInt(classId) : null;
 
@@ -70,7 +79,8 @@ const StudentClassDetailPage: React.FC = () => {
     if (classIdNumber) {
       dispatch(fetchClassDetail(classIdNumber));
       dispatch(fetchGroupsByClass(classIdNumber));
-      dispatch(fetchMyGroup());
+      dispatch(fetchMyGroupByClass(classIdNumber));
+      dispatch(fetchEnrolledTopics());
     }
   }, [classIdNumber, dispatch]);
 
@@ -110,23 +120,16 @@ const StudentClassDetailPage: React.FC = () => {
 
   const userDisplayName = user
     ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-      user.username ||
-      "Student"
+    user.username ||
+    "Student"
     : "Student";
-
-  const myGroupForClass =
-    myGroup &&
-    classIdNumber &&
-    `${myGroup.classId ?? myGroup.class?.classId}` === `${classIdNumber}`
-      ? myGroup
-      : null;
 
   const currentUserId = user?.userId;
   const myRole = myGroupForClass
     ? myGroupForClass.myRole ||
-      myGroupForClass.students?.find(
-        (member) => `${member.userId ?? member.id}` === `${currentUserId}`,
-      )?.GroupStudent?.role
+    myGroupForClass.students?.find(
+      (member) => `${member.userId ?? member.id}` === `${currentUserId}`,
+    )?.GroupStudent?.role
     : null;
   const isLeader = myRole === "leader";
 
@@ -157,8 +160,8 @@ const StudentClassDetailPage: React.FC = () => {
   const refreshGroups = () => {
     if (classIdNumber) {
       dispatch(fetchGroupsByClass(classIdNumber));
+      dispatch(fetchMyGroupByClass(classIdNumber));
     }
-    dispatch(fetchMyGroup());
   };
 
   useEffect(() => {
@@ -211,27 +214,6 @@ const StudentClassDetailPage: React.FC = () => {
     } catch (err: any) {
       setToast({
         message: err?.message || "Failed to join group.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleLeaveGroup = async () => {
-    if (!myGroupForClass) {
-      return;
-    }
-    const groupId = getGroupId(myGroupForClass);
-    if (!groupId) {
-      return;
-    }
-    try {
-      await dispatch(leaveGroup(groupId)).unwrap();
-      setToast({ message: "Left group successfully.", type: "success" });
-      setShowMyGroup(false);
-      refreshGroups();
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to leave group.",
         type: "error",
       });
     }
@@ -319,6 +301,18 @@ const StudentClassDetailPage: React.FC = () => {
     }
   };
 
+  const handleEnrollTopic = async (topicId: number) => {
+    try {
+      await dispatch(enrollTopic(topicId)).unwrap();
+      setToast({ message: "Successfully enrolled in topic!", type: "success" });
+    } catch (err: any) {
+      setToast({
+        message: err?.message || "Failed to enroll in topic",
+        type: "error",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -362,18 +356,18 @@ const StudentClassDetailPage: React.FC = () => {
   const classDuration = Math.ceil(
     (new Date(classDetail.endDate).getTime() -
       new Date(classDetail.startDate).getTime()) /
-      (1000 * 60 * 60 * 24),
+    (1000 * 60 * 60 * 24),
   );
 
   const instructorName = classDetail.instructors?.length
     ? classDetail.instructors
-        .map(
-          (instructor) =>
-            `${instructor.firstName || ""} ${instructor.lastName || ""}`.trim() ||
-            instructor.username ||
-            "Unknown Instructor",
-        )
-        .join(", ")
+      .map(
+        (instructor) =>
+          `${instructor.firstName || ""} ${instructor.lastName || ""}`.trim() ||
+          instructor.username ||
+          "Unknown Instructor",
+      )
+      .join(", ")
     : "Unknown Instructor";
   const courseInfo = classDetail.course;
   const classTitle = classDetail.className || classDetail.classCode;
@@ -496,11 +490,10 @@ const StudentClassDetailPage: React.FC = () => {
                 <div className="relative flex flex-col gap-6">
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                        classDetail.status === "active"
-                          ? "bg-sky-100 text-sky-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${classDetail.status === "active"
+                        ? "bg-sky-100 text-sky-700"
+                        : "bg-slate-100 text-slate-600"
+                        }`}
                     >
                       {classDetail.status === "active" ? "Active" : "Inactive"}
                     </span>
@@ -586,54 +579,109 @@ const StudentClassDetailPage: React.FC = () => {
 
                 {topics.length > 0 ? (
                   <div className="space-y-3">
-                    {topics.map((topic) => (
-                      <div
-                        key={topic.topicId}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:px-5 sm:py-4"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
-                              {topic.sequenceNumber}
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Topic {topic.sequenceNumber}
-                              </p>
-                              <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
-                                {topic.topicName}
-                              </h4>
-                              {topic.description && (
-                                <p className="mt-1 text-sm text-slate-600 max-w-3xl">
-                                  {topic.description}
+                    {topics.map((topic) => {
+                      const isTopicEnrolled = enrolledTopicIds.includes(topic.topicId);
+                      return (
+                        <div
+                          key={topic.topicId}
+                          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4 hover:border-sky-200 hover:shadow-md transition"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                                {topic.sequenceNumber}
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Topic {topic.sequenceNumber}
                                 </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            {topic.dueDate && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                <Calendar className="w-3 h-3" />
-                                Due{" "}
-                                {new Date(topic.dueDate).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  },
+                                <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
+                                  {topic.topicName}
+                                </h4>
+                                {topic.description && (
+                                  <p className="mt-1 text-sm text-slate-600 max-w-3xl line-clamp-2">
+                                    {topic.description}
+                                  </p>
                                 )}
-                              </span>
-                            )}
-                            {topic.maxDurationMinutes && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                {topic.maxDurationMinutes} mins
-                              </span>
-                            )}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {topic.dueDate && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                                  <Calendar className="w-3 h-3" />
+                                  Due{" "}
+                                  {new Date(topic.dueDate).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    },
+                                  )}
+                                </span>
+                              )}
+                              {topic.maxDurationMinutes && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                                  {topic.maxDurationMinutes} mins
+                                </span>
+                              )}
+                              {/* Enroll Button */}
+                              {isGroupEnrolled ? (
+                                isTopicEnrolled ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2 text-xs font-semibold border border-emerald-200 cursor-default"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Enrolled
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEnrollTopic(topic.topicId);
+                                    }}
+                                    disabled={enrollmentLoading}
+                                    className="inline-flex items-center gap-1.5 rounded-full bg-sky-600 text-white px-4 py-2 text-xs font-semibold hover:bg-sky-500 transition disabled:opacity-50"
+                                  >
+                                    {enrollmentLoading ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <Plus className="w-3.5 h-3.5" />
+                                        Enroll Topic
+                                      </>
+                                    )}
+                                  </button>
+                                )
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setToast({
+                                      message: "You need to enroll in this class first before enrolling in topics.",
+                                      type: "info",
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 text-gray-600 px-4 py-2 text-xs font-semibold border border-gray-200 hover:bg-gray-200 transition"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  Enroll Topic
+                                </button>
+                              )}
+                              {/* View Details Button */}
+                              <button
+                                onClick={() =>
+                                  navigate(`/student/class/${classId}/topic/${topic.topicId}`)
+                                }
+                                className="inline-flex items-center gap-1 rounded-full bg-sky-50 text-sky-700 px-3 py-2 text-xs font-semibold border border-sky-200 hover:bg-sky-100 transition"
+                              >
+                                View Details
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600 bg-slate-50">
@@ -674,6 +722,20 @@ const StudentClassDetailPage: React.FC = () => {
                         Create group
                       </button>
                     )}
+                    {myGroupForClass && (
+                      <button
+                        onClick={() => {
+                          if (myGroupForClass.groupId) {
+                            dispatch(fetchGroupDetail(Number(myGroupForClass.groupId)));
+                          }
+                          setShowGroupDetail(true);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/60 hover:bg-emerald-500 transition"
+                      >
+                        <Users className="w-4 h-4" />
+                        Your Group: {getGroupName(myGroupForClass)}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -683,6 +745,7 @@ const StudentClassDetailPage: React.FC = () => {
                     a group.
                   </div>
                 )}
+
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {groupLoading ? (
@@ -698,60 +761,76 @@ const StudentClassDetailPage: React.FC = () => {
                       return (
                         <div
                           key={`${groupId ?? group.name}`}
-                          className={`flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                            isMyGroup
-                              ? "cursor-pointer ring-1 ring-sky-100"
-                              : ""
-                          }`}
+                          className={`flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg ${isMyGroup
+                            ? "ring-1 ring-emerald-200"
+                            : ""
+                            }`}
                           onClick={() => {
                             if (isMyGroup) {
-                              setShowMyGroup(true);
+                              dispatch(fetchGroupDetail(Number(groupId)));
+                              setShowGroupDetail(true);
                             }
                           }}
                         >
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-base font-semibold text-slate-900">
-                                {getGroupName(group)}
-                              </p>
-                              {isMyGroup && (
-                                <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
-                                  View details
-                                </span>
-                              )}
-                              {group.myRole && (
-                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                                  {group.myRole}
-                                </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <p className="text-base font-semibold text-slate-900">
+                                  {getGroupName(group)}
+                                </p>
+                                {isMyGroup && (
+                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                    Your Group
+                                  </span>
+                                )}
+                                {group.myRole && !isMyGroup && (
+                                  <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                                    {group.myRole}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Join/Full/Joined Status */}
+                              {!myGroupForClass && (
+                                group.isMember ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-200">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Joined
+                                  </span>
+                                ) : memberCount >= (group.maxGroupMembers || groupLimit || 0) ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold border border-red-200">
+                                    Full
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleJoinGroup(groupId);
+                                    }}
+                                    disabled={
+                                      groupActionLoading ||
+                                      !groupId ||
+                                      !isGroupEnrolled
+                                    }
+                                    className="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-4 py-1.5 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    Join
+                                  </button>
+                                )
                               )}
                             </div>
                             {group.description && (
-                              <p className="text-sm text-slate-600">
+                              <p className="text-sm text-slate-600 mt-1">
                                 {group.description}
                               </p>
                             )}
-                            <p className="text-sm text-slate-600">
+                            <p className="text-sm text-slate-600 mt-2">
                               Members: {memberCount}
                               {groupLimit ? `/${groupLimit}` : ""}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-500 mt-1">
                               Leader: {getLeaderName(group)}
                             </p>
                           </div>
-                          {!myGroupForClass && (
-                            <button
-                              onClick={() => handleJoinGroup(groupId)}
-                              disabled={
-                                groupActionLoading ||
-                                !groupId ||
-                                group.isMember ||
-                                !isGroupEnrolled
-                              }
-                              className="rounded-full border border-sky-200 bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {group.isMember ? "Joined" : "Join group"}
-                            </button>
-                          )}
                         </div>
                       );
                     })
@@ -1083,16 +1162,18 @@ const StudentClassDetailPage: React.FC = () => {
               >
                 Close
               </button>
-              <button
-                onClick={handleLeaveGroup}
-                disabled={groupActionLoading}
-                className="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Leave group
-              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Group Detail Modal */}
+      {showGroupDetail && myGroupForClass?.groupId && (
+        <GroupDetailModal
+          isOpen={showGroupDetail}
+          onClose={() => setShowGroupDetail(false)}
+          groupId={Number(myGroupForClass.groupId)}
+        />
       )}
 
       {/* Toast Notification */}

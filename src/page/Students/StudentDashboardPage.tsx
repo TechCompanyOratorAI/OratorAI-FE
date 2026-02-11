@@ -73,12 +73,12 @@ const StudentDashboardPage: React.FC = () => {
     const query = searchQuery.toLowerCase();
     const instructorNames = (course.instructors || course.instructor
       ? (course.instructors || [course.instructor])
-          .filter(Boolean)
-          .map(
-            (inst) =>
-              `${inst?.firstName || ""} ${inst?.lastName || ""}`.toLowerCase(),
-          )
-          .join(" ")
+        .filter(Boolean)
+        .map(
+          (inst) =>
+            `${inst?.firstName || ""} ${inst?.lastName || ""}`.toLowerCase(),
+        )
+        .join(" ")
       : ""
     ).toLowerCase();
 
@@ -324,15 +324,14 @@ const StudentDashboardPage: React.FC = () => {
               {filteredCourses.map((course) => {
                 const instructorNames = course.instructors?.length
                   ? course.instructors
-                      .map(
-                        (inst) =>
-                          `${inst.firstName || ""} ${inst.lastName || ""}`.trim() ||
-                          inst.username,
-                      )
-                      .join(", ")
+                    .map(
+                      (inst) =>
+                        `${inst.firstName || ""} ${inst.lastName || ""}`.trim() ||
+                        inst.username,
+                    )
+                    .join(", ")
                   : course.instructor
-                    ? `${course.instructor.firstName || ""} ${
-                        course.instructor.lastName || ""
+                    ? `${course.instructor.firstName || ""} ${course.instructor.lastName || ""
                       }`.trim() || course.instructor.username
                     : "No instructor assigned";
 
@@ -347,11 +346,10 @@ const StudentDashboardPage: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                course.isActive
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
+                              className={`px-2 py-1 rounded text-xs font-medium ${course.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                                }`}
                             >
                               {course.isActive ? "Active" : "Inactive"}
                             </span>
@@ -385,15 +383,7 @@ const StudentDashboardPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <BookOpen className="w-4 h-4 text-gray-600" />
-                          <div>
-                            <p className="text-xs text-gray-600">Enrollments</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {course.enrollmentCount ?? 0}
-                            </p>
-                          </div>
-                        </div>
+
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
                           <Calendar className="w-4 h-4 text-gray-600" />
                           <div>
@@ -410,7 +400,7 @@ const StudentDashboardPage: React.FC = () => {
                       {/* Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 pt-4 border-t border-gray-200">
                         <Button
-                          text="View Classes"
+                          text="Classes"
                           variant="primary"
                           fontSize="14px"
                           borderRadius="6px"
