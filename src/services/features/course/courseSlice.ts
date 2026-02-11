@@ -26,8 +26,8 @@ export interface Instructor {
 export interface CourseData {
   courseId: number;
   courseCode: string;
-  majorCode: string;
   courseName: string;
+  departmentId: number;
   description: string;
   instructorId: number;
   semester: string;
@@ -37,10 +37,22 @@ export interface CourseData {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  majorCode?: string;
   instructor?: Instructor;
   instructors?: Instructor[];
   topics?: Topic[];
   enrollmentCount?: number;
+}
+
+export interface CreateCourseData {
+  courseCode: string;
+  courseName: string;
+  departmentId: number;
+  description: string;
+  semester: string;
+  academicYear: number;
+  startDate: string;
+  endDate: string;
 }
 
 export interface CoursesResponse {
@@ -148,18 +160,11 @@ export const fetchCourseDetail = createAsyncThunk(
 // Create course
 export const createCourse = createAsyncThunk(
   "course/createCourse",
-  async (
-    courseData: Omit<CourseData, "courseId" | "createdAt" | "updatedAt">,
-    { rejectWithValue },
-  ) => {
+  async (courseData: CreateCourseData, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post(COURSES_ENDPOINT, courseData);
       // API returns { success: true, course: {...} }
-      const createdCourse = response.data.course || response.data;
-      return {
-        ...createdCourse,
-        majorCode: createdCourse.majorCode ?? courseData.majorCode,
-      };
+      return response.data.course || response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create course",
@@ -187,11 +192,7 @@ export const updateCourse = createAsyncThunk(
         data,
       );
       // API returns { success: true, course: {...} }
-      const updatedCourse = response.data.course || response.data;
-      return {
-        ...updatedCourse,
-        majorCode: updatedCourse.majorCode ?? data.majorCode,
-      };
+      return response.data.course || response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update course",

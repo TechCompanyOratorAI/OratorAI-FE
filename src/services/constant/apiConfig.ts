@@ -1,6 +1,6 @@
-// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+ export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-export const BASE_URL = "http://localhost:8080";
+//export const BASE_URL = "http://localhost:8080";
 
 
 // Auth endpoints
@@ -37,6 +37,14 @@ export const TOPIC_DETAIL_ENDPOINT = (topicId: string) =>
 
 //Admin endpoints
 export const GET_ALL_USERS_ENDPOINT = `${BASE_URL}/api/v1/users`;
+// Departments endpoints
+export const DEPARTMENTS_ENDPOINT = `${BASE_URL}/api/v1/departments`;
+export const CREATE_DEPARTMENT_ENDPOINT = `${BASE_URL}/api/v1/departments`;
+export const UPDATE_DEPARTMENT_ENDPOINT = (departmentId: string) =>
+  `${BASE_URL}/api/v1/departments/${departmentId}`;
+export const DELETE_DEPARTMENT_ENDPOINT = (departmentId: string) =>
+  `${BASE_URL}/api/v1/departments/${departmentId}`;
+
 // Classes endpoints
 export const CLASSES_ENDPOINT = `${BASE_URL}/api/v1/classes`;
 export const CREATE_CLASS_ENDPOINT = (courseId: string) =>
@@ -89,8 +97,8 @@ export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teachin
 // Filter for admin endpoints
 export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/available-instructors`;
-export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (classId: string) =>
-  `${BASE_URL}/api/v1/classes/${classId}/instructors`;
+export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (courseId: string) =>
+  `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
 
 // Enrollment endpoints (course-level enrollment removed; students enroll at class or topic level only)
 export const ENROLL_TOPIC_ENDPOINT = (topicId: string) =>

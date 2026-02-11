@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Book,
+  FolderCog,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -87,6 +88,12 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
       label: "Manage Courses",
       icon: Book,
       path: "/admin/manage-courses",
+    },
+    {
+      id: "manage-departments",
+      label: "Manage Departments",
+      icon: FolderCog,
+      path: "/admin/manage-departments",
     },
     {
       id: "settings",
