@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import { Select } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { registerInstructor } from "@/services/features/auth/authSlice";
+import { fetchDepartments } from "@/services/features/admin/adminSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
 
@@ -11,17 +13,24 @@ const InstructorRegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((state) => state.auth);
+  const { departments } = useAppSelector((state) => state.admin);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     firstName: "",
     lastName: "",
+    departmentId: 0,
   });
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Fetch departments on component mount
+  useEffect(() => {
+    dispatch(fetchDepartments());
+  }, [dispatch]);
 
   const validatePassword = (password: string): string => {
     if (password.length < 8) {
@@ -65,6 +74,12 @@ const InstructorRegisterForm: React.FC = () => {
     // Validate confirm password
     if (formData.password !== confirmPassword) {
       setPasswordError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    // Validate department selection
+    if (!formData.departmentId || formData.departmentId === 0) {
+      setPasswordError("Vui lòng chọn bộ môn");
       return;
     }
 
@@ -157,6 +172,31 @@ const InstructorRegisterForm: React.FC = () => {
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white"
                 placeholder="username"
                 whileFocus={{ scale: 1.01 }}
+              />
+            </div>
+          </ScrollAnimation>
+
+          <ScrollAnimation type="fade" delay={0.65}>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="departmentId"
+                className="text-sm font-medium text-slate-700"
+              >
+                Bộ môn <span className="text-red-500">*</span>
+              </label>
+              <Select
+                id="departmentId"
+                placeholder="Chọn bộ môn"
+                value={formData.departmentId || undefined}
+                onChange={(value) => setFormData((prev) => ({ ...prev, departmentId: value }))}
+                className="w-full"
+                size="large"
+                options={departments
+                  .filter((dept) => dept.isActive)
+                  .map((department) => ({
+                    value: department.departmentId,
+                    label: `${department.departmentCode} - ${department.departmentName}`,
+                  }))}
               />
             </div>
           </ScrollAnimation>
