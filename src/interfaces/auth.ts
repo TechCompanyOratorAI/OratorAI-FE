@@ -36,6 +36,7 @@ export interface RegisterInstructorCredentials {
   password: string;
   firstName: string;
   lastName: string;
+  departmentId: number;
 }
 
 export interface LoginResponse {
