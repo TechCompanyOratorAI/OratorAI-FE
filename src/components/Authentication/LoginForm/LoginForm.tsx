@@ -47,14 +47,17 @@ const LoginForm: React.FC = () => {
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
-        // Redirect based on user role
         const user = resultAction.payload.user;
         const primaryRole = user.roles?.[0]?.roleName;
 
-        // Verify selected role matches user's actual role
         if (primaryRole !== selectedRole) {
           message.error(`Bạn không có quyền truy cập với vai trò ${selectedRole}`);
           dispatch(logout());
+          return;
+        }
+
+        if (!user.isEmailVerified) {
+          navigate("/verify-email");
           return;
         }
 
@@ -65,7 +68,6 @@ const LoginForm: React.FC = () => {
         } else if (primaryRole === "Student") {
           navigate("/student/dashboard");
         } else {
-          // Default to home page
           navigate("/");
         }
       }

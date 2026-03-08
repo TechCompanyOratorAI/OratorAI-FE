@@ -17,6 +17,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
 import { logout } from "@/services/features/auth/authSlice";
+import AppLogo from "@/components/AppLogo/AppLogo";
 
 const StudentMyClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -153,12 +154,7 @@ const StudentMyClassesPage: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">E</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">
-                OratorAI
-              </span>
+              <AppLogo to="/" size="md" />
             </div>
 
             {/* Desktop Navigation */}

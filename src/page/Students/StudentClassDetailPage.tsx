@@ -12,13 +12,13 @@ import {
   Menu,
   X,
   LogOut,
-  GraduationCap,
   Plus,
   Loader2,
 } from "lucide-react";
 import Toast from "@/components/Toast/Toast";
 import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import { logout } from "@/services/features/auth/authSlice";
 import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
@@ -396,13 +396,8 @@ const StudentClassDetailPage: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-200/60">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
               <div>
-                <p className="text-lg font-semibold text-slate-900 leading-tight">
-                  OratorAI
-                </p>
+                <AppLogo to="/" size="md" />
                 <p className="text-xs text-slate-500">Student workspace</p>
               </div>
             </div>

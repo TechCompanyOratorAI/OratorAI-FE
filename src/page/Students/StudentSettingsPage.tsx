@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { User as UserIcon, Lock } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { getProfile, changePassword } from "@/services/features/auth/authSlice";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Card,
@@ -117,10 +118,7 @@ const StudentSettingsPage: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">E</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">OratorAI</span>
+              <AppLogo to="/" size="md" />
             </div>
 
             {/* Desktop Navigation */}
