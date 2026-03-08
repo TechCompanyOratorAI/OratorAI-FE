@@ -13,7 +13,6 @@ import {
   Menu,
   X,
   LogOut,
-  GraduationCap,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
@@ -25,6 +24,7 @@ import {
   fetchEnrolledClasses,
 } from "@/services/features/enrollment/enrollmentSlice";
 import { logout } from "@/services/features/auth/authSlice";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import type { ClassData } from "@/services/features/admin/classSlice";
 
 interface ClassItem {
@@ -238,10 +238,7 @@ const StudentClassesPage: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">OratorAI</span>
+              <AppLogo to="/" size="lg" />
             </div>
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">

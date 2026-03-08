@@ -48,7 +48,7 @@ const ForgotPasswordForm: React.FC = () => {
               <p className="text-xs text-slate-400 mb-6">
                 Vui lòng kiểm tra hộp thư đến và làm theo hướng dẫn để đặt lại mật khẩu.
               </p>
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col items-center">
                 <Button
                   text="Quay lại đăng nhập"
                   variant="primary"

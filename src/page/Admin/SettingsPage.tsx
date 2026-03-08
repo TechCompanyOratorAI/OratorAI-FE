@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { User as UserIcon, Lock } from "lucide-react";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
-import SidebarStudent from "@/components/Sidebar/SidebarStudent/SidebarStudent";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { getProfile, changePassword } from "@/services/features/auth/authSlice";
-import { useLocation } from "react-router-dom";
 import type { User, ProfileUser } from "@/interfaces/auth";
 import {
   Card,
@@ -29,12 +27,8 @@ const { Title, Text } = Typography;
 
 const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const location = useLocation();
   const { user, loading } = useAppSelector((state) => state.auth);
   const [form] = Form.useForm();
-
-  // Determine which sidebar to use based on route
-  const isStudentRoute = location.pathname.includes("/student");
   const [profileData, setProfileData] = useState<ProfileUser | null>(null);
 
   const loadProfile = useCallback(async () => {
@@ -84,11 +78,9 @@ const SettingsPage: React.FC = () => {
     .toUpperCase()
     .slice(0, 2);
 
-  const SidebarComponent = isStudentRoute ? SidebarStudent : SidebarAdmin;
-
   return (
     <div className="flex h-screen bg-gray-50">
-      <SidebarComponent activeItem="settings" />
+      <SidebarAdmin activeItem="settings" />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto">
           <Title level={2} className="mb-6">

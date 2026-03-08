@@ -8,6 +8,9 @@ import {
   PROFILE_ENDPOINT,
   CHANGE_PASSWORD_ENDPOINT,
   FORGOT_PASSWORD_ENDPOINT,
+  RESET_PASSWORD_ENDPOINT,
+  RESEND_VERIFICATION_ENDPOINT,
+  VERIFY_EMAIL_ENDPOINT,
 } from "../../constant/apiConfig";
 import {
   AuthState,
@@ -23,6 +26,11 @@ import {
   ChangePasswordResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
+  VerifyEmailResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from "../../../interfaces/auth";
 
 // Helper function to get user from localStorage
@@ -178,6 +186,77 @@ export const forgotPassword = createAsyncThunk<
     const errorMessage =
       error.response?.data?.message || error.message || "Gửi email đặt lại mật khẩu thất bại";
     return rejectWithValue({ message: errorMessage });
+  }
+});
+
+export type ResendVerificationReject = {
+  message?: string;
+  errors?: Array<{ msg: string }>;
+};
+
+export const resendVerification = createAsyncThunk<
+  ResendVerificationResponse,
+  ResendVerificationRequest,
+  { rejectValue: ResendVerificationReject }
+>("auth/resendVerification", async (request, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      RESEND_VERIFICATION_ENDPOINT,
+      request
+    );
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as { response?: { data?: { message?: string; errors?: Array<{ msg: string }> } }; message?: string };
+    const data = error.response?.data;
+    return rejectWithValue({
+      message: data?.message,
+      errors: data?.errors,
+    });
+  }
+});
+
+export const verifyEmail = createAsyncThunk<
+  VerifyEmailResponse,
+  string,
+  { rejectValue: { message: string } }
+>("auth/verifyEmail", async (token, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(VERIFY_EMAIL_ENDPOINT(token));
+    if (response.data && response.data.success === false) {
+      return rejectWithValue({
+        message: response.data.message ?? "Invalid or expired verification token",
+      });
+    }
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
+    const msg =
+      error.response?.data?.message ?? error.message ?? "Invalid or expired verification token";
+    return rejectWithValue({ message: msg });
+  }
+});
+
+export const resetPassword = createAsyncThunk<
+  ResetPasswordResponse,
+  ResetPasswordRequest,
+  { rejectValue: { message: string } }
+>("auth/resetPassword", async (request, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      RESET_PASSWORD_ENDPOINT,
+      request
+    );
+    if (response.data && response.data.success === false) {
+      return rejectWithValue({
+        message: response.data.message ?? "Invalid or expired password reset token",
+      });
+    }
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
+    const msg =
+      error.response?.data?.message ?? error.message ?? "Invalid or expired password reset token";
+    return rejectWithValue({ message: msg });
   }
 });
 
@@ -346,6 +425,41 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || "Gửi email đặt lại mật khẩu thất bại";
         message.error(state.error);
+      })
+      // Resend Verification cases (no toast - message shown on page from API)
+      .addCase(resendVerification.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resendVerification.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resendVerification.rejected, (state) => {
+        state.loading = false;
+      })
+      // Verify Email (token from link) - message shown on page from API
+      .addCase(verifyEmail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyEmail.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(verifyEmail.rejected, (state) => {
+        state.loading = false;
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state) => {
+        state.loading = false;
       });
   },
 });

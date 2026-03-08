@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import InstructorRegisterForm from "@/components/Authentication/InstructorRegisterForm/InstructorRegisterForm";
 
 const InstructorRegisterPage: React.FC = () => {
@@ -36,14 +37,11 @@ const InstructorRegisterPage: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <motion.div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <span className="font-semibold text-lg text-slate-900">
-              FPTOratorAI
-            </span>
+            <AppLogo to="/" size="md" />
           </motion.div>
 
           <Button

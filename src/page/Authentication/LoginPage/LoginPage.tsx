@@ -1,29 +1,50 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAppSelector } from "@/services/store/store";
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import { getProfile } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import LoginForm from "@/components/Authentication/LoginForm/LoginForm";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const [profileChecked, setProfileChecked] = useState(false);
+  const refreshDone = useRef(false);
 
+  // Khi đã đăng nhập: gọi getProfile để lấy isEmailVerified mới nhất (sau khi user verify qua link)
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const primaryRole = user.roles?.[0]?.roleName;
-      if (primaryRole === "Admin") {
-        navigate("/admin/dashboard");
-      } else if (primaryRole === "Instructor") {
-        navigate("/instructor/manage-classes");
-      } else if (primaryRole === "Student") {
-        navigate("/student/dashboard");
-      } else {
-        navigate("/");
-      }
+    if (!isAuthenticated || !user) {
+      setProfileChecked(false);
+      refreshDone.current = false;
+      return;
     }
-  }, [isAuthenticated, user, navigate]);
+    if (refreshDone.current) return;
+    refreshDone.current = true;
+    dispatch(getProfile()).finally(() => setProfileChecked(true));
+  }, [isAuthenticated, user, dispatch]);
+
+  // Redirect chỉ sau khi đã refresh profile để tránh dùng user cũ (isEmailVerified chưa cập nhật)
+  useEffect(() => {
+    if (!isAuthenticated || !user || !profileChecked) return;
+    if (!user.isEmailVerified) {
+      navigate("/verify-email");
+      return;
+    }
+    const primaryRole = user.roles?.[0]?.roleName;
+    if (primaryRole === "Admin") {
+      navigate("/admin/dashboard");
+    } else if (primaryRole === "Instructor") {
+      navigate("/instructor/manage-classes");
+    } else if (primaryRole === "Student") {
+      navigate("/student/dashboard");
+    } else {
+      navigate("/");
+    }
+  }, [isAuthenticated, user, profileChecked, navigate]);
 
   const headerVariants = {
     hidden: { y: -20, opacity: 0 },
@@ -53,15 +74,11 @@ const LoginPage: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <motion.div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-
-            <span className="font-semibold text-lg text-slate-900">
-              FPTOratorAI
-            </span>
+            <AppLogo to="/" size="md" />
           </motion.div>
 
           <Button

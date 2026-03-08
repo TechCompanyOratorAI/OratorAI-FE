@@ -3,6 +3,8 @@ import LoginPage from "@/page/Authentication/LoginPage/LoginPage";
 import RegisterPage from "@/page/Authentication/RegisterPage/RegisterPage";
 import InstructorRegisterPage from "@/page/Authentication/InstructorRegisterPage/InstructorRegisterPage";
 import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotPasswordPage";
+import ResetPasswordPage from "@/page/Authentication/ResetPasswordPage/ResetPasswordPage";
+import VerifyEmailPage from "@/page/Authentication/VerifyEmailPage/VerifyEmailPage";
 import { Route, Routes } from "react-router-dom";
 import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
@@ -38,6 +40,8 @@ const AppRouter = () => {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register-instructor" element={<InstructorRegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       {/* Protected Instructor routes */}
       <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>

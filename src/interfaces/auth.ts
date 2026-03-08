@@ -101,3 +101,35 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
 }
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ApiValidationError {
+  type?: string;
+  value?: string;
+  msg: string;
+  path?: string;
+  location?: string;
+}
+
+export interface VerifyEmailResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}

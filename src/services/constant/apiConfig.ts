@@ -12,6 +12,10 @@ export const LOGOUT_ENDPOINT = `${BASE_URL}/api/v1/auth/logout`;
 export const PROFILE_ENDPOINT = `${BASE_URL}/api/v1/auth/profile`;
 export const CHANGE_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/change-password`;
 export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password`;
+export const RESET_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/reset-password`;
+export const RESEND_VERIFICATION_ENDPOINT = `${BASE_URL}/api/v1/auth/resend-verification`;
+export const VERIFY_EMAIL_ENDPOINT = (token: string) =>
+  `${BASE_URL}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
 
 // Course endpoints
 export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;

@@ -16,7 +16,6 @@ import {
   Bell,
   Menu,
   LogOut,
-  GraduationCap,
   Crown,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -28,6 +27,7 @@ import {
 import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
 import { fetchMyGroupByClass } from "@/services/features/group/groupSlice";
 import { logout } from "@/services/features/auth/authSlice";
+import AppLogo from "@/components/AppLogo/AppLogo";
 import Toast from "@/components/Toast/Toast";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 
@@ -285,10 +285,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-sky-200/60">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-slate-900">OratorAI</span>
+              <AppLogo to="/" size="lg" />
             </div>
 
             {/* Desktop Navigation */}

@@ -15,6 +15,10 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  if (user && !user.isEmailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   if (allowedRoles && user) {
     const userRoles = user.roles?.map((role) => role.roleName) || [];
     const hasAllowedRole = allowedRoles.some((role) => userRoles.includes(role));
