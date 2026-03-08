@@ -131,10 +131,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     : "Student";
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleString("vi-VN", {
       year: "numeric",
-      month: "long",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -147,22 +147,22 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     > = {
       draft: {
         bg: "bg-gray-100 text-gray-700",
-        text: "Draft",
+        text: "Nháp",
         icon: <FileTextIcon className="w-3 h-3" />,
       },
       submitted: {
         bg: "bg-blue-100 text-blue-700",
-        text: "Submitted",
+        text: "Đã nộp",
         icon: <CheckCircle2 className="w-3 h-3" />,
       },
       processing: {
         bg: "bg-amber-100 text-amber-700",
-        text: "Processing",
+        text: "Đang xử lý",
         icon: <Loader2 className="w-3 h-3 animate-spin" />,
       },
       analyzed: {
         bg: "bg-green-100 text-green-700",
-        text: "Analyzed",
+        text: "Đã chấm",
         icon: <CheckCircle2 className="w-3 h-3" />,
       },
     };
@@ -182,11 +182,11 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     if (!topicIdNumber) return;
     try {
       await dispatch(enrollTopic(topicIdNumber)).unwrap();
-      setToast({ message: "Successfully enrolled in topic!", type: "success" });
+      setToast({ message: "Ghi danh chủ đề thành công!", type: "success" });
       dispatch(fetchEnrolledTopics());
     } catch (err: unknown) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to enroll in topic",
+        message: err instanceof Error ? err.message : "Ghi danh chủ đề thất bại",
         type: "error",
       });
     }
@@ -197,13 +197,13 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
     // Only group leader can create presentation
     if (!isCurrentUserLeader) {
-      setToast({ message: "Only group leader can create presentation", type: "info" });
+      setToast({ message: "Chỉ nhóm trưởng mới có thể tạo bài thuyết trình", type: "info" });
       return;
     }
 
     const trimmedTitle = presentationTitle.trim();
     if (!trimmedTitle) {
-      setToast({ message: "Please enter a presentation title", type: "info" });
+      setToast({ message: "Vui lòng nhập tiêu đề bài thuyết trình", type: "info" });
       return;
     }
 
@@ -229,7 +229,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       }
     } catch (err: unknown) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to create presentation",
+        message: err instanceof Error ? err.message : "Tạo bài thuyết trình thất bại",
         type: "error",
       });
     } finally {
@@ -245,75 +245,74 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
   if (topicLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading topic details...</p>
-          </div>
-        </main>
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Đang tải thông tin chủ đề...</p>
+        </div>
       </div>
     );
   }
 
   if (topicError || !topic) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1280px] mx-auto px-4 py-8">
-            <button
-              onClick={() => (isModalMode && onCloseModal ? onCloseModal() : navigate(-1))}
-              className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back
-            </button>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-700 font-medium">{topicError || "Topic not found"}</p>
-            </div>
+      <div className="min-h-screen bg-slate-100">
+        <div className="max-w-[1280px] mx-auto px-4 py-8">
+          <button
+            onClick={() => (isModalMode && onCloseModal ? onCloseModal() : navigate(-1))}
+            className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Quay lại
+          </button>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <p className="text-red-700 font-medium">{topicError || "Không tìm thấy chủ đề"}</p>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <AppLogo to="/" size="lg" />
+              <div>
+                <AppLogo to="/" size="md" />
+                <p className="text-xs text-slate-500">Student workspace</p>
+              </div>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-8 font-vn">
               <Link
                 to="/student/classes"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-slate-700 hover:text-slate-900"
               >
-                Classes
+                Khóa học
               </Link>
               <Link
                 to="/student/my-class"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-slate-700 hover:text-slate-900"
               >
-                My Classes
+                Lớp của tôi
               </Link>
               <Link
-                to="/student/feedback"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                to="/student/my-presentations"
+                className="text-sm font-medium text-slate-700 hover:text-slate-900"
               >
-                My Presentations
+                Bài thuyết trình
               </Link>
             </nav>
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
               {/* Notifications */}
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+              <button className="relative p-2 hover:bg-sky-50 rounded-full transition">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
@@ -322,7 +321,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                  className="flex items-center gap-2 p-1 hover:bg-sky-50 rounded-full transition"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
@@ -340,10 +339,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
+                      <span>Đăng xuất</span>
                     </button>
                   </div>
                 )}
@@ -355,9 +354,9 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 className="md:hidden p-2 hover:bg-gray-100 rounded-full"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-slate-600" />
                 ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
+                  <Menu className="w-5 h-5 text-slate-600" />
                 )}
               </button>
             </div>
@@ -369,22 +368,22 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => (isModalMode && onCloseModal ? onCloseModal() : navigate(-1))}
-              className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-800 font-semibold"
+              className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              Back
+              Quay lại
             </button>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-slate-500 font-vn">
               <Info className="w-4 h-4" />
               Student workspace
             </div>
           </div>
 
           {/* Hero Section */}
-          <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-indigo-600 via-purple-600 to-sky-500 text-white shadow-lg">
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-sky-500 text-white shadow-xl mb-6">
             <div
               className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.12),transparent_30%)]"
               aria-hidden
@@ -411,13 +410,13 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     {topic.dueDate && (
                       <div className="flex items-center gap-2 text-white/90">
                         <Calendar className="w-5 h-5" />
-                        <span className="font-medium">Due: {formatDate(topic.dueDate)}</span>
+                        <span className="font-medium">Hạn: {formatDate(topic.dueDate)}</span>
                       </div>
                     )}
                     {topic.maxDurationMinutes && (
                       <div className="flex items-center gap-2 text-white/90">
                         <Clock className="w-5 h-5" />
-                        <span className="font-medium">{topic.maxDurationMinutes} minutes</span>
+                        <span className="font-medium">{topic.maxDurationMinutes} phút</span>
                       </div>
                     )}
                   </div>
@@ -426,34 +425,34 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
               <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 {[
                   {
-                    label: "Due date",
+                    label: "Hạn nộp",
                     value: topic.dueDate
-                      ? new Date(topic.dueDate).toLocaleDateString("en-US", {
+                      ? new Date(topic.dueDate).toLocaleDateString("vi-VN", {
                         month: "short",
                         day: "numeric",
                       })
-                      : "No deadline",
+                      : "Không có",
                     Icon: Calendar,
                   },
                   {
-                    label: "Duration",
-                    value: `${topic.maxDurationMinutes || 0} mins`,
+                    label: "Thời lượng",
+                    value: `${topic.maxDurationMinutes || 0} phút`,
                     Icon: Clock,
                   },
                   {
-                    label: "Submissions",
+                    label: "Bài nộp",
                     value: `${presentations.length}`,
                     Icon: FileTextIcon,
                   },
                   {
-                    label: "Course",
+                    label: "Môn học",
                     value: topic.course?.courseName || "N/A",
                     Icon: BookOpen,
                   },
                 ].map(({ label, value, Icon }, idx) => (
                   <div
                     key={idx}
-                    className="rounded-3xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3"
+                    className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3"
                   >
                     <span className="rounded-full bg-white/20 p-2">
                       <Icon className="w-5 h-5 text-white" />
@@ -471,15 +470,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
           </section>
 
           {/* Action Section - Enrollment or Create Presentation */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
             {!isEnrolled ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Info className="w-8 h-8 text-amber-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Enroll to Start</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Ghi danh để bắt đầu</h3>
                 <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  You need to enroll in this topic before you can create and submit your presentation.
+                  Bạn cần ghi danh chủ đề này trước khi tạo và nộp bài thuyết trình.
                 </p>
                 <button
                   onClick={handleEnroll}
@@ -491,7 +490,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                   ) : (
                     <CheckCircle2 className="w-5 h-5" />
                   )}
-                  Enroll in Topic
+                  Ghi danh chủ đề
                 </button>
               </div>
             ) : myPresentation ? (
@@ -499,9 +498,9 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Your Presentation</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Bài thuyết trình của bạn</h3>
                 <p className="text-slate-600 mb-6">
-                  You have created a presentation for this topic. You can upload files or submit when ready.
+                  Bạn đã tạo bài thuyết trình cho chủ đề này. Có thể tải lên file hoặc nộp khi sẵn sàng.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
                   <button
@@ -511,15 +510,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
                   >
                     <Upload className="w-5 h-5" />
-                    Upload Files
+                    Tải lên file
                   </button>
                   {myPresentation.status === "draft" && (
-                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-full font-medium">
+                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-full font-medium">
                       {getStatusBadge(myPresentation.status)}
                     </span>
                   )}
                   {myPresentation.status !== "draft" && (
-                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-green-100 text-green-700 rounded-full font-medium">
+                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-full font-medium">
                       {getStatusBadge(myPresentation.status)}
                     </span>
                   )}
@@ -530,16 +529,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Plus className="w-8 h-8 text-sky-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Create Your Presentation</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Tạo bài thuyết trình</h3>
                 <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  As the group leader, you can create the presentation for this topic.
+                  Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.
                 </p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
                 >
                   <Plus className="w-5 h-5" />
-                  Create Presentation
+                  Tạo bài thuyết trình
                 </button>
               </div>
             ) : myGroupForClass ? (
@@ -547,13 +546,13 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-amber-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Waiting for Leader</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Chờ nhóm trưởng</h3>
                 <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  Your group leader needs to create the presentation. Please wait for them to start.
+                  Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ họ bắt đầu.
                 </p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-full font-medium">
                   <Users className="w-4 h-4" />
-                  Group: {myGroupForClass.groupName || myGroupForClass.name}
+                  Nhóm: {myGroupForClass.groupName || myGroupForClass.name}
                 </div>
               </div>
             ) : (
@@ -561,16 +560,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-slate-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Join or Create a Group</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Tham gia hoặc tạo nhóm</h3>
                 <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  You need to be in a group to create a presentation. Join an existing group or create a new one.
+                  Bạn cần ở trong một nhóm để tạo bài thuyết trình. Tham gia nhóm có sẵn hoặc tạo nhóm mới.
                 </p>
                 <Link
                   to={`/student/class/${classId}`}
                   className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
                 >
                   <Users className="w-5 h-5" />
-                  Go to Group Management
+                  Đến quản lý nhóm
                 </Link>
               </div>
             )}
@@ -578,20 +577,20 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
           {/* Requirements */}
           {topic.requirements && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-2xl bg-amber-100 p-2">
-                  <FileTextIcon className="w-5 h-5 text-amber-700" />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                  <FileTextIcon className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Requirements
+                    Yêu cầu
                   </p>
-                  <h3 className="text-lg font-bold text-slate-900">Topic Requirements</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Yêu cầu chủ đề</h3>
                 </div>
               </div>
               <div className="prose prose-sm max-w-none">
-                <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200">
                   {topic.requirements}
                 </pre>
               </div>
@@ -599,17 +598,17 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
           )}
 
           {/* Presentations List */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="rounded-2xl bg-indigo-100 p-2">
-                <FileTextIcon className="w-5 h-5 text-indigo-700" />
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                <FileTextIcon className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                  All Submissions
+                  Tất cả bài nộp
                 </p>
                 <h3 className="text-lg font-bold text-slate-900">
-                  Presentations ({presentations.length})
+                  Bài thuyết trình ({presentations.length})
                 </h3>
               </div>
             </div>
@@ -620,7 +619,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                   <Link
                     key={presentation.presentationId}
                     to={`/student/presentation/${presentation.presentationId}`}
-                    className="rounded-3xl overflow-hidden border border-slate-200 hover:border-sky-200 hover:shadow transition bg-slate-50/60 p-4 block"
+                    className="rounded-xl overflow-hidden border border-slate-200 hover:border-sky-200 hover:shadow-md transition bg-slate-50/50 hover:bg-white p-4 block"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
@@ -632,8 +631,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           {presentation.submissionDate && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              Submitted:{" "}
-                              {new Date(presentation.submissionDate).toLocaleDateString("en-US", {
+                              Nộp:{" "}
+                              {new Date(presentation.submissionDate).toLocaleDateString("vi-VN", {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
@@ -643,33 +642,19 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           {presentation.groupCode && (
                             <span className="flex items-center gap-1">
                               <Users className="w-3 h-3" />
-                              Group: {presentation.groupCode}
+                              Nhóm: {presentation.groupCode}
                             </span>
                           )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {presentation.studentId === user?.userId && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleOpenUploadModal(presentation.presentationId, presentation.title);
-                            }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg text-sm font-medium hover:bg-sky-200 transition"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Manage
-                          </button>
-                        )}
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
                 <FileTextIcon className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                <p>No presentations submitted yet.</p>
+                <p>Chưa có bài thuyết trình nào được nộp.</p>
               </div>
             )}
           </div>
@@ -692,10 +677,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="flex items-center gap-2 mb-1">
                   <Crown className="w-5 h-5 text-amber-500" />
                   <p className="text-xs uppercase tracking-wide text-amber-600 font-semibold">
-                    Group Leader Only
+                    Chỉ nhóm trưởng
                   </p>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900">Create your presentation</h3>
+                <h3 className="text-xl font-semibold text-slate-900">Tạo bài thuyết trình</h3>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -706,20 +691,20 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-semibold text-slate-700">Title *</label>
+                <label className="text-sm font-semibold text-slate-700">Tiêu đề *</label>
                 <input
                   value={presentationTitle}
                   onChange={(event) => setPresentationTitle(event.target.value)}
-                  placeholder="Enter presentation title"
+                  placeholder="Nhập tiêu đề bài thuyết trình"
                   className="mt-2 w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-slate-700">Description</label>
+                <label className="text-sm font-semibold text-slate-700">Mô tả</label>
                 <textarea
                   value={presentationDescription}
                   onChange={(event) => setPresentationDescription(event.target.value)}
-                  placeholder="Optional description"
+                  placeholder="Mô tả (tùy chọn)"
                   className="mt-2 min-h-[100px] w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
                 />
               </div>
@@ -728,7 +713,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                   <div className="flex items-center gap-2 text-sm text-sky-700">
                     <Users className="w-4 h-4" />
                     <span className="font-medium">
-                      This presentation will be created for group: {myGroupForClass.groupName || myGroupForClass.name}
+                      Bài thuyết trình này sẽ được tạo cho nhóm: {myGroupForClass.groupName || myGroupForClass.name}
                     </span>
                   </div>
                 </div>
@@ -739,7 +724,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 onClick={() => setIsCreateModalOpen(false)}
                 className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 onClick={handleCreatePresentation}
@@ -749,10 +734,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 {isCreating ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating...
+                    Đang tạo...
                   </span>
                 ) : (
-                  "Create Presentation"
+                  "Tạo bài thuyết trình"
                 )}
               </button>
             </div>

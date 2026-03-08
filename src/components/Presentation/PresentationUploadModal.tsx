@@ -171,11 +171,14 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     }
   };
 
-  // ✅ Submit: close modal immediately on success + spinner while waiting
+  // Cho phép gửi khi đã confirm ít nhất một loại: slides hoặc video (không bắt buộc cả hai)
+  const canSubmit =
+    (slideFile != null && slideConfirmed) || (mediaFile != null && mediaConfirmed);
+
   const handleSubmit = async () => {
-    if (!slideConfirmed || !mediaConfirmed) {
+    if (!canSubmit) {
       setToast({
-        message: "Please confirm both slide and media before submitting",
+        message: "Vui lòng upload và xác nhận ít nhất slides hoặc video",
         type: "error",
       });
       return;
@@ -258,6 +261,9 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
               Upload Presentation Files
             </h2>
             <p className="text-sm text-gray-600 mt-1">{presentationTitle}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Chỉ cần upload slides (PDF/PowerPoint) hoặc video — không bắt buộc cả hai.
+            </p>
           </div>
           <button
             onClick={handleClose}
@@ -578,7 +584,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
             text={
               isSubmitting
                 ? "Submitting..."
-                : slideConfirmed && mediaConfirmed
+                : canSubmit
                   ? "Submit Presentation"
                   : "Confirm Files First"
             }
@@ -587,7 +593,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
             borderRadius="8px"
             paddingWidth="20px"
             paddingHeight="10px"
-            disabled={!slideConfirmed || !mediaConfirmed || isSubmitting}
+            disabled={!canSubmit || isSubmitting}
             icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : undefined}
             onClick={handleSubmit}
           />

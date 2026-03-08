@@ -316,15 +316,26 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
     );
   };
 
-  const hasMediaContent = hasVideo || audioRecord;
+  const hasSlides = slides.length > 0;
+  const hasMediaContent = hasVideo || !!audioRecord;
+
+  // Khi không có slide nhưng có media (video/audio), ưu tiên tab media
+  useEffect(() => {
+    if (!hasSlides && hasMediaContent) {
+      setActiveTab("media");
+    } else if (hasSlides && !hasMediaContent) {
+      setActiveTab("slides");
+    }
+  }, [hasSlides, hasMediaContent]);
 
   // Calculate status badge
   const getStatusBadge = () => {
     const statusConfigs: Record<string, { bg: string; text: string }> = {
-      draft: { bg: "bg-gray-100 text-gray-700", text: "Draft" },
-      submitted: { bg: "bg-blue-100 text-blue-700", text: "Submitted" },
-      processing: { bg: "bg-amber-100 text-amber-700", text: "Processing" },
-      analyzed: { bg: "bg-green-100 text-green-700", text: "Analyzed" },
+      draft: { bg: "bg-slate-100 text-slate-700", text: "Nháp" },
+      submitted: { bg: "bg-sky-100 text-sky-700", text: "Đã nộp" },
+      processing: { bg: "bg-amber-100 text-amber-700", text: "Đang xử lý" },
+      analyzed: { bg: "bg-emerald-100 text-emerald-700", text: "Đã chấm" },
+      failed: { bg: "bg-red-100 text-red-700", text: "Thất bại" },
     };
     return statusConfigs[status.toLowerCase()] || statusConfigs.draft;
   };
@@ -356,12 +367,12 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               {createdAt && (
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>{new Date(createdAt).toLocaleDateString()}</span>
+                  <span>{new Date(createdAt).toLocaleDateString("vi-VN")}</span>
                 </div>
               )}
               <div className="flex items-center gap-1">
                 <FileText className="w-4 h-4" />
-                <span>{slides.length} slides</span>
+                <span>{slides.length} slide</span>
               </div>
               {audioRecord && (
                 <div className="flex items-center gap-1">
@@ -371,14 +382,14 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               )}
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadge.bg} ${statusBadge.text === "Draft" ? "text-gray-700" : ""}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.bg}`}>
             {statusBadge.text}
           </span>
         </div>
       </div>
 
-      {/* Tabs for media and slides */}
-      {hasMediaContent && slides.length > 0 && (
+      {/* Tabs cho media và slides (chỉ hiển thị khi vừa có slide vừa có media) */}
+      {hasMediaContent && hasSlides && (
         <div className="border-b border-slate-200">
           <div className="flex gap-4 px-4">
             <button
@@ -390,7 +401,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             >
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                Slides ({slides.length})
+                Slide ({slides.length})
               </div>
             </button>
             <button
@@ -402,7 +413,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             >
               <div className="flex items-center gap-2">
                 <Video className="w-4 h-4" />
-                Video Recording
+                Video ghi hình
               </div>
             </button>
           </div>
@@ -414,25 +425,25 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
         <div className="flex flex-col">
           {/* Content Section */}
           <div className="p-4">
-            {(!hasMediaContent || activeTab === "slides") && (
+            {hasSlides && (!hasMediaContent || activeTab === "slides") && (
               <div className="mb-4">
                 {renderSlideContent()}
               </div>
             )}
-            {hasMediaContent && activeTab === "media" && (
+            {hasMediaContent && (!hasSlides || activeTab === "media") && (
               <div className="mb-4">
                 {renderMediaPlayer()}
               </div>
             )}
           </div>
 
-          {/* Slides Sidebar - Only show when viewing slides */}
-          {!hasMediaContent || activeTab === "slides" ? (
+          {/* Slides Sidebar - chỉ hiển thị khi có slide và đang xem slides */}
+          {hasSlides && (!hasMediaContent || activeTab === "slides") ? (
             <div className="bg-slate-800 border-t border-slate-700">
               <div className="p-4 border-b border-slate-700">
                 <h3 className="text-white font-semibold flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  Slides ({slides.length})
+                  Slide ({slides.length})
                 </h3>
               </div>
               <div className="flex overflow-x-auto p-4 gap-3 max-h-[200px]">

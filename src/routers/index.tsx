@@ -21,7 +21,7 @@ import UserManagementPage from "@/page/Admin/UserManagementPage";
 import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
 import SettingsPage from "@/page/Admin/SettingsPage";
 import StudentSettingsPage from "@/page/Students/StudentSettingsPage";
-import FeedbackPage from "@/page/Students/FeedbackPage";
+import FeedbackPage from "@/page/Students/MyPresentPage";
 import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
 import PresentationDetailPage from "@/page/Students/PresentationDetailPage";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
@@ -88,7 +88,7 @@ const AppRouter = () => {
           path="/student/class/:classId/topic/:topicId"
           element={<StudentTopicDetailPage />}
         />
-        <Route path="/student/feedback" element={<FeedbackPage />} />
+        <Route path="/student/my-presentations" element={<FeedbackPage />} />
         <Route path="/student/settings" element={<StudentSettingsPage />} />
         <Route
           path="/student/presentation/:presentationId"
