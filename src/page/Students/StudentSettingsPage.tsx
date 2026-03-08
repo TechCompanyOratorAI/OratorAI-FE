@@ -136,7 +136,7 @@ const StudentSettingsPage: React.FC = () => {
                 My Classes
               </Link>
               <Link
-                to="/student/feedback"
+                to="/student/my-presentations"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900"
               >
                 My Presentations
@@ -223,7 +223,7 @@ const StudentSettingsPage: React.FC = () => {
                 My Classes
               </Link>
               <Link
-                to="/student/feedback"
+                to="/student/my-presentations"
                 className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
               >
                 My Presentations

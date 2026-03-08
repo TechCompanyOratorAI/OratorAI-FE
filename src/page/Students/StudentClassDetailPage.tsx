@@ -315,10 +315,10 @@ const StudentClassDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading class details...</p>
+          <p className="text-slate-600">Đang tải thông tin lớp...</p>
         </div>
       </div>
     );
@@ -326,18 +326,18 @@ const StudentClassDetailPage: React.FC = () => {
 
   if (error || !classDetail) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back
+            Quay lại
           </button>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
             <p className="text-red-700 font-medium">
-              {error || "Class not found"}
+              {error || "Không tìm thấy lớp học"}
             </p>
           </div>
         </div>
@@ -346,7 +346,7 @@ const StudentClassDetailPage: React.FC = () => {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -384,14 +384,9 @@ const StudentClassDetailPage: React.FC = () => {
     classDetail.topics ?? classDetail.course?.topics ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 relative">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-sky-200/35 blur-3xl"></div>
-        <div className="absolute top-24 -left-24 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/3 h-64 w-64 rounded-full bg-teal-200/25 blur-[120px]"></div>
-      </div>
+    <div className="min-h-screen bg-slate-100/90">
       {/* Header */}
-      <header className="bg-white/85 backdrop-blur border-b border-slate-200/70 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -460,117 +455,96 @@ const StudentClassDetailPage: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              Back to Classes
+              Quay lại lớp học
             </button>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="rounded-full bg-emerald-500 px-2 py-1 text-white font-semibold">
-                Class code
+            <span className="rounded-full bg-emerald-600 px-3 py-1.5 text-white text-sm font-semibold">
+              {classDetail.classCode}
+            </span>
+          </div>
+
+          {/* Hero: Class name + badges */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-500 p-6 sm:p-8 mb-6 shadow-xl">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-60"></div>
+            <div className="relative flex flex-wrap items-center gap-2 mb-4">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  classDetail.status === "active"
+                    ? "bg-white/25 text-white"
+                    : "bg-white/20 text-white/90"
+                }`}
+              >
+                {classDetail.status === "active" ? "Đang mở" : "Đã đóng"}
               </span>
-              <span className="font-semibold text-slate-700">
-                {classDetail.classCode}
-              </span>
+              {courseInfo?.semester && courseInfo?.academicYear && (
+                <span className="text-white/90 text-sm">
+                  {courseInfo.semester} • {courseInfo.academicYear}
+                </span>
+              )}
+              {classId && isClassEnrolled(parseInt(classId)) && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/25 text-white rounded-full text-xs font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Đã ghi danh
+                </span>
+              )}
+            </div>
+            <h1 className="relative text-2xl sm:text-3xl font-bold text-white mb-1">
+              {classTitle}
+            </h1>
+            <p className="relative text-white/90 text-sm sm:text-base mb-6">
+              {courseInfo?.courseCode && courseInfo?.courseName
+                ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
+                : classDetail.classCode}
+            </p>
+            {classDetail.description && (
+              <p className="relative text-white/85 text-sm max-w-2xl mb-6">
+                {classDetail.description}
+              </p>
+            )}
+            <div className="relative flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm font-semibold">{classDuration} ngày</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
+                <BookOpen className="w-4 h-4" />
+                <span className="text-sm font-semibold">
+                  {enrollmentCount}
+                  {classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""} học viên
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
+                <User className="w-4 h-4" />
+                <span className="text-sm font-semibold">{instructorName}</span>
+              </div>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
             <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-[32px] border border-sky-100/80 bg-gradient-to-br from-white via-white to-sky-50/70 shadow-2xl shadow-sky-100/50 p-8">
-                <div className="absolute -right-24 -top-20 h-56 w-56 rounded-full bg-sky-100/70 blur-3xl"></div>
-                <div className="relative flex flex-col gap-6">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                        classDetail.status === "active"
-                          ? "bg-sky-100 text-sky-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {classDetail.status === "active" ? "Active" : "Inactive"}
-                    </span>
-                    {courseInfo?.semester && courseInfo?.academicYear && (
-                      <span className="text-xs text-slate-500">
-                        {courseInfo.semester} • {courseInfo.academicYear}
-                      </span>
-                    )}
-                    {classId && isClassEnrolled(parseInt(classId)) && (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span className="text-xs font-medium">Enrolled</span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-2">
-                      {classTitle}
-                    </h1>
-                    <p className="text-base sm:text-lg text-slate-600">
-                      {classDetail.classCode}
-                      {courseInfo?.courseCode && courseInfo?.courseName
-                        ? ` • ${courseInfo.courseCode} - ${courseInfo.courseName}`
-                        : ""}
-                    </p>
-                    {classDetail.description && (
-                      <p className="text-sm text-slate-600 mt-3 max-w-3xl">
-                        {classDetail.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-sm">
-                      <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
-                        Timeline
-                      </p>
-                      <div className="flex items-center gap-2 text-slate-900 font-semibold">
-                        <Calendar className="w-4 h-4 text-sky-600" />
-                        {classDuration} days
-                      </div>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+                      <BookOpen className="w-5 h-5" />
                     </div>
-                    <div className="rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-sm">
-                      <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
-                        Enrolled students
-                      </p>
-                      <div className="flex items-center gap-2 text-slate-900 font-semibold">
-                        <BookOpen className="w-4 h-4 text-amber-600" />
-                        {enrollmentCount}
-                        {classDetail.maxStudents
-                          ? `/${classDetail.maxStudents}`
-                          : ""}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-sm">
-                      <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
-                        Instructor
-                      </p>
-                      <div className="flex items-center gap-2 text-slate-900 font-semibold">
-                        <User className="w-4 h-4 text-amber-600" />
-                        {instructorName}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/95 rounded-3xl border border-sky-100/80 shadow-lg shadow-sky-100/40 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-sky-600" />
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                        Presentation topics
+                        Chủ đề thuyết trình
                       </p>
                       <h3 className="text-lg font-bold text-slate-900">
-                        Topics for this class
+                        Các chủ đề của lớp
                       </h3>
                     </div>
                   </div>
-                  <div className="text-xs font-semibold text-sky-700 bg-sky-50 rounded-full px-3 py-1">
-                    {topics.length} topics
-                  </div>
+                  <span className="text-sm font-semibold text-sky-700 bg-sky-100 rounded-full px-3 py-1.5">
+                    {topics.length} chủ đề
+                  </span>
                 </div>
 
                 {topics.length > 0 ? (
@@ -582,16 +556,16 @@ const StudentClassDetailPage: React.FC = () => {
                       return (
                         <div
                           key={topic.topicId}
-                          className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4 hover:border-sky-200 hover:shadow-md transition"
+                          className="rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-sky-200 hover:shadow-md px-4 py-3 sm:px-5 sm:py-4 transition"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div className="flex items-start gap-3 flex-1">
-                              <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500 text-sm font-bold text-white">
                                 {topic.sequenceNumber}
                               </div>
                               <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  Topic {topic.sequenceNumber}
+                                <p className="text-xs font-semibold text-slate-500">
+                                  Chủ đề {topic.sequenceNumber}
                                 </p>
                                 <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
                                   {topic.topicName}
@@ -605,11 +579,11 @@ const StudentClassDetailPage: React.FC = () => {
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               {topic.dueDate && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                                   <Calendar className="w-3 h-3" />
-                                  Due{" "}
+                                  Hạn:{" "}
                                   {new Date(topic.dueDate).toLocaleDateString(
-                                    "en-US",
+                                    "vi-VN",
                                     {
                                       year: "numeric",
                                       month: "short",
@@ -619,16 +593,15 @@ const StudentClassDetailPage: React.FC = () => {
                                 </span>
                               )}
                               {topic.maxDurationMinutes && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                                  {topic.maxDurationMinutes} mins
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                                  {topic.maxDurationMinutes} phút
                                 </span>
                               )}
-                              {/* Enroll Button */}
                               {isGroupEnrolled ? (
                                 isTopicEnrolled ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2 text-xs font-semibold border border-emerald-200 cursor-default">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-2 text-xs font-semibold border border-emerald-200 cursor-default">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Enrolled
+                                    Đã ghi danh
                                   </span>
                                 ) : (
                                   <button
@@ -644,7 +617,7 @@ const StudentClassDetailPage: React.FC = () => {
                                     ) : (
                                       <>
                                         <Plus className="w-3.5 h-3.5" />
-                                        Enroll Topic
+                                        Ghi danh
                                       </>
                                     )}
                                   </button>
@@ -655,26 +628,25 @@ const StudentClassDetailPage: React.FC = () => {
                                     e.stopPropagation();
                                     setToast({
                                       message:
-                                        "You need to enroll in this class first before enrolling in topics.",
+                                        "Bạn cần ghi danh lớp trước khi ghi danh chủ đề.",
                                       type: "info",
                                     });
                                   }}
-                                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 text-gray-600 px-4 py-2 text-xs font-semibold border border-gray-200 hover:bg-gray-200 transition"
+                                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-200 text-slate-600 px-4 py-2 text-xs font-semibold hover:bg-slate-300 transition"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
-                                  Enroll Topic
+                                  Ghi danh
                                 </button>
                               )}
-                              {/* View Details Button */}
                               <button
                                 onClick={() =>
                                   navigate(
                                     `/student/class/${classId}/topic/${topic.topicId}`,
                                   )
                                 }
-                                className="inline-flex items-center gap-1 rounded-full bg-sky-50 text-sky-700 px-3 py-2 text-xs font-semibold border border-sky-200 hover:bg-sky-100 transition"
+                                className="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-3 py-2 text-xs font-semibold hover:bg-sky-500 transition"
                               >
-                                View Details
+                                Xem chi tiết
                               </button>
                             </div>
                           </div>
@@ -683,42 +655,43 @@ const StudentClassDetailPage: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600 bg-slate-50">
-                    No topics have been assigned yet. Your instructor will add
-                    presentation topics here when ready.
+                  <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600 bg-slate-50">
+                    Chưa có chủ đề nào. Giảng viên sẽ thêm chủ đề thuyết trình khi sẵn sàng.
                   </div>
                 )}
               </div>
 
-              <div className="bg-white/95 rounded-3xl border border-sky-100/80 shadow-lg shadow-sky-100/40 p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-sky-600" />
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                      <Users className="w-5 h-5" />
+                    </div>
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                        Group workspace
+                        Nhóm làm việc
                       </p>
                       <h3 className="text-lg font-bold text-slate-900">
-                        Groups
+                        Danh sách nhóm
                       </h3>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-xs font-semibold text-sky-700 bg-sky-50 rounded-full px-3 py-1">
-                      {groupsCount} groups
-                    </div>
+                    <span className="text-sm font-semibold text-violet-700 bg-violet-100 rounded-full px-3 py-1.5">
+                      {groupsCount} nhóm
+                    </span>
                     {groupLimit && (
-                      <div className="text-xs font-semibold text-slate-600 bg-slate-100 rounded-full px-3 py-1">
-                        Max members: {groupLimit}
-                      </div>
+                      <span className="text-sm font-semibold text-slate-600 bg-slate-100 rounded-full px-3 py-1.5">
+                        Tối đa {groupLimit} thành viên
+                      </span>
                     )}
                     {!myGroupForClass && isGroupEnrolled && (
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-200/60 hover:bg-sky-500 transition"
+                        className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 transition"
                       >
                         <Plus className="w-4 h-4" />
-                        Create group
+                        Tạo nhóm
                       </button>
                     )}
                     {myGroupForClass && (
@@ -731,19 +704,18 @@ const StudentClassDetailPage: React.FC = () => {
                           }
                           setShowGroupDetail(true);
                         }}
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-200/60 hover:bg-emerald-500 transition"
+                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition"
                       >
                         <Users className="w-4 h-4" />
-                        Your Group: {getGroupName(myGroupForClass)}
+                        Nhóm của bạn: {getGroupName(myGroupForClass)}
                       </button>
                     )}
                   </div>
                 </div>
 
                 {!isGroupEnrolled && (
-                  <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    You need to enroll in this class before joining or creating
-                    a group.
+                  <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm.
                   </div>
                 )}
 
@@ -761,8 +733,8 @@ const StudentClassDetailPage: React.FC = () => {
                       return (
                         <div
                           key={`${groupId ?? group.name}`}
-                          className={`flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                            isMyGroup ? "ring-1 ring-emerald-200" : ""
+                          className={`flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:bg-white hover:shadow-md ${
+                            isMyGroup ? "ring-2 ring-emerald-400 bg-emerald-50/50" : ""
                           }`}
                           onClick={() => {
                             if (isMyGroup) {
@@ -778,8 +750,8 @@ const StudentClassDetailPage: React.FC = () => {
                                   {getGroupName(group)}
                                 </p>
                                 {isMyGroup && (
-                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                                    Your Group
+                                  <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                    Nhóm của bạn
                                   </span>
                                 )}
                                 {group.myRole && !isMyGroup && (
@@ -791,14 +763,14 @@ const StudentClassDetailPage: React.FC = () => {
                               {/* Join/Full/Joined Status */}
                               {!myGroupForClass &&
                                 (group.isMember ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-200">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1.5 text-xs font-semibold border border-emerald-200">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Joined
+                                    Đã tham gia
                                   </span>
                                 ) : memberCount >=
                                   (group.maxGroupMembers || groupLimit || 0) ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold border border-red-200">
-                                    Full
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1.5 text-xs font-semibold border border-red-200">
+                                    Đã đủ
                                   </span>
                                 ) : (
                                   <button
@@ -813,7 +785,7 @@ const StudentClassDetailPage: React.FC = () => {
                                     }
                                     className="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-4 py-1.5 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
-                                    Join
+                                    Tham gia
                                   </button>
                                 ))}
                             </div>
@@ -823,11 +795,11 @@ const StudentClassDetailPage: React.FC = () => {
                               </p>
                             )}
                             <p className="text-sm text-slate-600 mt-2">
-                              Members: {memberCount}
+                              Thành viên: {memberCount}
                               {groupLimit ? `/${groupLimit}` : ""}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">
-                              Leader: {getLeaderName(group)}
+                              Nhóm trưởng: {getLeaderName(group)}
                             </p>
                           </div>
                         </div>
@@ -835,7 +807,7 @@ const StudentClassDetailPage: React.FC = () => {
                     })
                   ) : (
                     <p className="text-sm text-slate-600">
-                      No groups available yet.
+                      Chưa có nhóm nào.
                     </p>
                   )}
                 </div>
@@ -843,54 +815,56 @@ const StudentClassDetailPage: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white/95 rounded-3xl border border-amber-100/80 shadow-lg shadow-amber-100/40 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Info className="w-5 h-5 text-amber-600" />
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-md border-l-4 border-l-amber-500 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                    <Info className="w-5 h-5" />
+                  </div>
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Class information
+                      Thông tin lớp
                     </p>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Details
+                      Chi tiết
                     </h3>
                   </div>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="font-semibold text-slate-900">
+                <div className="flex items-center justify-between py-2 mb-2">
+                  <span className="font-semibold text-slate-900 text-sm">
                     {courseInfo?.courseCode && courseInfo?.courseName
                       ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
                       : "N/A"}
                   </span>
                 </div>
-                <div className="space-y-3 text-sm text-slate-700">
-                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-600">Start Date</span>
+                <div className="space-y-0 text-sm text-slate-700">
+                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
+                    <span className="text-slate-600">Ngày bắt đầu</span>
                     <span className="font-semibold text-slate-900">
                       {formatDate(classDetail.startDate)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-600">End Date</span>
+                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
+                    <span className="text-slate-600">Ngày kết thúc</span>
                     <span className="font-semibold text-slate-900">
                       {formatDate(classDetail.endDate)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-600">Duration</span>
+                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
+                    <span className="text-slate-600">Thời lượng</span>
                     <span className="font-semibold text-slate-900">
-                      {classDuration} days
+                      {classDuration} ngày
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-600">Status</span>
+                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
+                    <span className="text-slate-600">Trạng thái</span>
                     <span
-                      className={`font-semibold ${classDetail.status === "active" ? "text-sky-700" : "text-slate-600"}`}
+                      className={`font-semibold ${classDetail.status === "active" ? "text-sky-600" : "text-slate-600"}`}
                     >
-                      {classDetail.status === "active" ? "Active" : "Inactive"}
+                      {classDetail.status === "active" ? "Đang mở" : "Đã đóng"}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-600">Class Code</span>
+                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
+                    <span className="text-slate-600">Mã lớp</span>
                     <span className="font-semibold text-slate-900">
                       {classDetail.classCode}
                     </span>
@@ -898,19 +872,19 @@ const StudentClassDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white/95 rounded-3xl border border-slate-200/70 shadow-lg shadow-slate-200/50 p-6">
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                  Quick stats
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-md border-l-4 border-l-sky-500 p-6">
+                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-4">
+                  Thống kê nhanh
                 </p>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span>Groups</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
+                    <span>Nhóm</span>
                     <span className="font-semibold text-slate-900">
                       {groupsCount}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span>Enrollment</span>
+                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
+                    <span>Ghi danh</span>
                     <span className="font-semibold text-slate-900">
                       {enrollmentCount}
                       {classDetail.maxStudents
@@ -918,22 +892,22 @@ const StudentClassDetailPage: React.FC = () => {
                         : ""}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span>Topics</span>
+                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
+                    <span>Chủ đề</span>
                     <span className="font-semibold text-slate-900">
                       {classDetail.topics?.length || 0}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span>Instructor</span>
-                    <span className="font-semibold text-slate-900">
+                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
+                    <span>Giảng viên</span>
+                    <span className="font-semibold text-slate-900 truncate max-w-[140px]" title={instructorName}>
                       {instructorName}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span>Duration</span>
+                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5">
+                    <span>Thời lượng</span>
                     <span className="font-semibold text-slate-900">
-                      {classDuration} days
+                      {classDuration} ngày
                     </span>
                   </div>
                 </div>

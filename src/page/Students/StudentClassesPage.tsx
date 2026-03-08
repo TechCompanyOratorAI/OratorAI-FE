@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import Button from "@/components/yoodli/Button";
 import Toast from "@/components/Toast/Toast";
 import {
   Search,
@@ -56,7 +55,7 @@ const StudentClassesPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("All Classes");
+  const [selectedFilter, setSelectedFilter] = useState<"All Classes" | "Active Classes" | "Inactive Classes">("All Classes");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [toast, setToast] = useState<{
@@ -126,7 +125,7 @@ const StudentClassesPage: React.FC = () => {
       courseName,
       semester,
       status: apiClass.status,
-      schedule: `${new Date(apiClass.startDate).toLocaleDateString()} to ${new Date(apiClass.endDate).toLocaleDateString()}`,
+      schedule: `${new Date(apiClass.startDate).toLocaleDateString("vi-VN")} – ${new Date(apiClass.endDate).toLocaleDateString("vi-VN")}`,
       instructorName,
       description: apiClass.description || "",
       enrollmentCount: apiClass.enrollmentCount ?? 0,
@@ -182,7 +181,7 @@ const StudentClassesPage: React.FC = () => {
     }
     const trimmedKey = enrollKey.trim();
     if (!trimmedKey) {
-      setEnrollError("Enroll key is required");
+      setEnrollError("Vui lòng nhập mã ghi danh");
       return;
     }
 
@@ -204,7 +203,7 @@ const StudentClassesPage: React.FC = () => {
       const errorMessage =
         typeof error === "string"
           ? error
-          : (error as Error)?.message || "Failed to enroll in class";
+          : (error as Error)?.message || "Ghi danh lớp thất bại";
       setToast({
         message: errorMessage,
         type: "error",
@@ -231,93 +230,91 @@ const StudentClassesPage: React.FC = () => {
     : "Student";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <AppLogo to="/" size="lg" />
+              <div>
+                <AppLogo to="/" size="md" />
+                <p className="text-xs text-slate-500 font-vn">Student workspace</p>
+              </div>
             </div>
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-8 font-vn">
               <Link
                 to="/student/dashboard"
                 className={
                   courseIdNumber
-                    ? "text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
-                    : "text-sm font-medium text-gray-600 hover:text-gray-900"
+                    ? "text-sm font-medium text-slate-900 border-b-2 border-sky-500 pb-1"
+                    : "text-sm font-medium text-slate-700 hover:text-slate-900"
                 }
               >
-                Courses
+                Khóa học
               </Link>
               <Link
                 to="/student/my-class"
                 className={
                   courseIdNumber
-                    ? "text-sm font-medium text-gray-600 hover:text-gray-900"
-                    : "text-sm font-medium text-gray-900 border-b-2 border-sky-500 pb-1"
+                    ? "text-sm font-medium text-slate-700 hover:text-slate-900"
+                    : "text-sm font-medium text-slate-900 border-b-2 border-sky-500 pb-1"
                 }
               >
-                My Classes
+                Lớp của tôi
               </Link>
               <Link
-                to="/student/feedback"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                to="/student/my-presentations"
+                className="text-sm font-medium text-slate-700 hover:text-slate-900"
               >
-                My Presentations
+                Bài thuyết trình
               </Link>
             </nav>
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5 text-gray-600" />
+              <button className="relative p-2 hover:bg-sky-50 rounded-full transition">
+                <Bell className="w-5 h-5 text-slate-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-
-              {/* User Menu */}
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                  className="flex items-center gap-2 p-1 hover:bg-sky-50 rounded-full transition"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
                       {userInitial}
                     </span>
                   </div>
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-sm font-semibold text-slate-900">
                         {userDisplayName}
                       </p>
-                      <p className="text-xs text-gray-500">Student</p>
+                      <p className="text-xs text-slate-500">Student</p>
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
+                      <span>Đăng xuất</span>
                     </button>
                   </div>
                 )}
               </div>
-
-              {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-gray-100 rounded-full"
+                className="md:hidden p-2 hover:bg-slate-100 rounded-full"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-slate-600" />
                 ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
+                  <Menu className="w-5 h-5 text-slate-600" />
                 )}
               </button>
             </div>
@@ -331,82 +328,68 @@ const StudentClassesPage: React.FC = () => {
           {/* Page Header */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                {courseIdNumber ? "Classes in this course" : "All Classes"}
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 font-vn">
+                {courseIdNumber ? "Lớp thuộc khóa học" : "Tất cả lớp học"}
               </h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-slate-600 font-vn">
                 {courseIdNumber
-                  ? "These are classes that belong to the selected course."
-                  : "Browse and explore available classes to improve your presentation skills."}
+                  ? "Các lớp thuộc khóa học đã chọn."
+                  : "Xem và khám phá các lớp có sẵn để cải thiện kỹ năng thuyết trình."}
               </p>
             </div>
             {courseIdNumber && (
-              <div className="w-full sm:w-auto">
-                <Button
-                  text="View all classes"
-                  variant="secondary"
-                  fontSize="14px"
-                  borderRadius="6px"
-                  paddingWidth="16px"
-                  paddingHeight="8px"
-                  onClick={() => navigate("/student/classes")}
-                />
-              </div>
+              <button
+                onClick={() => navigate("/student/classes")}
+                className="rounded-full border border-sky-200 bg-sky-50 text-sky-700 px-4 py-2 text-sm font-semibold hover:bg-sky-100 transition font-vn"
+              >
+                Xem tất cả lớp
+              </button>
             )}
           </div>
 
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-            {/* Search */}
             <div className="relative flex-1 w-full sm:max-w-[448px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search for classes..."
+                placeholder="Tìm lớp học..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[43px] pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                className="w-full h-[43px] pl-10 pr-4 border border-slate-200 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-vn placeholder:text-slate-500"
               />
             </div>
-
-            {/* Filters */}
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto font-vn">
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
                   selectedFilter === "All Classes"
-                    ? "bg-gray-100 border-gray-300"
-                    : "bg-white border-gray-300"
+                    ? "bg-sky-100 border-sky-200 text-sky-800"
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => setSelectedFilter("All Classes")}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  All Classes
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium">Tất cả lớp</span>
+                <ChevronDown className="w-4 h-4" />
               </button>
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
                   selectedFilter === "Active Classes"
-                    ? "bg-gray-100 border-gray-300"
-                    : "bg-white border-gray-300"
+                    ? "bg-sky-100 border-sky-200 text-sky-800"
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => setSelectedFilter("Active Classes")}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  Active Classes
-                </span>
+                <span className="text-sm font-medium">Đang mở</span>
               </button>
               <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
                   selectedFilter === "Inactive Classes"
-                    ? "bg-gray-100 border-gray-300"
-                    : "bg-white border-gray-300"
+                    ? "bg-sky-100 border-sky-200 text-sky-800"
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => setSelectedFilter("Inactive Classes")}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  Inactive
-                </span>
+                <span className="text-sm font-medium">Đã đóng</span>
               </button>
             </div>
           </div>
@@ -416,7 +399,7 @@ const StudentClassesPage: React.FC = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading classes...</p>
+                <p className="text-slate-600 font-vn">Đang tải danh sách lớp...</p>
               </div>
             </div>
           )}
@@ -425,24 +408,24 @@ const StudentClassesPage: React.FC = () => {
           {!loading && (
             <div className="space-y-6">
               {filteredClasses.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg font-medium text-gray-900 mb-2">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-12 text-center">
+                  <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-slate-900 mb-2 font-vn">
                     {searchQuery
-                      ? "No classes found matching your search"
-                      : "No classes available"}
+                      ? "Không tìm thấy lớp phù hợp"
+                      : "Chưa có lớp nào"}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-slate-600 font-vn">
                     {searchQuery
-                      ? "Try adjusting your search terms or filters"
-                      : "Check back later for new classes"}
+                      ? "Thử đổi từ khóa hoặc bộ lọc"
+                      : "Hãy quay lại sau để xem lớp mới"}
                   </p>
                 </div>
               ) : (
                 filteredClasses.map((classItem) => (
                   <div
                     key={classItem.classId}
-                    className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                    className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden hover:shadow-lg hover:border-sky-100 transition"
                   >
                     {/* Course Info */}
                     <div className="p-5">
@@ -450,33 +433,33 @@ const StudentClassesPage: React.FC = () => {
                       <div className="mb-4">
                         <div className="flex items-center gap-3 mb-2">
                           <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                               classItem.status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-700"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
                             }`}
                           >
                             {classItem.status === "active"
-                              ? "Active"
-                              : "Inactive"}
+                              ? "Đang mở"
+                              : "Đã đóng"}
                           </span>
                           {classItem.semester && (
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-slate-600">
                               {classItem.semester}
                             </span>
                           )}
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">
+                        <h3 className="text-xl font-bold text-slate-900 mb-1 font-vn">
                           {classItem.className}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-slate-600 mb-2">
                           {classItem.classCode}
                           {classItem.courseCode &&
                             classItem.courseName &&
                             ` • ${classItem.courseCode} - ${classItem.courseName}`}
                         </p>
                         {classItem.description && (
-                          <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                          <p className="text-sm text-slate-700 mb-3 line-clamp-2">
                             {classItem.description}
                           </p>
                         )}
@@ -484,20 +467,20 @@ const StudentClassesPage: React.FC = () => {
 
                       {/* Stats */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <User className="w-4 h-4 text-gray-600" />
+                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                          <User className="w-4 h-4 text-sky-600" />
                           <div>
-                            <p className="text-xs text-gray-600">Instructor</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs text-slate-500 font-vn">Giảng viên</p>
+                            <p className="text-sm font-medium text-slate-900">
                               {classItem.instructorName}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <BookOpen className="w-4 h-4 text-gray-600" />
+                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                          <BookOpen className="w-4 h-4 text-amber-600" />
                           <div>
-                            <p className="text-xs text-gray-600">Enrolled</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs text-slate-500 font-vn">Ghi danh</p>
+                            <p className="text-sm font-medium text-slate-900">
                               {classItem.enrollmentCount}
                               {classItem.maxStudents
                                 ? `/${classItem.maxStudents}`
@@ -505,11 +488,11 @@ const StudentClassesPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <Calendar className="w-4 h-4 text-gray-600" />
+                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                          <Calendar className="w-4 h-4 text-sky-600" />
                           <div>
-                            <p className="text-xs text-gray-600">Schedule</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs text-slate-500 font-vn">Lịch học</p>
+                            <p className="text-sm font-medium text-slate-900">
                               {classItem.schedule}
                             </p>
                           </div>
@@ -517,24 +500,19 @@ const StudentClassesPage: React.FC = () => {
                       </div>
 
                       {/* Action Button */}
-                      <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
                         {isEnrolled(classItem.classId) ? (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full border border-green-200">
+                          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 font-vn">
                             <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-sm font-medium">
-                              Enrolled
-                            </span>
+                            <span className="text-sm font-medium">Đã ghi danh</span>
                           </div>
                         ) : (
-                          <Button
-                            text="Enroll"
-                            variant="primary"
-                            fontSize="14px"
-                            borderRadius="6px"
-                            paddingWidth="16px"
-                            paddingHeight="8px"
+                          <button
                             onClick={() => openEnrollModal(classItem)}
-                          />
+                            className="rounded-full bg-sky-600 hover:bg-sky-500 text-white px-5 py-2.5 text-sm font-semibold transition font-vn"
+                          >
+                            Ghi danh
+                          </button>
                         )}
                       </div>
                     </div>
@@ -545,12 +523,10 @@ const StudentClassesPage: React.FC = () => {
           )}
 
           {!loading && !error && pagination.total > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-8 px-4 py-4 border-t border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="text-sm text-gray-600">
-                    Page {pagination.page} of {pagination.totalPages}
-                  </div>
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-8 px-4 py-4 border-t border-slate-200">
+              <div className="flex items-center gap-3 font-vn">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <span>Trang {pagination.page} / {pagination.totalPages}</span>
                   <select
                     value={pageSize}
                     onChange={(e) => {
@@ -558,7 +534,7 @@ const StudentClassesPage: React.FC = () => {
                       setPageSize(nextSize);
                       setCurrentPage(1);
                     }}
-                    className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
                   >
                     <option value={10}>10</option>
                     <option value={20}>20</option>
@@ -570,9 +546,9 @@ const StudentClassesPage: React.FC = () => {
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
                   disabled={pagination.page <= 1}
-                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  Trước
                 </button>
                 <button
                   onClick={() =>
@@ -581,9 +557,9 @@ const StudentClassesPage: React.FC = () => {
                     )
                   }
                   disabled={pagination.page >= pagination.totalPages}
-                  className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  Sau
                 </button>
               </div>
             </div>
@@ -592,55 +568,51 @@ const StudentClassesPage: React.FC = () => {
           {isEnrollModalOpen && selectedClass && (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
               <div
-                className="absolute inset-0 bg-black/40"
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                 onClick={closeEnrollModal}
-              ></div>
-              <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Enroll in {selectedClass.className}
+              />
+              <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-1 font-vn">
+                  Ghi danh vào {selectedClass.className}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4 ">
-                  Enter the enroll key to join this class.
+                <p className="text-sm text-slate-600 mb-4 font-vn">
+                  Nhập mã ghi danh để tham gia lớp này.
                 </p>
-                <label className="block text-sm font-medium text-gray-700 mb-2 ">
-                  Enroll Key
+                <label className="block text-sm font-medium text-slate-700 mb-2 font-vn">
+                  Mã ghi danh
                 </label>
                 <input
                   type="text"
                   value={enrollKey}
                   onChange={(event) => {
                     setEnrollKey(event.target.value);
-                    if (enrollError) {
-                      setEnrollError("");
-                    }
+                    if (enrollError) setEnrollError("");
                   }}
-                  className={`w-full h-[42px] px-4 border rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                    enrollError ? "border-red-500" : "border-gray-300"
+                  className={`w-full h-[42px] px-4 border rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-vn ${
+                    enrollError ? "border-red-500" : "border-slate-200"
                   }`}
-                  placeholder="Enter enroll key"
+                  placeholder="Nhập mã ghi danh"
                 />
                 {enrollError && (
-                  <p className="text-sm text-red-600 mt-2">{enrollError}</p>
+                  <p className="text-sm text-red-600 mt-2 font-vn">{enrollError}</p>
                 )}
                 <div className="mt-6 flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-full"
+                    className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-full font-vn"
                     onClick={closeEnrollModal}
                     disabled={isEnrollSubmitting}
                   >
-                    Cancel
+                    Hủy
                   </button>
-                  <Button
-                    text={isEnrollSubmitting ? "Enrolling..." : "Enroll"}
-                    variant="primary"
-                    fontSize="14px"
-                    borderRadius="6px"
-                    paddingWidth="16px"
-                    paddingHeight="8px"
+                  <button
+                    type="button"
                     onClick={handleEnrollSubmit}
                     disabled={isEnrollSubmitting}
-                  />
+                    className="rounded-full bg-sky-600 hover:bg-sky-500 text-white px-5 py-2 text-sm font-semibold transition disabled:opacity-50 font-vn"
+                  >
+                    {isEnrollSubmitting ? "Đang ghi danh..." : "Ghi danh"}
+                  </button>
                 </div>
               </div>
             </div>
