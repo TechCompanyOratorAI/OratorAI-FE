@@ -1,456 +1,236 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { User as UserIcon, Lock } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { getProfile, changePassword } from "@/services/features/auth/authSlice";
-import AppLogo from "@/components/AppLogo/AppLogo";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import * as Tabs from "@radix-ui/react-tabs";
+import { motion } from "framer-motion";
+import { toast } from "react-toastify";
 import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Descriptions,
-  Avatar,
-  Space,
-  Typography,
-  Tag,
-} from "antd";
-import {
-  UserOutlined,
-  MailOutlined,
-  LockOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-} from "@ant-design/icons";
-import {
-  Bell,
-  Menu,
-  X,
-  LogOut,
-  ChevronDown,
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Save,
+  Loader2,
+  CheckCircle2,
+  Mail,
+  AtSign,
+  IdCard,
 } from "lucide-react";
-import type { User, ProfileUser } from "@/interfaces/auth";
-import { logout } from "@/services/features/auth/authSlice";
-
-const { Title, Text } = Typography;
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import { changePassword } from "@/services/features/auth/authSlice";
+import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const StudentSettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const { user, loading } = useAppSelector((state) => state.auth);
-  const [form] = Form.useForm();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const [profileData, setProfileData] = useState<ProfileUser | null>(null);
+  const { user } = useAppSelector((state) => state.auth);
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
+  const [activeTab, setActiveTab] = useState("profile");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-    if (isUserMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+  const fullName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "Student" : "Student";
+  const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isUserMenuOpen]);
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) { toast.error("Vui lòng điền đầy đủ thông tin."); return; }
+    if (newPassword !== confirmPassword) { toast.error("Mật khẩu mới không khớp."); return; }
+    if (newPassword.length < 6) { toast.error("Mật khẩu mới phải có ít nhất 6 ký tự."); return; }
+    if (newPassword === currentPassword) { toast.error("Mật khẩu mới phải khác mật khẩu cũ."); return; }
 
-  const loadProfile = useCallback(async () => {
+    setIsChangingPwd(true);
     try {
-      const result = await dispatch(getProfile());
-      if (getProfile.fulfilled.match(result)) {
-        setProfileData(result.payload.user);
-      }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    }
-  }, [dispatch]);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  const handlePasswordChange = async (values: {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  }) => {
-    try {
-      const result = await dispatch(
-        changePassword({
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword,
-        })
-      );
-
-      if (changePassword.fulfilled.match(result)) {
-        form.resetFields();
-      }
-    } catch (error) {
-      console.error("Error changing password:", error);
+      await dispatch(changePassword({ currentPassword, newPassword })).unwrap();
+      toast.success("Đổi mật khẩu thành công!");
+      setPasswordSuccess(true);
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err: any) {
+      toast.error(err?.message || "Đổi mật khẩu thất bại.");
+    } finally {
+      setIsChangingPwd(false);
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
-
-  const displayUser: ProfileUser | User | null = profileData || user;
-  const fullName = displayUser
-    ? `${displayUser.firstName || ""} ${displayUser.lastName || ""}`.trim()
-    : "Student";
+  const profileFields = [
+    { icon: User, label: "Tên đầy đủ", value: fullName },
+    { icon: Mail, label: "Email", value: user?.email || "—" },
+    { icon: AtSign, label: "Tên đăng nhập", value: user?.username || "—" },
+    { icon: IdCard, label: "Vai trò", value: "Học viên (Student)" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <AppLogo to="/" size="md" />
-            </div>
+    <StudentLayout>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Page Header */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Cài đặt</h1>
+          <p className="text-slate-500 mt-1">Quản lý thông tin cá nhân và bảo mật tài khoản</p>
+        </motion.div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              <Link
-                to="/student/dashboard"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+        {/* Tabs */}
+        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
+            {[
+              { value: "profile", label: "Hồ sơ", icon: User },
+              { value: "security", label: "Bảo mật", icon: Lock },
+            ].map(({ value, label, icon: Icon }) => (
+              <Tabs.Trigger
+                key={value}
+                value={value}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === value ? "text-blue-700 bg-blue-50 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}
               >
-                Courses
-              </Link>
-              <Link
-                to="/student/my-class"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
-                My Classes
-              </Link>
-              <Link
-                to="/student/my-presentations"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
-                My Presentations
-              </Link>
-            </nav>
+                <Icon className="w-4 h-4" />{label}
+              </Tabs.Trigger>
+            ))}
+          </Tabs.List>
 
-            {/* User Actions */}
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center">
-                    <span className="text-white font-semibold text-xs">
-                      {fullName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {fullName}
-                      </p>
-                      <p className="text-xs text-gray-500">Student</p>
-                    </div>
-                    <Link
-                      to="/student/settings"
-                      className="block px-4 py-2 text-sm text-gray-900 bg-gray-50 font-medium"
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Đăng Xuất
-                    </button>
-                  </div>
-                )}
+          {/* Profile Tab */}
+          <Tabs.Content value="profile" className="mt-4 outline-none">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              {/* Avatar header */}
+              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-8 flex flex-col items-center gap-4">
+                <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-4xl font-bold text-white shadow-xl">
+                  {initials}
+                </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-white">{fullName}</h2>
+                  <p className="text-blue-100 text-sm mt-0.5">{user?.email}</p>
+                  <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full border border-white/30">
+                    <User className="w-3.5 h-3.5" /> Student
+                  </span>
+                </div>
               </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
+              {/* Profile fields */}
+              <div className="p-6">
+                <h3 className="text-base font-bold text-slate-900 mb-4">Thông tin tài khoản</h3>
+                <div className="space-y-3">
+                  {profileFields.map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+                        <p className="text-sm font-semibold text-slate-900 mt-0.5">{value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>Để thay đổi thông tin hồ sơ, vui lòng liên hệ quản trị viên hoặc giảng viên phụ trách.</span>
+                </div>
+              </div>
+            </motion.div>
+          </Tabs.Content>
+
+          {/* Security Tab */}
+          <Tabs.Content value="security" className="mt-4 outline-none">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Đổi mật khẩu</h3>
+                  <p className="text-xs text-slate-500">Cập nhật mật khẩu để bảo vệ tài khoản</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Current password */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu hiện tại *</label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPwd ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu hiện tại"
+                      className="w-full pr-10 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                    <button type="button" onClick={() => setShowCurrentPwd(!showCurrentPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showCurrentPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New password */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu mới *</label>
+                  <div className="relative">
+                    <input
+                      type={showNewPwd ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Ít nhất 6 ký tự"
+                      className="w-full pr-10 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                    <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {newPassword.length > 0 && (
+                    <div className="mt-2 flex gap-1">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < (newPassword.length >= 12 ? 4 : newPassword.length >= 8 ? 3 : newPassword.length >= 6 ? 2 : 1) ? "bg-blue-500" : "bg-slate-200"}`} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirm password */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Xác nhận mật khẩu mới *</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPwd ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Nhập lại mật khẩu mới"
+                      className={`w-full pr-10 px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${confirmPassword && newPassword !== confirmPassword ? "border-red-300 bg-red-50" : "border-slate-200"}`}
+                      required
+                    />
+                    <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showConfirmPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-xs text-red-600 mt-1">Mật khẩu không khớp</p>
+                  )}
+                </div>
+
+                {passwordSuccess && (
+                  <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> Đổi mật khẩu thành công!
+                  </div>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <nav className="px-4 py-3 space-y-1">
-              <Link
-                to="/student/dashboard"
-                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-              >
-                Courses
-              </Link>
-              <Link
-                to="/student/my-class"
-                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-              >
-                My Classes
-              </Link>
-              <Link
-                to="/student/my-presentations"
-                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-              >
-                My Presentations
-              </Link>
-              <Link
-                to="/student/settings"
-                className="block px-3 py-2 text-sm font-medium text-gray-900 bg-gray-50 rounded-lg"
-              >
-                Settings
-              </Link>
-            </nav>
-          </div>
-        )}
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Title level={2} className="mb-6 text-gray-900">
-          Settings
-        </Title>
-
-        {/* Profile Section */}
-        <Card
-          title={
-            <Space>
-              <UserIcon className="w-5 h-5" />
-              <span>Thông tin Profile</span>
-            </Space>
-          }
-          className="mb-6"
-        >
-          <div className="flex flex-col md:flex-row gap-6 mb-6">
-            <div className="flex flex-col items-center md:items-start">
-              <Avatar
-                size={100}
-                style={{
-                  backgroundColor: "#0ea5e9",
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                }}
-              >
-                {fullName
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2) || "U"}
-              </Avatar>
-              <Text className="mt-3 text-base font-semibold">{fullName || "User"}</Text>
-              <Text type="secondary" className="text-sm">
-                {displayUser?.username || "N/A"}
-              </Text>
-            </div>
-            <div className="flex-1">
-              <Descriptions column={1} bordered>
-                <Descriptions.Item
-                  label={
-                    <Space>
-                      <UserOutlined />
-                      <span>First Name</span>
-                    </Space>
-                  }
+                <button
+                  type="submit"
+                  disabled={isChangingPwd || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {displayUser?.firstName || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <Space>
-                      <UserOutlined />
-                      <span>Last Name</span>
-                    </Space>
-                  }
-                >
-                  {displayUser?.lastName || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <Space>
-                      <MailOutlined />
-                      <span>Email</span>
-                    </Space>
-                  }
-                >
-                  <Space>
-                    <span>{displayUser?.email || "N/A"}</span>
-                    {displayUser?.isEmailVerified ? (
-                      <Tag icon={<CheckCircleOutlined />} color="success">
-                        Verified
-                      </Tag>
-                    ) : (
-                      <Tag icon={<CloseCircleOutlined />} color="error">
-                        Not Verified
-                      </Tag>
-                    )}
-                  </Space>
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <Space>
-                      <UserOutlined />
-                      <span>Username</span>
-                    </Space>
-                  }
-                >
-                  {displayUser?.username || "N/A"}
-                </Descriptions.Item>
-              </Descriptions>
-            </div>
-          </div>
-        </Card>
-
-        {/* Change Password Section */}
-        <Card
-          title={
-            <Space>
-              <Lock className="w-5 h-5" />
-              <span>Đổi Mật Khẩu</span>
-            </Space>
-          }
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handlePasswordChange}
-            autoComplete="off"
-          >
-            <Form.Item
-              name="currentPassword"
-              label="Mật khẩu hiện tại"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập mật khẩu hiện tại",
-                },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Nhập mật khẩu hiện tại"
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="newPassword"
-              label="Mật khẩu mới"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập mật khẩu mới",
-                },
-                {
-                  min: 8,
-                  message: "Mật khẩu phải có ít nhất 8 ký tự",
-                },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Nhập mật khẩu mới (ít nhất 8 ký tự)"
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              label="Xác nhận mật khẩu mới"
-              dependencies={["newPassword"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng xác nhận mật khẩu",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("newPassword") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("Mật khẩu xác nhận không khớp")
-                    );
-                  },
-                }),
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (
-                      !value ||
-                      getFieldValue("currentPassword") !== value
-                    ) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("Mật khẩu mới phải khác mật khẩu hiện tại")
-                    );
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Nhập lại mật khẩu mới"
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                size="large"
-                block
-                style={{
-                  background: "linear-gradient(to right, #0ea5e9, #6366f1)",
-                  border: "none",
-                  height: "44px",
-                  borderRadius: "12px",
-                  fontWeight: 600,
-                }}
-              >
-                {loading ? "Đang xử lý..." : "Đổi Mật Khẩu"}
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      </main>
-    </div>
+                  {isChangingPwd ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Đang đổi...</>
+                  ) : (
+                    <><Save className="w-4 h-4" /> Đổi mật khẩu</>
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </Tabs.Content>
+        </Tabs.Root>
+      </div>
+    </StudentLayout>
   );
 };
 
