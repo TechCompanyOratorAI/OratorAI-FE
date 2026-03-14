@@ -1,22 +1,22 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Calendar,
   Clock,
   BookOpen,
   CheckCircle2,
-  Info,
   Plus,
   Upload,
   FileText as FileTextIcon,
   Users,
   X,
   Loader2,
-  Bell,
-  Menu,
-  LogOut,
   Crown,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
@@ -26,15 +26,20 @@ import {
 } from "@/services/features/presentation/presentationSlice";
 import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
 import { fetchMyGroupByClass } from "@/services/features/group/groupSlice";
-import { logout } from "@/services/features/auth/authSlice";
-import AppLogo from "@/components/AppLogo/AppLogo";
-import Toast from "@/components/Toast/Toast";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
+import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 interface TopicStudentDetailPageProps {
   isModalMode?: boolean;
   onCloseModal?: () => void;
 }
+
+const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  draft: { label: "Nháp", color: "bg-slate-100 text-slate-700 border-slate-200", icon: <FileTextIcon className="w-3 h-3" /> },
+  submitted: { label: "Đã nộp", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+  processing: { label: "Đang xử lý", color: "bg-amber-100 text-amber-700 border-amber-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+  analyzed: { label: "Đã chấm", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+};
 
 const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   isModalMode = false,
@@ -44,22 +49,11 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector(
-    (state) => state.topic
-  );
-  const { presentations } = useAppSelector(
-    (state) => state.presentation
-  );
+  const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector((state) => state.topic);
+  const { presentations } = useAppSelector((state) => state.presentation);
   const { user } = useAppSelector((state) => state.auth);
-  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector(
-    (state) => state.enrollment
-  );
+  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector((state) => state.enrollment);
   const { myGroupForClass } = useAppSelector((state) => state.group);
-
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -67,20 +61,12 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const [presentationDescription, setPresentationDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [selectedPresentationId, setSelectedPresentationId] = useState<number | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [showRequirements, setShowRequirements] = useState(true);
 
   const topicIdNumber = topicId ? parseInt(topicId) : null;
   const classIdNumber = classId ? parseInt(classId) : null;
-
-  // Check if user is enrolled in topic
   const isEnrolled = topicIdNumber ? enrolledTopicIds.includes(topicIdNumber) : false;
-
-  // Find user's presentation for this topic
   const myPresentation = presentations.find((p) => p.studentId === user?.userId);
-
-  // Check if current user is the leader of their group (using myRole from API)
   const isCurrentUserLeader = myGroupForClass?.myRole === "leader";
 
   useEffect(() => {
@@ -88,153 +74,36 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       dispatch(fetchTopicDetail(topicIdNumber));
       dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
     }
-    if (classIdNumber) {
-      dispatch(fetchMyGroupByClass(classIdNumber));
-    }
+    if (classIdNumber) dispatch(fetchMyGroupByClass(classIdNumber));
     dispatch(fetchEnrolledTopics());
   }, [topicIdNumber, classIdNumber, dispatch]);
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    if (isUserMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isUserMenuOpen]);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
-
-  const userInitial =
-    user?.firstName?.[0]?.toUpperCase() ||
-    user?.username?.[0]?.toUpperCase() ||
-    "S";
-
-  const userDisplayName = user
-    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-    user.username ||
-    "Student"
-    : "Student";
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<
-      string,
-      { bg: string; text: string; icon: React.ReactNode }
-    > = {
-      draft: {
-        bg: "bg-gray-100 text-gray-700",
-        text: "Nháp",
-        icon: <FileTextIcon className="w-3 h-3" />,
-      },
-      submitted: {
-        bg: "bg-blue-100 text-blue-700",
-        text: "Đã nộp",
-        icon: <CheckCircle2 className="w-3 h-3" />,
-      },
-      processing: {
-        bg: "bg-amber-100 text-amber-700",
-        text: "Đang xử lý",
-        icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      },
-      analyzed: {
-        bg: "bg-green-100 text-green-700",
-        text: "Đã chấm",
-        icon: <CheckCircle2 className="w-3 h-3" />,
-      },
-    };
-
-    const config = statusConfig[status.toLowerCase()] || statusConfig.draft;
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${config.bg}`}
-      >
-        {config.icon}
-        {config.text}
-      </span>
-    );
-  };
 
   const handleEnroll = async () => {
     if (!topicIdNumber) return;
     try {
       await dispatch(enrollTopic(topicIdNumber)).unwrap();
-      setToast({ message: "Ghi danh chủ đề thành công!", type: "success" });
+      toast.success("Ghi danh chủ đề thành công!");
       dispatch(fetchEnrolledTopics());
     } catch (err: unknown) {
-      setToast({
-        message: err instanceof Error ? err.message : "Ghi danh chủ đề thất bại",
-        type: "error",
-      });
+      toast.error(err instanceof Error ? err.message : "Ghi danh chủ đề thất bại");
     }
   };
 
   const handleCreatePresentation = async () => {
     if (!topicIdNumber || !classIdNumber) return;
-
-    // Only group leader can create presentation
-    if (!isCurrentUserLeader) {
-      setToast({ message: "Chỉ nhóm trưởng mới có thể tạo bài thuyết trình", type: "info" });
-      return;
-    }
-
+    if (!isCurrentUserLeader) { toast.info("Chỉ nhóm trưởng mới có thể tạo bài thuyết trình"); return; }
     const trimmedTitle = presentationTitle.trim();
-    if (!trimmedTitle) {
-      setToast({ message: "Vui lòng nhập tiêu đề bài thuyết trình", type: "info" });
-      return;
-    }
-
+    if (!trimmedTitle) { toast.info("Vui lòng nhập tiêu đề"); return; }
     setIsCreating(true);
     try {
       const groupCode = myGroupForClass?.groupName || myGroupForClass?.name || undefined;
-      await dispatch(
-        createPresentation({
-          classId: classIdNumber,
-          topicId: topicIdNumber,
-          title: trimmedTitle,
-          description: presentationDescription.trim() || undefined,
-          groupCode,
-        })
-      ).unwrap();
-
-      setToast({ message: "Presentation created successfully!", type: "success" });
-      setIsCreateModalOpen(false);
-      setPresentationTitle("");
-      setPresentationDescription("");
-      if (classIdNumber && topicIdNumber) {
-        dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
-      }
+      await dispatch(createPresentation({ classId: classIdNumber, topicId: topicIdNumber, title: trimmedTitle, description: presentationDescription.trim() || undefined, groupCode })).unwrap();
+      toast.success("Tạo bài thuyết trình thành công!");
+      setIsCreateModalOpen(false); setPresentationTitle(""); setPresentationDescription("");
+      dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
     } catch (err: unknown) {
-      setToast({
-        message: err instanceof Error ? err.message : "Tạo bài thuyết trình thất bại",
-        type: "error",
-      });
-    } finally {
-      setIsCreating(false);
-    }
+      toast.error(err instanceof Error ? err.message : "Tạo bài thuyết trình thất bại");
+    } finally { setIsCreating(false); }
   };
 
   const handleOpenUploadModal = (presentationId: number, title: string) => {
@@ -245,532 +114,324 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
   if (topicLoading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Đang tải thông tin chủ đề...</p>
+      <StudentLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-500">Đang tải thông tin chủ đề...</p>
+          </div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   if (topicError || !topic) {
     return (
-      <div className="min-h-screen bg-slate-100">
-        <div className="max-w-[1280px] mx-auto px-4 py-8">
-          <button
-            onClick={() => (isModalMode && onCloseModal ? onCloseModal() : navigate(-1))}
-            className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Quay lại
+      <StudentLayout>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <button onClick={() => isModalMode && onCloseModal ? onCloseModal() : navigate(-1)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6">
+            <ArrowLeft className="w-5 h-5" /> Quay lại
           </button>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
             <p className="text-red-700 font-medium">{topicError || "Không tìm thấy chủ đề"}</p>
           </div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div>
-                <AppLogo to="/" size="md" />
-                <p className="text-xs text-slate-500">Student workspace</p>
-              </div>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8 font-vn">
-              <Link
-                to="/student/classes"
-                className="text-sm font-medium text-slate-700 hover:text-slate-900"
-              >
-                Khóa học
-              </Link>
-              <Link
-                to="/student/my-class"
-                className="text-sm font-medium text-slate-700 hover:text-slate-900"
-              >
-                Lớp của tôi
-              </Link>
-              <Link
-                to="/student/my-presentations"
-                className="text-sm font-medium text-slate-700 hover:text-slate-900"
-              >
-                Bài thuyết trình
-              </Link>
-            </nav>
-
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <button className="relative p-2 hover:bg-sky-50 rounded-full transition">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              {/* User Menu */}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-sky-50 rounded-full transition"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {userInitial}
-                    </span>
-                  </div>
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {userDisplayName}
-                      </p>
-                      <p className="text-xs text-gray-500">Student</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-gray-100 rounded-full"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-slate-600" />
-                ) : (
-                  <Menu className="w-5 h-5 text-slate-600" />
-                )}
-              </button>
-            </div>
-          </div>
+    <StudentLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm">
+          <button onClick={() => isModalMode && onCloseModal ? onCloseModal() : navigate(-1)} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition">
+            <ArrowLeft className="w-4 h-4" /> Quay lại
+          </button>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-500 truncate">{topic.topicName}</span>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => (isModalMode && onCloseModal ? onCloseModal() : navigate(-1))}
-              className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Quay lại
-            </button>
-            <div className="flex items-center gap-2 text-sm text-slate-500 font-vn">
-              <Info className="w-4 h-4" />
-              Student workspace
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+          <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
+          <div className="relative">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-semibold">Chủ đề #{topic.sequenceNumber}</span>
+              {isEnrolled && <span className="inline-flex items-center gap-1.5 bg-emerald-400/30 text-white text-xs px-2.5 py-1 rounded-full font-semibold"><CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh</span>}
             </div>
-          </div>
-
-          {/* Hero Section */}
-          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-sky-500 text-white shadow-xl mb-6">
-            <div
-              className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.12),transparent_30%)]"
-              aria-hidden
-            />
-            <div className="relative p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-3 max-w-3xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-white/20 text-white font-bold flex items-center justify-center text-lg">
-                      {topic.sequenceNumber}
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-white/20 text-white border border-white/30">
-                      Topic #{topic.sequenceNumber}
-                    </span>
-                    {isEnrolled && (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-emerald-500/80 text-white border border-white/30">
-                        Enrolled
-                      </span>
-                    )}
-                  </div>
-                  <h1 className="text-3xl sm:text-4xl font-bold">{topic.topicName}</h1>
-                  <p className="text-white/90 text-lg">{topic.description}</p>
-                  <div className="flex flex-wrap items-center gap-4 pt-2">
-                    {topic.dueDate && (
-                      <div className="flex items-center gap-2 text-white/90">
-                        <Calendar className="w-5 h-5" />
-                        <span className="font-medium">Hạn: {formatDate(topic.dueDate)}</span>
-                      </div>
-                    )}
-                    {topic.maxDurationMinutes && (
-                      <div className="flex items-center gap-2 text-white/90">
-                        <Clock className="w-5 h-5" />
-                        <span className="font-medium">{topic.maxDurationMinutes} phút</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                {[
-                  {
-                    label: "Hạn nộp",
-                    value: topic.dueDate
-                      ? new Date(topic.dueDate).toLocaleDateString("vi-VN", {
-                        month: "short",
-                        day: "numeric",
-                      })
-                      : "Không có",
-                    Icon: Calendar,
-                  },
-                  {
-                    label: "Thời lượng",
-                    value: `${topic.maxDurationMinutes || 0} phút`,
-                    Icon: Clock,
-                  },
-                  {
-                    label: "Bài nộp",
-                    value: `${presentations.length}`,
-                    Icon: FileTextIcon,
-                  },
-                  {
-                    label: "Môn học",
-                    value: topic.course?.courseName || "N/A",
-                    Icon: BookOpen,
-                  },
-                ].map(({ label, value, Icon }, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-xl bg-white/15 border border-white/20 px-4 py-3 flex items-center gap-3"
-                  >
-                    <span className="rounded-full bg-white/20 p-2">
-                      <Icon className="w-5 h-5 text-white" />
-                    </span>
-                    <div>
-                      <p className="text-white/80 text-xs uppercase tracking-wide font-semibold">
-                        {label}
-                      </p>
-                      <p className="font-semibold truncate max-w-[180px]">{value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Action Section - Enrollment or Create Presentation */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
-            {!isEnrolled ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Info className="w-8 h-8 text-amber-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Ghi danh để bắt đầu</h3>
-                <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  Bạn cần ghi danh chủ đề này trước khi tạo và nộp bài thuyết trình.
-                </p>
-                <button
-                  onClick={handleEnroll}
-                  disabled={enrollmentLoading}
-                  className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition disabled:opacity-50"
-                >
-                  {enrollmentLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-5 h-5" />
-                  )}
-                  Ghi danh chủ đề
-                </button>
-              </div>
-            ) : myPresentation ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Bài thuyết trình của bạn</h3>
-                <p className="text-slate-600 mb-6">
-                  Bạn đã tạo bài thuyết trình cho chủ đề này. Có thể tải lên file hoặc nộp khi sẵn sàng.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <button
-                    onClick={() =>
-                      handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)
-                    }
-                    className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
-                  >
-                    <Upload className="w-5 h-5" />
-                    Tải lên file
-                  </button>
-                  {myPresentation.status === "draft" && (
-                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-full font-medium">
-                      {getStatusBadge(myPresentation.status)}
-                    </span>
-                  )}
-                  {myPresentation.status !== "draft" && (
-                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-full font-medium">
-                      {getStatusBadge(myPresentation.status)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : myGroupForClass && isCurrentUserLeader ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Plus className="w-8 h-8 text-sky-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Tạo bài thuyết trình</h3>
-                <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.
-                </p>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
-                >
-                  <Plus className="w-5 h-5" />
-                  Tạo bài thuyết trình
-                </button>
-              </div>
-            ) : myGroupForClass ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-amber-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Chờ nhóm trưởng</h3>
-                <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ họ bắt đầu.
-                </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-full font-medium">
-                  <Users className="w-4 h-4" />
-                  Nhóm: {myGroupForClass.groupName || myGroupForClass.name}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-slate-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Tham gia hoặc tạo nhóm</h3>
-                <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                  Bạn cần ở trong một nhóm để tạo bài thuyết trình. Tham gia nhóm có sẵn hoặc tạo nhóm mới.
-                </p>
-                <Link
-                  to={`/student/class/${classId}`}
-                  className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-full transition"
-                >
-                  <Users className="w-5 h-5" />
-                  Đến quản lý nhóm
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Requirements */}
-          {topic.requirements && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                  <FileTextIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Yêu cầu
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900">Yêu cầu chủ đề</h3>
-                </div>
-              </div>
-              <div className="prose prose-sm max-w-none">
-                <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  {topic.requirements}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Presentations List */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
-                <FileTextIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                  Tất cả bài nộp
-                </p>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Bài thuyết trình ({presentations.length})
-                </h3>
-              </div>
-            </div>
-
-            {presentations.length > 0 ? (
-              <div className="space-y-3">
-                {presentations.map((presentation) => (
-                  <Link
-                    key={presentation.presentationId}
-                    to={`/student/presentation/${presentation.presentationId}`}
-                    className="rounded-xl overflow-hidden border border-slate-200 hover:border-sky-200 hover:shadow-md transition bg-slate-50/50 hover:bg-white p-4 block"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-slate-900">{presentation.title}</h4>
-                          {getStatusBadge(presentation.status)}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                          {presentation.submissionDate && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              Nộp:{" "}
-                              {new Date(presentation.submissionDate).toLocaleDateString("vi-VN", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          )}
-                          {presentation.groupCode && (
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />
-                              Nhóm: {presentation.groupCode}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                <FileTextIcon className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                <p>Chưa có bài thuyết trình nào được nộp.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Create Presentation Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setIsCreateModalOpen(false)}
-          />
-          <div
-            className="relative w-full max-w-lg rounded-3xl border border-sky-200 bg-white p-6 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Crown className="w-5 h-5 text-amber-500" />
-                  <p className="text-xs uppercase tracking-wide text-amber-600 font-semibold">
-                    Chỉ nhóm trưởng
-                  </p>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900">Tạo bài thuyết trình</h3>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-full p-2 text-slate-500 hover:bg-sky-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-slate-700">Tiêu đề *</label>
-                <input
-                  value={presentationTitle}
-                  onChange={(event) => setPresentationTitle(event.target.value)}
-                  placeholder="Nhập tiêu đề bài thuyết trình"
-                  className="mt-2 w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-slate-700">Mô tả</label>
-                <textarea
-                  value={presentationDescription}
-                  onChange={(event) => setPresentationDescription(event.target.value)}
-                  placeholder="Mô tả (tùy chọn)"
-                  className="mt-2 min-h-[100px] w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                />
-              </div>
-              {myGroupForClass && (
-                <div className="rounded-xl bg-sky-50 border border-sky-200 p-3">
-                  <div className="flex items-center gap-2 text-sm text-sky-700">
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium">
-                      Bài thuyết trình này sẽ được tạo cho nhóm: {myGroupForClass.groupName || myGroupForClass.name}
-                    </span>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{topic.topicName}</h1>
+            {topic.description && <p className="text-white/80 mb-4 max-w-2xl">{topic.description}</p>}
+            <div className="flex flex-wrap gap-3">
+              {topic.dueDate && (
+                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
+                  <Calendar className="w-4 h-4 text-white/80" />
+                  <div>
+                    <p className="text-white/60 text-xs">Hạn nộp</p>
+                    <p className="text-white font-semibold text-xs">{new Date(topic.dueDate).toLocaleDateString("vi-VN")}</p>
                   </div>
                 </div>
               )}
+              {topic.maxDurationMinutes && (
+                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
+                  <Clock className="w-4 h-4 text-white/80" />
+                  <div>
+                    <p className="text-white/60 text-xs">Thời lượng</p>
+                    <p className="text-white font-semibold text-xs">{topic.maxDurationMinutes} phút</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
+                <FileTextIcon className="w-4 h-4 text-white/80" />
+                <div>
+                  <p className="text-white/60 text-xs">Bài nộp</p>
+                  <p className="text-white font-semibold text-xs">{presentations.length}</p>
+                </div>
+              </div>
             </div>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleCreatePresentation}
-                disabled={isCreating || !presentationTitle.trim()}
-                className="rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-200/70 hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isCreating ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Đang tạo...
-                  </span>
-                ) : (
-                  "Tạo bài thuyết trình"
-                )}
-              </button>
+          </div>
+        </motion.div>
+
+        {/* Main content: split layout on desktop */}
+        <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+          {/* Left: Topic details + submission history */}
+          <div className="space-y-6">
+            {/* Requirements accordion */}
+            {topic.requirements && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <button
+                  onClick={() => setShowRequirements(!showRequirements)}
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                      <FileTextIcon className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <span className="font-bold text-slate-900">Yêu cầu chủ đề</span>
+                  </div>
+                  {showRequirements ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                </button>
+                <AnimatePresence initial={false}>
+                  {showRequirements && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: "auto" }}
+                      exit={{ height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-5 pt-0">
+                        <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed">
+                          {topic.requirements}
+                        </pre>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Presentations list */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                    <FileTextIcon className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Bài thuyết trình</h3>
+                    <p className="text-xs text-slate-500">{presentations.length} bài đã nộp</p>
+                  </div>
+                </div>
+              </div>
+
+              {presentations.length > 0 ? (
+                <div className="space-y-3">
+                  {presentations.map((presentation) => {
+                    const sc = statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
+                    return (
+                      <Link
+                        key={presentation.presentationId}
+                        to={`/student/presentation/${presentation.presentationId}`}
+                        className="group flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200 block"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                          <FileTextIcon className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-slate-900 text-sm truncate">{presentation.title}</h4>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${sc.color}`}>{sc.icon}{sc.label}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                            {presentation.submissionDate && (
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(presentation.submissionDate).toLocaleDateString("vi-VN")}</span>
+                            )}
+                            {presentation.groupCode && (
+                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {presentation.groupCode}</span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
+                  <FileTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">Chưa có bài thuyết trình nào.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Action zone */}
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sticky top-24">
+              {!isEnrolled ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <BookOpen className="w-7 h-7 text-amber-600" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Ghi danh để bắt đầu</h3>
+                  <p className="text-sm text-slate-500 mb-5">Ghi danh chủ đề này để có thể tạo và nộp bài thuyết trình.</p>
+                  <button onClick={handleEnroll} disabled={enrollmentLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    {enrollmentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Ghi danh chủ đề
+                  </button>
+                </div>
+              ) : myPresentation ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
+                  <p className="text-sm text-slate-500 mb-4">Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý.</p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" /> Tải lên file
+                    </button>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
+                      {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
+                      {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).label}
+                    </div>
+                  </div>
+                  {/* AI processing stages if processing */}
+                  {myPresentation.status === "processing" && (
+                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                      <p className="text-xs font-semibold text-amber-700 mb-2">Đang xử lý AI...</p>
+                      <div className="flex items-center justify-between text-xs">
+                        {["Upload", "ASR", "Diarization", "Phân tích", "Hoàn thành"].map((step, i) => (
+                          <div key={step} className="flex flex-col items-center gap-1">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i <= 1 ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-400"}`}>{i + 1}</div>
+                            <span className="text-amber-600 text-[10px] text-center leading-tight w-12">{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : myGroupForClass && isCurrentUserLeader ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Crown className="w-7 h-7 text-blue-600" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Tạo bài thuyết trình</h3>
+                  <p className="text-sm text-slate-500 mb-5">Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.</p>
+                  <button onClick={() => setIsCreateModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" /> Tạo bài thuyết trình
+                  </button>
+                </div>
+              ) : myGroupForClass ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-7 h-7 text-slate-500" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
+                  <p className="text-sm text-slate-500 mb-4">Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ.</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
+                    <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-7 h-7 text-slate-400" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
+                  <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để tạo bài thuyết trình.</p>
+                  <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <Users className="w-4 h-4" /> Đến quản lý nhóm
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Upload Modal */}
+      {/* Create Presentation Modal */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Crown className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Chỉ nhóm trưởng</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Tạo bài thuyết trình</h3>
+                </div>
+                <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition"><X className="w-4 h-4 text-slate-500" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Tiêu đề *</label>
+                  <input value={presentationTitle} onChange={(e) => setPresentationTitle(e.target.value)} placeholder="Nhập tiêu đề bài thuyết trình" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Mô tả <span className="text-slate-400 font-normal">(tùy chọn)</span></label>
+                  <textarea value={presentationDescription} onChange={(e) => setPresentationDescription(e.target.value)} placeholder="Mô tả bài thuyết trình" rows={3} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" />
+                </div>
+                {myGroupForClass && (
+                  <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 flex items-center gap-2 text-sm text-blue-700">
+                    <Users className="w-4 h-4 shrink-0" />
+                    Bài thuyết trình sẽ được tạo cho nhóm: <span className="font-semibold">{myGroupForClass.groupName || myGroupForClass.name}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Hủy</button>
+                <button onClick={handleCreatePresentation} disabled={isCreating || !presentationTitle.trim()} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Đang tạo...</> : "Tạo bài thuyết trình"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {isUploadModalOpen && selectedPresentationId && (
         <PresentationUploadModal
           isOpen={isUploadModalOpen}
           onClose={() => {
             setIsUploadModalOpen(false);
-            if (classIdNumber && topicIdNumber) {
-              dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
-            }
+            if (classIdNumber && topicIdNumber) dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
           }}
           presentationId={selectedPresentationId}
           presentationTitle={presentationTitle}
         />
       )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        </div>
-      )}
-    </div>
+    </StudentLayout>
   );
 };
 

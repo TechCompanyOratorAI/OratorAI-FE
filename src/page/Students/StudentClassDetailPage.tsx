@@ -1,5 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import * as Tabs from "@radix-ui/react-tabs";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Calendar,
@@ -7,32 +10,58 @@ import {
   Users,
   BookOpen,
   CheckCircle2,
-  Info,
-  Bell,
-  Menu,
-  X,
-  LogOut,
   Plus,
   Loader2,
+  Clock,
+  AlertTriangle,
+  X,
 } from "lucide-react";
-import Toast from "@/components/Toast/Toast";
 import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import AppLogo from "@/components/AppLogo/AppLogo";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
-import { logout } from "@/services/features/auth/authSlice";
-import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
+import {
+  enrollTopic,
+  fetchEnrolledTopics,
+} from "@/services/features/enrollment/enrollmentSlice";
 import {
   fetchGroupsByClass,
   fetchMyGroupByClass,
   fetchGroupDetail,
   createGroup,
   joinGroup,
-  updateGroup,
-  removeMemberFromGroup,
-  changeLeaderOfGroup,
   Group,
 } from "@/services/features/group/groupSlice";
+import StudentLayout from "@/components/StudentLayout/StudentLayout";
+
+/* Deadline urgency helper */
+const getDeadlineUrgency = (dueDate?: string) => {
+  if (!dueDate) return null;
+  const diff = new Date(dueDate).getTime() - Date.now();
+  const hours = diff / (1000 * 60 * 60);
+  if (hours < 0)
+    return {
+      label: "Đã hết hạn",
+      color: "bg-red-100 text-red-700 border-red-200",
+      dot: "bg-red-500",
+    };
+  if (hours < 24)
+    return {
+      label: "< 24 giờ",
+      color: "bg-red-100 text-red-700 border-red-200",
+      dot: "bg-red-500",
+    };
+  if (hours < 72)
+    return {
+      label: "< 3 ngày",
+      color: "bg-amber-100 text-amber-700 border-amber-200",
+      dot: "bg-amber-500",
+    };
+  return {
+    label: new Date(dueDate).toLocaleDateString("vi-VN"),
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    dot: "bg-emerald-500",
+  };
+};
 
 const StudentClassDetailPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
@@ -52,27 +81,15 @@ const StudentClassDetailPage: React.FC = () => {
     classInfo: groupClassInfo,
     isEnrolled: isGroupEnrolled,
   } = useAppSelector((state) => state.group);
+  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector(
+    (state) => state.enrollment,
+  );
 
-  const {
-    enrolledTopicIds,
-    loading: enrollmentLoading,
-  } = useAppSelector((state) => state.enrollment);
-
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [showMyGroup, setShowMyGroup] = useState(false);
-  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
-  const [editGroupName, setEditGroupName] = useState("");
-  const [editGroupDescription, setEditGroupDescription] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showGroupDetail, setShowGroupDetail] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState("topics");
   const classIdNumber = classId ? parseInt(classId) : null;
 
   useEffect(() => {
@@ -84,20 +101,6 @@ const StudentClassDetailPage: React.FC = () => {
     }
   }, [classIdNumber, dispatch]);
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const isClassEnrolled = (targetClassId: number): boolean => {
     if (!classDetail || !user?.userId) return false;
     return (
@@ -108,38 +111,11 @@ const StudentClassDetailPage: React.FC = () => {
     );
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
-
-  const userInitial =
-    user?.firstName?.[0]?.toUpperCase() ||
-    user?.username?.[0]?.toUpperCase() ||
-    "S";
-
-  const userDisplayName = user
-    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-    user.username ||
-    "Student"
-    : "Student";
-
-  const currentUserId = user?.userId;
-  const myRole = myGroupForClass
-    ? myGroupForClass.myRole ||
-    myGroupForClass.students?.find(
-      (member) => `${member.userId ?? member.id}` === `${currentUserId}`,
-    )?.GroupStudent?.role
-    : null;
-  const isLeader = myRole === "leader";
-
   const getGroupId = (group: Group) => group.groupId ?? group.id;
   const getGroupName = (group: Group) =>
     group.groupName ?? group.name ?? "Group";
   const getMemberDisplayName = (member: any) => {
-    if (!member) {
-      return "Member";
-    }
+    if (!member) return "Member";
     const fullName = [member.firstName, member.lastName]
       .filter(Boolean)
       .join(" ")
@@ -148,13 +124,8 @@ const StudentClassDetailPage: React.FC = () => {
   };
   const getLeaderName = (group: Group) => {
     const students = group.students || [];
-    const leader = students.find(
-      (student) => student.GroupStudent?.role === "leader",
-    );
-    if (leader) {
-      return getMemberDisplayName(leader);
-    }
-    return "Unknown";
+    const leader = students.find((s) => s.GroupStudent?.role === "leader");
+    return leader ? getMemberDisplayName(leader) : "Unknown";
   };
 
   const refreshGroups = () => {
@@ -164,21 +135,11 @@ const StudentClassDetailPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (showMyGroup && myGroupForClass) {
-      setEditGroupName(getGroupName(myGroupForClass));
-      setEditGroupDescription(myGroupForClass.description || "");
-      setIsEditGroupOpen(false);
-    }
-  }, [showMyGroup, myGroupForClass]);
-
   const handleCreateGroup = async () => {
-    if (!classIdNumber) {
-      return;
-    }
+    if (!classIdNumber) return;
     const trimmedName = groupName.trim();
     if (!trimmedName) {
-      setToast({ message: "Please enter a group name.", type: "info" });
+      toast.info("Vui lòng nhập tên nhóm.");
       return;
     }
     try {
@@ -192,182 +153,84 @@ const StudentClassDetailPage: React.FC = () => {
       setGroupName("");
       setGroupDescription("");
       setIsCreateModalOpen(false);
-      setShowMyGroup(true);
-      setToast({ message: "Group created successfully.", type: "success" });
+      toast.success("Tạo nhóm thành công!");
       refreshGroups();
     } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to create group.",
-        type: "error",
-      });
+      toast.error(err?.message || "Tạo nhóm thất bại.");
     }
   };
 
   const handleJoinGroup = async (groupId: string | number | undefined) => {
-    if (!groupId) {
-      return;
-    }
+    if (!groupId) return;
     try {
       await dispatch(joinGroup(groupId)).unwrap();
-      setToast({ message: "Joined group successfully.", type: "success" });
+      toast.success("Tham gia nhóm thành công!");
       refreshGroups();
     } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to join group.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleUpdateGroup = async () => {
-    if (!myGroupForClass) {
-      return;
-    }
-    const groupId = getGroupId(myGroupForClass);
-    if (!groupId) {
-      return;
-    }
-    const trimmedName = editGroupName.trim();
-    if (!trimmedName) {
-      setToast({ message: "Please enter a group name.", type: "info" });
-      return;
-    }
-    try {
-      await dispatch(
-        updateGroup({
-          groupId,
-          groupName: trimmedName,
-          description: editGroupDescription.trim() || undefined,
-        }),
-      ).unwrap();
-      setToast({ message: "Group updated successfully.", type: "success" });
-      setIsEditGroupOpen(false);
-      refreshGroups();
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to update group.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleRemoveMember = async (memberId?: string | number) => {
-    if (!memberId || !myGroupForClass) {
-      return;
-    }
-    const groupId = getGroupId(myGroupForClass);
-    if (!groupId) {
-      return;
-    }
-    try {
-      await dispatch(
-        removeMemberFromGroup({
-          groupId,
-          userId: memberId,
-        }),
-      ).unwrap();
-      setToast({ message: "Member removed.", type: "success" });
-      refreshGroups();
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to remove member.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleChangeLeader = async (memberId?: string | number) => {
-    if (!memberId || !myGroupForClass) {
-      return;
-    }
-    const groupId = getGroupId(myGroupForClass);
-    if (!groupId) {
-      return;
-    }
-    try {
-      await dispatch(
-        changeLeaderOfGroup({
-          groupId,
-          userId: memberId,
-        }),
-      ).unwrap();
-      setToast({ message: "Leader updated.", type: "success" });
-      refreshGroups();
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to change leader.",
-        type: "error",
-      });
+      toast.error(err?.message || "Tham gia nhóm thất bại.");
     }
   };
 
   const handleEnrollTopic = async (topicId: number) => {
     try {
       await dispatch(enrollTopic(topicId)).unwrap();
-      setToast({ message: "Successfully enrolled in topic!", type: "success" });
+      toast.success("Ghi danh chủ đề thành công!");
     } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to enroll in topic",
-        type: "error",
-      });
+      toast.error(err?.message || "Ghi danh chủ đề thất bại.");
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Đang tải thông tin lớp...</p>
+      <StudentLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-500">Đang tải thông tin lớp...</p>
+          </div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   if (error || !classDetail) {
     return (
-      <div className="min-h-screen bg-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <StudentLayout>
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Quay lại
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6">
+            <ArrowLeft className="w-5 h-5" /> Quay lại
           </button>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
             <p className="text-red-700 font-medium">
               {error || "Không tìm thấy lớp học"}
             </p>
           </div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
 
   const classDuration = Math.ceil(
     (new Date(classDetail.endDate).getTime() -
       new Date(classDetail.startDate).getTime()) /
-    (1000 * 60 * 60 * 24),
+      (1000 * 60 * 60 * 24),
   );
-
   const instructorName = classDetail.instructors?.length
     ? classDetail.instructors
-      .map(
-        (instructor) =>
-          `${instructor.firstName || ""} ${instructor.lastName || ""}`.trim() ||
-          instructor.username ||
-          "Unknown Instructor",
-      )
-      .join(", ")
+        .map(
+          (i) =>
+            `${i.firstName || ""} ${i.lastName || ""}`.trim() || i.username,
+        )
+        .join(", ")
     : "Unknown Instructor";
   const courseInfo = classDetail.course;
   const classTitle = classDetail.className || classDetail.classCode;
@@ -378,764 +241,507 @@ const StudentClassDetailPage: React.FC = () => {
     0;
   const groupLimit =
     classDetail.maxGroupMembers ?? groupClassInfo?.maxGroupMembers ?? null;
-
-  const groupsCount = groups.length;
-  const topics =
-    classDetail.topics ?? classDetail.course?.topics ?? [];
+  const topics = classDetail.topics ?? classDetail.course?.topics ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-100/90">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div>
-                <AppLogo to="/" size="md" />
-                <p className="text-xs text-slate-500">Student workspace</p>
-              </div>
-            </div>
-
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <button className="relative p-2 hover:bg-sky-50 rounded-lg transition">
-                <Bell className="w-5 h-5 text-slate-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              {/* User Menu */}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-sky-50 rounded-lg transition"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {userInitial}
-                    </span>
-                  </div>
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {userDisplayName}
-                      </p>
-                      <p className="text-xs text-gray-500">Student</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
-                )}
-              </button>
-            </div>
-          </div>
+    <StudentLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition">
+            <ArrowLeft className="w-4 h-4" /> Quay lại
+          </button>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-500 truncate">{classTitle}</span>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Quay lại lớp học
-            </button>
-            <span className="rounded-full bg-emerald-600 px-3 py-1.5 text-white text-sm font-semibold">
-              {classDetail.classCode}
-            </span>
-          </div>
-
-          {/* Hero: Class name + badges */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-500 p-6 sm:p-8 mb-6 shadow-xl">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-60"></div>
-            <div className="relative flex flex-wrap items-center gap-2 mb-4">
+        {/* Hero Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xl shadow-blue-200/40 p-6 sm:p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+          <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
+          <div className="relative">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  classDetail.status === "active"
-                    ? "bg-white/25 text-white"
-                    : "bg-white/20 text-white/90"
-                }`}
-              >
-                {classDetail.status === "active" ? "Đang mở" : "Đã đóng"}
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${classDetail.status === "active" ? "bg-emerald-400/30 text-white" : "bg-white/20 text-white/80"}`}>
+                {classDetail.status === "active" ? "✓ Đang mở" : "Đã đóng"}
               </span>
-              {courseInfo?.semester && courseInfo?.academicYear && (
-                <span className="text-white/90 text-sm">
-                  {courseInfo.semester} • {courseInfo.academicYear}
-                </span>
-              )}
+              <span className="bg-white/20 text-white/90 text-xs px-2.5 py-1 rounded-full font-mono">
+                {classDetail.classCode}
+              </span>
               {classId && isClassEnrolled(parseInt(classId)) && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/25 text-white rounded-full text-xs font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Đã ghi danh
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh
                 </span>
               )}
             </div>
-            <h1 className="relative text-2xl sm:text-3xl font-bold text-white mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">
               {classTitle}
             </h1>
-            <p className="relative text-white/90 text-sm sm:text-base mb-6">
+            <p className="text-white/80 mb-4">
               {courseInfo?.courseCode && courseInfo?.courseName
-                ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
+                ? `${courseInfo.courseCode} — ${courseInfo.courseName}`
                 : classDetail.classCode}
             </p>
-            {classDetail.description && (
-              <p className="relative text-white/85 text-sm max-w-2xl mb-6">
-                {classDetail.description}
-              </p>
-            )}
-            <div className="relative flex flex-wrap gap-3">
-              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm font-semibold">{classDuration} ngày</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
-                <BookOpen className="w-4 h-4" />
-                <span className="text-sm font-semibold">
-                  {enrollmentCount}
-                  {classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""} học viên
+            <div className="flex flex-wrap gap-3">
+              {[
+                { icon: Calendar, label: `${classDuration} ngày` },
+                {
+                  icon: Users,
+                  label: `${enrollmentCount}${classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""} học viên`,
+                },
+                { icon: User, label: instructorName },
+                { icon: BookOpen, label: `${topics.length} chủ đề` },
+              ].map(({ icon: Icon, label }, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
+                  <Icon className="w-4 h-4 text-white/80" />
+                  <span className="text-white/90 font-medium">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
+            {[
+              { value: "topics", label: "Chủ đề", icon: BookOpen },
+              { value: "groups", label: "Nhóm học", icon: Users },
+              { value: "info", label: "Thông tin lớp", icon: User },
+            ].map(({ value, label, icon: Icon }) => (
+              <Tabs.Trigger
+                key={value}
+                value={value}
+                className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === value ? "text-blue-700 bg-blue-50 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}>
+                <Icon className="w-4 h-4" />
+                {label}
+              </Tabs.Trigger>
+            ))}
+          </Tabs.List>
+
+          {/* Topics Tab */}
+          <Tabs.Content value="topics" className="mt-4 outline-none">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Chủ đề thuyết trình
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {topics.length} chủ đề trong lớp này
+                  </p>
+                </div>
+                <span className="bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1.5 rounded-full">
+                  {topics.length} chủ đề
                 </span>
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-white">
-                <User className="w-4 h-4" />
-                <span className="text-sm font-semibold">{instructorName}</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
-                      <BookOpen className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                        Chủ đề thuyết trình
-                      </p>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Các chủ đề của lớp
-                      </h3>
-                    </div>
-                  </div>
-                  <span className="text-sm font-semibold text-sky-700 bg-sky-100 rounded-full px-3 py-1.5">
-                    {topics.length} chủ đề
-                  </span>
-                </div>
-
-                {topics.length > 0 ? (
-                  <div className="space-y-3">
-                    {topics.map((topic) => {
-                      const isTopicEnrolled = enrolledTopicIds.includes(
-                        topic.topicId,
-                      );
-                      return (
-                        <div
-                          key={topic.topicId}
-                          className="rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-sky-200 hover:shadow-md px-4 py-3 sm:px-5 sm:py-4 transition"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="flex items-start gap-3 flex-1">
-                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500 text-sm font-bold text-white">
-                                {topic.sequenceNumber}
-                              </div>
-                              <div>
-                                <p className="text-xs font-semibold text-slate-500">
-                                  Chủ đề {topic.sequenceNumber}
-                                </p>
-                                <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
-                                  {topic.topicName}
-                                </h4>
-                                {topic.description && (
-                                  <p className="mt-1 text-sm text-slate-600 max-w-3xl line-clamp-2">
-                                    {topic.description}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {topic.dueDate && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                                  <Calendar className="w-3 h-3" />
-                                  Hạn:{" "}
-                                  {new Date(topic.dueDate).toLocaleDateString(
-                                    "vi-VN",
-                                    {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    },
-                                  )}
-                                </span>
-                              )}
-                              {topic.maxDurationMinutes && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                                  {topic.maxDurationMinutes} phút
-                                </span>
-                              )}
-                              {isGroupEnrolled ? (
-                                isTopicEnrolled ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-2 text-xs font-semibold border border-emerald-200 cursor-default">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Đã ghi danh
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEnrollTopic(topic.topicId);
-                                    }}
-                                    disabled={enrollmentLoading}
-                                    className="inline-flex items-center gap-1.5 rounded-full bg-sky-600 text-white px-4 py-2 text-xs font-semibold hover:bg-sky-500 transition disabled:opacity-50"
-                                  >
-                                    {enrollmentLoading ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                      <>
-                                        <Plus className="w-3.5 h-3.5" />
-                                        Ghi danh
-                                      </>
-                                    )}
-                                  </button>
-                                )
-                              ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setToast({
-                                      message:
-                                        "Bạn cần ghi danh lớp trước khi ghi danh chủ đề.",
-                                      type: "info",
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-200 text-slate-600 px-4 py-2 text-xs font-semibold hover:bg-slate-300 transition"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  Ghi danh
-                                </button>
-                              )}
-                              <button
-                                onClick={() =>
-                                  navigate(
-                                    `/student/class/${classId}/topic/${topic.topicId}`,
-                                  )
-                                }
-                                className="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-3 py-2 text-xs font-semibold hover:bg-sky-500 transition"
-                              >
-                                Xem chi tiết
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600 bg-slate-50">
-                    Chưa có chủ đề nào. Giảng viên sẽ thêm chủ đề thuyết trình khi sẵn sàng.
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                        Nhóm làm việc
-                      </p>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Danh sách nhóm
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-violet-700 bg-violet-100 rounded-full px-3 py-1.5">
-                      {groupsCount} nhóm
-                    </span>
-                    {groupLimit && (
-                      <span className="text-sm font-semibold text-slate-600 bg-slate-100 rounded-full px-3 py-1.5">
-                        Tối đa {groupLimit} thành viên
-                      </span>
-                    )}
-                    {!myGroupForClass && isGroupEnrolled && (
-                      <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 transition"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Tạo nhóm
-                      </button>
-                    )}
-                    {myGroupForClass && (
-                      <button
-                        onClick={() => {
-                          if (myGroupForClass.groupId) {
-                            dispatch(
-                              fetchGroupDetail(Number(myGroupForClass.groupId)),
-                            );
-                          }
-                          setShowGroupDetail(true);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition"
-                      >
-                        <Users className="w-4 h-4" />
-                        Nhóm của bạn: {getGroupName(myGroupForClass)}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {!isGroupEnrolled && (
-                  <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm.
-                  </div>
-                )}
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {groupLoading ? (
-                    <p className="text-sm text-slate-600">Loading groups...</p>
-                  ) : groups.length ? (
-                    groups.map((group) => {
-                      const groupId = getGroupId(group);
-                      const isMyGroup =
-                        myGroupForClass &&
-                        `${getGroupId(myGroupForClass)}` === `${groupId}`;
-                      const memberCount =
-                        group.memberCount ?? group.students?.length ?? 0;
-                      return (
-                        <div
-                          key={`${groupId ?? group.name}`}
-                          className={`flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:bg-white hover:shadow-md ${
-                            isMyGroup ? "ring-2 ring-emerald-400 bg-emerald-50/50" : ""
-                          }`}
-                          onClick={() => {
-                            if (isMyGroup) {
-                              dispatch(fetchGroupDetail(Number(groupId)));
-                              setShowGroupDetail(true);
-                            }
-                          }}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <p className="text-base font-semibold text-slate-900">
-                                  {getGroupName(group)}
-                                </p>
-                                {isMyGroup && (
-                                  <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                                    Nhóm của bạn
-                                  </span>
-                                )}
-                                {group.myRole && !isMyGroup && (
-                                  <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                                    {group.myRole}
-                                  </span>
-                                )}
-                              </div>
-                              {/* Join/Full/Joined Status */}
-                              {!myGroupForClass &&
-                                (group.isMember ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1.5 text-xs font-semibold border border-emerald-200">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Đã tham gia
-                                  </span>
-                                ) : memberCount >=
-                                  (group.maxGroupMembers || groupLimit || 0) ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-3 py-1.5 text-xs font-semibold border border-red-200">
-                                    Đã đủ
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleJoinGroup(groupId);
-                                    }}
-                                    disabled={
-                                      groupActionLoading ||
-                                      !groupId ||
-                                      !isGroupEnrolled
-                                    }
-                                    className="inline-flex items-center gap-1 rounded-full bg-sky-600 text-white px-4 py-1.5 text-xs font-semibold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    Tham gia
-                                  </button>
-                                ))}
-                            </div>
-                            {group.description && (
-                              <p className="text-sm text-slate-600 mt-1">
-                                {group.description}
-                              </p>
-                            )}
-                            <p className="text-sm text-slate-600 mt-2">
-                              Thành viên: {memberCount}
-                              {groupLimit ? `/${groupLimit}` : ""}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Nhóm trưởng: {getLeaderName(group)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-slate-600">
-                      Chưa có nhóm nào.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-md border-l-4 border-l-amber-500 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                    <Info className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Thông tin lớp
-                    </p>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Chi tiết
-                    </h3>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-2 mb-2">
-                  <span className="font-semibold text-slate-900 text-sm">
-                    {courseInfo?.courseCode && courseInfo?.courseName
-                      ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="space-y-0 text-sm text-slate-700">
-                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-600">Ngày bắt đầu</span>
-                    <span className="font-semibold text-slate-900">
-                      {formatDate(classDetail.startDate)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-600">Ngày kết thúc</span>
-                    <span className="font-semibold text-slate-900">
-                      {formatDate(classDetail.endDate)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-600">Thời lượng</span>
-                    <span className="font-semibold text-slate-900">
-                      {classDuration} ngày
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-600">Trạng thái</span>
-                    <span
-                      className={`font-semibold ${classDetail.status === "active" ? "text-sky-600" : "text-slate-600"}`}
-                    >
-                      {classDetail.status === "active" ? "Đang mở" : "Đã đóng"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                    <span className="text-slate-600">Mã lớp</span>
-                    <span className="font-semibold text-slate-900">
-                      {classDetail.classCode}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-md border-l-4 border-l-sky-500 p-6">
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-4">
-                  Thống kê nhanh
-                </p>
+              {topics.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
-                    <span>Nhóm</span>
-                    <span className="font-semibold text-slate-900">
-                      {groupsCount}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
-                    <span>Ghi danh</span>
-                    <span className="font-semibold text-slate-900">
-                      {enrollmentCount}
-                      {classDetail.maxStudents
-                        ? `/${classDetail.maxStudents}`
-                        : ""}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
-                    <span>Chủ đề</span>
-                    <span className="font-semibold text-slate-900">
-                      {classDetail.topics?.length || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5 border-b border-slate-100">
-                    <span>Giảng viên</span>
-                    <span className="font-semibold text-slate-900 truncate max-w-[140px]" title={instructorName}>
-                      {instructorName}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-slate-700 py-1.5">
-                    <span>Thời lượng</span>
-                    <span className="font-semibold text-slate-900">
-                      {classDuration} ngày
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setIsCreateModalOpen(false)}
-          ></div>
-          <div
-            className="relative w-full max-w-lg rounded-3xl border border-sky-200 bg-white p-6 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                  New group
-                </p>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Create your group
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-full p-2 text-slate-500 hover:bg-sky-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-slate-700">
-                  Group name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={groupName}
-                  onChange={(event) => setGroupName(event.target.value)}
-                  placeholder="Enter group name"
-                  className="mt-2 w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                  disabled={groupActionLoading}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-slate-700">
-                  Description
-                </label>
-                <textarea
-                  value={groupDescription}
-                  onChange={(event) => setGroupDescription(event.target.value)}
-                  placeholder="What is your group focusing on?"
-                  className="mt-2 min-h-[110px] w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                  disabled={groupActionLoading}
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                onClick={handleCreateGroup}
-                disabled={groupActionLoading || !groupName.trim()}
-                className="rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-200/70 hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Create group
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMyGroup && myGroupForClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setShowMyGroup(false)}
-          ></div>
-          <div
-            className="relative w-full max-w-2xl rounded-3xl border border-sky-200 bg-white p-6 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                  Your group
-                </p>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {getGroupName(myGroupForClass)}
-                </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  Leader: {getLeaderName(myGroupForClass)}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowMyGroup(false)}
-                className="rounded-full p-2 text-slate-500 hover:bg-sky-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Group details
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {myGroupForClass.description || "No description provided."}
-                  </p>
-                </div>
-                {isLeader && (
-                  <button
-                    onClick={() => setIsEditGroupOpen((prev) => !prev)}
-                    className="rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-sky-100"
-                  >
-                    {isEditGroupOpen ? "Cancel edit" : "Edit group"}
-                  </button>
-                )}
-              </div>
-              {isEditGroupOpen && isLeader && (
-                <div className="mt-4 grid gap-3">
-                  <div>
-                    <label className="text-sm font-semibold text-slate-700">
-                      Group name
-                    </label>
-                    <input
-                      value={editGroupName}
-                      onChange={(event) => setEditGroupName(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                      disabled={groupActionLoading}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-slate-700">
-                      Description
-                    </label>
-                    <textarea
-                      value={editGroupDescription}
-                      onChange={(event) =>
-                        setEditGroupDescription(event.target.value)
-                      }
-                      className="mt-2 min-h-[90px] w-full rounded-xl border border-sky-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600"
-                      disabled={groupActionLoading}
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={handleUpdateGroup}
-                      disabled={groupActionLoading || !editGroupName.trim()}
-                      className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Save changes
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-3">
-                Members
-              </p>
-              {myGroupForClass.students?.length ? (
-                <div className="grid gap-2 text-sm text-slate-700">
-                  {myGroupForClass.students.map((member, index) => {
-                    const memberId = member.userId ?? member.id;
-                    const isMemberLeader =
-                      member.GroupStudent?.role === "leader";
-                    const isCurrentUser = `${memberId}` === `${currentUserId}`;
+                  {topics.map((topic) => {
+                    const isTopicEnrolled = enrolledTopicIds.includes(
+                      topic.topicId,
+                    );
+                    const urgency = getDeadlineUrgency(topic.dueDate);
                     return (
-                      <div
-                        key={`${memberId ?? index}`}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
-                      >
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {getMemberDisplayName(member)}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {member.email || ""}
-                          </p>
+                      <motion.div
+                        key={topic.topicId}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="group flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200">
+                        {/* Sequence number */}
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {topic.sequenceNumber}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {isMemberLeader && (
-                            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
-                              Leader
-                            </span>
+
+                        {/* Topic info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-slate-900 truncate">
+                            {topic.topicName}
+                          </h4>
+                          {topic.description && (
+                            <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">
+                              {topic.description}
+                            </p>
                           )}
-                          {isLeader && !isMemberLeader && !isCurrentUser && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {urgency && (
+                              <span
+                                className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${urgency.color}`}>
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${urgency.dot}`}
+                                />
+                                Hạn: {urgency.label}
+                              </span>
+                            )}
+                            {topic.maxDurationMinutes && (
+                              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                <Clock className="w-3 h-3" />{" "}
+                                {topic.maxDurationMinutes} phút
+                              </span>
+                            )}
+                            {isTopicEnrolled && (
+                              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium">
+                                <CheckCircle2 className="w-3 h-3" /> Đã ghi danh
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isGroupEnrolled && !isTopicEnrolled && (
                             <button
-                              onClick={() => handleChangeLeader(memberId)}
-                              disabled={groupActionLoading}
-                              className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-                            >
-                              Make leader
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEnrollTopic(topic.topicId);
+                              }}
+                              disabled={enrollmentLoading}
+                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+                              {enrollmentLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Plus className="w-3 h-3" />
+                              )}
+                              Ghi danh
                             </button>
                           )}
-                          {isLeader && !isCurrentUser && (
+                          {!isGroupEnrolled && (
                             <button
-                              onClick={() => handleRemoveMember(memberId)}
-                              disabled={groupActionLoading}
-                              className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
-                            >
-                              Remove
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.info("Bạn cần ghi danh lớp trước.");
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 font-semibold cursor-not-allowed">
+                              <Plus className="w-3 h-3" /> Ghi danh
                             </button>
                           )}
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/student/class/${classId}/topic/${topic.topicId}`,
+                              )
+                            }
+                            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-blue-200 text-blue-700 font-semibold hover:bg-blue-50 transition">
+                            Xem chi tiết
+                          </button>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-600">No members listed yet.</p>
+                <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center">
+                  <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm">
+                    Chưa có chủ đề nào. Giảng viên sẽ thêm khi sẵn sàng.
+                  </p>
+                </div>
               )}
             </div>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                onClick={() => setShowMyGroup(false)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Close
-              </button>
+          </Tabs.Content>
+
+          {/* Groups Tab */}
+          <Tabs.Content value="groups" className="mt-4 outline-none">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Nhóm làm việc
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {groups.length} nhóm trong lớp này
+                    {groupLimit
+                      ? ` • Tối đa ${groupLimit} thành viên/nhóm`
+                      : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!myGroupForClass && isGroupEnrolled && (
+                    <button
+                      onClick={() => setIsCreateModalOpen(true)}
+                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition shadow-sm">
+                      <Plus className="w-4 h-4" /> Tạo nhóm
+                    </button>
+                  )}
+                  {myGroupForClass && (
+                    <button
+                      onClick={() => {
+                        if (myGroupForClass.groupId)
+                          dispatch(
+                            fetchGroupDetail(Number(myGroupForClass.groupId)),
+                          );
+                        setShowGroupDetail(true);
+                      }}
+                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition shadow-sm">
+                      <Users className="w-4 h-4" /> Nhóm của bạn:{" "}
+                      {getGroupName(myGroupForClass)}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!isGroupEnrolled && (
+                <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm.
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {groupLoading ? (
+                  [...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-200 p-4 animate-pulse">
+                      <div className="h-4 bg-slate-200 rounded w-1/2 mb-2" />
+                      <div className="h-3 bg-slate-100 rounded w-1/3" />
+                    </div>
+                  ))
+                ) : groups.length ? (
+                  groups.map((group) => {
+                    const groupId = getGroupId(group);
+                    const isMyGroup =
+                      myGroupForClass &&
+                      `${getGroupId(myGroupForClass)}` === `${groupId}`;
+                    const memberCount =
+                      group.memberCount ?? group.students?.length ?? 0;
+                    const isFull =
+                      memberCount >=
+                        (group.maxGroupMembers || groupLimit || 0) &&
+                      (group.maxGroupMembers || groupLimit);
+                    return (
+                      <div
+                        key={`${groupId ?? group.name}`}
+                        className={`rounded-xl border p-4 transition cursor-pointer hover:shadow-md ${isMyGroup ? "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-300" : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-blue-200"}`}
+                        onClick={() => {
+                          if (isMyGroup) {
+                            dispatch(fetchGroupDetail(Number(groupId)));
+                            setShowGroupDetail(true);
+                          }
+                        }}>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-900">
+                              {getGroupName(group)}
+                            </p>
+                            {isMyGroup && (
+                              <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                Nhóm của bạn
+                              </span>
+                            )}
+                          </div>
+                          {!myGroupForClass &&
+                            (isFull ? (
+                              <span className="text-xs text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full font-medium">
+                                Đã đủ
+                              </span>
+                            ) : group.isMember ? (
+                              <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Đã tham gia
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinGroup(groupId);
+                                }}
+                                disabled={
+                                  groupActionLoading ||
+                                  !groupId ||
+                                  !isGroupEnrolled
+                                }
+                                className="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+                                Tham gia
+                              </button>
+                            ))}
+                        </div>
+                        {group.description && (
+                          <p className="text-sm text-slate-500 mb-2 line-clamp-2">
+                            {group.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Users className="w-3.5 h-3.5" />
+                          {memberCount}
+                          {groupLimit ? `/${groupLimit}` : ""} thành viên
+                          {memberCount > 0 && (
+                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 rounded-full transition-all"
+                                style={{
+                                  width: `${groupLimit ? Math.min((memberCount / groupLimit) * 100, 100) : 0}%`,
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span className="text-xs text-slate-400">
+                            Trưởng: {getLeaderName(group)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-2 rounded-xl border border-dashed border-slate-200 p-10 text-center">
+                    <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500 text-sm">
+                      Chưa có nhóm nào. Hãy tạo nhóm đầu tiên!
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
+          </Tabs.Content>
+
+          {/* Info Tab */}
+          <Tabs.Content value="info" className="mt-4 outline-none">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <h3 className="text-base font-bold text-slate-900 mb-4">
+                  Thông tin lớp
+                </h3>
+                <div className="space-y-3 text-sm">
+                  {[
+                    { label: "Mã lớp", value: classDetail.classCode },
+                    {
+                      label: "Môn học",
+                      value: courseInfo
+                        ? `${courseInfo.courseCode} — ${courseInfo.courseName}`
+                        : "N/A",
+                    },
+                    {
+                      label: "Học kỳ",
+                      value: courseInfo
+                        ? `${courseInfo.semester} ${courseInfo.academicYear}`
+                        : "N/A",
+                    },
+                    {
+                      label: "Ngày bắt đầu",
+                      value: formatDate(classDetail.startDate),
+                    },
+                    {
+                      label: "Ngày kết thúc",
+                      value: formatDate(classDetail.endDate),
+                    },
+                    { label: "Thời lượng", value: `${classDuration} ngày` },
+                    { label: "Giảng viên", value: instructorName },
+                    {
+                      label: "Số học viên",
+                      value: `${enrollmentCount}${classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""}`,
+                    },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                      <span className="text-slate-500">{label}</span>
+                      <span className="font-semibold text-slate-900 text-right max-w-[200px] truncate">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {classDetail.description && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <h3 className="text-base font-bold text-slate-900 mb-3">
+                    Mô tả
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {classDetail.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Tabs.Content>
+        </Tabs.Root>
+      </div>
+
+      {/* Create Group Modal */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setIsCreateModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Tạo nhóm mới
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    Nhóm của bạn sẽ tham gia lớp này
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-xl transition">
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Tên nhóm *
+                  </label>
+                  <input
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Nhập tên nhóm"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={groupActionLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Mô tả{" "}
+                    <span className="text-slate-400 font-normal">
+                      (tùy chọn)
+                    </span>
+                  </label>
+                  <textarea
+                    value={groupDescription}
+                    onChange={(e) => setGroupDescription(e.target.value)}
+                    placeholder="Mô tả nhóm..."
+                    rows={3}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    disabled={groupActionLoading}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  Hủy
+                </button>
+                <button
+                  onClick={handleCreateGroup}
+                  disabled={groupActionLoading || !groupName.trim()}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition disabled:opacity-50">
+                  {groupActionLoading ? "Đang tạo..." : "Tạo nhóm"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Group Detail Modal */}
       {showGroupDetail && myGroupForClass?.groupId && (
@@ -1145,18 +751,7 @@ const StudentClassDetailPage: React.FC = () => {
           groupId={Number(myGroupForClass.groupId)}
         />
       )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        </div>
-      )}
-    </div>
+    </StudentLayout>
   );
 };
 
