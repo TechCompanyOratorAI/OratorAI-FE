@@ -31,6 +31,7 @@ import NotFoundPage from "@/page/Error/NotFoundPage";
 import AdminCoursePage from "@/page/Admin/AdminCoursePage";
 import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
+import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
 
 const AppRouter = () => {
   return (
@@ -127,6 +128,10 @@ const AppRouter = () => {
         <Route
           path="/admin/manage-departments"
           element={<AdminDepartmentPage />}
+        />
+        <Route
+          path="/admin/rubric-templates"
+          element={<AdminRubricTemplePage />}
         />
         <Route
           path="/admin/ai-configuration"

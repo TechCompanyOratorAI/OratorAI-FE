@@ -11,6 +11,7 @@ import {
   Book,
   FolderCog,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -74,6 +75,12 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
       label: "Manage Departments",
       icon: FolderCog,
       path: "/admin/manage-departments",
+    },
+    {
+      id: "rubric-templates",
+      label: "Rubric Templates",
+      icon: ClipboardList,
+      path: "/admin/rubric-templates",
     },
     {
       id: "settings",
@@ -147,7 +154,9 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
       >
         {/* Logo */}
         <div className={`p-4 ${expanded ? "" : "lg:p-4"}`}>
-          <div className={`flex items-center gap-3 mb-1 ${expanded ? "" : "lg:justify-center"}`}>
+          <div
+            className={`flex items-center gap-3 mb-1 ${expanded ? "" : "lg:justify-center"}`}
+          >
             {expanded && (
               <div className="lg:block hidden">
                 <AppLogo to="/" size="sm" />
@@ -168,25 +177,33 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
                 to={item.path}
                 title={!expanded ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
-                  active ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-100"
+                  active
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-700 hover:bg-gray-100"
                 } ${!expanded ? "lg:justify-center" : ""}`}
               >
                 <Icon className="w-6 h-6 flex-shrink-0" />
-                {expanded && <span className="lg:block hidden">{item.label}</span>}
+                {expanded && (
+                  <span className="lg:block hidden">{item.label}</span>
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* User info + Đăng xuất (luôn hiện, không popup) */}
-        <div className={`p-4 border-t border-gray-200 space-y-2 ${expanded ? "" : "lg:px-2"}`}>
+        <div
+          className={`p-4 border-t border-gray-200 space-y-2 ${expanded ? "" : "lg:px-2"}`}
+        >
           {expanded && (
             <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
               <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700 flex-shrink-0">
                 {userInitial}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{userDisplayName}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {userDisplayName}
+                </p>
                 <p className="text-xs text-gray-500">{userRoleLabel}</p>
               </div>
             </div>
@@ -208,4 +225,3 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
 };
 
 export default SidebarAdmin;
-
