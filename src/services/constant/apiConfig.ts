@@ -111,7 +111,6 @@ export const UPDATE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
 export const DELETE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
   `${BASE_URL}/api/v1/rubric-templates/${rubricTemplateId}`;
 
-
 //get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
