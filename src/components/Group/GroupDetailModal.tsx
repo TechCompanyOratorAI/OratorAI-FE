@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  X,
-  Users,
-  Crown,
-  User,
-} from "lucide-react";
+import { X, Users, Crown, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchGroupDetail,
@@ -21,17 +16,19 @@ interface GroupDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   groupId: number;
+  hideFooterActions?: boolean;
 }
 
 const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   isOpen,
   onClose,
   groupId,
+  hideFooterActions = false,
 }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { groupDetail, loading, actionLoading, error } = useAppSelector(
-    (state) => state.group
+    (state) => state.group,
   );
   const { user } = useAppSelector((state) => state.auth);
 
@@ -81,8 +78,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   };
 
   const isCurrentUserMember = groupDetail?.students?.some(
-    (member) =>
-      `${member.userId ?? member.id}` === `${user?.userId}`
+    (member) => `${member.userId ?? member.id}` === `${user?.userId}`,
   );
 
   const handleLeaveGroup = async () => {
@@ -96,7 +92,10 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         dispatch(fetchMyGroupByClass(classId));
       }
       // Show toast first, then close modal after a short delay
-      setToast({ message: result?.message || "Left group successfully.", type: "success" });
+      setToast({
+        message: result?.message || "Left group successfully.",
+        type: "success",
+      });
       setTimeout(() => {
         onClose();
       }, 800);
@@ -164,21 +163,26 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
           ) : groupDetail ? (
             <div className="space-y-6">
               {/* Group Info */}
-              <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Users className="w-4 h-4 text-sky-600" />
-                    <span>
-                      {groupDetail.memberCount ?? groupDetail.students?.length ?? 0} members
-                    </span>
+              {!hideFooterActions && (
+                <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Users className="w-4 h-4 text-sky-600" />
+                      <span>
+                        {groupDetail.memberCount ??
+                          groupDetail.students?.length ??
+                          0}{" "}
+                        members
+                      </span>
+                    </div>
+                    {groupDetail.description && (
+                      <p className="text-sm text-slate-600 col-span-2">
+                        {groupDetail.description}
+                      </p>
+                    )}
                   </div>
-                  {groupDetail.description && (
-                    <p className="text-sm text-slate-600 col-span-2">
-                      {groupDetail.description}
-                    </p>
-                  )}
                 </div>
-              </div>
+              )}
 
               {/* Members List */}
               <div>
@@ -210,11 +214,15 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                             <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
                               {getMemberDisplayName(member)}
                               {isCurrentUser && (
-                                <span className="text-xs text-sky-600">(You)</span>
+                                <span className="text-xs text-sky-600">
+                                  (You)
+                                </span>
                               )}
                             </p>
                             {member.email && (
-                              <p className="text-xs text-slate-500">{member.email}</p>
+                              <p className="text-xs text-slate-500">
+                                {member.email}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -235,36 +243,38 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-3xl">
-          <button
-            onClick={handleLeaveGroup}
-            disabled={actionLoading || !isCurrentUserMember}
-            className="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Leave Group
-          </button>
-          <div className="flex items-center gap-3">
-            <Button
-              text="Close"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="8px"
-              paddingWidth="16px"
-              paddingHeight="10px"
-              onClick={onClose}
-            />
-            <Button
-              text="View Topics"
-              variant="primary"
-              fontSize="14px"
-              borderRadius="8px"
-              paddingWidth="16px"
-              paddingHeight="10px"
-              onClick={handleViewTopics}
-              disabled={!groupDetail?.classId && !groupDetail?.class?.classId}
-            />
+        {!hideFooterActions && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-3xl">
+            <button
+              onClick={handleLeaveGroup}
+              disabled={actionLoading || !isCurrentUserMember}
+              className="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Leave Group
+            </button>
+            <div className="flex items-center gap-3">
+              <Button
+                text="Close"
+                variant="secondary"
+                fontSize="14px"
+                borderRadius="8px"
+                paddingWidth="16px"
+                paddingHeight="10px"
+                onClick={onClose}
+              />
+              <Button
+                text="View Topics"
+                variant="primary"
+                fontSize="14px"
+                borderRadius="8px"
+                paddingWidth="16px"
+                paddingHeight="10px"
+                onClick={handleViewTopics}
+                disabled={!groupDetail?.classId && !groupDetail?.class?.classId}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Toast Notification */}

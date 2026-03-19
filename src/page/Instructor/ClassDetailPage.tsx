@@ -19,17 +19,33 @@ import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarIns
 import Button from "@/components/yoodli/Button";
 import TopicModal from "@/components/Topic/TopicModal";
 import TopicUpdateModal from "@/components/Topic/TopicUpdateModal";
+import GroupDetailModal from "@/components/Group/GroupDetailModal";
+import RubricModal from "@/components/Rubric/RubricModal";
 import Toast from "@/components/Toast/Toast";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
+import {
+  fetchGroupsByClass,
+  fetchGroupDetail,
+  Group,
+} from "@/services/features/group/groupSlice";
 import {
   createTopic,
   CreateTopicData,
   updateTopic,
   deleteTopic,
 } from "@/services/features/topic/topicSlice";
+import {
+  ClassRubricCriteria,
+  RubricCriteriaPayload,
+  createRubricCriteria,
+  deleteRubricCriteria,
+  fetchRubricByClass,
+  updateRubricCriteria,
+} from "@/services/features/rubric/rubricSilce";
 
 const ClassDetailPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
+  const classIdNumber = classId ? parseInt(classId, 10) : null;
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { selectedClass, loading, error } = useAppSelector(
@@ -39,10 +55,25 @@ const ClassDetailPage: React.FC = () => {
     (state) => state.course,
   );
   const { loading: topicLoading } = useAppSelector((state) => state.topic);
+  const { groups, loading: groupLoading } = useAppSelector(
+    (state) => state.group,
+  );
+  const {
+    criteria: rubricCriteria,
+    loading: rubricLoading,
+    actionLoading: rubricActionLoading,
+  } = useAppSelector((state) => state.rubric);
 
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
   const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
+  const [showGroupDetail, setShowGroupDetail] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
+  const [isDeleteRubricModalOpen, setIsDeleteRubricModalOpen] = useState(false);
+  const [rubricMode, setRubricMode] = useState<"create" | "edit">("create");
+  const [editingRubric, setEditingRubric] =
+    useState<ClassRubricCriteria | null>(null);
   const [editingTopic, setEditingTopic] = useState<{
     topicId: number;
     topicName: string;
@@ -58,10 +89,12 @@ const ClassDetailPage: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    if (classId) {
-      dispatch(fetchClassDetail(parseInt(classId)));
+    if (classIdNumber) {
+      dispatch(fetchClassDetail(classIdNumber));
+      dispatch(fetchGroupsByClass(classIdNumber));
+      dispatch(fetchRubricByClass(classIdNumber));
     }
-  }, [classId, dispatch]);
+  }, [classIdNumber, dispatch]);
 
   // When class details are loaded, also fetch course detail
   // so we can manage presentation topics for this class's course.
@@ -148,6 +181,79 @@ const ClassDetailPage: React.FC = () => {
       requirements: prev?.requirements,
     }));
     setIsDeleteTopicModalOpen(true);
+  };
+
+  const sortedRubricCriteria = [...rubricCriteria].sort(
+    (a, b) => a.displayOrder - b.displayOrder,
+  );
+
+  const openCreateRubricModal = () => {
+    setRubricMode("create");
+    setEditingRubric(null);
+    setIsRubricModalOpen(true);
+  };
+
+  const openEditRubricModal = (criterion: ClassRubricCriteria) => {
+    setRubricMode("edit");
+    setEditingRubric(criterion);
+    setIsRubricModalOpen(true);
+  };
+
+  const handleSubmitRubric = async (payload: RubricCriteriaPayload) => {
+    if (!classIdNumber) return;
+
+    try {
+      if (rubricMode === "create") {
+        await dispatch(
+          createRubricCriteria({ classId: classIdNumber, rubricData: payload }),
+        ).unwrap();
+        setToast({ message: "Rubric criteria created.", type: "success" });
+      } else if (editingRubric) {
+        await dispatch(
+          updateRubricCriteria({
+            classRubricCriteriaId: editingRubric.classRubricCriteriaId,
+            rubricData: payload,
+          }),
+        ).unwrap();
+        setToast({ message: "Rubric criteria updated.", type: "success" });
+      }
+
+      dispatch(fetchRubricByClass(classIdNumber));
+      setIsRubricModalOpen(false);
+      setEditingRubric(null);
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Rubric action failed.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleDeleteRubric = async () => {
+    if (!editingRubric || !classIdNumber) return;
+
+    try {
+      await dispatch(
+        deleteRubricCriteria({
+          classRubricCriteriaId: editingRubric.classRubricCriteriaId,
+        }),
+      ).unwrap();
+      setToast({ message: "Rubric criteria deleted.", type: "success" });
+      dispatch(fetchRubricByClass(classIdNumber));
+      setIsDeleteRubricModalOpen(false);
+      setEditingRubric(null);
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to delete rubric criteria.",
+        type: "error",
+      });
+    }
   };
 
   if (loading) {
@@ -239,8 +345,30 @@ const ClassDetailPage: React.FC = () => {
     selectedClass.enrollmentCount ??
     selectedClass.enrollments?.length ??
     0;
-  const topicsForClass =
-    selectedClass.topics || courseForTopics?.topics || [];
+  const topicsForClass = selectedClass.topics || courseForTopics?.topics || [];
+  const groupsForClass = groups.filter((group) => {
+    const groupClassId = Number(
+      group.classId ?? group.class?.classId ?? selectedClass.classId,
+    );
+    return groupClassId === selectedClass.classId;
+  });
+
+  const getGroupName = (group: Group) =>
+    group.groupName ?? group.name ?? "Group";
+  const getGroupId = (group: Group) => group.groupId ?? group.id;
+  const getMemberName = (member: any) => {
+    const fullName = [member?.firstName, member?.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    return fullName || member?.username || member?.email || "Unknown";
+  };
+  const getGroupLeaderName = (group: Group) => {
+    const leader = (group.students || []).find(
+      (student) => student.GroupStudent?.role === "leader",
+    );
+    return leader ? getMemberName(leader) : "Unknown";
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -387,71 +515,249 @@ const ClassDetailPage: React.FC = () => {
                 <div className="space-y-3">
                   {(selectedClass.topics || courseForTopics?.topics || []).map(
                     (topic) => (
-                    <div
-                      key={topic.topicId}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-50/80 transition-colors"
-                    >
-                      <div className="px-4 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1">
-                          <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
-                            {topic.sequenceNumber}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Topic {topic.sequenceNumber}
-                            </p>
-                            <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
-                              {topic.topicName}
-                            </h4>
-                            {topic.description && (
-                              <p className="mt-1 text-sm text-slate-600 max-w-3xl">
-                                {topic.description}
+                      <div
+                        key={topic.topicId}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-50/80 transition-colors"
+                      >
+                        <div className="px-4 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(
+                                `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
+                              )
+                            }
+                            className="flex items-start gap-3 flex-1 text-left"
+                          >
+                            <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                              {topic.sequenceNumber}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Topic {topic.sequenceNumber}
                               </p>
-                            )}
+                              <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
+                                {topic.topicName}
+                              </h4>
+                              {topic.description && (
+                                <p className="mt-1 text-sm text-slate-600 max-w-3xl">
+                                  {topic.description}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                              {topic.dueDate && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
+                                  <Calendar className="w-3 h-3" />
+                                  Due {formatDate(topic.dueDate)}
+                                </span>
+                              )}
+                              {topic.maxDurationMinutes && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
+                                  <Clock className="w-3 h-3" />
+                                  {topic.maxDurationMinutes} mins
+                                </span>
+                              )}
+                            </div>
+                            <div className="group relative">
+                              <button className="p-2 hover:bg-slate-200 rounded-lg transition">
+                                <MoreVertical className="w-5 h-5 text-slate-600" />
+                                {/* Dropdown menu */}
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditTopic(topic.topicId);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
+                                  >
+                                    <Edit className="w-4 h-4 text-sky-600" />
+                                    Edit Topic
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTopic({
+                                        topicId: topic.topicId,
+                                        topicName: topic.topicName,
+                                      });
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Topic
+                                  </button>
+                                </div>
+                              </button>
+                            </div>
                           </div>
                         </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                  No topics yet. Use{" "}
+                  <span className="font-semibold text-slate-800">
+                    Create Topic
+                  </span>{" "}
+                  to add the first presentation topic for this class.
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="rounded-2xl bg-violet-100 p-2">
+                  <Users className="w-5 h-5 text-violet-700" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                    Groups
+                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Student Groups ({groupsForClass.length})
+                  </h3>
+                </div>
+              </div>
+
+              {groupLoading ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                  Loading groups...
+                </div>
+              ) : groupsForClass.length > 0 ? (
+                <div className="space-y-3">
+                  {groupsForClass.map((group, index) => {
+                    const groupId = Number(getGroupId(group));
+                    const memberCount =
+                      group.memberCount ?? group.students?.length ?? 0;
+
+                    return (
+                      <button
+                        key={group.groupId ?? group.id ?? index}
+                        type="button"
+                        onClick={() => {
+                          if (!Number.isFinite(groupId)) return;
+                          setSelectedGroupId(groupId);
+                          dispatch(fetchGroupDetail(groupId));
+                          setShowGroupDetail(true);
+                        }}
+                        className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:border-violet-200 hover:bg-white hover:shadow-sm transition"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {getGroupName(group)}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Leader: {getGroupLeaderName(group)}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                            <Users className="w-3.5 h-3.5" />
+                            {memberCount} members
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                  No groups found for this class.
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-2xl bg-emerald-100 p-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                      Rubric
+                    </p>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Class Evaluation Criteria ({rubricCriteria.length})
+                    </h3>
+                  </div>
+                </div>
+                <Button
+                  text="Create Criteria"
+                  variant="primary"
+                  fontSize="14px"
+                  borderRadius="999px"
+                  paddingWidth="16px"
+                  paddingHeight="8px"
+                  onClick={openCreateRubricModal}
+                />
+              </div>
+
+              {rubricLoading ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                  Loading rubric...
+                </div>
+              ) : rubricCriteria.length > 0 ? (
+                <div className="space-y-3">
+                  {sortedRubricCriteria.map((criterion) => (
+                    <div
+                      key={criterion.classRubricCriteriaId}
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                             {criterion.criteriaName}
+                          </p>
+                          {criterion.criteriaDescription && (
+                            <p className="text-sm text-slate-600 mt-1">
+                              {criterion.criteriaDescription}
+                            </p>
+                          )}
+                          {criterion.evaluationGuide && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              Guide: {criterion.evaluationGuide}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            {topic.dueDate && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                <Calendar className="w-3 h-3" />
-                                Due {formatDate(topic.dueDate)}
-                              </span>
-                            )}
-                            {topic.maxDurationMinutes && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                <Clock className="w-3 h-3" />
-                                {topic.maxDurationMinutes} mins
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2 text-xs font-semibold">
+                            <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
+                              Persen {Number(criterion.weight).toFixed(0)}%
+                            </span>
+                            <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
+                              Max {Number(criterion.maxScore).toFixed(0)}
+                            </span>
                           </div>
                           <div className="group relative">
                             <button className="p-2 hover:bg-slate-200 rounded-lg transition">
                               <MoreVertical className="w-5 h-5 text-slate-600" />
-                              {/* Dropdown menu */}
                               <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleEditTopic(topic.topicId);
+                                    openEditRubricModal(criterion);
                                   }}
                                   className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
                                 >
                                   <Edit className="w-4 h-4 text-sky-600" />
-                                  Edit Topic
+                                  Edit Rubric
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteTopic({
-                                      topicId: topic.topicId,
-                                      topicName: topic.topicName,
-                                    });
+                                    setEditingRubric(criterion);
+                                    setIsDeleteRubricModalOpen(true);
                                   }}
                                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
                                 >
                                   <Trash2 className="w-4 h-4" />
-                                  Delete Topic
+                                  Delete Rubric
                                 </button>
                               </div>
                             </button>
@@ -463,11 +769,7 @@ const ClassDetailPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  No topics yet. Use{" "}
-                  <span className="font-semibold text-slate-800">
-                    Create Topic
-                  </span>{" "}
-                  to add the first presentation topic for this class.
+                  No rubric criteria configured for this class.
                 </div>
               )}
             </div>
@@ -530,7 +832,6 @@ const ClassDetailPage: React.FC = () => {
                     {selectedClass.maxStudents} students
                   </span>
                 </div>
-                
               </div>
             </div>
 
@@ -571,6 +872,85 @@ const ClassDetailPage: React.FC = () => {
         onSubmit={handleCreateTopicSubmit}
         isLoading={topicLoading}
       />
+
+      {showGroupDetail && selectedGroupId && (
+        <GroupDetailModal
+          isOpen={showGroupDetail}
+          onClose={() => {
+            setShowGroupDetail(false);
+            setSelectedGroupId(null);
+          }}
+          groupId={selectedGroupId}
+          hideFooterActions
+        />
+      )}
+
+      <RubricModal
+        isOpen={isRubricModalOpen}
+        onClose={() => {
+          if (rubricActionLoading) return;
+          setIsRubricModalOpen(false);
+          setEditingRubric(null);
+        }}
+        onSubmit={handleSubmitRubric}
+        isLoading={rubricActionLoading}
+        mode={rubricMode}
+        initialData={
+          editingRubric
+            ? {
+                criteriaName: editingRubric.criteriaName,
+                criteriaDescription: editingRubric.criteriaDescription,
+                weight: Number(editingRubric.weight),
+                maxScore: Number(editingRubric.maxScore),
+                displayOrder: editingRubric.displayOrder,
+                evaluationGuide: editingRubric.evaluationGuide,
+              }
+            : undefined
+        }
+        defaultDisplayOrder={sortedRubricCriteria.length + 1}
+      />
+
+      {isDeleteRubricModalOpen && editingRubric && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (rubricActionLoading) return;
+              setIsDeleteRubricModalOpen(false);
+              setEditingRubric(null);
+            }}
+          />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <h3 className="text-lg font-bold text-slate-900">Delete rubric</h3>
+            <p className="text-sm text-slate-600 mt-2">
+              Are you sure you want to delete rubric criteria{" "}
+              <span className="font-semibold">
+                {editingRubric.criteriaName}
+              </span>
+              ?
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => {
+                  setIsDeleteRubricModalOpen(false);
+                  setEditingRubric(null);
+                }}
+                disabled={rubricActionLoading}
+                className="px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRubric}
+                disabled={rubricActionLoading}
+                className="px-4 py-2 rounded-full bg-rose-600 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {rubricActionLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Topic Modal */}
       <TopicUpdateModal

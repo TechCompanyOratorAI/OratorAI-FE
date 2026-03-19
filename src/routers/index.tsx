@@ -8,7 +8,7 @@ import VerifyEmailPage from "@/page/Authentication/VerifyEmailPage/VerifyEmailPa
 import { Route, Routes } from "react-router-dom";
 import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
-import TopicDetailPage from "@/page/Instructor/TopicDetailPage";
+import IntructorTopicDetailPage from "@/page/Instructor/IntructorTopicDetailPage";
 import ClassDetailPage from "@/page/Instructor/ClassDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
@@ -24,6 +24,7 @@ import StudentSettingsPage from "@/page/Students/StudentSettingsPage";
 import FeedbackPage from "@/page/Students/MyPresentPage";
 import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
 import PresentationDetailPage from "@/page/Students/PresentationDetailPage";
+import IntructorPresentationDetailPage from "@/page/Instructor/IntructorPresentationDetailPage";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
@@ -63,7 +64,19 @@ const AppRouter = () => {
         />
         <Route
           path="/instructor/topic/:topicId"
-          element={<TopicDetailPage />}
+          element={<IntructorTopicDetailPage />}
+        />
+        <Route
+          path="/instructor/class/:classId/topic/:topicId"
+          element={<IntructorTopicDetailPage />}
+        />
+        <Route
+          path="/instructor/presentation/:presentationId"
+          element={<IntructorPresentationDetailPage />}
+        />
+        <Route
+          path="/intructor/presentation/:presentationId"
+          element={<IntructorPresentationDetailPage />}
         />
       </Route>
 
@@ -111,7 +124,10 @@ const AppRouter = () => {
         <Route path="/admin/user-management" element={<UserManagementPage />} />
         <Route path="/admin/manage-classes" element={<AdminClassPage />} />
         <Route path="/admin/manage-courses" element={<AdminCoursePage />} />
-        <Route path="/admin/manage-departments" element={<AdminDepartmentPage />} />
+        <Route
+          path="/admin/manage-departments"
+          element={<AdminDepartmentPage />}
+        />
         <Route
           path="/admin/ai-configuration"
           element={<AIConfigurationPage />}

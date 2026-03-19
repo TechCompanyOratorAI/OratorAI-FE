@@ -1,7 +1,6 @@
- export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
 //export const BASE_URL = "http://localhost:8080";
-
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -90,12 +89,30 @@ export const REMOVE_MEMBER_FROM_GROUP_ENDPOINT = (
   groupId: string,
   userId: string,
 ) => `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/remove`;
-export const CHANGE_LEADER_OF_GROUP_ENDPOINT = (groupId: string, userId: string) =>
-  `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/promote`;
+export const CHANGE_LEADER_OF_GROUP_ENDPOINT = (
+  groupId: string,
+  userId: string,
+) => `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/promote`;
+
+//Rubric endpoints
+export const GET_RUBRIC_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/${classId}/rubric`;
+export const CREATE_RUBRIC_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/${classId}/rubric/criteria`;
+export const UPDATE_CLASS_RUBRIC_ENDPOINT = (classRubricCriteriaId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
+export const DELETE_CLASS_RUBRIC_ENDPOINT = (classRubricCriteriaId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
+//Rubric-temple admin endpoints
+export const GET_ALL_RUBRIC_TEMPLATES_ENDPOINT = `${BASE_URL}/api/v1/rubric-templates/all`;
+export const CREATE_RUBRIC_TEMPLATE_ENDPOINT = `${BASE_URL}/api/v1/rubric-templates`;
+export const UPDATE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
+  `${BASE_URL}/api/v1/rubric-templates/${rubricTemplateId}`;
+export const DELETE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
+  `${BASE_URL}/api/v1/rubric-templates/${rubricTemplateId}`;
 
 
-
-//get class by instructor 
+//get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
 // Filter for admin endpoints
@@ -116,8 +133,10 @@ export const GET_ENROLLED_CLASSES_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/
 
 // Presentation endpoints
 export const PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/presentations`;
-export const PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT = (classId: string, topicId: string) =>
-  `${BASE_URL}/api/v1/presentations?classId=${classId}&topicId=${topicId}`;
+export const PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT = (
+  classId: string,
+  topicId: string,
+) => `${BASE_URL}/api/v1/presentations?classId=${classId}&topicId=${topicId}`;
 export const CREATE_PRESENTATION_ENDPOINT = `${BASE_URL}/api/v1/presentations`;
 export const PRESENTATION_DETAIL_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}`;
@@ -128,8 +147,11 @@ export const PRESENTATION_MEDIA_ENDPOINT = (presentationId: string) =>
 export const PRESENTATION_SUBMIT_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/submit`;
 export const TOPIC_PRESENTATIONS_ENDPOINT = (topicId: string) =>
-  `${BASE_URL}/api/v1/topics/${topicId}/presentations`;
+  `${BASE_URL}/api/v1/topics/
+${topicId}/presentations`;
 
 //Report Presentation endpoints
 export const REPORT_PRESENTATION_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/ai-reports/submission/${presentationId}`;
+export const CONFIRM_REPORT_ENDPOINT = (reportId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/confirm`;
