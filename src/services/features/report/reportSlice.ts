@@ -1,4 +1,7 @@
-import { REPORT_PRESENTATION_ENDPOINT } from "@/services/constant/apiConfig";
+import {
+  CONFIRM_REPORT_ENDPOINT,
+  REPORT_PRESENTATION_ENDPOINT,
+} from "@/services/constant/apiConfig";
 import axiosInstance from "@/services/constant/axiosInstance";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
@@ -59,12 +62,14 @@ interface ReportResponse {
 interface ReportState {
   currentReport: PresentationReport | null;
   loading: boolean;
+  confirmLoading: boolean;
   error: string | null;
 }
 
 const initialState: ReportState = {
   currentReport: null,
   loading: false,
+  confirmLoading: false,
   error: null,
 };
 
@@ -85,6 +90,20 @@ export const fetchPresentationReport = createAsyncThunk(
   },
 );
 
+export const confirmPresentationReport = createAsyncThunk(
+  "report/confirmPresentationReport",
+  async (reportId: number, { rejectWithValue }) => {
+    try {
+      await axiosInstance.put(CONFIRM_REPORT_ENDPOINT(reportId.toString()));
+      return reportId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể xác nhận AI report",
+      );
+    }
+  },
+);
+
 const reportSlice = createSlice({
   name: "report",
   initialState,
@@ -96,6 +115,7 @@ const reportSlice = createSlice({
       state.currentReport = null;
       state.error = null;
       state.loading = false;
+      state.confirmLoading = false;
     },
     setCurrentReport: (
       state,
@@ -116,6 +136,17 @@ const reportSlice = createSlice({
       })
       .addCase(fetchPresentationReport.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(confirmPresentationReport.pending, (state) => {
+        state.confirmLoading = true;
+        state.error = null;
+      })
+      .addCase(confirmPresentationReport.fulfilled, (state) => {
+        state.confirmLoading = false;
+      })
+      .addCase(confirmPresentationReport.rejected, (state, action) => {
+        state.confirmLoading = false;
         state.error = action.payload as string;
       });
   },
