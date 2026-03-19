@@ -47,6 +47,8 @@ interface PresentationPlayerProps {
   status: string;
   studentName?: string;
   createdAt?: string;
+  onResultClick?: () => void;
+  resultLoading?: boolean;
 }
 
 // Helper to check if file is video
@@ -77,6 +79,8 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
   status,
   studentName,
   createdAt,
+  onResultClick,
+  resultLoading = false,
 }) => {
   const [pageNumber, setPageNumber] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,9 +165,13 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
   // For PDF files: use currentSelectedSlideIndex to pick which file to view
   // For video slides: use pageNumber to navigate pages within the video
   const currentPdfSlide = slides[currentSelectedSlideIndex];
-  const currentSlide = slides.find((s) => s.slideNumber === pageNumber) || slides[0] || currentPdfSlide;
+  const currentSlide =
+    slides.find((s) => s.slideNumber === pageNumber) ||
+    slides[0] ||
+    currentPdfSlide;
   const hasVideo = !!audioRecord?.filePath && isVideoFile(audioRecord.filePath);
-  const currentSlideIsVideo = currentSlide?.filePath && isVideoFile(currentSlide.filePath);
+  const currentSlideIsVideo =
+    currentSlide?.filePath && isVideoFile(currentSlide.filePath);
 
   // Force reset pageNumber and selected index when component mounts
   useEffect(() => {
@@ -241,7 +249,9 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       <div className="flex flex-col items-center justify-center h-[500px] text-slate-500 bg-slate-100 rounded-lg">
         <File className="w-16 h-16 mb-4" />
         <p className="text-lg font-medium">{currentSlide.fileName}</p>
-        <p className="text-sm">{getFileExtension(currentSlide.filePath)} File</p>
+        <p className="text-sm">
+          {getFileExtension(currentSlide.filePath)} File
+        </p>
         <div className="flex gap-2 mt-4">
           <a
             href={currentSlide.filePath}
@@ -303,7 +313,9 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
         <div className="w-24 h-24 rounded-full bg-sky-500/20 flex items-center justify-center mb-4">
           <Volume2 className="w-12 h-12 text-sky-400" />
         </div>
-        <p className="text-white font-medium truncate max-w-md px-4">{audioRecord.fileName}</p>
+        <p className="text-white font-medium truncate max-w-md px-4">
+          {audioRecord.fileName}
+        </p>
         <div className="w-full max-w-md px-4 mt-4">
           <audio
             ref={playerRef as React.LegacyRef<HTMLAudioElement>}
@@ -355,7 +367,9 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
           <div className="flex-1">
             <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
             {description && (
-              <p className="text-slate-400 mt-1 text-sm sm:text-base">{description}</p>
+              <p className="text-slate-400 mt-1 text-sm sm:text-base">
+                {description}
+              </p>
             )}
             <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-slate-400">
               {studentName && (
@@ -382,7 +396,9 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               )}
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.bg}`}>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.bg}`}
+          >
             {statusBadge.text}
           </span>
         </div>
@@ -391,31 +407,46 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       {/* Tabs cho media và slides (chỉ hiển thị khi vừa có slide vừa có media) */}
       {hasMediaContent && hasSlides && (
         <div className="border-b border-slate-200">
-          <div className="flex gap-4 px-4">
-            <button
-              onClick={() => setActiveTab("slides")}
-              className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "slides"
-                ? "border-sky-500 text-sky-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
+          <div className="flex items-center justify-between gap-4 px-4">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab("slides")}
+                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "slides"
+                    ? "border-sky-500 text-sky-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Slide ({slides.length})
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("media")}
-              className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "media"
-                ? "border-sky-500 text-sky-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Slide ({slides.length})
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab("media")}
+                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "media"
+                    ? "border-sky-500 text-sky-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
-            >
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4" />
-                Video ghi hình
-              </div>
-            </button>
+              >
+                <div className="flex items-center gap-2">
+                  <Video className="w-4 h-4" />
+                  Video ghi hình
+                </div>
+              </button>
+            </div>
+
+            {onResultClick && (
+              <button
+                onClick={onResultClick}
+                disabled={resultLoading}
+                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FileText className="h-4 w-4" />
+                {resultLoading ? "Đang tải..." : "Kết quả"}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -426,14 +457,10 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
           {/* Content Section */}
           <div className="p-4">
             {hasSlides && (!hasMediaContent || activeTab === "slides") && (
-              <div className="mb-4">
-                {renderSlideContent()}
-              </div>
+              <div className="mb-4">{renderSlideContent()}</div>
             )}
             {hasMediaContent && (!hasSlides || activeTab === "media") && (
-              <div className="mb-4">
-                {renderMediaPlayer()}
-              </div>
+              <div className="mb-4">{renderMediaPlayer()}</div>
             )}
           </div>
 
@@ -469,17 +496,19 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
                           setIsPlaying(false);
                         }
                       }}
-                      className={`flex-shrink-0 w-40 p-2 rounded-lg border-2 transition ${isSelected
-                        ? "border-sky-500 bg-sky-500/10"
-                        : "border-slate-600 hover:border-slate-500 bg-slate-700/50"
-                        }`}
+                      className={`flex-shrink-0 w-40 p-2 rounded-lg border-2 transition ${
+                        isSelected
+                          ? "border-sky-500 bg-sky-500/10"
+                          : "border-slate-600 hover:border-slate-500 bg-slate-700/50"
+                      }`}
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-8 h-8 rounded flex items-center justify-center text-sm font-medium flex-shrink-0 ${isSelected
-                            ? "bg-sky-500 text-white"
-                            : "bg-slate-600 text-slate-300"
-                            }`}
+                          className={`w-8 h-8 rounded flex items-center justify-center text-sm font-medium flex-shrink-0 ${
+                            isSelected
+                              ? "bg-sky-500 text-white"
+                              : "bg-slate-600 text-slate-300"
+                          }`}
                         >
                           {index + 1}
                         </span>
@@ -488,7 +517,11 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
                             {slide.fileName}
                           </span>
                           <span className="text-[10px] text-slate-400">
-                            {slideIsVideo ? "Video" : slideIsPdf ? "PDF" : getFileExtension(slide.filePath)}
+                            {slideIsVideo
+                              ? "Video"
+                              : slideIsPdf
+                                ? "PDF"
+                                : getFileExtension(slide.filePath)}
                           </span>
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
+import {
+  clearCurrentReport,
+  fetchPresentationReport,
+} from "@/services/features/report/reportSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
@@ -46,6 +50,8 @@ const statusConfig: Record<
   },
 };
 
+const REPORT_SCROLL_TOP_GAP = 12;
+
 const PresentationDetailPage: React.FC = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
   const navigate = useNavigate();
@@ -56,6 +62,14 @@ const PresentationDetailPage: React.FC = () => {
     detailLoading,
     error,
   } = useAppSelector((state) => state.presentation);
+  const {
+    currentReport,
+    loading: reportLoading,
+    error: reportError,
+  } = useAppSelector((state) => state.report);
+
+  const [showReport, setShowReport] = useState(false);
+  const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
 
@@ -65,8 +79,57 @@ const PresentationDetailPage: React.FC = () => {
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
+    dispatch(clearCurrentReport());
+    setShowReport(false);
+  }, [presentationIdNumber, dispatch]);
+
+  useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
+
+  useEffect(() => {
+    if (reportError) toast.error(reportError);
+  }, [reportError]);
+
+  const criteriaScores = useMemo(() => {
+    if (!currentReport?.criterionScores) return [];
+
+    return Object.values(currentReport.criterionScores).sort(
+      (a, b) => a.criteriaId - b.criteriaId,
+    );
+  }, [currentReport]);
+
+  const scrollToReportSection = () => {
+    window.requestAnimationFrame(() => {
+      if (!reportSectionRef.current) return;
+
+      const stickyHeader = document.querySelector("header.sticky") as HTMLElement | null;
+      const stickyHeaderHeight = stickyHeader?.offsetHeight || 0;
+
+      const targetTop =
+        window.scrollY +
+        reportSectionRef.current.getBoundingClientRect().top +
+        -stickyHeaderHeight -
+        REPORT_SCROLL_TOP_GAP;
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: "smooth",
+      });
+    });
+  };
+
+  useEffect(() => {
+    if (showReport) {
+      scrollToReportSection();
+    }
+  }, [showReport]);
+
+  useEffect(() => {
+    if (showReport && !reportLoading) {
+      scrollToReportSection();
+    }
+  }, [showReport, reportLoading, currentReport]);
 
   if (detailLoading) {
     return (
@@ -87,7 +150,8 @@ const PresentationDetailPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6">
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6"
+          >
             <ArrowLeft className="w-5 h-5" /> Quay lại
           </button>
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
@@ -107,6 +171,15 @@ const PresentationDetailPage: React.FC = () => {
 
   const sc =
     statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
+
+  const handleViewReport = () => {
+    if (!presentationIdNumber) return;
+    if (showReport) {
+      scrollToReportSection();
+    }
+    setShowReport(true);
+    dispatch(fetchPresentationReport(presentationIdNumber));
+  };
 
   const statCards = [
     {
@@ -152,11 +225,13 @@ const PresentationDetailPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition text-sm">
+            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition text-sm"
+          >
             <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
           <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}>
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}
+          >
             <FileText className="w-3.5 h-3.5" /> {sc.label}
           </span>
         </div>
@@ -164,7 +239,8 @@ const PresentationDetailPage: React.FC = () => {
         {/* Page title */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}>
+          animate={{ opacity: 1, y: 0 }}
+        >
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
             {presentation.title}
           </h1>
@@ -182,9 +258,11 @@ const PresentationDetailPage: React.FC = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className={`bg-gradient-to-br ${gradient} rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4`}>
+                className={`bg-gradient-to-br ${gradient} rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4`}
+              >
                 <div
-                  className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+                  className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}
+                >
                   <Icon className={`w-5 h-5 ${iconColor}`} />
                 </div>
                 <div className="min-w-0">
@@ -202,7 +280,8 @@ const PresentationDetailPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}>
+          transition={{ delay: 0.3 }}
+        >
           <PresentationPlayer
             slides={presentation.slides || []}
             audioRecord={presentation.audioRecord || null}
@@ -211,8 +290,81 @@ const PresentationDetailPage: React.FC = () => {
             status={presentation.status}
             studentName={studentName}
             createdAt={presentation.createdAt}
+            onResultClick={handleViewReport}
+            resultLoading={reportLoading}
           />
         </motion.div>
+
+        {showReport && (
+          <motion.div
+            ref={reportSectionRef}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                Kết quả đánh giá AI
+              </h2>
+              {currentReport?.generatedAt && (
+                <span className="text-sm text-slate-500">
+                  {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                </span>
+              )}
+            </div>
+
+            {reportLoading ? (
+              <div className="flex items-center justify-center py-10 text-slate-500">
+                <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin mr-3" />
+                Đang tải kết quả...
+              </div>
+            ) : currentReport ? (
+              <>
+                <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
+                  <p className="text-sm text-slate-600">Điểm tổng</p>
+                  <p className="text-2xl font-bold text-sky-700">
+                    {`${(Number(currentReport.overallScore) * 100).toFixed(0)}%`}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {criteriaScores.map((criterion) => (
+                    <div
+                      key={criterion.criteriaId}
+                      className="rounded-xl border border-slate-200 p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h3 className="font-semibold text-slate-900">
+                          {criterion.criteriaName}
+                        </h3>
+                        <span className="text-sm font-semibold text-sky-700">
+                          {criterion.score}/{criterion.maxScore} (w:{" "}
+                          {criterion.weight}%)
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-3">
+                        {criterion.comment}
+                      </p>
+                      {criterion.suggestions?.length > 0 && (
+                        <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                          {criterion.suggestions.map((suggestion, index) => (
+                            <li key={`${criterion.criteriaId}-${index}`}>
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
+                Chưa có kết quả đánh giá cho bài thuyết trình này.
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
     </StudentLayout>
   );

@@ -129,3 +129,7 @@ export const PRESENTATION_SUBMIT_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/submit`;
 export const TOPIC_PRESENTATIONS_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/topics/${topicId}/presentations`;
+
+//Report Presentation endpoints
+export const REPORT_PRESENTATION_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/submission/${presentationId}`;

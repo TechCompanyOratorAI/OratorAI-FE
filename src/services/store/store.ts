@@ -10,6 +10,7 @@ import topicReducer from "../features/topic/topicSlice";
 import enrollmentReducer from "../features/enrollment/enrollmentSlice";
 import presentationReducer from "../features/presentation/presentationSlice";
 import groupReducer from "../features/group/groupSlice";
+import reportReducer from "../features/report/reportSlice";
 
 const presistConfig = {
   key: "root",
@@ -27,6 +28,7 @@ const rootReducer = combineReducers({
   enrollment: enrollmentReducer,
   presentation: presentationReducer,
   group: groupReducer,
+  report: reportReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
