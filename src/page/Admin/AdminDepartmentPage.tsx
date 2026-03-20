@@ -45,6 +45,8 @@ const AdminDepartmentPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     dispatch(fetchDepartments());
@@ -134,6 +136,26 @@ const AdminDepartmentPage: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
   }, [departments, searchTerm, filterStatus]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredDepartments.length / pageSize),
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedDepartments = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredDepartments.slice(startIndex, startIndex + pageSize);
+  }, [filteredDepartments, currentPage, pageSize]);
 
   const stats = useMemo(() => {
     const total = departments.length;
@@ -327,7 +349,7 @@ const AdminDepartmentPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredDepartments.map((department) => (
+                    {paginatedDepartments.map((department) => (
                       <tr
                         key={department.departmentId}
                         className="hover:bg-slate-50"
@@ -381,6 +403,49 @@ const AdminDepartmentPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {!loading && !error && filteredDepartments.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="text-sm text-slate-600">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value, 10);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </section>
