@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Users, ShieldCheck, MailCheck, AlertCircle, RefreshCw, UserX } from "lucide-react";
+import {
+  Users,
+  ShieldCheck,
+  MailCheck,
+  AlertCircle,
+  RefreshCw,
+  UserX,
+} from "lucide-react";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchAllUsers, AdminUser } from "@/services/features/admin/adminSlice";
@@ -10,8 +17,12 @@ const UserManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { users, loading, error } = useAppSelector((state) => state.admin);
   const safeUsers = Array.isArray(users) ? users : [];
-  const [roleFilter, setRoleFilter] = useState<"all" | "student" | "instructor">("all");
+  const [roleFilter, setRoleFilter] = useState<
+    "all" | "student" | "instructor"
+  >("all");
   const [search, setSearch] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     dispatch(fetchAllUsers());
@@ -30,13 +41,15 @@ const UserManagementPage: React.FC = () => {
         const query = search.trim().toLowerCase();
         const matchesSearch =
           !query ||
-          `${user.firstName || ""} ${user.lastName || ""}`.toLowerCase().includes(query) ||
+          `${user.firstName || ""} ${user.lastName || ""}`
+            .toLowerCase()
+            .includes(query) ||
           user.username.toLowerCase().includes(query) ||
           (user.email || "").toLowerCase().includes(query);
 
         return matchesRole && matchesSearch;
       }),
-    [safeUsers, roleFilter, search]
+    [safeUsers, roleFilter, search],
   );
 
   const stats = useMemo(() => {
@@ -46,6 +59,23 @@ const UserManagementPage: React.FC = () => {
     return { total, active, verified };
   }, [filteredUsers]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(startIndex, startIndex + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <SidebarAdmin activeItem="user-management" />
@@ -53,9 +83,16 @@ const UserManagementPage: React.FC = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Administration</p>
-              <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
-              <p className="text-sm text-slate-600">Students & Instructors directory with quick search and role filter.</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                Administration
+              </p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                User Management
+              </h1>
+              <p className="text-sm text-slate-600">
+                Students & Instructors directory with quick search and role
+                filter.
+              </p>
             </div>
             <button
               onClick={() => dispatch(fetchAllUsers())}
@@ -72,8 +109,12 @@ const UserManagementPage: React.FC = () => {
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">Total users</p>
-                <p className="text-xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-xs uppercase text-slate-500 font-semibold">
+                  Total users
+                </p>
+                <p className="text-xl font-bold text-slate-900">
+                  {stats.total}
+                </p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
@@ -81,8 +122,12 @@ const UserManagementPage: React.FC = () => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">Active</p>
-                <p className="text-xl font-bold text-slate-900">{stats.active}</p>
+                <p className="text-xs uppercase text-slate-500 font-semibold">
+                  Active
+                </p>
+                <p className="text-xl font-bold text-slate-900">
+                  {stats.active}
+                </p>
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
@@ -90,8 +135,12 @@ const UserManagementPage: React.FC = () => {
                 <MailCheck className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">Verified email</p>
-                <p className="text-xl font-bold text-slate-900">{stats.verified}</p>
+                <p className="text-xs uppercase text-slate-500 font-semibold">
+                  Verified email
+                </p>
+                <p className="text-xl font-bold text-slate-900">
+                  {stats.verified}
+                </p>
               </div>
             </div>
           </section>
@@ -99,8 +148,12 @@ const UserManagementPage: React.FC = () => {
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-slate-200">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Directory</p>
-                <h2 className="text-lg font-bold text-slate-900">Students & Instructors</h2>
+                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                  Directory
+                </p>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Students & Instructors
+                </h2>
               </div>
               <div className="flex rounded-2xl flex-col sm:flex-row gap-2 sm:items-center w-full md:w-auto">
                 <input
@@ -113,7 +166,11 @@ const UserManagementPage: React.FC = () => {
                 <div className="relative w-full sm:w-40">
                   <select
                     value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value as "all" | "student" | "instructor")}
+                    onChange={(e) =>
+                      setRoleFilter(
+                        e.target.value as "all" | "student" | "instructor",
+                      )
+                    }
                     className="w-full rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none bg-white appearance-none cursor-pointer pr-8"
                   >
                     <option value="all">All roles</option>
@@ -121,12 +178,24 @@ const UserManagementPage: React.FC = () => {
                     <option value="instructor">Instructor</option>
                   </select>
                   <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                      />
                     </svg>
                   </div>
                 </div>
-                <div className="text-xs text-slate-500 whitespace-nowrap">{filteredUsers.length} records</div>
+                <div className="text-xs text-slate-500 whitespace-nowrap">
+                  {filteredUsers.length} records
+                </div>
               </div>
             </div>
 
@@ -150,22 +219,49 @@ const UserManagementPage: React.FC = () => {
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wide">
                     <tr>
-                      <th className="px-6 py-3 text-left font-semibold">User</th>
-                      <th className="px-6 py-3 text-left font-semibold">Role</th>
-                      <th className="px-6 py-3 text-left font-semibold">Status</th>
-                      <th className="px-6 py-3 text-left font-semibold">Verify</th>
-                      <th className="px-6 py-3 text-left font-semibold">Last login</th>
-                      <th className="px-6 py-3 text-left font-semibold">Joined</th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        User
+                      </th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        Verify
+                      </th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        Last login
+                      </th>
+                      <th className="px-6 py-3 text-left font-semibold">
+                        Joined
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.map((user: AdminUser) => {
-                      const role = user.userRoles?.find((ur) => ur.role?.roleName && roleWhitelist.includes(ur.role.roleName.toLowerCase()))?.role?.roleName;
+                    {paginatedUsers.map((user: AdminUser) => {
+                      const role = user.userRoles?.find(
+                        (ur) =>
+                          ur.role?.roleName &&
+                          roleWhitelist.includes(
+                            ur.role.roleName.toLowerCase(),
+                          ),
+                      )?.role?.roleName;
                       return (
-                        <tr key={user.userId} className="hover:bg-slate-50/80 transition">
+                        <tr
+                          key={user.userId}
+                          className="hover:bg-slate-50/80 transition"
+                        >
                           <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-900">{user.firstName || user.lastName ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : user.username}</div>
-                            <div className="text-xs text-slate-500">{user.email}</div>
+                            <div className="font-semibold text-slate-900">
+                              {user.firstName || user.lastName
+                                ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                                : user.username}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {user.email}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-700 border-slate-200">
@@ -195,16 +291,63 @@ const UserManagementPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-slate-700">
-                            {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "—"}
+                            {user.lastLoginAt
+                              ? new Date(user.lastLoginAt).toLocaleString()
+                              : "—"}
                           </td>
                           <td className="px-6 py-4 text-slate-700">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
+                            {user.createdAt
+                              ? new Date(user.createdAt).toLocaleDateString()
+                              : "—"}
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {!loading && !error && filteredUsers.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="text-sm text-slate-600">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value, 10);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </section>
@@ -215,4 +358,3 @@ const UserManagementPage: React.FC = () => {
 };
 
 export default UserManagementPage;
-

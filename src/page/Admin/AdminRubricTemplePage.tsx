@@ -25,9 +25,8 @@ import {
 
 const AdminRubricTemplePage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { templates, loading, actionLoading, error } = useAppSelector(
-    (state) => state.rubricTemplate,
-  );
+  const { templates, pagination, loading, actionLoading, error } =
+    useAppSelector((state) => state.rubricTemplate);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -45,10 +44,12 @@ const AdminRubricTemplePage: React.FC = () => {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    dispatch(fetchRubricTemplates({ page: 1, limit: 20 }));
-  }, [dispatch]);
+    dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
 
   useEffect(() => {
     if (error) {
@@ -128,7 +129,7 @@ const AdminRubricTemplePage: React.FC = () => {
       setToast({ message: "Tạo template thành công", type: "success" });
 
       handleCloseCreateModal();
-      dispatch(fetchRubricTemplates({ page: 1, limit: 20 }));
+      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
       setToast({
         message:
@@ -153,7 +154,7 @@ const AdminRubricTemplePage: React.FC = () => {
       setToast({ message: "Cập nhật template thành công", type: "success" });
 
       handleCloseEditModal();
-      dispatch(fetchRubricTemplates({ page: 1, limit: 20 }));
+      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (updateError: any) {
       setToast({
         message:
@@ -174,7 +175,7 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       setToast({ message: "Xóa template thành công", type: "success" });
       setShowDeleteConfirm(null);
-      dispatch(fetchRubricTemplates({ page: 1, limit: 20 }));
+      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
       setToast({
         message:
@@ -206,7 +207,12 @@ const AdminRubricTemplePage: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={() =>
-                  dispatch(fetchRubricTemplates({ page: 1, limit: 20 }))
+                  dispatch(
+                    fetchRubricTemplates({
+                      page: currentPage,
+                      limit: pageSize,
+                    }),
+                  )
                 }
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-200 hover:text-sky-700"
               >
@@ -453,6 +459,51 @@ const AdminRubricTemplePage: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {!loading && !error && pagination && pagination.total > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="text-sm text-slate-600">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </div>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const nextSize = parseInt(e.target.value, 10);
+                        setPageSize(nextSize);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={pagination.page <= 1}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1),
+                      )
+                    }
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </section>

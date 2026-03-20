@@ -261,6 +261,13 @@ const IntructorPresentationDetailPage: React.FC = () => {
       <SidebarInstructor activeItem="manage-classes" />
       <main className="flex-1 overflow-y-auto lg:ml-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <ArrowLeft className="w-5 h-5" /> Quay lại
+          </button>
+
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
