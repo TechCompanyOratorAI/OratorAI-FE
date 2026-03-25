@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,6 +13,22 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
@@ -42,6 +58,106 @@ import {
   fetchRubricByClass,
   updateRubricCriteria,
 } from "@/services/features/rubric/rubricSilce";
+
+type SortableCriterionItemProps = {
+  criterion: ClassRubricCriteria;
+  onEdit: (criterion: ClassRubricCriteria) => void;
+  onDelete: (criterion: ClassRubricCriteria) => void;
+};
+
+const SortableCriterionItem = React.memo(
+  ({ criterion, onEdit, onDelete }: SortableCriterionItemProps) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({
+      id: criterion.classRubricCriteriaId,
+    });
+
+    const style: React.CSSProperties = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${
+          isDragging
+            ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
+            : "cursor-grab"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                {criterion.displayOrder}
+              </span>
+              <p className="font-semibold text-slate-900">
+                {criterion.criteriaName}
+              </p>
+            </div>
+            {criterion.criteriaDescription && (
+              <p className="text-sm text-slate-600 mt-1">
+                {criterion.criteriaDescription}
+              </p>
+            )}
+            {criterion.evaluationGuide && (
+              <p className="text-xs text-slate-500 mt-1">
+                Guide: {criterion.evaluationGuide}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
+                Persen {Number(criterion.weight).toFixed(0)}%
+              </span>
+              <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
+                Max {Number(criterion.maxScore).toFixed(0)}
+              </span>
+            </div>
+            <div className="group relative">
+              <button className="p-2 hover:bg-slate-200 rounded-lg transition">
+                <MoreVertical className="w-5 h-5 text-slate-600" />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(criterion);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4 text-sky-600" />
+                    Edit Rubric
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(criterion);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Rubric
+                  </button>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
 
 const ClassDetailPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
@@ -74,6 +190,10 @@ const ClassDetailPage: React.FC = () => {
   const [rubricMode, setRubricMode] = useState<"create" | "edit">("create");
   const [editingRubric, setEditingRubric] =
     useState<ClassRubricCriteria | null>(null);
+  const [localCriteria, setLocalCriteria] = useState<ClassRubricCriteria[]>([]);
+  const [originalCriteria, setOriginalCriteria] = useState<
+    ClassRubricCriteria[]
+  >([]);
   const [editingTopic, setEditingTopic] = useState<{
     topicId: number;
     topicName: string;
@@ -183,9 +303,93 @@ const ClassDetailPage: React.FC = () => {
     setIsDeleteTopicModalOpen(true);
   };
 
-  const sortedRubricCriteria = [...rubricCriteria].sort(
-    (a, b) => a.displayOrder - b.displayOrder,
+  const sortedRubricCriteria = useMemo(
+    () => [...rubricCriteria].sort((a, b) => a.displayOrder - b.displayOrder),
+    [rubricCriteria],
   );
+
+  useEffect(() => {
+    setLocalCriteria(sortedRubricCriteria);
+    setOriginalCriteria(sortedRubricCriteria);
+  }, [sortedRubricCriteria]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+
+  const isRubricOrderChanged = useMemo(() => {
+    if (localCriteria.length !== originalCriteria.length) return true;
+    return localCriteria.some(
+      (item, index) =>
+        item.classRubricCriteriaId !==
+        originalCriteria[index]?.classRubricCriteriaId,
+    );
+  }, [localCriteria, originalCriteria]);
+
+  const handleRubricDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setLocalCriteria((previous) => {
+      const oldIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(active.id),
+      );
+      const newIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(over.id),
+      );
+
+      if (oldIndex < 0 || newIndex < 0) return previous;
+      return arrayMove(previous, oldIndex, newIndex);
+    });
+  }, []);
+
+  const handleCancelRubricReorder = useCallback(() => {
+    setLocalCriteria(originalCriteria);
+  }, [originalCriteria]);
+
+  const handleSaveRubricReorder = useCallback(async () => {
+    if (!classIdNumber || !isRubricOrderChanged) return;
+
+    try {
+      const reorderedCriteria = localCriteria.map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      }));
+
+      await Promise.all(
+        reorderedCriteria.map((criterion) =>
+          dispatch(
+            updateRubricCriteria({
+              classRubricCriteriaId: criterion.classRubricCriteriaId,
+              rubricData: {
+                criteriaName: criterion.criteriaName,
+                criteriaDescription: criterion.criteriaDescription,
+                weight: Number(criterion.weight),
+                maxScore: Number(criterion.maxScore),
+                displayOrder: criterion.displayOrder,
+                evaluationGuide: criterion.evaluationGuide,
+              },
+            }),
+          ).unwrap(),
+        ),
+      );
+
+      setLocalCriteria(reorderedCriteria);
+      setOriginalCriteria(reorderedCriteria);
+      setToast({ message: "Rubric order updated.", type: "success" });
+      dispatch(fetchRubricByClass(classIdNumber));
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to update rubric order.",
+        type: "error",
+      });
+    }
+  }, [classIdNumber, dispatch, isRubricOrderChanged, localCriteria, setToast]);
 
   const openCreateRubricModal = () => {
     setRubricMode("create");
@@ -683,7 +887,7 @@ const ClassDetailPage: React.FC = () => {
                       Rubric
                     </p>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Class Evaluation Criteria ({rubricCriteria.length})
+                      Class Evaluation Criteria ({localCriteria.length})
                     </h3>
                   </div>
                 </div>
@@ -702,74 +906,59 @@ const ClassDetailPage: React.FC = () => {
                 <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
                   Loading rubric...
                 </div>
-              ) : rubricCriteria.length > 0 ? (
-                <div className="space-y-3">
-                  {sortedRubricCriteria.map((criterion) => (
-                    <div
-                      key={criterion.classRubricCriteriaId}
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                             {criterion.criteriaName}
-                          </p>
-                          {criterion.criteriaDescription && (
-                            <p className="text-sm text-slate-600 mt-1">
-                              {criterion.criteriaDescription}
-                            </p>
-                          )}
-                          {criterion.evaluationGuide && (
-                            <p className="text-xs text-slate-500 mt-1">
-                              Guide: {criterion.evaluationGuide}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-2 text-xs font-semibold">
-                            <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
-                              Persen {Number(criterion.weight).toFixed(0)}%
-                            </span>
-                            <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
-                              Max {Number(criterion.maxScore).toFixed(0)}
-                            </span>
-                          </div>
-                          <div className="group relative">
-                            <button className="p-2 hover:bg-slate-200 rounded-lg transition">
-                              <MoreVertical className="w-5 h-5 text-slate-600" />
-                              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEditRubricModal(criterion);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
-                                >
-                                  <Edit className="w-4 h-4 text-sky-600" />
-                                  Edit Rubric
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingRubric(criterion);
-                                    setIsDeleteRubricModalOpen(true);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete Rubric
-                                </button>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+              ) : localCriteria.length > 0 ? (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={handleRubricDragEnd}
+                >
+                  <SortableContext
+                    items={localCriteria.map(
+                      (criterion) => criterion.classRubricCriteriaId,
+                    )}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {localCriteria.map((criterion) => (
+                        <SortableCriterionItem
+                          key={criterion.classRubricCriteriaId}
+                          criterion={criterion}
+                          onEdit={openEditRubricModal}
+                          onDelete={(selectedCriterion) => {
+                            setEditingRubric(selectedCriterion);
+                            setIsDeleteRubricModalOpen(true);
+                          }}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
                   No rubric criteria configured for this class.
+                </div>
+              )}
+              {isRubricOrderChanged && (
+                <div className="mb-4 flex items-center justify-end gap-2 mt-6">
+                  <button
+                    type="button"
+                    onClick={handleSaveRubricReorder}
+                    disabled={rubricActionLoading}
+                    className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                  >
+                    {rubricActionLoading ? "Processing..." : "Save"}
+                  </button>
+                  <Button
+                    text="Cancel"
+                    variant="secondary"
+                    fontSize="14px"
+                    borderRadius="999px"
+                    paddingWidth="18px"
+                    paddingHeight="10px"
+                    onClick={handleCancelRubricReorder}
+                    disabled={rubricActionLoading}
+                  />
                 </div>
               )}
             </div>
