@@ -101,7 +101,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+            className="rounded-xl p-1 text-slate-500 hover:bg-slate-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -121,7 +121,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
                   templateName: e.target.value,
                 }))
               }
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
                 errors.templateName ? "border-rose-300" : "border-slate-300"
               }`}
               placeholder="Presentation Rubric v1"
@@ -146,7 +146,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
                 }))
               }
               rows={3}
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
                 errors.description ? "border-rose-300" : "border-slate-300"
               }`}
               placeholder="Rubric for group presentations"
@@ -169,7 +169,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
                   assignmentType: e.target.value,
                 }))
               }
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
                 errors.assignmentType ? "border-rose-300" : "border-slate-300"
               }`}
               placeholder="presentation"
@@ -199,14 +199,14 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading
                 ? "Saving..."

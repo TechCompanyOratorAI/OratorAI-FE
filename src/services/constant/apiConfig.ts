@@ -110,6 +110,16 @@ export const UPDATE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
   `${BASE_URL}/api/v1/rubric-templates/${rubricTemplateId}`;
 export const DELETE_RUBRIC_TEMPLATE_ENDPOINT = (rubricTemplateId: string) =>
   `${BASE_URL}/api/v1/rubric-templates/${rubricTemplateId}`;
+// Create criteria by rubric template
+export const CREATE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
+  rubricTemplateId: string,
+) => `${BASE_URL}/api/v1/rubric-criteria/${rubricTemplateId}/criteria`;
+export const UPDATE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
+  rubricCriteriaId: string,
+) => `${BASE_URL}/api/v1/rubric-criteria/${rubricCriteriaId}`;
+export const DELETE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
+  rubricCriteriaId: string,
+) => `${BASE_URL}/api/v1/rubric-criteria/${rubricCriteriaId}`;
 
 //get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
