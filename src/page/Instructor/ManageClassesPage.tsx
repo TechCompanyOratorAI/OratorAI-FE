@@ -337,19 +337,7 @@ const ManageClassesPage: React.FC = () => {
                   Manage classes and presentation assignments for your students.
                 </p>
               </div>
-              <div className="w-full sm:w-auto flex items-center gap-3">
-                <Button
-                  text="Create New Class"
-                  variant="primary"
-                  fontSize="14px"
-                  borderRadius="8px"
-                  paddingWidth="20px"
-                  paddingHeight="10px"
-                  icon={<Plus className="w-5 h-5 text-white" />}
-                  iconPosition="left"
-                  onClick={() => handleCourseModalOpen()}
-                />
-              </div>
+             
             </div>
 
             {/* Stats Cards */}

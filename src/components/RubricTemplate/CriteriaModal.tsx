@@ -1,5 +1,28 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Edit, Search, Trash2, X } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Edit,
+  GripVertical,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   RubricTemplate,
   RubricTemplateCriterion,
@@ -19,6 +42,7 @@ interface CriteriaModalProps {
     criteriaId: number,
     payload: RubricTemplateCriterionPayload,
   ) => Promise<void>;
+  onReorder: (criteria: RubricTemplateCriterion[]) => Promise<void>;
   onDelete: (criteriaId: number, rubricTemplateId: number) => Promise<void>;
 }
 
@@ -42,6 +66,121 @@ const defaultFormState: CriteriaFormState = {
   isActive: true,
 };
 
+type SortableCriteriaItemProps = {
+  criterion: RubricTemplateCriterion;
+  isEditing: boolean;
+  onSelect: (criterion: RubricTemplateCriterion) => void;
+  onDelete: (criterion: RubricTemplateCriterion) => void;
+};
+
+const SortableCriteriaItem = ({
+  criterion,
+  isEditing,
+  onSelect,
+  onDelete,
+}: SortableCriteriaItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: criterion.criteriaId,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(criterion)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(criterion);
+        }
+      }}
+      className={`w-full rounded-3xl border p-3 text-left transition-all ${
+        isDragging
+          ? "border-sky-300 bg-sky-50/80 shadow-md"
+          : isEditing
+            ? "border-sky-300 bg-sky-50/70 shadow-sm"
+            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            onClick={(event) => event.stopPropagation()}
+            className="mt-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-grab active:cursor-grabbing"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              {criterion.displayOrder}. {criterion.criteriaName}
+            </p>
+            <p className="mt-1 text-xs text-slate-600 line-clamp-2">
+              {criterion.criteriaDescription}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Persen{" "}
+                {Number(criterion.weight) % 1 === 0
+                  ? Math.floor(Number(criterion.weight))
+                  : Number(criterion.weight).toFixed(1)}
+                %
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Max: {criterion.maxScore}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 ${
+                  criterion.isActive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {criterion.isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 gap-1">
+          <span className="rounded-xl p-2 text-sky-600" title="Edit criterion">
+            <Edit className="h-4 w-4" />
+          </span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(criterion);
+            }}
+            className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
+            title="Delete criterion"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CriteriaModal: React.FC<CriteriaModalProps> = ({
   isOpen,
   template,
@@ -49,6 +188,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   onClose,
   onCreate,
   onUpdate,
+  onReorder,
   onDelete,
 }) => {
   const [formState, setFormState] =
@@ -61,6 +201,12 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   const [deletingCriterion, setDeletingCriterion] =
     useState<RubricTemplateCriterion | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [localCriteria, setLocalCriteria] = useState<RubricTemplateCriterion[]>(
+    [],
+  );
+  const [originalCriteria, setOriginalCriteria] = useState<
+    RubricTemplateCriterion[]
+  >([]);
 
   const sortedCriteria = useMemo(() => {
     return [...(template?.criteria || [])].sort(
@@ -68,12 +214,18 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     );
   }, [template]);
 
-  const nextDisplayOrder = useMemo(() => {
-    if (sortedCriteria.length === 0) return 1;
-    return (
-      Math.max(...sortedCriteria.map((criterion) => criterion.displayOrder)) + 1
-    );
+  useEffect(() => {
+    setLocalCriteria(sortedCriteria);
+    setOriginalCriteria(sortedCriteria);
   }, [sortedCriteria]);
+
+  const nextDisplayOrder = useMemo(() => {
+    if (localCriteria.length === 0) return 1;
+    return (
+      Math.max(...localCriteria.map((criterion) => criterion.displayOrder)) + 1
+    );
+  }, [localCriteria]);
+
   useEffect(() => {
     if (!isOpen) return;
     setEditingCriterion(null);
@@ -84,16 +236,64 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
   const filteredCriteria = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
-    if (!keyword) return sortedCriteria;
+    if (!keyword) return localCriteria;
 
-    return sortedCriteria.filter((criterion) => {
+    return localCriteria.filter((criterion) => {
       return (
         criterion.criteriaName.toLowerCase().includes(keyword) ||
         criterion.criteriaDescription.toLowerCase().includes(keyword) ||
         criterion.evaluationGuide.toLowerCase().includes(keyword)
       );
     });
-  }, [sortedCriteria, searchTerm]);
+  }, [localCriteria, searchTerm]);
+
+  const isOrderChanged = useMemo(() => {
+    if (localCriteria.length !== originalCriteria.length) return true;
+    return localCriteria.some(
+      (criterion, index) =>
+        criterion.criteriaId !== originalCriteria[index]?.criteriaId,
+    );
+  }, [localCriteria, originalCriteria]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setLocalCriteria((previous) => {
+      const oldIndex = previous.findIndex(
+        (item) => item.criteriaId === Number(active.id),
+      );
+      const newIndex = previous.findIndex(
+        (item) => item.criteriaId === Number(over.id),
+      );
+
+      if (oldIndex < 0 || newIndex < 0) return previous;
+      return arrayMove(previous, oldIndex, newIndex);
+    });
+  }, []);
+
+  const handleCancelReorder = useCallback(() => {
+    setLocalCriteria(originalCriteria);
+  }, [originalCriteria]);
+
+  const handleSaveReorder = useCallback(async () => {
+    if (!template || !isOrderChanged) return;
+
+    const reorderedCriteria = localCriteria.map((criterion, index) => ({
+      ...criterion,
+      displayOrder: index + 1,
+    }));
+
+    await onReorder(reorderedCriteria);
+    setLocalCriteria(reorderedCriteria);
+    setOriginalCriteria(reorderedCriteria);
+  }, [isOrderChanged, localCriteria, onReorder, template]);
 
   if (!isOpen || !template) return null;
 
@@ -294,83 +494,54 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                     : "Template nay chua co criteria nao"}
                 </div>
               ) : (
-                filteredCriteria.map((criterion) => {
-                  const isEditing =
-                    editingCriterion?.criteriaId === criterion.criteriaId;
-
-                  return (
-                    <div
-                      key={criterion.criteriaId}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setEditMode(criterion)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setEditMode(criterion);
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={filteredCriteria.map(
+                      (criterion) => criterion.criteriaId,
+                    )}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {filteredCriteria.map((criterion) => (
+                      <SortableCriteriaItem
+                        key={criterion.criteriaId}
+                        criterion={criterion}
+                        isEditing={
+                          editingCriterion?.criteriaId === criterion.criteriaId
                         }
-                      }}
-                      className={`w-full rounded-3xl border p-3 text-left transition-all ${
-                        isEditing
-                          ? "border-sky-300 bg-sky-50/70 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {criterion.displayOrder}. {criterion.criteriaName}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-600 line-clamp-2">
-                            {criterion.criteriaDescription}
-                          </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                              Persen{" "}
-                              {Number(criterion.weight) % 1 === 0
-                                ? Math.floor(Number(criterion.weight))
-                                : Number(criterion.weight).toFixed(1)}
-                              %
-                            </span>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                              Max: {criterion.maxScore}
-                            </span>
-                            <span
-                              className={`rounded-full px-2 py-0.5 ${
-                                criterion.isActive
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-rose-100 text-rose-700"
-                              }`}
-                            >
-                              {criterion.isActive ? "Active" : "Inactive"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 gap-1">
-                          <span
-                            className="rounded-xl p-2 text-sky-600"
-                            title="Edit criterion"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setDeletingCriterion(criterion);
-                            }}
-                            className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
-                            title="Delete criterion"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                        onSelect={setEditMode}
+                        onDelete={setDeletingCriterion}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
+
+            {isOrderChanged && (
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveReorder}
+                  disabled={isLoading}
+                  className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? "Saving..." : "Save Order"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelReorder}
+                  disabled={isLoading}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">

@@ -8,6 +8,7 @@ import {
   createRubricTemplateCriterion,
   deleteRubricTemplateCriterion,
   RubricTemplate,
+  RubricTemplateCriterion,
   RubricTemplateCriterionPayload,
   RubricTemplatePayload,
   clearRubricTemplateError,
@@ -280,6 +281,49 @@ const AdminRubricTemplePage: React.FC = () => {
         type: "error",
       });
       throw deleteCriteriaError;
+    }
+  };
+
+  const handleReorderCriteria = async (
+    reorderedCriteria: RubricTemplateCriterion[],
+  ) => {
+    try {
+      await Promise.all(
+        reorderedCriteria.map((criterion) =>
+          dispatch(
+            updateRubricTemplateCriterion({
+              criteriaId: criterion.criteriaId,
+              data: {
+                criteriaName: criterion.criteriaName,
+                criteriaDescription: criterion.criteriaDescription,
+                weight: Number(criterion.weight),
+                maxScore: Number(criterion.maxScore),
+                displayOrder: criterion.displayOrder,
+                evaluationGuide: criterion.evaluationGuide,
+                isActive: criterion.isActive,
+              },
+            }),
+          ).unwrap(),
+        ),
+      );
+
+      setToast({
+        message: "Cập nhật thứ tự criteria thành công",
+        type: "success",
+      });
+      await dispatch(
+        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+      ).unwrap();
+    } catch (reorderCriteriaError: any) {
+      setToast({
+        message:
+          typeof reorderCriteriaError === "string"
+            ? reorderCriteriaError
+            : reorderCriteriaError?.message ||
+              "Không thể cập nhật thứ tự criteria",
+        type: "error",
+      });
+      throw reorderCriteriaError;
     }
   };
 
@@ -647,6 +691,7 @@ const AdminRubricTemplePage: React.FC = () => {
         onClose={closeCriteriaModal}
         onCreate={handleCreateCriteria}
         onUpdate={handleUpdateCriteria}
+        onReorder={handleReorderCriteria}
         onDelete={handleDeleteCriteria}
       />
 
