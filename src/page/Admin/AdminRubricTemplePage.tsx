@@ -2,14 +2,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import Toast from "@/components/Toast/Toast";
 import RubricTemplateModal from "@/components/RubricTemplate/RubricTemplateModal";
+import CriteriaModal from "@/components/RubricTemplate/CriteriaModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
+  createRubricTemplateCriterion,
+  deleteRubricTemplateCriterion,
   RubricTemplate,
+  RubricTemplateCriterionPayload,
   RubricTemplatePayload,
   clearRubricTemplateError,
   createRubricTemplate,
   deleteRubricTemplate,
   fetchRubricTemplates,
+  updateRubricTemplateCriterion,
   updateRubricTemplate,
 } from "@/services/features/admin/rubricTempleSlice";
 import {
@@ -40,6 +45,17 @@ const AdminRubricTemplePage: React.FC = () => {
   );
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState<RubricTemplate | null>(null);
+  const [selectedTemplateForCriteriaId, setSelectedTemplateForCriteriaId] =
+    useState<number | null>(null);
+  const selectedTemplateForCriteria = useMemo(
+    () =>
+      templates.find(
+        (template) =>
+          template.rubricTemplateId === selectedTemplateForCriteriaId,
+      ) || null,
+    [templates, selectedTemplateForCriteriaId],
+  );
+
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -184,6 +200,86 @@ const AdminRubricTemplePage: React.FC = () => {
             : deleteError?.message || "Không thể xóa rubric template",
         type: "error",
       });
+    }
+  };
+
+  const openCriteriaModal = (template: RubricTemplate) => {
+    setSelectedTemplateForCriteriaId(template.rubricTemplateId);
+  };
+
+  const closeCriteriaModal = () => {
+    setSelectedTemplateForCriteriaId(null);
+  };
+
+  const handleCreateCriteria = async (
+    rubricTemplateId: number,
+    payload: RubricTemplateCriterionPayload,
+  ) => {
+    try {
+      await dispatch(
+        createRubricTemplateCriterion({ rubricTemplateId, data: payload }),
+      ).unwrap();
+      setToast({ message: "Tạo criteria thành công", type: "success" });
+      await dispatch(
+        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+      ).unwrap();
+    } catch (createCriteriaError: any) {
+      setToast({
+        message:
+          typeof createCriteriaError === "string"
+            ? createCriteriaError
+            : createCriteriaError?.message || "Không thể tạo criteria",
+        type: "error",
+      });
+      throw createCriteriaError;
+    }
+  };
+
+  const handleUpdateCriteria = async (
+    criteriaId: number,
+    payload: RubricTemplateCriterionPayload,
+  ) => {
+    try {
+      await dispatch(
+        updateRubricTemplateCriterion({ criteriaId, data: payload }),
+      ).unwrap();
+      setToast({ message: "Cập nhật criteria thành công", type: "success" });
+      await dispatch(
+        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+      ).unwrap();
+    } catch (updateCriteriaError: any) {
+      setToast({
+        message:
+          typeof updateCriteriaError === "string"
+            ? updateCriteriaError
+            : updateCriteriaError?.message || "Không thể cập nhật criteria",
+        type: "error",
+      });
+      throw updateCriteriaError;
+    }
+  };
+
+  const handleDeleteCriteria = async (
+    criteriaId: number,
+    rubricTemplateId: number,
+  ) => {
+    try {
+      await dispatch(
+        deleteRubricTemplateCriterion({ criteriaId, rubricTemplateId }),
+      ).unwrap();
+      setToast({ message: "Xóa criteria thành công", type: "success" });
+      await dispatch(
+        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+      ).unwrap();
+    } catch (deleteCriteriaError: any) {
+      setToast({
+        message:
+          typeof deleteCriteriaError === "string"
+            ? deleteCriteriaError
+            : deleteCriteriaError?.message || "Không thể xóa criteria",
+        type: "error",
+      });
+      throw deleteCriteriaError;
     }
   };
 
@@ -403,7 +499,8 @@ const AdminRubricTemplePage: React.FC = () => {
                                 {sortedCriteria.map((criterion) => (
                                   <div
                                     key={criterion.criteriaId}
-                                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5"
+                                    onClick={() => openCriteriaModal(template)}
+                                    className="cursor-pointer rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition-colors hover:border-sky-200 hover:bg-sky-50/40"
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <p className="text-xs font-semibold text-slate-800 leading-5">
@@ -444,6 +541,13 @@ const AdminRubricTemplePage: React.FC = () => {
                                 title="Edit Template"
                               >
                                 <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openCriteriaModal(template)}
+                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="Manage Criteria"
+                              >
+                                <ListChecks className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => setShowDeleteConfirm(template)}
@@ -534,6 +638,16 @@ const AdminRubricTemplePage: React.FC = () => {
         }
         onClose={handleCloseEditModal}
         onSubmit={handleUpdateTemplate}
+      />
+
+      <CriteriaModal
+        isOpen={Boolean(selectedTemplateForCriteria)}
+        template={selectedTemplateForCriteria}
+        isLoading={actionLoading}
+        onClose={closeCriteriaModal}
+        onCreate={handleCreateCriteria}
+        onUpdate={handleUpdateCriteria}
+        onDelete={handleDeleteCriteria}
       />
 
       {showDeleteConfirm && (
