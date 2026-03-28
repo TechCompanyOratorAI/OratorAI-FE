@@ -24,8 +24,12 @@ import {
   fetchPresentationsByClassAndTopic,
   createPresentation,
 } from "@/services/features/presentation/presentationSlice";
-import { enrollTopic, fetchEnrolledTopics } from "@/services/features/enrollment/enrollmentSlice";
-import { fetchMyGroupByClass } from "@/services/features/group/groupSlice";
+import {
+  fetchMyGroupByClass,
+  fetchGroupTopic,
+  pickGroupTopic,
+  clearGroupTopic,
+} from "@/services/features/group/groupSlice";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
@@ -52,8 +56,11 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector((state) => state.topic);
   const { presentations } = useAppSelector((state) => state.presentation);
   const { user } = useAppSelector((state) => state.auth);
-  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector((state) => state.enrollment);
-  const { myGroupForClass } = useAppSelector((state) => state.group);
+  const {
+    myGroupForClass,
+    groupTopic,
+    actionLoading: groupActionLoading,
+  } = useAppSelector((state) => state.group);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -65,7 +72,13 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
   const topicIdNumber = topicId ? parseInt(topicId) : null;
   const classIdNumber = classId ? parseInt(classId) : null;
-  const isEnrolled = topicIdNumber ? enrolledTopicIds.includes(topicIdNumber) : false;
+  const myGroupId = myGroupForClass?.groupId != null
+    ? Number(myGroupForClass.groupId)
+    : null;
+  const isGroupTopicThis =
+    topicIdNumber != null && groupTopic?.topicId === topicIdNumber;
+  /** Chỉ theo chủ đề nhóm (GET /groups/:id/topic), không dùng ghi danh cá nhân — tránh hiển thị sai sau khi rời nhóm */
+  const isEnrolled = Boolean(myGroupForClass && isGroupTopicThis);
   const myPresentation = presentations.find((p) => p.studentId === user?.userId);
   const isCurrentUserLeader = myGroupForClass?.myRole === "leader";
 
@@ -75,17 +88,33 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
     }
     if (classIdNumber) dispatch(fetchMyGroupByClass(classIdNumber));
-    dispatch(fetchEnrolledTopics());
   }, [topicIdNumber, classIdNumber, dispatch]);
 
-  const handleEnroll = async () => {
-    if (!topicIdNumber) return;
+  useEffect(() => {
+    if (myGroupId != null && Number.isFinite(myGroupId)) {
+      dispatch(fetchGroupTopic(myGroupId));
+    }
+  }, [myGroupId, dispatch]);
+
+  const handlePickTopicForGroup = async () => {
+    if (!topicIdNumber || !myGroupId) return;
     try {
-      await dispatch(enrollTopic(topicIdNumber)).unwrap();
-      toast.success("Ghi danh chủ đề thành công!");
-      dispatch(fetchEnrolledTopics());
+      await dispatch(pickGroupTopic({ groupId: myGroupId, topicId: topicIdNumber })).unwrap();
+      toast.success("Đã chọn chủ đề cho nhóm.");
+      await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ghi danh chủ đề thất bại");
+      toast.error(err instanceof Error ? err.message : "Chọn chủ đề thất bại");
+    }
+  };
+
+  const handleClearGroupTopic = async () => {
+    if (!myGroupId) return;
+    try {
+      await dispatch(clearGroupTopic(myGroupId)).unwrap();
+      toast.success("Đã hủy chọn chủ đề cho nhóm.");
+      await dispatch(fetchGroupTopic(myGroupId));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Hủy chủ đề thất bại");
     }
   };
 
@@ -163,7 +192,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
           <div className="relative">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-semibold">Chủ đề #{topic.sequenceNumber}</span>
-              {isEnrolled && <span className="inline-flex items-center gap-1.5 bg-emerald-400/30 text-white text-xs px-2.5 py-1 rounded-full font-semibold"><CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh</span>}
+              {isEnrolled && <span className="inline-flex items-center gap-1.5 bg-emerald-400/30 text-white text-xs px-2.5 py-1 rounded-full font-semibold"><CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh (nhóm)</span>}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">{topic.topicName}</h1>
             {topic.description && <p className="text-white/80 mb-4 max-w-2xl">{topic.description}</p>}
@@ -294,17 +323,84 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sticky top-24">
               {!isEnrolled ? (
                 <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="w-7 h-7 text-amber-600" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 mb-1">Ghi danh để bắt đầu</h3>
-                  <p className="text-sm text-slate-500 mb-5">Ghi danh chủ đề này để có thể tạo và nộp bài thuyết trình.</p>
-                  <button onClick={handleEnroll} disabled={enrollmentLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2">
-                    {enrollmentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    Ghi danh chủ đề
-                  </button>
+                  {myGroupForClass && !isCurrentUserLeader ? (
+                    <>
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-7 h-7 text-slate-500" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
+                      <p className="text-sm text-slate-500 mb-4">
+                        Chỉ nhóm trưởng mới chọn chủ đề cho cả nhóm. Bạn sẽ được ghi danh khi nhóm trưởng đã chọn.
+                      </p>
+                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
+                        <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
+                      </div>
+                    </>
+                  ) : isCurrentUserLeader && myGroupId && groupTopic ? (
+                    <>
+                      <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Nhóm đã chọn chủ đề</h3>
+                      <p className="text-sm text-slate-500 mb-4">
+                        Nhóm đang làm chủ đề:{" "}
+                        <span className="font-semibold text-slate-800">{groupTopic.topicName}</span>
+                      </p>
+                      {classId && groupTopic.topicId !== topicIdNumber ? (
+                        <Link
+                          to={`/student/class/${classId}/topic/${groupTopic.topicId}`}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                        >
+                          <BookOpen className="w-4 h-4" /> Đi tới chủ đề của nhóm
+                        </Link>
+                      ) : null}
+                    </>
+                  ) : isCurrentUserLeader && myGroupId ? (
+                    <>
+                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Crown className="w-7 h-7 text-amber-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Chọn chủ đề cho nhóm</h3>
+                      <p className="text-sm text-slate-500 mb-5">
+                        Chọn chủ đề này cho cả nhóm — các thành viên sẽ được ghi danh cùng lúc.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handlePickTopicForGroup}
+                        disabled={groupActionLoading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        Chọn chủ đề này cho nhóm
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-7 h-7 text-amber-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
+                      <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để nhóm trưởng chọn chủ đề.</p>
+                      <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <Users className="w-4 h-4" /> Đến quản lý nhóm
+                      </Link>
+                    </>
+                  )}
                 </div>
-              ) : myPresentation ? (
+              ) : (
+                <div className="space-y-4">
+                  {isCurrentUserLeader && isGroupTopicThis && myGroupId ? (
+                    <button
+                      type="button"
+                      onClick={handleClearGroupTopic}
+                      disabled={groupActionLoading}
+                      className="w-full border border-red-200 bg-red-50 text-red-800 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-red-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      Hủy chọn chủ đề cho nhóm
+                    </button>
+                  ) : null}
+                  {myPresentation ? (
                 <div className="text-center py-4">
                   <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-7 h-7 text-emerald-600" />
@@ -370,6 +466,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                   <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
                     <Users className="w-4 h-4" /> Đến quản lý nhóm
                   </Link>
+                </div>
+              )}
                 </div>
               )}
             </div>

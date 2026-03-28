@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../constant/axiosInstance";
 import {
-  TOPICS_ENDPOINT,
+  CLASS_TOPICS_ENDPOINT,
   TOPIC_DETAIL_ENDPOINT,
 } from "../../constant/apiConfig";
 
@@ -62,19 +62,19 @@ const initialState: TopicState = {
   error: null,
 };
 
-// Create topic
+// Create topic (POST /api/v1/classes/:classId/topics)
 export const createTopic = createAsyncThunk(
   "topic/createTopic",
   async (
-    { courseId, topicData }: { courseId: number; topicData: CreateTopicData },
+    { classId, topicData }: { classId: number; topicData: CreateTopicData },
     { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.post(
-        TOPICS_ENDPOINT(courseId.toString()),
+        CLASS_TOPICS_ENDPOINT(classId.toString()),
         topicData,
       );
-      // API returns { success: true, topic: {...} }
+      // API returns { success: true, message, topic: {...} }
       return response.data.topic || response.data;
     } catch (error: any) {
       return rejectWithValue(

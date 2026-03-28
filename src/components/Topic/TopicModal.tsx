@@ -3,11 +3,22 @@ import { X } from "lucide-react";
 import Button from "@/components/yoodli/Button";
 import { CreateTopicData } from "@/services/features/topic/topicSlice";
 
+export interface TopicClassOption {
+  classId: number;
+  className: string;
+  classCode?: string;
+}
+
 interface TopicModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (topicData: CreateTopicData) => void;
+  onSubmit: (
+    topicData: CreateTopicData,
+    meta?: { classId: number },
+  ) => void;
   isLoading?: boolean;
+  /** When creating from the course page, pick which class receives the new topic */
+  classOptions?: TopicClassOption[];
 }
 
 const TopicModal: React.FC<TopicModalProps> = ({
@@ -15,6 +26,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
   onClose,
   onSubmit,
   isLoading = false,
+  classOptions,
 }) => {
   const [formData, setFormData] = useState<CreateTopicData>({
     topicName: "",
@@ -29,7 +41,10 @@ const TopicModal: React.FC<TopicModalProps> = ({
     Partial<Record<keyof CreateTopicData, string>>
   >({});
 
-  // Reset form when modal opens/closes
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [classError, setClassError] = useState<string | null>(null);
+
+  // Reset form when modal opens/closes; default class when creating from course page
   useEffect(() => {
     if (!isOpen) {
       setFormData({
@@ -41,8 +56,14 @@ const TopicModal: React.FC<TopicModalProps> = ({
         requirements: "",
       });
       setErrors({});
+      setSelectedClassId(null);
+      setClassError(null);
+      return;
     }
-  }, [isOpen]);
+    if (classOptions?.length) {
+      setSelectedClassId(classOptions[0].classId);
+    }
+  }, [isOpen, classOptions]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof CreateTopicData, string>> = {};
@@ -63,8 +84,17 @@ const TopicModal: React.FC<TopicModalProps> = ({
       newErrors.sequenceNumber = "Sequence number must be greater than 0";
     }
 
+    if (classOptions?.length && selectedClassId == null) {
+      setClassError("Chọn lớp để gán chủ đề");
+    } else {
+      setClassError(null);
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return (
+      Object.keys(newErrors).length === 0 &&
+      !(classOptions?.length && selectedClassId == null)
+    );
   };
 
   const handleChange = (
@@ -108,7 +138,11 @@ const TopicModal: React.FC<TopicModalProps> = ({
         dueDate: dueDateISO,
         requirements: formData.requirements || undefined,
       };
-      onSubmit(submitData);
+      if (classOptions?.length && selectedClassId != null) {
+        onSubmit(submitData, { classId: selectedClassId });
+      } else {
+        onSubmit(submitData);
+      }
     }
   };
 
@@ -130,6 +164,35 @@ const TopicModal: React.FC<TopicModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {classOptions && classOptions.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lớp học *
+              </label>
+              <select
+                value={selectedClassId ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSelectedClassId(v ? parseInt(v, 10) : null);
+                  if (classError) setClassError(null);
+                }}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  classError ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                {classOptions.map((c) => (
+                  <option key={c.classId} value={c.classId}>
+                    {c.classCode ? `${c.classCode} — ` : ""}
+                    {c.className}
+                  </option>
+                ))}
+              </select>
+              {classError && (
+                <p className="text-red-600 text-sm mt-1">{classError}</p>
+              )}
+            </div>
+          )}
+
           {/* Topic Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

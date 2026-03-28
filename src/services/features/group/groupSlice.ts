@@ -6,12 +6,12 @@ import {
   CREATE_GROUP_ENDPOINT,
   UPDATE_GROUP_ENDPOINT,
   DELETE_GROUP_ENDPOINT,
-  GET_MY_GROUP_ENDPOINT,
   JOIN_GROUP_ENDPOINT,
   LEAVE_GROUP_ENDPOINT,
   REMOVE_MEMBER_FROM_GROUP_ENDPOINT,
   CHANGE_LEADER_OF_GROUP_ENDPOINT,
   GROUP_DETAIL_ENDPOINT,
+  GROUP_TOPIC_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface GroupStudentMeta {
@@ -52,11 +52,24 @@ export interface Group {
   class?: GroupClassInfo;
 }
 
+/** Topic đã chọn cho nhóm (GET /groups/:id/topic) */
+export interface GroupTopicInfo {
+  topicId: number;
+  topicName: string;
+  description?: string;
+  dueDate?: string;
+  sequenceNumber?: number;
+  enrolledAt?: string;
+}
+
 export interface GroupState {
   groups: Group[];
   myGroup: Group | null;
   myGroupForClass: Group | null;
   groupDetail: Group | null;
+  /** Chủ đề hiện tại của nhóm (theo groupId đang fetch) */
+  groupTopic: GroupTopicInfo | null;
+  groupTopicLoading: boolean;
   classInfo: GroupClassInfo | null;
   isEnrolled: boolean;
   loading: boolean;
@@ -69,6 +82,8 @@ const initialState: GroupState = {
   myGroup: null,
   myGroupForClass: null,
   groupDetail: null,
+  groupTopic: null,
+  groupTopicLoading: false,
   classInfo: null,
   isEnrolled: false,
   loading: false,
@@ -95,11 +110,6 @@ const extractGroup = (payload: any): Group | null => {
   return data;
 };
 
-const extractMyGroup = (payload: any): Group | null => {
-  const groups = extractGroupArray(payload);
-  return groups.length ? groups[0] : null;
-};
-
 export const fetchGroupsByClass = createAsyncThunk<
   { groups: Group[]; classInfo: GroupClassInfo | null; isEnrolled: boolean },
   number,
@@ -118,21 +128,6 @@ export const fetchGroupsByClass = createAsyncThunk<
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || "Failed to fetch groups",
-    );
-  }
-});
-
-export const fetchMyGroup = createAsyncThunk<
-  Group | null,
-  void,
-  { rejectValue: string }
->("group/fetchMyGroup", async (_, { rejectWithValue }) => {
-  try {
-    const response = await axiosInstance.get(GET_MY_GROUP_ENDPOINT);
-    return extractMyGroup(response.data);
-  } catch (error: any) {
-    return rejectWithValue(
-      error.response?.data?.message || "Failed to fetch my group",
     );
   }
 });
@@ -314,6 +309,68 @@ export const changeLeaderOfGroup = createAsyncThunk<
   },
 );
 
+export const fetchGroupTopic = createAsyncThunk<
+  GroupTopicInfo | null,
+  number,
+  { rejectValue: string }
+>("group/fetchGroupTopic", async (groupId, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(
+      GROUP_TOPIC_ENDPOINT(groupId.toString()),
+    );
+    const topic = response.data?.topic ?? null;
+    return topic;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch group topic",
+    );
+  }
+});
+
+export const pickGroupTopic = createAsyncThunk<
+  { message?: string; groupId: number; topicId: number; topicName?: string },
+  { groupId: number; topicId: number },
+  { rejectValue: string }
+>("group/pickGroupTopic", async ({ groupId, topicId }, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      GROUP_TOPIC_ENDPOINT(groupId.toString()),
+      { topicId },
+    );
+    const data = response.data?.data;
+    return {
+      message: response.data?.message,
+      groupId: data?.groupId ?? groupId,
+      topicId: data?.topicId ?? topicId,
+      topicName: data?.topicName,
+    };
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to pick topic for group",
+    );
+  }
+});
+
+export const clearGroupTopic = createAsyncThunk<
+  { message?: string; groupId: number },
+  number,
+  { rejectValue: string }
+>("group/clearGroupTopic", async (groupId, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.delete(
+      GROUP_TOPIC_ENDPOINT(groupId.toString()),
+    );
+    return { message: response.data?.message, groupId };
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to clear group topic",
+    );
+  }
+});
+
 const groupSlice = createSlice({
   name: "group",
   initialState,
@@ -338,19 +395,6 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Failed to fetch groups";
       })
-      .addCase(fetchMyGroup.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchMyGroup.fulfilled, (state, action) => {
-        state.loading = false;
-        state.myGroup = action.payload;
-      })
-      .addCase(fetchMyGroup.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to fetch my group";
-      })
-      // Fetch my group by class
       .addCase(fetchMyGroupByClass.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -358,6 +402,9 @@ const groupSlice = createSlice({
       .addCase(fetchMyGroupByClass.fulfilled, (state, action) => {
         state.loading = false;
         state.myGroupForClass = action.payload;
+        if (!action.payload) {
+          state.groupTopic = null;
+        }
       })
       .addCase(fetchMyGroupByClass.rejected, (state, action) => {
         state.loading = false;
@@ -464,6 +511,7 @@ const groupSlice = createSlice({
         state.actionLoading = false;
         state.myGroup = null;
         state.myGroupForClass = null;
+        state.groupTopic = null;
       })
       .addCase(leaveGroup.rejected, (state, action) => {
         state.actionLoading = false;
@@ -493,6 +541,47 @@ const groupSlice = createSlice({
       .addCase(changeLeaderOfGroup.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload || "Failed to change leader";
+      })
+      .addCase(fetchGroupTopic.pending, (state) => {
+        state.groupTopicLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupTopic.fulfilled, (state, action) => {
+        state.groupTopicLoading = false;
+        state.groupTopic = action.payload;
+      })
+      .addCase(fetchGroupTopic.rejected, (state, action) => {
+        state.groupTopicLoading = false;
+        state.error = action.payload || "Failed to fetch group topic";
+      })
+      .addCase(pickGroupTopic.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(pickGroupTopic.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const { topicId, topicName } = action.payload;
+        state.groupTopic = {
+          topicId,
+          topicName: topicName || "",
+          enrolledAt: new Date().toISOString(),
+        };
+      })
+      .addCase(pickGroupTopic.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to pick group topic";
+      })
+      .addCase(clearGroupTopic.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(clearGroupTopic.fulfilled, (state) => {
+        state.actionLoading = false;
+        state.groupTopic = null;
+      })
+      .addCase(clearGroupTopic.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to clear group topic";
       });
   },
 });
