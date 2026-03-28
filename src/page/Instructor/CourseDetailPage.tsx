@@ -19,6 +19,7 @@ import TopicUpdateModal from "@/components/Topic/TopicUpdateModal";
 import Toast from "@/components/Toast/Toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
+import { fetchClassesByCourse } from "@/services/features/admin/classSlice";
 import {
   createTopic,
   CreateTopicData,
@@ -37,6 +38,7 @@ const CourseDetailPage: React.FC = () => {
     error,
   } = useAppSelector((state) => state.course);
   const { loading: topicLoading } = useAppSelector((state) => state.topic);
+  const { classes: classesForCourse } = useAppSelector((state) => state.class);
   const [topicModalOpen, setTopicModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<{
@@ -55,7 +57,9 @@ const CourseDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (courseId) {
-      dispatch(fetchCourseDetail(parseInt(courseId)));
+      const id = parseInt(courseId, 10);
+      dispatch(fetchCourseDetail(id));
+      dispatch(fetchClassesByCourse(id));
     }
   }, [courseId, dispatch]);
 
@@ -111,11 +115,20 @@ const CourseDetailPage: React.FC = () => {
       (1000 * 60 * 60 * 24)
   );
 
-  const handleTopicSubmit = async (topicData: CreateTopicData) => {
-    if (!courseId) return;
+  const handleTopicSubmit = async (
+    topicData: CreateTopicData,
+    meta?: { classId: number },
+  ) => {
+    if (!courseId || !meta?.classId) {
+      setToast({
+        message: "Chọn lớp học để tạo chủ đề.",
+        type: "error",
+      });
+      return;
+    }
     try {
       await dispatch(
-        createTopic({ courseId: parseInt(courseId), topicData }),
+        createTopic({ classId: meta.classId, topicData }),
       ).unwrap();
       setToast({
         message: "Topic created successfully!",
@@ -446,7 +459,17 @@ const CourseDetailPage: React.FC = () => {
                     paddingHeight="8px"
                     icon={<Plus className="w-4 h-4 text-white" />}
                     iconPosition="left"
-                    onClick={() => setTopicModalOpen(true)}
+                    onClick={() => {
+                      if (!classesForCourse?.length) {
+                        setToast({
+                          message:
+                            "Tạo ít nhất một lớp học cho khóa này trước khi thêm chủ đề.",
+                          type: "error",
+                        });
+                        return;
+                      }
+                      setTopicModalOpen(true);
+                    }}
                   />
                 </div>
 
@@ -648,6 +671,11 @@ const CourseDetailPage: React.FC = () => {
         onClose={() => setTopicModalOpen(false)}
         onSubmit={handleTopicSubmit}
         isLoading={topicLoading}
+        classOptions={classesForCourse.map((c) => ({
+          classId: c.classId,
+          className: c.className,
+          classCode: c.classCode,
+        }))}
       />
 
       {/* Edit Topic Modal */}

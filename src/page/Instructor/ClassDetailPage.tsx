@@ -228,7 +228,7 @@ const ClassDetailPage: React.FC = () => {
     if (!selectedClass?.courseId) return;
     try {
       await dispatch(
-        createTopic({ courseId: selectedClass.courseId, topicData }),
+        createTopic({ classId: selectedClass.classId, topicData }),
       ).unwrap();
       setToast({
         message: "Topic created successfully.",

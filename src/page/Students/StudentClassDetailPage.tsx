@@ -20,13 +20,11 @@ import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import {
-  enrollTopic,
-  fetchEnrolledTopics,
-} from "@/services/features/enrollment/enrollmentSlice";
-import {
   fetchGroupsByClass,
   fetchMyGroupByClass,
   fetchGroupDetail,
+  fetchGroupTopic,
+  pickGroupTopic,
   createGroup,
   joinGroup,
   Group,
@@ -76,14 +74,12 @@ const StudentClassDetailPage: React.FC = () => {
   const {
     groups,
     myGroupForClass,
+    groupTopic,
     loading: groupLoading,
     actionLoading: groupActionLoading,
     classInfo: groupClassInfo,
     isEnrolled: isGroupEnrolled,
   } = useAppSelector((state) => state.group);
-  const { enrolledTopicIds, loading: enrollmentLoading } = useAppSelector(
-    (state) => state.enrollment,
-  );
 
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
@@ -92,14 +88,22 @@ const StudentClassDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("topics");
   const classIdNumber = classId ? parseInt(classId) : null;
 
+  const myGroupId =
+    myGroupForClass?.groupId != null ? Number(myGroupForClass.groupId) : null;
+
   useEffect(() => {
     if (classIdNumber) {
       dispatch(fetchClassDetail(classIdNumber));
       dispatch(fetchGroupsByClass(classIdNumber));
       dispatch(fetchMyGroupByClass(classIdNumber));
-      dispatch(fetchEnrolledTopics());
     }
   }, [classIdNumber, dispatch]);
+
+  useEffect(() => {
+    if (myGroupId != null && Number.isFinite(myGroupId)) {
+      dispatch(fetchGroupTopic(myGroupId));
+    }
+  }, [myGroupId, dispatch]);
 
   const isClassEnrolled = (targetClassId: number): boolean => {
     if (!classDetail || !user?.userId) return false;
@@ -134,6 +138,8 @@ const StudentClassDetailPage: React.FC = () => {
       dispatch(fetchMyGroupByClass(classIdNumber));
     }
   };
+
+  const isMyGroupLeader = myGroupForClass?.myRole === "leader";
 
   const handleCreateGroup = async () => {
     if (!classIdNumber) return;
@@ -171,12 +177,14 @@ const StudentClassDetailPage: React.FC = () => {
     }
   };
 
-  const handleEnrollTopic = async (topicId: number) => {
+  const handlePickTopicForGroup = async (topicId: number) => {
+    if (!myGroupId) return;
     try {
-      await dispatch(enrollTopic(topicId)).unwrap();
-      toast.success("Ghi danh chủ đề thành công!");
+      await dispatch(pickGroupTopic({ groupId: myGroupId, topicId })).unwrap();
+      toast.success("Đã chọn chủ đề cho nhóm.");
+      await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: any) {
-      toast.error(err?.message || "Ghi danh chủ đề thất bại.");
+      toast.error(err?.message || "Chọn chủ đề thất bại.");
     }
   };
 
@@ -346,8 +354,9 @@ const StudentClassDetailPage: React.FC = () => {
               {topics.length > 0 ? (
                 <div className="space-y-3">
                   {topics.map((topic) => {
-                    const isTopicEnrolled = enrolledTopicIds.includes(
-                      topic.topicId,
+                    const isTopicEnrolled = Boolean(
+                      myGroupForClass &&
+                        groupTopic?.topicId === topic.topicId,
                     );
                     const urgency = getDeadlineUrgency(topic.dueDate);
                     return (
@@ -389,7 +398,8 @@ const StudentClassDetailPage: React.FC = () => {
                             )}
                             {isTopicEnrolled && (
                               <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium">
-                                <CheckCircle2 className="w-3 h-3" /> Đã ghi danh
+                                <CheckCircle2 className="w-3 h-3" />{" "}
+                                Đã ghi danh (nhóm)
                               </span>
                             )}
                           </div>
@@ -397,20 +407,25 @@ const StudentClassDetailPage: React.FC = () => {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 shrink-0">
-                          {isGroupEnrolled && !isTopicEnrolled && (
+                          {isGroupEnrolled &&
+                            myGroupForClass &&
+                            !groupTopic &&
+                            !isTopicEnrolled &&
+                            isMyGroupLeader &&
+                            myGroupId && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEnrollTopic(topic.topicId);
+                                handlePickTopicForGroup(topic.topicId);
                               }}
-                              disabled={enrollmentLoading}
+                              disabled={groupActionLoading}
                               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50">
-                              {enrollmentLoading ? (
+                              {groupActionLoading ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Plus className="w-3 h-3" />
                               )}
-                              Ghi danh
+                              Chọn cho nhóm
                             </button>
                           )}
                           {!isGroupEnrolled && (

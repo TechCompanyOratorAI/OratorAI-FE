@@ -18,10 +18,6 @@ export const VERIFY_EMAIL_ENDPOINT = (token: string) =>
 
 // Course endpoints
 export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;
-export const UPDATE_COURSE_ENDPOINT = (courseId: string) =>
-  `${BASE_URL}/api/v1/courses/${courseId}`;
-export const DELETE_COURSE_ENDPOINT = (courseId: string) =>
-  `${BASE_URL}/api/v1/courses/${courseId}`;
 export const ADD_INSTRUCTOR_TO_COURSE_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
 export const REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT = (
@@ -32,9 +28,9 @@ export const MY_COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses/my-class`;
 export const COURSE_DETAIL_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}`;
 
-// Topic endpoints
-export const TOPICS_ENDPOINT = (courseId: string) =>
-  `${BASE_URL}/api/v1/courses/${courseId}/topics`;
+// Topic endpoints (topics are created per class, not per course)
+export const CLASS_TOPICS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/topics`;
 export const TOPIC_DETAIL_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/topics/${topicId}`;
 
@@ -80,7 +76,6 @@ export const UPDATE_GROUP_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}`;
 export const DELETE_GROUP_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}`;
-export const GET_MY_GROUP_ENDPOINT = `${BASE_URL}/api/v1/groups/my`;
 export const JOIN_GROUP_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}/join`;
 export const LEAVE_GROUP_ENDPOINT = (groupId: string) =>
@@ -93,6 +88,9 @@ export const CHANGE_LEADER_OF_GROUP_ENDPOINT = (
   groupId: string,
   userId: string,
 ) => `${BASE_URL}/api/v1/groups/${groupId}/members/${userId}/promote`;
+/** GET/POST/DELETE — topic the nhóm (leader chọn / hủy) */
+export const GROUP_TOPIC_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/topic`;
 
 //Rubric endpoints
 export const GET_RUBRIC_BY_CLASS_ENDPOINT = (classId: string) =>
@@ -130,13 +128,7 @@ export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>
 export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
 
-// Enrollment endpoints (course-level enrollment removed; students enroll at class or topic level only)
-export const ENROLL_TOPIC_ENDPOINT = (topicId: string) =>
-  `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
-export const GET_ENROLLED_TOPICS_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/topics`;
-export const DROP_TOPIC_ENDPOINT = (topicId: string) =>
-  `${BASE_URL}/api/v1/enrollments/topics/${topicId}`;
-
+// Enrollment (class-level; topic theo nhóm dùng /groups/:id/topic)
 // Enrolled Classes endpoints
 export const GET_ENROLLED_CLASSES_ENDPOINT = `${BASE_URL}/api/v1/enrollments/me/classes`;
 
