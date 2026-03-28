@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Edit,
   Trash2,
+  Plus,
 } from "lucide-react";
 import {
   DndContext,
@@ -52,11 +53,14 @@ import {
 } from "@/services/features/topic/topicSlice";
 import {
   ClassRubricCriteria,
+  PickRubricTemplatePayload,
   RubricCriteriaPayload,
-  createRubricCriteria,
   deleteRubricCriteria,
+  fetchRubricTemplatesForInstructor,
   fetchRubricByClass,
+  pickRubricTemplateForClass,
   updateRubricCriteria,
+  createRubricCriteria,
 } from "@/services/features/rubric/rubricSilce";
 
 type SortableCriterionItemProps = {
@@ -176,7 +180,11 @@ const ClassDetailPage: React.FC = () => {
   );
   const {
     criteria: rubricCriteria,
+    templates: rubricTemplates,
+    selectedTemplateId,
     loading: rubricLoading,
+    templatesLoading: rubricTemplatesLoading,
+    pickLoading: rubricPickLoading,
     actionLoading: rubricActionLoading,
   } = useAppSelector((state) => state.rubric);
 
@@ -186,10 +194,35 @@ const ClassDetailPage: React.FC = () => {
   const [showGroupDetail, setShowGroupDetail] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
+  const [isCreateCriteriaModalOpen, setIsCreateCriteriaModalOpen] =
+    useState(false);
   const [isDeleteRubricModalOpen, setIsDeleteRubricModalOpen] = useState(false);
-  const [rubricMode, setRubricMode] = useState<"create" | "edit">("create");
   const [editingRubric, setEditingRubric] =
     useState<ClassRubricCriteria | null>(null);
+  const [expandedTemplateId, setExpandedTemplateId] = useState<number | null>(
+    null,
+  );
+  const [isTemplateConfigModalOpen, setIsTemplateConfigModalOpen] =
+    useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<number | null>(
+    null,
+  );
+  const [selectedTemplateOptionId, setSelectedTemplateOptionId] = useState<
+    number | null
+  >(null);
+  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+  const [confirmApplyPick, setConfirmApplyPick] = useState(false);
+  const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
+    rubricTemplateId: 0,
+    enableAiReport: true,
+    requireInstructorConfirmation: false,
+    allowInstructorEdit: true,
+    feedbackLanguage: "en",
+    reportFormat: "detailed",
+    includeCriterionComments: true,
+    includeOverallSummary: true,
+    includeSuggestions: true,
+  });
   const [localCriteria, setLocalCriteria] = useState<ClassRubricCriteria[]>([]);
   const [originalCriteria, setOriginalCriteria] = useState<
     ClassRubricCriteria[]
@@ -213,8 +246,55 @@ const ClassDetailPage: React.FC = () => {
       dispatch(fetchClassDetail(classIdNumber));
       dispatch(fetchGroupsByClass(classIdNumber));
       dispatch(fetchRubricByClass(classIdNumber));
+      dispatch(fetchRubricTemplatesForInstructor());
     }
   }, [classIdNumber, dispatch]);
+
+  useEffect(() => {
+    if (!selectedTemplateId) return;
+    setPickSettings((prev) => ({
+      ...prev,
+      rubricTemplateId: selectedTemplateId,
+    }));
+  }, [selectedTemplateId]);
+
+  const configuredTemplateId = pendingTemplateId ?? selectedTemplateId ?? null;
+
+  useEffect(() => {
+    setSelectedTemplateOptionId(configuredTemplateId);
+  }, [configuredTemplateId]);
+
+  const pendingTemplate = useMemo(
+    () =>
+      rubricTemplates.find(
+        (template) => template.rubricTemplateId === pendingTemplateId,
+      ) || null,
+    [pendingTemplateId, rubricTemplates],
+  );
+
+  const buildPickPayload = useCallback(
+    (templateId: number): PickRubricTemplatePayload => {
+      const payload: PickRubricTemplatePayload = {
+        rubricTemplateId: templateId,
+        enableAiReport: pickSettings.enableAiReport,
+      };
+
+      if (pickSettings.enableAiReport) {
+        payload.requireInstructorConfirmation =
+          pickSettings.requireInstructorConfirmation;
+        payload.allowInstructorEdit = pickSettings.allowInstructorEdit;
+        payload.feedbackLanguage = pickSettings.feedbackLanguage;
+        payload.reportFormat = pickSettings.reportFormat;
+        payload.includeCriterionComments =
+          pickSettings.includeCriterionComments;
+        payload.includeOverallSummary = pickSettings.includeOverallSummary;
+        payload.includeSuggestions = pickSettings.includeSuggestions;
+      }
+
+      return payload;
+    },
+    [pickSettings],
+  );
 
   // When class details are loaded, also fetch course detail
   // so we can manage presentation topics for this class's course.
@@ -391,46 +471,209 @@ const ClassDetailPage: React.FC = () => {
     }
   }, [classIdNumber, dispatch, isRubricOrderChanged, localCriteria, setToast]);
 
-  const openCreateRubricModal = () => {
-    setRubricMode("create");
-    setEditingRubric(null);
-    setIsRubricModalOpen(true);
-  };
-
   const openEditRubricModal = (criterion: ClassRubricCriteria) => {
-    setRubricMode("edit");
     setEditingRubric(criterion);
     setIsRubricModalOpen(true);
   };
 
-  const handleSubmitRubric = async (payload: RubricCriteriaPayload) => {
+  const handleChooseTemplate = (templateId: number) => {
+    setPendingTemplateId(templateId);
+    setConfirmApplyPick(false);
+    setPickSettings((prev) => ({
+      ...prev,
+      rubricTemplateId: templateId,
+    }));
+    setIsTemplateConfigModalOpen(true);
+    setToast({
+      message: "Template selected. Configure AI settings in modal and use it.",
+      type: "info",
+    });
+  };
+
+  const handleApplyPickTemplate = async () => {
+    if (!classIdNumber || !configuredTemplateId) return;
+
+    try {
+      const payload = buildPickPayload(configuredTemplateId);
+
+      await dispatch(
+        pickRubricTemplateForClass({
+          classId: classIdNumber,
+          data: payload,
+        }),
+      ).unwrap();
+
+      setPendingTemplateId(null);
+      setConfirmApplyPick(false);
+      setIsTemplateConfigModalOpen(false);
+
+      await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+      setToast({
+        message: "Template selected for this class.",
+        type: "success",
+      });
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to pick rubric template.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleSubmitRubric = async (
+    payload: RubricCriteriaPayload,
+    criterionId?: number,
+  ) => {
     if (!classIdNumber) return;
 
     try {
-      if (rubricMode === "create") {
-        await dispatch(
-          createRubricCriteria({ classId: classIdNumber, rubricData: payload }),
-        ).unwrap();
-        setToast({ message: "Rubric criteria created.", type: "success" });
-      } else if (editingRubric) {
+      const targetCriterionId =
+        criterionId || editingRubric?.classRubricCriteriaId;
+
+      if (targetCriterionId) {
         await dispatch(
           updateRubricCriteria({
-            classRubricCriteriaId: editingRubric.classRubricCriteriaId,
+            classRubricCriteriaId: targetCriterionId,
             rubricData: payload,
           }),
         ).unwrap();
         setToast({ message: "Rubric criteria updated.", type: "success" });
+      } else {
+        await dispatch(
+          createRubricCriteria({
+            classId: classIdNumber,
+            rubricData: payload,
+          }),
+        ).unwrap();
+        setToast({
+          message: "Rubric criteria created successfully.",
+          type: "success",
+        });
       }
 
       dispatch(fetchRubricByClass(classIdNumber));
-      setIsRubricModalOpen(false);
-      setEditingRubric(null);
+      if (targetCriterionId) {
+        setIsRubricModalOpen(false);
+        setEditingRubric(null);
+      }
     } catch (error: any) {
       setToast({
         message:
           typeof error === "string"
             ? error
             : error?.message || "Rubric action failed.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleCreateCriteria = async (payload: RubricCriteriaPayload) => {
+    if (!classIdNumber) return;
+
+    try {
+      await dispatch(
+        createRubricCriteria({
+          classId: classIdNumber,
+          rubricData: payload,
+        }),
+      ).unwrap();
+      setToast({
+        message: "Rubric criteria created successfully.",
+        type: "success",
+      });
+
+      dispatch(fetchRubricByClass(classIdNumber));
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to create rubric criteria.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleDeleteRubricById = async (criterionId: number) => {
+    if (!classIdNumber) return;
+
+    try {
+      await dispatch(
+        deleteRubricCriteria({
+          classRubricCriteriaId: criterionId,
+        }),
+      ).unwrap();
+
+      setToast({ message: "Rubric criteria deleted.", type: "success" });
+      await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+
+      if (editingRubric?.classRubricCriteriaId === criterionId) {
+        setEditingRubric(null);
+      }
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to delete rubric criteria.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleSelectRubricFromModal = (criterionId: number) => {
+    const criterion = sortedRubricCriteria.find(
+      (item) => item.classRubricCriteriaId === criterionId,
+    );
+
+    if (criterion) {
+      setEditingRubric(criterion);
+    }
+  };
+
+  const handleReorderRubricFromModal = async (
+    criteria: Array<{
+      classRubricCriteriaId: number;
+      criteriaName: string;
+      criteriaDescription: string;
+      weight: number | string;
+      maxScore: number | string;
+      displayOrder: number;
+      evaluationGuide?: string;
+    }>,
+  ) => {
+    if (!classIdNumber) return;
+
+    try {
+      await Promise.all(
+        criteria.map((criterion, index) =>
+          dispatch(
+            updateRubricCriteria({
+              classRubricCriteriaId: criterion.classRubricCriteriaId,
+              rubricData: {
+                criteriaName: criterion.criteriaName,
+                criteriaDescription: criterion.criteriaDescription,
+                weight: Number(criterion.weight),
+                maxScore: Number(criterion.maxScore),
+                displayOrder: index + 1,
+                evaluationGuide: criterion.evaluationGuide || "",
+              },
+            }),
+          ).unwrap(),
+        ),
+      );
+
+      setToast({ message: "Rubric order updated.", type: "success" });
+      await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+    } catch (error: any) {
+      setToast({
+        message:
+          typeof error === "string"
+            ? error
+            : error?.message || "Failed to update rubric order.",
         type: "error",
       });
     }
@@ -504,17 +747,6 @@ const ClassDetailPage: React.FC = () => {
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
-  };
-
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
@@ -682,43 +914,48 @@ const ClassDetailPage: React.FC = () => {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-6">
-            {/* Presentation Topics for this class's course */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-start justify-between gap-3 mb-5">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-2xl bg-sky-100 p-2">
-                    <BookOpen className="w-5 h-5 text-sky-700" />
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_360px] gap-6 items-start">
+            <div className="space-y-6">
+              {/* Presentation Topics for this class's course */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-2xl bg-sky-100 p-2">
+                      <BookOpen className="w-5 h-5 text-sky-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                        Presentation topics
+                      </p>
+                      <h3 className="text-xl font-bold text-slate-900">
+                        Topics for student presentations
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-600 max-w-xl">
+                        Create and manage topics that students will use for
+                        their presentations in this class.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Presentation topics
-                    </p>
-                    <h3 className="text-xl font-bold text-slate-900">
-                      Topics for student presentations
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-600 max-w-xl">
-                      Create and manage topics that students will use for their
-                      presentations in this class.
-                    </p>
-                  </div>
+                  <Button
+                    text="Create Topic"
+                    variant="primary"
+                    fontSize="14px"
+                    borderRadius="999px"
+                    paddingWidth="18px"
+                    paddingHeight="9px"
+                    onClick={() => setIsTopicModalOpen(true)}
+                  />
                 </div>
-                <Button
-                  text="Create Topic"
-                  variant="primary"
-                  fontSize="14px"
-                  borderRadius="999px"
-                  paddingWidth="18px"
-                  paddingHeight="9px"
-                  onClick={() => setIsTopicModalOpen(true)}
-                />
-              </div>
 
-              {(selectedClass.topics && selectedClass.topics.length > 0) ||
-              (courseForTopics?.topics && courseForTopics.topics.length > 0) ? (
-                <div className="space-y-3">
-                  {(selectedClass.topics || courseForTopics?.topics || []).map(
-                    (topic) => (
+                {(selectedClass.topics && selectedClass.topics.length > 0) ||
+                (courseForTopics?.topics &&
+                  courseForTopics.topics.length > 0) ? (
+                  <div className="space-y-3">
+                    {(
+                      selectedClass.topics ||
+                      courseForTopics?.topics ||
+                      []
+                    ).map((topic) => (
                       <div
                         key={topic.topicId}
                         className="rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-50/80 transition-colors"
@@ -799,258 +1036,371 @@ const ClassDetailPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  No topics yet. Use{" "}
-                  <span className="font-semibold text-slate-800">
-                    Create Topic
-                  </span>{" "}
-                  to add the first presentation topic for this class.
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-2xl bg-violet-100 p-2">
-                  <Users className="w-5 h-5 text-violet-700" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Groups
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    Student Groups ({groupsForClass.length})
-                  </h3>
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                    No topics yet. Use{" "}
+                    <span className="font-semibold text-slate-800">
+                      Create Topic
+                    </span>{" "}
+                    to add the first presentation topic for this class.
+                  </div>
+                )}
               </div>
 
-              {groupLoading ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  Loading groups...
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-2xl bg-emerald-100 p-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                        Rubric Templates
+                      </p>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Class Evaluation Criteria ({localCriteria.length})
+                      </h3>
+                    </div>
+                  </div>
                 </div>
-              ) : groupsForClass.length > 0 ? (
-                <div className="space-y-3">
-                  {groupsForClass.map((group, index) => {
-                    const groupId = Number(getGroupId(group));
-                    const memberCount =
-                      group.memberCount ?? group.students?.length ?? 0;
 
-                    return (
-                      <button
-                        key={group.groupId ?? group.id ?? index}
-                        type="button"
-                        onClick={() => {
-                          if (!Number.isFinite(groupId)) return;
-                          setSelectedGroupId(groupId);
-                          dispatch(fetchGroupDetail(groupId));
-                          setShowGroupDetail(true);
-                        }}
-                        className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:border-violet-200 hover:bg-white hover:shadow-sm transition"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <p className="font-semibold text-slate-900">
-                              {getGroupName(group)}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Leader: {getGroupLeaderName(group)}
-                            </p>
+                {!selectedTemplateId && (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 mb-6 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-800">
+                        Choose template for this class
+                      </p>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                        No template selected
+                      </span>
+                    </div>
+
+                    {localCriteria.length >
+                    0 ? null : rubricTemplatesLoading ? (
+                      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 text-center">
+                        Loading rubric templates...
+                      </div>
+                    ) : rubricTemplates.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex gap-3">
+                          <div className="flex-1 relative">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setIsTemplateDropdownOpen((prev) => !prev)
+                              }
+                              disabled={
+                                rubricPickLoading || rubricTemplatesLoading
+                              }
+                              className="w-full px-4 py-2.5 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-left bg-white hover:border-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                            >
+                              {selectedTemplateOptionId
+                                ? rubricTemplates.find(
+                                    (item) =>
+                                      item.rubricTemplateId ===
+                                      selectedTemplateOptionId,
+                                  )?.templateName || "Select template"
+                                : "Select template"}
+                            </button>
+                            {isTemplateDropdownOpen && (
+                              <div className="absolute top-full left-0 right-0 mt-1 border border-slate-300 rounded-2xl bg-white shadow-lg z-10 max-h-44 overflow-y-auto">
+                                {rubricTemplates.map((template) => (
+                                  <button
+                                    key={template.rubricTemplateId}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedTemplateOptionId(
+                                        template.rubricTemplateId,
+                                      );
+                                      setExpandedTemplateId(
+                                        template.rubricTemplateId,
+                                      );
+                                      setIsTemplateDropdownOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-sky-50 border-b border-slate-100 last:border-b-0"
+                                  >
+                                    <div className="font-medium text-slate-900">
+                                      {template.templateName}
+                                    </div>
+                                    <div className="text-sm text-slate-600">
+                                      {template.assignmentType}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                            <Users className="w-3.5 h-3.5" />
-                            {memberCount} members
-                          </span>
+                          <Button
+                            text="Add"
+                            variant="primary"
+                            fontSize="14px"
+                            borderRadius="999px"
+                            paddingWidth="18px"
+                            paddingHeight="9px"
+                            icon={<Plus className="w-4 h-4" />}
+                            onClick={() => {
+                              if (!selectedTemplateOptionId) return;
+                              handleChooseTemplate(selectedTemplateOptionId);
+                            }}
+                            disabled={
+                              rubricPickLoading || !selectedTemplateOptionId
+                            }
+                          />
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  No groups found for this class.
-                </div>
-              )}
+
+                        {expandedTemplateId && (
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                            {(() => {
+                              const expandedTemplate = rubricTemplates.find(
+                                (template) =>
+                                  template.rubricTemplateId ===
+                                  expandedTemplateId,
+                              );
+                              if (!expandedTemplate) return null;
+
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between gap-2 mb-3">
+                                    <p className="text-sm font-semibold text-slate-900">
+                                      {expandedTemplate.templateName}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                    {expandedTemplate.criteria?.length ? (
+                                      expandedTemplate.criteria
+                                        .slice()
+                                        .sort(
+                                          (a, b) =>
+                                            a.displayOrder - b.displayOrder,
+                                        )
+                                        .map((criterion) => (
+                                          <div
+                                            key={criterion.criteriaId}
+                                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <p className="text-sm font-semibold text-slate-800">
+                                                {criterion.displayOrder}.{" "}
+                                                {criterion.criteriaName}
+                                              </p>
+                                              <span className="text-xs text-slate-600">
+                                                {Number(
+                                                  criterion.weight,
+                                                ).toFixed(0)}
+                                                % | Max {criterion.maxScore}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))
+                                    ) : (
+                                      <p className="text-sm text-slate-500">
+                                        Template has no criteria.
+                                      </p>
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 text-center">
+                        No rubric templates available.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {rubricLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                    Loading class rubric...
+                  </div>
+                ) : localCriteria.length > 0 ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis]}
+                    onDragEnd={handleRubricDragEnd}
+                  >
+                    <SortableContext
+                      items={localCriteria.map(
+                        (criterion) => criterion.classRubricCriteriaId,
+                      )}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {localCriteria.map((criterion) => (
+                          <SortableCriterionItem
+                            key={criterion.classRubricCriteriaId}
+                            criterion={criterion}
+                            onEdit={openEditRubricModal}
+                            onDelete={(selectedCriterion) => {
+                              setEditingRubric(selectedCriterion);
+                              setIsDeleteRubricModalOpen(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                    No rubric criteria configured for this class.
+                  </div>
+                )}
+                {isRubricOrderChanged && (
+                  <div className="mb-4 flex items-center justify-end gap-2 mt-6">
+                    <button
+                      type="button"
+                      onClick={handleSaveRubricReorder}
+                      disabled={rubricActionLoading}
+                      className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                    >
+                      {rubricActionLoading ? "Processing..." : "Save"}
+                    </button>
+                    <Button
+                      text="Cancel"
+                      variant="secondary"
+                      fontSize="14px"
+                      borderRadius="999px"
+                      paddingWidth="18px"
+                      paddingHeight="10px"
+                      onClick={handleCancelRubricReorder}
+                      disabled={rubricActionLoading}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-2xl bg-emerald-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+            <aside className="space-y-6 xl:sticky xl:top-6">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="rounded-2xl bg-sky-100 p-2">
+                    <BookOpen className="w-5 h-5 text-sky-700" />
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Rubric
+                      Course
                     </p>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Class Evaluation Criteria ({localCriteria.length})
+                      {selectedClass.course?.courseName || "Course"}
                     </h3>
                   </div>
                 </div>
-                <Button
-                  text="Create Criteria"
-                  variant="primary"
-                  fontSize="14px"
-                  borderRadius="999px"
-                  paddingWidth="16px"
-                  paddingHeight="8px"
-                  onClick={openCreateRubricModal}
-                />
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600">Course code:</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedClass.course?.courseCode || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600">Schedule:</span>
+                    <span className="font-semibold text-slate-900">
+                      {formatDate(selectedClass.startDate)} - {""}
+                      {formatDate(selectedClass.endDate)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600">Academic year:</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedClass.course?.academicYear || "N/A"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {rubricLoading ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  Loading rubric...
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="rounded-2xl bg-indigo-100 p-2">
+                    <Users className="w-5 h-5 text-indigo-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                      Enrollment
+                    </p>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {totalStudents} enrolled students
+                    </h3>
+                  </div>
                 </div>
-              ) : localCriteria.length > 0 ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  modifiers={[restrictToVerticalAxis]}
-                  onDragEnd={handleRubricDragEnd}
-                >
-                  <SortableContext
-                    items={localCriteria.map(
-                      (criterion) => criterion.classRubricCriteriaId,
-                    )}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {localCriteria.map((criterion) => (
-                        <SortableCriterionItem
-                          key={criterion.classRubricCriteriaId}
-                          criterion={criterion}
-                          onEdit={openEditRubricModal}
-                          onDelete={(selectedCriterion) => {
-                            setEditingRubric(selectedCriterion);
-                            setIsDeleteRubricModalOpen(true);
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600">Capacity:</span>
+                    <span className="font-semibold text-slate-900">
+                      {selectedClass.maxStudents} students
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="rounded-2xl bg-violet-100 p-2">
+                    <Users className="w-5 h-5 text-violet-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                      Groups
+                    </p>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Student Groups ({groupsForClass.length})
+                    </h3>
+                  </div>
+                </div>
+
+                {groupLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                    Loading groups...
+                  </div>
+                ) : groupsForClass.length > 0 ? (
+                  <div className="space-y-3">
+                    {groupsForClass.map((group, index) => {
+                      const groupId = Number(getGroupId(group));
+                      const memberCount =
+                        group.memberCount ?? group.students?.length ?? 0;
+
+                      return (
+                        <button
+                          key={group.groupId ?? group.id ?? index}
+                          type="button"
+                          onClick={() => {
+                            if (!Number.isFinite(groupId)) return;
+                            setSelectedGroupId(groupId);
+                            dispatch(fetchGroupDetail(groupId));
+                            setShowGroupDetail(true);
                           }}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                  No rubric criteria configured for this class.
-                </div>
-              )}
-              {isRubricOrderChanged && (
-                <div className="mb-4 flex items-center justify-end gap-2 mt-6">
-                  <button
-                    type="button"
-                    onClick={handleSaveRubricReorder}
-                    disabled={rubricActionLoading}
-                    className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-                  >
-                    {rubricActionLoading ? "Processing..." : "Save"}
-                  </button>
-                  <Button
-                    text="Cancel"
-                    variant="secondary"
-                    fontSize="14px"
-                    borderRadius="999px"
-                    paddingWidth="18px"
-                    paddingHeight="10px"
-                    onClick={handleCancelRubricReorder}
-                    disabled={rubricActionLoading}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-2xl bg-sky-100 p-2">
-                  <BookOpen className="w-5 h-5 text-sky-700" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Course
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {selectedClass.course?.courseName || "Course"}
-                  </h3>
-                </div>
+                          className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:border-violet-200 hover:bg-white hover:shadow-sm transition"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {getGroupName(group)}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Leader: {getGroupLeaderName(group)}
+                              </p>
+                            </div>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                              <Users className="w-3.5 h-3.5" />
+                              {memberCount} members
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
+                    No groups found for this class.
+                  </div>
+                )}
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Course code:</span>
-                  <span className="font-semibold text-slate-900">
-                    {selectedClass.course?.courseCode || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Schedule:</span>
-                  <span className="font-semibold text-slate-900">
-                    {formatDate(selectedClass.startDate)} - {""}
-                    {formatDate(selectedClass.endDate)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Academic year:</span>
-                  <span className="font-semibold text-slate-900">
-                    {selectedClass.course?.academicYear || "N/A"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-2xl bg-indigo-100 p-2">
-                  <Users className="w-5 h-5 text-indigo-700" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    Enrollment
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {selectedClass.enrollmentCount || 0} enrolled students
-                  </h3>
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Capacity:</span>
-                  <span className="font-semibold text-slate-900">
-                    {selectedClass.maxStudents} students
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-2xl bg-slate-100 p-2">
-                  <Clock className="w-5 h-5 text-slate-700" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                    System info
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900">Timeline</h3>
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Created:</span>
-                  <span className="font-semibold text-slate-900">
-                    {formatDateTime(selectedClass.createdAt)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600">Updated:</span>
-                  <span className="font-semibold text-slate-900">
-                    {formatDateTime(selectedClass.updatedAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            </aside>
           </div>
         </div>
       </main>
@@ -1082,8 +1432,11 @@ const ClassDetailPage: React.FC = () => {
           setEditingRubric(null);
         }}
         onSubmit={handleSubmitRubric}
+        onDeleteCriteria={handleDeleteRubricById}
+        onSelectCriteria={handleSelectRubricFromModal}
+        onReorderCriteria={handleReorderRubricFromModal}
         isLoading={rubricActionLoading}
-        mode={rubricMode}
+        mode="edit"
         initialData={
           editingRubric
             ? {
@@ -1097,7 +1450,217 @@ const ClassDetailPage: React.FC = () => {
             : undefined
         }
         defaultDisplayOrder={sortedRubricCriteria.length + 1}
+        templateName={selectedClass.classCode}
+        criteriaList={sortedRubricCriteria}
+        activeCriteriaId={editingRubric?.classRubricCriteriaId}
       />
+
+      <RubricModal
+        isOpen={isCreateCriteriaModalOpen}
+        onClose={() => {
+          if (rubricActionLoading) return;
+          setIsCreateCriteriaModalOpen(false);
+        }}
+        onSubmit={handleCreateCriteria}
+        isLoading={rubricActionLoading}
+        mode="create"
+        defaultDisplayOrder={sortedRubricCriteria.length + 1}
+        templateName={selectedClass.classCode}
+        criteriaList={sortedRubricCriteria}
+      />
+
+      {isTemplateConfigModalOpen && pendingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (rubricPickLoading) return;
+              setIsTemplateConfigModalOpen(false);
+              setPendingTemplateId(null);
+              setConfirmApplyPick(false);
+            }}
+          />
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                Selected Template
+              </p>
+              <p className="text-lg font-bold text-slate-900 mt-1">
+                {pendingTemplate.templateName}
+              </p>
+              <p className="text-sm text-slate-600 mt-1">
+                Assignment: {pendingTemplate.assignmentType}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={pickSettings.enableAiReport}
+                  onChange={(e) =>
+                    setPickSettings((prev) => ({
+                      ...prev,
+                      enableAiReport: e.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                />
+                Enable AI Report
+              </label>
+
+              {pickSettings.enableAiReport && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                  <label className="flex flex-col gap-1 text-sm text-slate-700">
+                    <span className="font-medium">Feedback Language</span>
+                    <select
+                      value={pickSettings.feedbackLanguage || "en"}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          feedbackLanguage: e.target.value,
+                        }))
+                      }
+                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="en">English</option>
+                      <option value="vi">Vietnamese</option>
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm text-slate-700">
+                    <span className="font-medium">Report Format</span>
+                    <select
+                      value={pickSettings.reportFormat || "detailed"}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          reportFormat: e.target.value,
+                        }))
+                      }
+                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="detailed">Detailed</option>
+                      <option value="summary">Summary</option>
+                    </select>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!!pickSettings.requireInstructorConfirmation}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          requireInstructorConfirmation: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    Require Instructor Confirmation
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!!pickSettings.allowInstructorEdit}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          allowInstructorEdit: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    Allow Instructor Edit
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!!pickSettings.includeCriterionComments}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          includeCriterionComments: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    Include Criterion Comments
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!!pickSettings.includeOverallSummary}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          includeOverallSummary: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    Include Overall Summary
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={!!pickSettings.includeSuggestions}
+                      onChange={(e) =>
+                        setPickSettings((prev) => ({
+                          ...prev,
+                          includeSuggestions: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    Include Suggestions
+                  </label>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 space-y-3">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={confirmApplyPick}
+                    onChange={(e) => setConfirmApplyPick(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  I confirm that I want to apply this template and overwrite
+                  existing rubric criteria for this class.
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (rubricPickLoading) return;
+                  setIsTemplateConfigModalOpen(false);
+                  setPendingTemplateId(null);
+                  setConfirmApplyPick(false);
+                }}
+                className="px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyPickTemplate}
+                disabled={!confirmApplyPick || rubricPickLoading}
+                className="px-4 py-2 rounded-full bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {rubricPickLoading ? "Apply Template..." : "Use Template"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isDeleteRubricModalOpen && editingRubric && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
