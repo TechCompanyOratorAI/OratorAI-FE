@@ -1,6 +1,6 @@
 export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-//export const BASE_URL = "http://localhost:8080";
+// export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -147,12 +147,14 @@ export const PRESENTATION_MEDIA_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/media`;
 export const PRESENTATION_SUBMIT_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/presentations/${presentationId}/submit`;
+export const PRESENTATION_PROGRESS_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/progress`;
 export const TOPIC_PRESENTATIONS_ENDPOINT = (topicId: string) =>
   `${BASE_URL}/api/v1/topics/
 ${topicId}/presentations`;
 
 //Report Presentation endpoints
 export const REPORT_PRESENTATION_ENDPOINT = (presentationId: string) =>
-  `${BASE_URL}/api/v1/ai-reports/submission/${presentationId}`;
+  `${BASE_URL}/api/v1/ai-reports/presentation/${presentationId}`;
 export const CONFIRM_REPORT_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/confirm`;

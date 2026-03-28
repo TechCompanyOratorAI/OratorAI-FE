@@ -1,4 +1,4 @@
-import { PRESENTATIONS_ENDPOINT, CREATE_PRESENTATION_ENDPOINT, TOPIC_PRESENTATIONS_ENDPOINT, PRESENTATION_MEDIA_ENDPOINT, PRESENTATION_SLIDES_ENDPOINT, PRESENTATION_SUBMIT_ENDPOINT, PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT, PRESENTATION_DETAIL_ENDPOINT } from "@/services/constant/apiConfig";
+import { PRESENTATIONS_ENDPOINT, CREATE_PRESENTATION_ENDPOINT, TOPIC_PRESENTATIONS_ENDPOINT, PRESENTATION_MEDIA_ENDPOINT, PRESENTATION_SLIDES_ENDPOINT, PRESENTATION_SUBMIT_ENDPOINT, PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT, PRESENTATION_DETAIL_ENDPOINT, PRESENTATION_PROGRESS_ENDPOINT } from "@/services/constant/apiConfig";
 import axiosInstance from "@/services/constant/axiosInstance";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
@@ -62,7 +62,7 @@ interface Presentation {
   title: string;
   description: string;
   submissionDate: string | null;
-  status: "draft" | "processing" | "submitted" | "analyzed";
+  status: "draft" | "submitted" | "processing" | "done" | "failed";
   durationSeconds: number | null;
   visibility: string;
   versionNumber: number;
@@ -135,6 +135,40 @@ interface SubmitResponse {
   };
 }
 
+// Progress types
+export interface ProgressStep {
+  type: string;
+  name: string;
+  order: number;
+  status: "pending" | "processing" | "completed" | "failed";
+  progress: number;
+  estimatedDuration: number | null;
+  actualDuration: number | null;
+  errorMessage: string | null;
+  jobId: number | null;
+  jobCount: number | null;
+  completedCount: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  retryCount: number;
+}
+
+export interface PresentationProgress {
+  presentationId: number;
+  presentationTitle: string;
+  presentationStatus: string;
+  submittedAt: string | null;
+  overallStatus: "pending" | "processing" | "completed" | "failed";
+  overallProgress: number;
+  currentStep: string | null;
+  currentStepProgress: number;
+  estimatedCompletionTime: string | null;
+  totalSteps: number;
+  completedSteps: number;
+  steps: ProgressStep[];
+  lastUpdated: string;
+}
+
 interface PresentationState {
   presentations: Presentation[];
   total: number;
@@ -145,6 +179,8 @@ interface PresentationState {
   currentPresentation: Presentation | null;
   currentPresentationDetail: Presentation | null;
   detailLoading: boolean;
+  progress: PresentationProgress | null;
+  progressLoading: boolean;
 }
 
 const initialState: PresentationState = {
@@ -157,6 +193,8 @@ const initialState: PresentationState = {
   currentPresentation: null,
   currentPresentationDetail: null,
   detailLoading: false,
+  progress: null,
+  progressLoading: false,
 };
 
 // Thunk to fetch presentations
@@ -263,12 +301,33 @@ export const uploadSlide = createAsyncThunk(
 export const uploadMedia = createAsyncThunk(
   "presentation/uploadMedia",
   async (
-    { presentationId, file }: { presentationId: number; file: File },
+    {
+      presentationId,
+      file,
+      durationSeconds,
+      sampleRate,
+      recordingMethod,
+    }: {
+      presentationId: number;
+      file: File;
+      durationSeconds?: number;
+      sampleRate?: number;
+      recordingMethod?: string;
+    },
     { rejectWithValue }
   ) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (durationSeconds !== undefined) {
+        formData.append("durationSeconds", String(durationSeconds));
+      }
+      if (sampleRate !== undefined) {
+        formData.append("sampleRate", String(sampleRate));
+      }
+      if (recordingMethod) {
+        formData.append("recordingMethod", recordingMethod);
+      }
       const response = await axiosInstance.post<MediaResponse>(
         PRESENTATION_MEDIA_ENDPOINT(presentationId.toString()),
         formData,
@@ -281,6 +340,21 @@ export const uploadMedia = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to upload media");
+    }
+  }
+);
+
+// Thunk to fetch presentation progress
+export const fetchPresentationProgress = createAsyncThunk(
+  "presentation/fetchPresentationProgress",
+  async (presentationId: number, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<{ success: boolean; progress: PresentationProgress }>(
+        PRESENTATION_PROGRESS_ENDPOINT(presentationId.toString())
+      );
+      return response.data.progress;
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : "Failed to fetch progress");
     }
   }
 );
@@ -441,9 +515,21 @@ const presentationSlice = createSlice({
       .addCase(submitPresentation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Fetch progress
+      .addCase(fetchPresentationProgress.pending, (state) => {
+        state.progressLoading = true;
+      })
+      .addCase(fetchPresentationProgress.fulfilled, (state, action) => {
+        state.progressLoading = false;
+        state.progress = action.payload;
+      })
+      .addCase(fetchPresentationProgress.rejected, (state) => {
+        state.progressLoading = false;
       });
   },
 });
 
 export const { clearError, setCurrentPresentation } = presentationSlice.actions;
+export const clearProgress = presentationSlice.actions.clearError; // re-use pattern
 export default presentationSlice.reducer;

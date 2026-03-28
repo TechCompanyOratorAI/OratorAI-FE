@@ -17,6 +17,7 @@ import {
   fetchPresentationReport,
 } from "@/services/features/report/reportSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
+import PresentationProgressTracker from "@/components/Presentation/PresentationProgressTracker";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const statusConfig: Record<
@@ -40,6 +41,11 @@ const statusConfig: Record<
   },
   analyzed: {
     label: "Đã chấm",
+    gradient: "from-emerald-100 to-green-200",
+    border: "border-emerald-300",
+  },
+  done: {
+    label: "Hoàn thành",
     gradient: "from-emerald-100 to-green-200",
     border: "border-emerald-300",
   },
@@ -294,6 +300,23 @@ const PresentationDetailPage: React.FC = () => {
             resultLoading={reportLoading}
           />
         </motion.div>
+
+        {/* Progress Tracker — hiển thị khi đang xử lý */}
+        {(presentation.status === "submitted" || presentation.status === "processing") && presentationIdNumber && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <PresentationProgressTracker
+              presentationId={presentationIdNumber}
+              pollInterval={5000}
+              onCompleted={() => {
+                dispatch(fetchPresentationDetail(presentationIdNumber));
+              }}
+            />
+          </motion.div>
+        )}
 
         {showReport && (
           <motion.div

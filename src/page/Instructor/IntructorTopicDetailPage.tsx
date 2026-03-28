@@ -43,6 +43,16 @@ const statusConfig: Record<
     color: "bg-emerald-100 text-emerald-700 border-emerald-200",
     icon: <CheckCircle2 className="w-3 h-3" />,
   },
+  done: {
+    label: "Hoàn thành",
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    icon: <CheckCircle2 className="w-3 h-3" />,
+  },
+  failed: {
+    label: "Thất bại",
+    color: "bg-red-100 text-red-700 border-red-200",
+    icon: <FileTextIcon className="w-3 h-3" />,
+  },
 };
 
 const IntructorTopicDetailPage: React.FC = () => {

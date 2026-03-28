@@ -64,6 +64,13 @@ const isPdfFile = (filePath: string): boolean => {
   return filePath.toLowerCase().endsWith(".pdf");
 };
 
+// Helper to check if file is PPTX/PPT
+const isPptxFile = (filePath: string): boolean => {
+  if (!filePath) return false;
+  const lower = filePath.toLowerCase().split("?")[0]; // strip query params
+  return lower.endsWith(".pptx") || lower.endsWith(".ppt");
+};
+
 // Helper to get file extension
 const getFileExtension = (filePath: string): string => {
   if (!filePath) return "FILE";
@@ -199,6 +206,38 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
         <div className="flex flex-col items-center justify-center h-[500px] text-slate-500">
           <File className="w-16 h-16 mb-4" />
           <p>No slide available</p>
+        </div>
+      );
+    }
+
+    // Render PPTX file using Microsoft Office Online Viewer
+    if (isPptxFile(currentPdfSlide?.filePath)) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentPdfSlide.filePath)}`;
+      return (
+        <div className="relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700" style={{ height: "600px" }}>
+          {/* Header bar */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+              <span className="text-xs text-slate-300 font-medium">{currentPdfSlide.fileName}</span>
+            </div>
+            <a
+              href={currentPdfSlide.filePath}
+              download
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded-full transition"
+            >
+              <Download className="w-3 h-3" />
+              Tải xuống
+            </a>
+          </div>
+          {/* Office Online iframe */}
+          <iframe
+            src={officeViewerUrl}
+            title={currentPdfSlide.fileName}
+            className="w-full h-full border-0"
+            style={{ paddingTop: "40px" }}
+            allowFullScreen
+          />
         </div>
       );
     }
@@ -347,6 +386,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       submitted: { bg: "bg-sky-100 text-sky-700", text: "Đã nộp" },
       processing: { bg: "bg-amber-100 text-amber-700", text: "Đang xử lý" },
       analyzed: { bg: "bg-emerald-100 text-emerald-700", text: "Đã chấm" },
+      done: { bg: "bg-emerald-100 text-emerald-700", text: "Hoàn thành" },
       failed: { bg: "bg-red-100 text-red-700", text: "Thất bại" },
     };
     return statusConfigs[status.toLowerCase()] || statusConfigs.draft;
@@ -477,18 +517,19 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
                 {slides.map((slide, index) => {
                   const slideIsVideo = isVideoFile(slide.filePath);
                   const slideIsPdf = isPdfFile(slide.filePath);
-                  const isSelected = slideIsPdf
+                  const slideIsPptx = isPptxFile(slide.filePath);
+                  const isSelected = slideIsPdf || slideIsPptx
                     ? index === currentSelectedSlideIndex
                     : pageNumber === slide.slideNumber;
                   return (
                     <button
                       key={slide.slideId}
                       onClick={() => {
-                        if (slideIsPdf) {
-                          // For PDF files, switch to that file
+                        if (slideIsPdf || slideIsPptx) {
+                          // For PDF/PPTX files, switch to that file by index
                           setCurrentSelectedSlideIndex(index);
                         } else {
-                          // For other slides (videos), navigate by pageNumber
+                          // For video slides, navigate by pageNumber
                           setPageNumber(slide.slideNumber);
                         }
                         setActiveTab("slides");
@@ -521,7 +562,9 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
                               ? "Video"
                               : slideIsPdf
                                 ? "PDF"
-                                : getFileExtension(slide.filePath)}
+                                : isPptxFile(slide.filePath)
+                                  ? "PPTX"
+                                  : getFileExtension(slide.filePath)}
                           </span>
                         </div>
                       </div>
