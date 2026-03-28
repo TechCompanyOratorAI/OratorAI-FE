@@ -220,11 +220,11 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   }, [sortedCriteria]);
 
   const nextDisplayOrder = useMemo(() => {
-    if (localCriteria.length === 0) return 1;
+    if (sortedCriteria.length === 0) return 1;
     return (
-      Math.max(...localCriteria.map((criterion) => criterion.displayOrder)) + 1
+      Math.max(...sortedCriteria.map((criterion) => criterion.displayOrder)) + 1
     );
-  }, [localCriteria]);
+  }, [sortedCriteria]);
 
   useEffect(() => {
     if (!isOpen) return;

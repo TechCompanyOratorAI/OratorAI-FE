@@ -1,7 +1,40 @@
-import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Edit,
+  GripVertical,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { RubricCriteriaPayload } from "@/services/features/rubric/rubricSilce";
+
+type RubricCriterionItem = {
+  classRubricCriteriaId: number;
+  criteriaName: string;
+  criteriaDescription: string;
+  weight: number | string;
+  maxScore: number | string;
+  displayOrder: number;
+  evaluationGuide?: string;
+  isActive?: number | boolean;
+};
 
 interface RubricFormState {
   criteriaName: string;
@@ -15,12 +48,131 @@ interface RubricFormState {
 interface RubricModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (rubricData: RubricCriteriaPayload) => void;
+  onSubmit: (rubricData: RubricCriteriaPayload, criterionId?: number) => void;
   isLoading?: boolean;
   mode?: "create" | "edit";
   initialData?: Partial<RubricCriteriaPayload>;
   defaultDisplayOrder?: number;
+  templateName?: string;
+  criteriaList?: RubricCriterionItem[];
+  activeCriteriaId?: number;
+  onSelectCriteria?: (criterionId: number) => void;
+  onDeleteCriteria?: (criterionId: number) => Promise<void>;
+  onReorderCriteria?: (criteria: RubricCriterionItem[]) => Promise<void>;
 }
+
+type SortableCriterionItemProps = {
+  criterion: RubricCriterionItem;
+  isEditing: boolean;
+  onSelect: (criterion: RubricCriterionItem) => void;
+  onDelete?: (criterion: RubricCriterionItem) => void;
+};
+
+const SortableCriterionItem = ({
+  criterion,
+  isEditing,
+  onSelect,
+  onDelete,
+}: SortableCriterionItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: criterion.classRubricCriteriaId,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(criterion)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(criterion);
+        }
+      }}
+      className={`w-full rounded-3xl border p-3 text-left transition-all ${
+        isDragging
+          ? "border-sky-300 bg-sky-50/80 shadow-md"
+          : isEditing
+            ? "border-sky-300 bg-sky-50/70 shadow-sm"
+            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            onClick={(event) => event.stopPropagation()}
+            className="mt-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-grab active:cursor-grabbing"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              {criterion.displayOrder}. {criterion.criteriaName}
+            </p>
+            <p className="mt-1 text-xs text-slate-600 line-clamp-2">
+              {criterion.criteriaDescription || "No description"}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Persen {Number(criterion.weight).toFixed(0)}%
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Max: {Number(criterion.maxScore)}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 ${
+                  Number(criterion.isActive ?? 1) === 1
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {Number(criterion.isActive ?? 1) === 1 ? "Active" : "Inactive"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 gap-1">
+          <span className="rounded-xl p-2 text-sky-600" title="Edit criterion">
+            <Edit className="h-4 w-4" />
+          </span>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(criterion);
+              }}
+              className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
+              title="Delete criterion"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const RubricModal: React.FC<RubricModalProps> = ({
   isOpen,
@@ -30,6 +182,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
   mode = "create",
   initialData,
   defaultDisplayOrder = 1,
+  templateName,
+  criteriaList = [],
+  activeCriteriaId,
+  onSelectCriteria,
+  onDeleteCriteria,
+  onReorderCriteria,
 }) => {
   const [formData, setFormData] = useState<RubricFormState>({
     criteriaName: "",
@@ -39,29 +197,144 @@ const RubricModal: React.FC<RubricModalProps> = ({
     displayOrder: String(defaultDisplayOrder),
     evaluationGuide: "",
   });
-
   const [errors, setErrors] = useState<
     Partial<Record<keyof RubricCriteriaPayload, string>>
   >({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCriterionId, setSelectedCriterionId] = useState<number | null>(
+    activeCriteriaId ?? null,
+  );
+  const [localCriteria, setLocalCriteria] = useState<RubricCriterionItem[]>([]);
+  const [originalCriteria, setOriginalCriteria] = useState<
+    RubricCriterionItem[]
+  >([]);
+  const [deletingCriterion, setDeletingCriterion] =
+    useState<RubricCriterionItem | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+
+  useEffect(() => {
+    const sorted = [...criteriaList].sort(
+      (a, b) => a.displayOrder - b.displayOrder,
+    );
+    setLocalCriteria(sorted);
+    setOriginalCriteria(sorted);
+  }, [criteriaList]);
+
+  const setFormFromCriterion = useCallback(
+    (criterion: RubricCriterionItem) => {
+      setFormData({
+        criteriaName: criterion.criteriaName || "",
+        criteriaDescription: criterion.criteriaDescription || "",
+        weight: String(Number(criterion.weight)),
+        maxScore: String(Number(criterion.maxScore)),
+        displayOrder: String(criterion.displayOrder),
+        evaluationGuide:
+          criterion.evaluationGuide || initialData?.evaluationGuide || "",
+      });
+    },
+    [initialData?.evaluationGuide],
+  );
 
   useEffect(() => {
     if (!isOpen) {
       setErrors({});
+      setSearchTerm("");
+      setDeletingCriterion(null);
       return;
     }
 
-    setFormData({
-      criteriaName: initialData?.criteriaName ?? "",
-      criteriaDescription: initialData?.criteriaDescription ?? "",
-      weight: String(Number(initialData?.weight ?? 1)),
-      maxScore: String(Number(initialData?.maxScore ?? 10)),
-      displayOrder: String(
-        Number(initialData?.displayOrder ?? defaultDisplayOrder),
-      ),
-      evaluationGuide: initialData?.evaluationGuide ?? "",
-    });
+    if (mode === "create") {
+      setSelectedCriterionId(null);
+      setFormData({
+        criteriaName: "",
+        criteriaDescription: "",
+        weight: "1",
+        maxScore: "10",
+        displayOrder: String(defaultDisplayOrder),
+        evaluationGuide: "",
+      });
+      setErrors({});
+      return;
+    }
+
+    const initialSelectedId =
+      activeCriteriaId ?? criteriaList[0]?.classRubricCriteriaId ?? null;
+    setSelectedCriterionId(initialSelectedId);
+
+    const selectedCriterion = criteriaList.find(
+      (item) => item.classRubricCriteriaId === initialSelectedId,
+    );
+
+    if (selectedCriterion) {
+      setFormFromCriterion(selectedCriterion);
+    } else {
+      setFormData({
+        criteriaName: initialData?.criteriaName ?? "",
+        criteriaDescription: initialData?.criteriaDescription ?? "",
+        weight: String(Number(initialData?.weight ?? 1)),
+        maxScore: String(Number(initialData?.maxScore ?? 10)),
+        displayOrder: String(
+          Number(initialData?.displayOrder ?? defaultDisplayOrder),
+        ),
+        evaluationGuide: initialData?.evaluationGuide ?? "",
+      });
+    }
+
     setErrors({});
-  }, [isOpen, initialData, defaultDisplayOrder]);
+  }, [
+    isOpen,
+    mode,
+    initialData,
+    defaultDisplayOrder,
+    activeCriteriaId,
+    criteriaList,
+    setFormFromCriterion,
+  ]);
+
+  const filteredCriteria = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return localCriteria;
+
+    return localCriteria.filter((item) => {
+      return (
+        item.criteriaName.toLowerCase().includes(keyword) ||
+        item.criteriaDescription.toLowerCase().includes(keyword)
+      );
+    });
+  }, [localCriteria, searchTerm]);
+
+  const isOrderChanged = useMemo(() => {
+    if (localCriteria.length !== originalCriteria.length) return true;
+    return localCriteria.some(
+      (criterion, index) =>
+        criterion.classRubricCriteriaId !==
+        originalCriteria[index]?.classRubricCriteriaId,
+    );
+  }, [localCriteria, originalCriteria]);
+
+  const activeCount = localCriteria.filter(
+    (item) => Number(item.isActive ?? 1) === 1,
+  ).length;
+  const inactiveCount = localCriteria.length - activeCount;
+  const nextOrder =
+    localCriteria.length > 0
+      ? Math.max(...localCriteria.map((item) => item.displayOrder)) + 1
+      : 1;
+
+  // Keep display order synced with next order in create mode.
+  useEffect(() => {
+    if (selectedCriterionId === null && mode === "create") {
+      setFormData((prev) => ({
+        ...prev,
+        displayOrder: String(nextOrder),
+      }));
+    }
+  }, [nextOrder, selectedCriterionId, mode]);
 
   const normalizeNumberValue = (
     field: "persen" | "maxScore" | "displayOrder",
@@ -112,10 +385,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        name === "persen" || name === "maxScore" || name === "displayOrder"
-          ? value
-          : value,
+      [name]: value,
     }));
 
     if (errors[name as keyof RubricCriteriaPayload]) {
@@ -123,174 +393,459 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
   };
 
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setLocalCriteria((previous) => {
+      const oldIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(active.id),
+      );
+      const newIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(over.id),
+      );
+
+      if (oldIndex < 0 || newIndex < 0) return previous;
+      return arrayMove(previous, oldIndex, newIndex);
+    });
+  }, []);
+
+  const handleSaveReorder = useCallback(async () => {
+    if (!onReorderCriteria || !isOrderChanged) return;
+
+    const reorderedCriteria = localCriteria.map((criterion, index) => ({
+      ...criterion,
+      displayOrder: index + 1,
+    }));
+
+    await onReorderCriteria(reorderedCriteria);
+    setLocalCriteria(reorderedCriteria);
+    setOriginalCriteria(reorderedCriteria);
+  }, [isOrderChanged, localCriteria, onReorderCriteria]);
+
+  const handleCancelReorder = useCallback(() => {
+    setLocalCriteria(originalCriteria);
+  }, [originalCriteria]);
+
+  const handleSelectCriterion = useCallback(
+    (criterion: RubricCriterionItem) => {
+      if (mode === "create") return;
+      setSelectedCriterionId(criterion.classRubricCriteriaId);
+      setFormFromCriterion(criterion);
+      setErrors({});
+      onSelectCriteria?.(criterion.classRubricCriteriaId);
+    },
+    [mode, onSelectCriteria, setFormFromCriterion],
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    onSubmit({
-      criteriaName: formData.criteriaName.trim(),
-      criteriaDescription: formData.criteriaDescription.trim(),
-      weight: Number(formData.weight),
-      maxScore: Number(formData.maxScore),
-      displayOrder: Math.trunc(Number(formData.displayOrder)),
-      evaluationGuide: formData.evaluationGuide.trim(),
-    });
+    onSubmit(
+      {
+        criteriaName: formData.criteriaName.trim(),
+        criteriaDescription: formData.criteriaDescription.trim(),
+        weight: Number(formData.weight),
+        maxScore: Number(formData.maxScore),
+        displayOrder: Math.trunc(Number(formData.displayOrder)),
+        evaluationGuide: formData.evaluationGuide.trim(),
+      },
+      selectedCriterionId ?? undefined,
+    );
+  };
+
+  const handleDeleteCriterion = async () => {
+    if (!onDeleteCriteria || !deletingCriterion) return;
+
+    await onDeleteCriteria(deletingCriterion.classRubricCriteriaId);
+    setDeletingCriterion(null);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {mode === "create"
-              ? "Create Rubric Criteria"
-              : "Edit Rubric Criteria"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
-          >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Criteria Name *
-            </label>
-            <input
-              name="criteriaName"
-              value={formData.criteriaName}
-              onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.criteriaName ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.criteriaName && (
-              <p className="text-red-600 text-sm mt-1">{errors.criteriaName}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              name="criteriaDescription"
-              value={formData.criteriaDescription}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+      <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 via-white to-emerald-50 px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Persen *
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                name="weight"
-                value={formData.weight}
-                onChange={handleChange}
-                onBlur={() => normalizeNumberValue("persen", formData.weight)}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.weight ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.weight && (
-                <p className="text-red-600 text-sm mt-1">{errors.weight}</p>
-              )}
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Rubric Template
+              </p>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">
+                Criteria Management
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {templateName || "Class Rubric"}
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Score *
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                name="maxScore"
-                value={formData.maxScore}
-                onChange={handleChange}
-                onBlur={() =>
-                  normalizeNumberValue("maxScore", formData.maxScore)
-                }
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.maxScore ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.maxScore && (
-                <p className="text-red-600 text-sm mt-1">{errors.maxScore}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Display Order *
-              </label>
-              <input
-                type="number"
-                name="displayOrder"
-                value={formData.displayOrder}
-                onChange={handleChange}
-                onBlur={() =>
-                  normalizeNumberValue("displayOrder", formData.displayOrder)
-                }
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.displayOrder ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.displayOrder && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.displayOrder}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Evaluation Guide
-            </label>
-            <textarea
-              name="evaluationGuide"
-              value={formData.evaluationGuide}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
-            <Button
-              text="Cancel"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="999px"
-              paddingWidth="18px"
-              paddingHeight="10px"
-              onClick={onClose}
-            />
             <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:text-slate-700"
             >
-              {isLoading
-                ? "Processing..."
-                : mode === "create"
-                  ? "Create Criteria"
-                  : "Save Changes"}
+              <X className="h-5 w-5" />
             </button>
           </div>
-        </form>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Total
+              </p>
+              <p className="text-lg font-bold text-slate-900">
+                {localCriteria.length}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Active
+              </p>
+              <p className="text-lg font-bold text-emerald-700">
+                {activeCount}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Inactive
+              </p>
+              <p className="text-lg font-bold text-rose-700">{inactiveCount}</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Next Order
+              </p>
+              <p className="text-lg font-bold text-slate-900">{nextOrder}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[1.1fr_1fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Criteria List
+              </h4>
+              {mode === "create" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCriterionId(null);
+                    setFormData({
+                      criteriaName: "",
+                      criteriaDescription: "",
+                      weight: "1",
+                      maxScore: "10",
+                      displayOrder: String(nextOrder),
+                      evaluationGuide: "",
+                    });
+                    setErrors({});
+                  }}
+                  className="text-xs font-semibold px-2 py-1 rounded-lg bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
+                >
+                  + Add New
+                </button>
+              )}
+            </div>
+
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, description, guide..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
+              />
+            </div>
+
+            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
+              {filteredCriteria.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">
+                  {searchTerm
+                    ? "No criteria matched your search"
+                    : "This class has no criteria yet"}
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={filteredCriteria.map(
+                      (criterion) => criterion.classRubricCriteriaId,
+                    )}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {filteredCriteria.map((criterion) => (
+                      <SortableCriterionItem
+                        key={criterion.classRubricCriteriaId}
+                        criterion={criterion}
+                        isEditing={
+                          mode === "edit" &&
+                          selectedCriterionId ===
+                            criterion.classRubricCriteriaId
+                        }
+                        onSelect={handleSelectCriterion}
+                        onDelete={
+                          onDeleteCriteria ? setDeletingCriterion : undefined
+                        }
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
+
+            {isOrderChanged && (
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveReorder}
+                  disabled={isLoading || !onReorderCriteria}
+                  className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? "Saving..." : "Save Order"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelReorder}
+                  disabled={isLoading}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <h4 className="text-base font-semibold text-slate-800">
+                  {selectedCriterionId ? "Edit Criteria" : "Create Criteria"}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  {selectedCriterionId
+                    ? "Update criterion details and evaluation guide"
+                    : "Create criteria for class rubric"}
+                </p>
+              </div>
+              {mode === "edit" && selectedCriterionId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCriterionId(null);
+                    setFormData({
+                      criteriaName: "",
+                      criteriaDescription: "",
+                      weight: "1",
+                      maxScore: "10",
+                      displayOrder: String(nextOrder),
+                      evaluationGuide: "",
+                    });
+                    setErrors({});
+                  }}
+                  className="rounded-2xl border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-white"
+                >
+                  New Criteria
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Criteria Name
+                </label>
+                <input
+                  name="criteriaName"
+                  value={formData.criteriaName}
+                  onChange={handleChange}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                    errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                  }`}
+                  placeholder="Content Quality"
+                />
+                {errors.criteriaName && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors.criteriaName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  name="criteriaDescription"
+                  value={formData.criteriaDescription}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                  placeholder="Evaluates content clarity and depth"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Persen %
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    onBlur={() =>
+                      normalizeNumberValue("persen", formData.weight)
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.weight ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  />
+                  {errors.weight && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.weight}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Max Score
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="maxScore"
+                    value={formData.maxScore}
+                    onChange={handleChange}
+                    onBlur={() =>
+                      normalizeNumberValue("maxScore", formData.maxScore)
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.maxScore ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  />
+                  {errors.maxScore && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.maxScore}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    name="displayOrder"
+                    value={formData.displayOrder}
+                    onChange={handleChange}
+                    onBlur={() =>
+                      normalizeNumberValue(
+                        "displayOrder",
+                        formData.displayOrder,
+                      )
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.displayOrder
+                        ? "border-rose-300"
+                        : "border-slate-300"
+                    }`}
+                  />
+                  {errors.displayOrder && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.displayOrder}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Evaluation Guide
+                </label>
+                <textarea
+                  rows={3}
+                  name="evaluationGuide"
+                  value={formData.evaluationGuide}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                  placeholder="Guide for evaluation..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading
+                    ? "Saving..."
+                    : !selectedCriterionId
+                      ? "Create Criteria"
+                      : "Update Criteria"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       </div>
+
+      {deletingCriterion && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-xl bg-rose-100 p-2 text-rose-600">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-slate-900">
+                  Delete criteria?
+                </h4>
+                <p className="mt-1 text-sm text-slate-600">
+                  Are you sure you want to delete{" "}
+                  {deletingCriterion.criteriaName}?
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCriterion(null)}
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCriterion}
+                disabled={isLoading}
+                className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

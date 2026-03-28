@@ -122,6 +122,16 @@ export const DELETE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
 //get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
+// Temple rubric for instructor 
+export const GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/rubric-templates`;
+export const PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classesAISettings/${classId}/ai-settings`;
+
+export const UPDATE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (classRubricCriteriaId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
+export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (classRubricCriteriaId: string) =>
+  `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
+
 // Filter for admin endpoints
 export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/available-instructors`;

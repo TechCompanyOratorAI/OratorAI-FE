@@ -5,6 +5,8 @@ import {
   CREATE_RUBRIC_BY_CLASS_ENDPOINT,
   UPDATE_CLASS_RUBRIC_ENDPOINT,
   DELETE_CLASS_RUBRIC_ENDPOINT,
+  GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT,
+  PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface RubricTemplateSummary {
@@ -15,6 +17,47 @@ export interface RubricTemplateSummary {
 export interface RubricSourceCriteria {
   criteriaId: number;
   criteriaName: string;
+}
+
+export interface RubricTemplateCriteria {
+  criteriaId: number;
+  rubricTemplateId: number;
+  criteriaName: string;
+  criteriaDescription: string;
+  weight: number | string;
+  maxScore: number;
+  displayOrder: number;
+  evaluationGuide: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface RubricTemplateForInstructor {
+  rubricTemplateId: number;
+  templateName: string;
+  description: string;
+  assignmentType: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdBy: number | null;
+  updatedBy: number | null;
+  createdAt: string;
+  updatedAt: string | null;
+  creator?: unknown;
+  criteria: RubricTemplateCriteria[];
+}
+
+export interface PickRubricTemplatePayload {
+  rubricTemplateId: number;
+  enableAiReport: boolean;
+  requireInstructorConfirmation?: boolean;
+  allowInstructorEdit?: boolean;
+  feedbackLanguage?: string;
+  reportFormat?: string;
+  includeCriterionComments?: boolean;
+  includeOverallSummary?: boolean;
+  includeSuggestions?: boolean;
 }
 
 export interface ClassRubricCriteria {
@@ -39,7 +82,11 @@ export interface ClassRubricCriteria {
 
 interface RubricState {
   criteria: ClassRubricCriteria[];
+  templates: RubricTemplateForInstructor[];
+  selectedTemplateId: number | null;
   loading: boolean;
+  templatesLoading: boolean;
+  pickLoading: boolean;
   actionLoading: boolean;
   error: string | null;
 }
@@ -49,9 +96,22 @@ interface RubricByClassResponse {
   data: ClassRubricCriteria[];
 }
 
+interface RubricTemplateListResponse {
+  success: boolean;
+  data:
+    | RubricTemplateForInstructor[]
+    | {
+        templates?: RubricTemplateForInstructor[];
+      };
+}
+
 const initialState: RubricState = {
   criteria: [],
+  templates: [],
+  selectedTemplateId: null,
   loading: false,
+  templatesLoading: false,
+  pickLoading: false,
   actionLoading: false,
   error: null,
 };
@@ -70,6 +130,51 @@ interface RubricMutationResponse {
   data?: ClassRubricCriteria;
   message?: string;
 }
+
+export const fetchRubricTemplatesForInstructor = createAsyncThunk<
+  RubricTemplateForInstructor[],
+  void,
+  { rejectValue: string }
+>("rubric/fetchTemplatesForInstructor", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get<RubricTemplateListResponse>(
+      GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT,
+    );
+
+    const rawData = response.data?.data;
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    return rawData?.templates || [];
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch rubric templates",
+    );
+  }
+});
+
+export const pickRubricTemplateForClass = createAsyncThunk<
+  { selectedTemplateId: number },
+  { classId: number; data: PickRubricTemplatePayload },
+  { rejectValue: string }
+>(
+  "rubric/pickTemplateForClass",
+  async ({ classId, data }, { rejectWithValue }) => {
+    try {
+      await axiosInstance.post(
+        PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT(classId.toString()),
+        data,
+      );
+
+      return { selectedTemplateId: data.rubricTemplateId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to pick rubric template",
+      );
+    }
+  },
+);
 
 export const fetchRubricByClass = createAsyncThunk<
   ClassRubricCriteria[],
@@ -173,9 +278,37 @@ const rubricSlice = createSlice({
     clearRubricCriteria: (state) => {
       state.criteria = [];
     },
+    clearRubricTemplates: (state) => {
+      state.templates = [];
+      state.selectedTemplateId = null;
+    },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchRubricTemplatesForInstructor.pending, (state) => {
+        state.templatesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchRubricTemplatesForInstructor.fulfilled, (state, action) => {
+        state.templatesLoading = false;
+        state.templates = action.payload;
+      })
+      .addCase(fetchRubricTemplatesForInstructor.rejected, (state, action) => {
+        state.templatesLoading = false;
+        state.error = action.payload || "Failed to fetch rubric templates";
+      })
+      .addCase(pickRubricTemplateForClass.pending, (state) => {
+        state.pickLoading = true;
+        state.error = null;
+      })
+      .addCase(pickRubricTemplateForClass.fulfilled, (state, action) => {
+        state.pickLoading = false;
+        state.selectedTemplateId = action.payload.selectedTemplateId;
+      })
+      .addCase(pickRubricTemplateForClass.rejected, (state, action) => {
+        state.pickLoading = false;
+        state.error = action.payload || "Failed to pick rubric template";
+      })
       .addCase(fetchRubricByClass.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -183,6 +316,7 @@ const rubricSlice = createSlice({
       .addCase(fetchRubricByClass.fulfilled, (state, action) => {
         state.loading = false;
         state.criteria = action.payload;
+        state.selectedTemplateId = action.payload[0]?.rubricTemplateId || null;
       })
       .addCase(fetchRubricByClass.rejected, (state, action) => {
         state.loading = false;
@@ -233,5 +367,6 @@ const rubricSlice = createSlice({
   },
 });
 
-export const { clearRubricError, clearRubricCriteria } = rubricSlice.actions;
+export const { clearRubricError, clearRubricCriteria, clearRubricTemplates } =
+  rubricSlice.actions;
 export default rubricSlice.reducer;
