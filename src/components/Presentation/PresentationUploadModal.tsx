@@ -149,8 +149,37 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
 
     setUploadType("media");
 
+    // Detect video duration from file metadata
+    let durationSeconds: number | undefined;
     try {
-      const result = await dispatch(uploadMedia({ presentationId, file })).unwrap();
+      durationSeconds = await new Promise<number>((resolve) => {
+        const videoEl = document.createElement("video");
+        videoEl.preload = "metadata";
+        const url = URL.createObjectURL(file);
+        videoEl.src = url;
+        videoEl.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(Math.round(videoEl.duration));
+        };
+        videoEl.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+      });
+    } catch {
+      durationSeconds = undefined;
+    }
+
+    try {
+      const result = await dispatch(
+        uploadMedia({
+          presentationId,
+          file,
+          durationSeconds: durationSeconds || undefined,
+          sampleRate: 44100,
+          recordingMethod: "upload",
+        })
+      ).unwrap();
 
       setMediaFile({
         name: result.audioRecord.fileName,

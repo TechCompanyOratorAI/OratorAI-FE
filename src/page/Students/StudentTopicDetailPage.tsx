@@ -43,6 +43,8 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   submitted: { label: "Đã nộp", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <CheckCircle2 className="w-3 h-3" /> },
   processing: { label: "Đang xử lý", color: "bg-amber-100 text-amber-700 border-amber-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
   analyzed: { label: "Đã chấm", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+  done: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
+  failed: { label: "Thất bại", color: "bg-red-100 text-red-700 border-red-200", icon: <FileTextIcon className="w-3 h-3" /> },
 };
 
 const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
@@ -406,33 +408,32 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     <CheckCircle2 className="w-7 h-7 text-emerald-600" />
                   </div>
                   <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
-                  <p className="text-sm text-slate-500 mb-4">Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý.</p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    {myPresentation.status === "draft"
+                      ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
+                      : myPresentation.status === "submitted" || myPresentation.status === "processing"
+                      ? "Bài đã được nộp và đang xử lý AI."
+                      : myPresentation.status === "done"
+                      ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
+                      : myPresentation.status === "failed"
+                      ? "Xử lý thất bại. Vui lòng liên hệ giảng viên."
+                      : ""}
+                  </p>
                   <div className="space-y-3">
-                    <button
-                      onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-                    >
-                      <Upload className="w-4 h-4" /> Tải lên file
-                    </button>
+                    {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
+                    {myPresentation.status === "draft" && (
+                      <button
+                        onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                      >
+                        <Upload className="w-4 h-4" /> Tải lên file
+                      </button>
+                    )}
                     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
                       {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
                       {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).label}
                     </div>
                   </div>
-                  {/* AI processing stages if processing */}
-                  {myPresentation.status === "processing" && (
-                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                      <p className="text-xs font-semibold text-amber-700 mb-2">Đang xử lý AI...</p>
-                      <div className="flex items-center justify-between text-xs">
-                        {["Upload", "ASR", "Diarization", "Phân tích", "Hoàn thành"].map((step, i) => (
-                          <div key={step} className="flex flex-col items-center gap-1">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i <= 1 ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-400"}`}>{i + 1}</div>
-                            <span className="text-amber-600 text-[10px] text-center leading-tight w-12">{step}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : myGroupForClass && isCurrentUserLeader ? (
                 <div className="text-center py-4">

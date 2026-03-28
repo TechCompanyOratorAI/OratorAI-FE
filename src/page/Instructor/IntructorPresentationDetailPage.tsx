@@ -37,6 +37,11 @@ const statusConfig: Record<
     gradient: "from-emerald-100 to-green-200",
     border: "border-emerald-300",
   },
+  done: {
+    label: "Hoàn thành",
+    gradient: "from-emerald-100 to-green-200",
+    border: "border-emerald-300",
+  },
   failed: {
     label: "Thất bại",
     gradient: "from-red-100 to-rose-200",

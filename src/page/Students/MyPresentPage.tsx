@@ -21,6 +21,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   draft: { label: "Nháp", color: "bg-slate-100 text-slate-700 border-slate-200" },
   processing: { label: "Đang xử lý", color: "bg-amber-100 text-amber-700 border-amber-200" },
   analyzed: { label: "Đã chấm", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  done: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   failed: { label: "Thất bại", color: "bg-red-100 text-red-700 border-red-200" },
   submitted: { label: "Đã nộp", color: "bg-sky-100 text-sky-700 border-sky-200" },
 };
@@ -85,7 +86,7 @@ const MyPresentationsPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: "Tổng cộng", value: presentations.length, color: "from-blue-50 to-indigo-50 border-blue-200", text: "text-blue-700" },
-              { label: "Đã chấm", value: presentations.filter((p) => p.status === "analyzed").length, color: "from-emerald-50 to-teal-50 border-emerald-200", text: "text-emerald-700" },
+              { label: "Hoàn thành", value: presentations.filter((p) => p.status === "done").length, color: "from-emerald-50 to-teal-50 border-emerald-200", text: "text-emerald-700" },
               { label: "Đang xử lý", value: presentations.filter((p) => p.status === "processing").length, color: "from-amber-50 to-orange-50 border-amber-200", text: "text-amber-700" },
               { label: "Đã nộp", value: presentations.filter((p) => p.status === "submitted").length, color: "from-sky-50 to-blue-50 border-sky-200", text: "text-sky-700" },
             ].map(({ label, value, color, text }) => (
