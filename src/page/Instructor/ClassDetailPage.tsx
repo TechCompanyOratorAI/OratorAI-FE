@@ -388,6 +388,16 @@ const ClassDetailPage: React.FC = () => {
     [rubricCriteria],
   );
 
+  const totalRubricPercentage = useMemo(() => {
+    return sortedRubricCriteria
+      .filter((criterion) => Number(criterion.isActive ?? 1) === 1)
+      .reduce((sum, criterion) => sum + Number(criterion.weight), 0);
+  }, [sortedRubricCriteria]);
+
+  const isRubricActive = useMemo(() => {
+    return totalRubricPercentage >= 100;
+  }, [totalRubricPercentage]);
+
   useEffect(() => {
     setLocalCriteria(sortedRubricCriteria);
     setOriginalCriteria(sortedRubricCriteria);
@@ -530,8 +540,7 @@ const ClassDetailPage: React.FC = () => {
     if (!classIdNumber) return;
 
     try {
-      const targetCriterionId =
-        criterionId || editingRubric?.classRubricCriteriaId;
+      const targetCriterionId = criterionId;
 
       if (targetCriterionId) {
         await dispatch(
@@ -540,7 +549,6 @@ const ClassDetailPage: React.FC = () => {
             rubricData: payload,
           }),
         ).unwrap();
-        setToast({ message: "Rubric criteria updated.", type: "success" });
       } else {
         await dispatch(
           createRubricCriteria({
@@ -548,13 +556,38 @@ const ClassDetailPage: React.FC = () => {
             rubricData: payload,
           }),
         ).unwrap();
+      }
+
+      // Fetch updated rubric to calculate total percentage
+      const result = await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+
+      // Calculate total percentage of active criteria
+      if (result && Array.isArray(result)) {
+        const totalPercentage = result
+          .filter((c: ClassRubricCriteria) => Number(c.isActive ?? 1) === 1)
+          .reduce(
+            (sum: number, c: ClassRubricCriteria) => sum + Number(c.weight),
+            0,
+          );
+
+        if (totalPercentage > 100) {
+          setToast({
+            message: `⚠️ ${targetCriterionId ? "Updated" : "Created"} criteria. Total % exceeded 100% (${totalPercentage.toFixed(1)}%)`,
+            type: "info",
+          });
+        } else {
+          setToast({
+            message: `Rubric criteria ${targetCriterionId ? "updated" : "created"} successfully.`,
+            type: "success",
+          });
+        }
+      } else {
         setToast({
-          message: "Rubric criteria created successfully.",
+          message: `Rubric criteria ${targetCriterionId ? "updated" : "created"} successfully.`,
           type: "success",
         });
       }
 
-      dispatch(fetchRubricByClass(classIdNumber));
       if (targetCriterionId) {
         setIsRubricModalOpen(false);
         setEditingRubric(null);
@@ -580,12 +613,36 @@ const ClassDetailPage: React.FC = () => {
           rubricData: payload,
         }),
       ).unwrap();
-      setToast({
-        message: "Rubric criteria created successfully.",
-        type: "success",
-      });
 
-      dispatch(fetchRubricByClass(classIdNumber));
+      // Fetch updated rubric to calculate total percentage
+      const result = await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+
+      // Calculate total percentage of active criteria
+      if (result && Array.isArray(result)) {
+        const totalPercentage = result
+          .filter((c: ClassRubricCriteria) => Number(c.isActive ?? 1) === 1)
+          .reduce(
+            (sum: number, c: ClassRubricCriteria) => sum + Number(c.weight),
+            0,
+          );
+
+        if (totalPercentage > 100) {
+          setToast({
+            message: `⚠️ Created criteria. Total % exceeded 100% (${totalPercentage.toFixed(1)}%)`,
+            type: "info",
+          });
+        } else {
+          setToast({
+            message: "Rubric criteria created successfully.",
+            type: "success",
+          });
+        }
+      } else {
+        setToast({
+          message: "Rubric criteria created successfully.",
+          type: "success",
+        });
+      }
     } catch (error: any) {
       setToast({
         message:
@@ -1059,9 +1116,16 @@ const ClassDetailPage: React.FC = () => {
                       <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
                         Rubric Templates
                       </p>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Class Evaluation Criteria ({localCriteria.length})
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-slate-900">
+                          Class Evaluation Criteria ({localCriteria.length})
+                        </h3>
+                        {!isRubricActive && (
+                          <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+                            InActive
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

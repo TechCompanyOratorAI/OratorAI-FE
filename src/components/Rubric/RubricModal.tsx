@@ -43,6 +43,7 @@ interface RubricFormState {
   maxScore: string;
   displayOrder: string;
   evaluationGuide: string;
+  isActive?: boolean;
 }
 
 interface RubricModalProps {
@@ -225,6 +226,53 @@ const RubricModal: React.FC<RubricModalProps> = ({
     setOriginalCriteria(sorted);
   }, [criteriaList]);
 
+  // Calculate total percentage of active criteria
+  const totalActivePercentage = useMemo(() => {
+    return localCriteria
+      .filter((criterion) => Number(criterion.isActive ?? 1) === 1)
+      .reduce((sum, criterion) => sum + Number(criterion.weight), 0);
+  }, [localCriteria]);
+
+  // Calculate what the total would be if current form is submitted
+  const potentialTotalPercentage = useMemo(() => {
+    if (selectedCriterionId) {
+      // If editing, replace the old weight with new weight
+      const oldCriterion = localCriteria.find(
+        (item) => item.classRubricCriteriaId === selectedCriterionId,
+      );
+      if (!oldCriterion) return totalActivePercentage;
+
+      const oldWeight = Number(oldCriterion.weight);
+      const newWeight = Number(formData.weight);
+      const isNewlyActive =
+        formData.isActive && Number(oldCriterion.isActive ?? 1) !== 1;
+      const isNewlyInactive =
+        !formData.isActive && Number(oldCriterion.isActive ?? 1) === 1;
+
+      if (isNewlyActive) {
+        return totalActivePercentage + newWeight;
+      } else if (isNewlyInactive) {
+        return totalActivePercentage - oldWeight;
+      } else {
+        return totalActivePercentage - oldWeight + newWeight;
+      }
+    } else {
+      // If creating new, add the new weight if isActive is true
+      const newWeight = Number(formData.weight);
+      return formData.isActive
+        ? totalActivePercentage + newWeight
+        : totalActivePercentage;
+    }
+  }, [selectedCriterionId, formData, localCriteria, totalActivePercentage]);
+
+  const isPercentageComplete = useMemo(() => {
+    return totalActivePercentage >= 100;
+  }, [totalActivePercentage]);
+
+  const isPercentageExceeded = useMemo(() => {
+    return potentialTotalPercentage > 100;
+  }, [potentialTotalPercentage]);
+
   const setFormFromCriterion = useCallback(
     (criterion: RubricCriterionItem) => {
       setFormData({
@@ -257,6 +305,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         maxScore: "10",
         displayOrder: String(defaultDisplayOrder),
         evaluationGuide: "",
+        isActive: true,
       });
       setErrors({});
       return;
@@ -320,7 +369,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const activeCount = localCriteria.filter(
     (item) => Number(item.isActive ?? 1) === 1,
   ).length;
-  const inactiveCount = localCriteria.length - activeCount;
   const nextOrder =
     localCriteria.length > 0
       ? Math.max(...localCriteria.map((item) => item.displayOrder)) + 1
@@ -373,6 +421,11 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
     if (!Number.isFinite(displayOrder) || displayOrder <= 0) {
       newErrors.displayOrder = "Display order must be greater than 0";
+    }
+
+    // Check if total percentage exceeds 100% when this is marked as active
+    if (formData.isActive && potentialTotalPercentage > 100) {
+      newErrors.weight = `Total percentage will exceed 100% (will be ${potentialTotalPercentage.toFixed(1)}%)`;
     }
 
     setErrors(newErrors);
@@ -508,9 +561,18 @@ const RubricModal: React.FC<RubricModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Inactive
+                Percentage
               </p>
-              <p className="text-lg font-bold text-rose-700">{inactiveCount}</p>
+              <p
+                className={`text-lg font-bold ${
+                  isPercentageComplete ? "text-emerald-700" : "text-rose-700"
+                }`}
+              >
+                {totalActivePercentage % 1 === 0
+                  ? Math.floor(totalActivePercentage)
+                  : totalActivePercentage.toFixed(1)}
+                %
+              </p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
@@ -714,6 +776,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
                       {errors.weight}
                     </p>
                   )}
+                  {isPercentageExceeded && formData.isActive && (
+                    <p className="mt-1 text-xs text-amber-600 font-semibold">
+                      ⚠️ Total sẽ vượt 100% (
+                      {potentialTotalPercentage.toFixed(1)}%)
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -781,6 +849,22 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
                   placeholder="Guide for evaluation..."
                 />
+              </div>
+
+              <div>
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive ?? true}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isActive: e.target.checked,
+                      }))
+                    }
+                  />
+                  Active
+                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
