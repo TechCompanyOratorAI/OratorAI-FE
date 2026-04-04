@@ -226,11 +226,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
     setOriginalCriteria(sorted);
   }, [criteriaList]);
 
-  // Calculate total percentage of active criteria
+  // Calculate total percentage of all criteria
   const totalActivePercentage = useMemo(() => {
-    return localCriteria
-      .filter((criterion) => Number(criterion.isActive ?? 1) === 1)
-      .reduce((sum, criterion) => sum + Number(criterion.weight), 0);
+    return localCriteria.reduce(
+      (sum, criterion) => sum + Number(criterion.weight),
+      0,
+    );
   }, [localCriteria]);
 
   // Calculate what the total would be if current form is submitted
@@ -244,24 +245,11 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
       const oldWeight = Number(oldCriterion.weight);
       const newWeight = Number(formData.weight);
-      const isNewlyActive =
-        formData.isActive && Number(oldCriterion.isActive ?? 1) !== 1;
-      const isNewlyInactive =
-        !formData.isActive && Number(oldCriterion.isActive ?? 1) === 1;
-
-      if (isNewlyActive) {
-        return totalActivePercentage + newWeight;
-      } else if (isNewlyInactive) {
-        return totalActivePercentage - oldWeight;
-      } else {
-        return totalActivePercentage - oldWeight + newWeight;
-      }
+      return totalActivePercentage - oldWeight + newWeight;
     } else {
-      // If creating new, add the new weight if isActive is true
+      // If creating new, add the new weight
       const newWeight = Number(formData.weight);
-      return formData.isActive
-        ? totalActivePercentage + newWeight
-        : totalActivePercentage;
+      return totalActivePercentage + newWeight;
     }
   }, [selectedCriterionId, formData, localCriteria, totalActivePercentage]);
 
@@ -559,20 +547,26 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 {activeCount}
               </p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Percentage
-              </p>
-              <p
-                className={`text-lg font-bold ${
-                  isPercentageComplete ? "text-emerald-700" : "text-rose-700"
-                }`}
-              >
-                {totalActivePercentage % 1 === 0
-                  ? Math.floor(totalActivePercentage)
-                  : totalActivePercentage.toFixed(1)}
-                %
-              </p>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2 relative">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                    Percentage
+                  </p>
+                  <p
+                    className={`text-lg font-bold ${
+                      isPercentageComplete
+                        ? "text-emerald-700"
+                        : "text-rose-700"
+                    }`}
+                  >
+                    {totalActivePercentage % 1 === 0
+                      ? Math.floor(totalActivePercentage)
+                      : totalActivePercentage.toFixed(1)}
+                    %
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
@@ -849,22 +843,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
                   placeholder="Guide for evaluation..."
                 />
-              </div>
-
-              <div>
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive ?? true}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isActive: e.target.checked,
-                      }))
-                    }
-                  />
-                  Active
-                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
