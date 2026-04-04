@@ -32,6 +32,7 @@ import AdminCoursePage from "@/page/Admin/AdminCoursePage";
 import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
+import SharePage from "@/page/Share/SharePage";
 
 const AppRouter = () => {
   return (
@@ -44,6 +45,7 @@ const AppRouter = () => {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/share/:token" element={<SharePage />} />
 
       {/* Protected Instructor routes */}
       <Route element={<ProtectedRoute allowedRoles={["Instructor"]} />}>

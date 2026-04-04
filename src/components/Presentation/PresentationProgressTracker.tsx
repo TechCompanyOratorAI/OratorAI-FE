@@ -17,7 +17,7 @@ import type { ProgressStep } from "@/services/features/presentation/presentation
 
 interface PresentationProgressTrackerProps {
   presentationId: number;
-  /** Poll interval in ms. Pass 0 to disable polling (e.g. when completed). */
+  /** Poll interval in ms. Default 0 = chỉ gọi khi vào trang và khi bấm làm mới. */
   pollInterval?: number;
   onCompleted?: () => void;
 }
@@ -77,12 +77,15 @@ function formatDate(iso: string | null): string {
 
 const PresentationProgressTracker: React.FC<PresentationProgressTrackerProps> = ({
   presentationId,
-  pollInterval = 5000,
+  pollInterval = 0,
   onCompleted,
 }) => {
   const dispatch = useAppDispatch();
   const { progress, progressLoading } = useAppSelector((s) => s.presentation);
   const onCompletedCalled = useRef(false);
+  // Keep a ref to the latest overallStatus so setInterval closure always sees fresh value
+  const overallStatusRef = useRef(progress?.overallStatus);
+  overallStatusRef.current = progress?.overallStatus;
 
   const fetch = useCallback(() => {
     dispatch(fetchPresentationProgress(presentationId));
@@ -93,14 +96,21 @@ const PresentationProgressTracker: React.FC<PresentationProgressTrackerProps> = 
     fetch();
   }, [fetch]);
 
-  // Polling
+  // Polling — interval reads overallStatusRef.current each tick (no stale closure)
   useEffect(() => {
     if (pollInterval <= 0) return;
-    if (progress?.overallStatus === "completed" || progress?.overallStatus === "failed") return;
 
-    const id = setInterval(fetch, pollInterval);
-    return () => clearInterval(id);
-  }, [fetch, pollInterval, progress?.overallStatus]);
+    const timer = setInterval(() => {
+      const status = overallStatusRef.current;
+      if (status === "completed" || status === "failed") {
+        clearInterval(timer);
+        return;
+      }
+      fetch();
+    }, pollInterval);
+
+    return () => clearInterval(timer);
+  }, [fetch, pollInterval]);
 
   // Notify parent when completed
   useEffect(() => {
@@ -302,7 +312,7 @@ const PresentationProgressTracker: React.FC<PresentationProgressTrackerProps> = 
         <span className="text-xs text-slate-400">
           Cập nhật: {formatDate(progress.lastUpdated)}
         </span>
-        {!isCompleted && !isFailed && (
+        {!isCompleted && !isFailed && pollInterval > 0 && (
           <AnimatePresence>
             <motion.span
               key="polling"
@@ -314,6 +324,9 @@ const PresentationProgressTracker: React.FC<PresentationProgressTrackerProps> = 
               Tự động cập nhật mỗi {pollInterval / 1000}s
             </motion.span>
           </AnimatePresence>
+        )}
+        {!isCompleted && !isFailed && pollInterval <= 0 && (
+          <span className="text-xs text-slate-500">Nhấn nút làm mới để cập nhật tiến độ</span>
         )}
       </div>
     </motion.div>
