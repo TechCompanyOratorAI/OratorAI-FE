@@ -9,6 +9,7 @@ import {
   Calendar,
   User,
   BookOpen,
+  Link2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
@@ -18,6 +19,7 @@ import {
 } from "@/services/features/report/reportSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import PresentationProgressTracker from "@/components/Presentation/PresentationProgressTracker";
+import ShareModal from "@/components/Share/ShareModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const statusConfig: Record<
@@ -75,6 +77,7 @@ const PresentationDetailPage: React.FC = () => {
   } = useAppSelector((state) => state.report);
 
   const [showReport, setShowReport] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
@@ -235,11 +238,20 @@ const PresentationDetailPage: React.FC = () => {
           >
             <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
-          <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}
-          >
-            <FileText className="w-3.5 h-3.5" /> {sc.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShareModalOpen(true)}
+              className="flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 font-medium transition border border-sky-200 hover:border-sky-300 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg"
+            >
+              <Link2 className="w-4 h-4" />
+              Chia sẻ
+            </button>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}
+            >
+              <FileText className="w-3.5 h-3.5" /> {sc.label}
+            </span>
+          </div>
         </div>
 
         {/* Page title */}
@@ -310,7 +322,6 @@ const PresentationDetailPage: React.FC = () => {
           >
             <PresentationProgressTracker
               presentationId={presentationIdNumber}
-              pollInterval={5000}
               onCompleted={() => {
                 dispatch(fetchPresentationDetail(presentationIdNumber));
               }}
@@ -389,6 +400,14 @@ const PresentationDetailPage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {presentationIdNumber && (
+        <ShareModal
+          open={shareModalOpen}
+          presentationId={presentationIdNumber}
+          onClose={() => setShareModalOpen(false)}
+        />
+      )}
     </StudentLayout>
   );
 };

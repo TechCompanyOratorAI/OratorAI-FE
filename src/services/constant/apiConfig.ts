@@ -1,6 +1,6 @@
-export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-// export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -122,14 +122,18 @@ export const DELETE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
 //get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
-// Temple rubric for instructor 
+// Temple rubric for instructor
 export const GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/rubric-templates`;
 export const PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classesAISettings/${classId}/ai-settings`;
 
-export const UPDATE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (classRubricCriteriaId: string) =>
+export const UPDATE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
+  classRubricCriteriaId: string,
+) =>
   `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
-export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (classRubricCriteriaId: string) =>
+export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
+  classRubricCriteriaId: string,
+) =>
   `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
 
 // Filter for admin endpoints
@@ -168,3 +172,19 @@ export const REPORT_PRESENTATION_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/ai-reports/presentation/${presentationId}`;
 export const CONFIRM_REPORT_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/confirm`;
+
+// Share presentation endpoints
+export const SHARE_PUBLIC_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/share/public`;
+export const SHARE_LIST_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/share`;
+export const SHARE_INVITE_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/share/invite`;
+export const SHARE_REVOKE_PUBLIC_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/share/public`;
+export const SHARE_REVOKE_INVITE_ENDPOINT = (
+  presentationId: string,
+  accessId: string,
+) => `${BASE_URL}/api/v1/presentations/${presentationId}/share/invite/${accessId}`;
+export const SHARE_VIEW_ENDPOINT = (token: string) =>
+  `${BASE_URL}/api/v1/share/${token}`;

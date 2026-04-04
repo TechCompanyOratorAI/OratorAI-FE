@@ -143,6 +143,14 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Separate axios instance for public endpoints (no auth / token refresh)
+const publicAxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 // HTTP Methods
 export const api = {
   // GET request
@@ -215,7 +223,15 @@ export const api = {
   },
 };
 
-export default axiosInstance;
+// Public API (no auth interceptor)
+export const publicApi = {
+  get: <T = any>(
+    url: string,
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> => {
+    return publicAxiosInstance.get<T>(url, config);
+  },
+};
 
-// Export refresh token function for manual use
-export { refreshTokenRequest };
+export { axiosInstance, publicAxiosInstance, refreshTokenRequest };
+export default axiosInstance;
