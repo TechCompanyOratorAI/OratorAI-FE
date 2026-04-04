@@ -98,8 +98,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
   const userDisplayName =
     (user
       ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-        user.username ||
-        "Admin"
+      user.username ||
+      "Admin"
       : "Admin") || "Admin";
 
   const userRoleLabel =
@@ -148,9 +148,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
           setIsHovered(false);
           setCollapsed(true);
         }}
-        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen overflow-y-auto transform transition-all duration-300 ease-in-out ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${expanded ? "lg:w-64" : "lg:w-20"}`}
+        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out lg:sticky lg:top-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          } ${expanded ? "lg:w-64" : "lg:w-20"}`}
       >
         {/* Logo */}
         <div className={`p-4 ${expanded ? "" : "lg:p-4"}`}>
@@ -176,11 +175,10 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
                 key={item.id}
                 to={item.path}
                 title={!expanded ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
-                  active
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${active
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-700 hover:bg-gray-100"
-                } ${!expanded ? "lg:justify-center" : ""}`}
+                  } ${!expanded ? "lg:justify-center" : ""}`}
               >
                 <Icon className="w-6 h-6 flex-shrink-0" />
                 {expanded && (
@@ -211,9 +209,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
           <button
             onClick={handleLogout}
             title={!expanded ? "Đăng xuất" : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-gray-700 hover:bg-red-50 hover:text-red-600 ${
-              !expanded ? "lg:justify-center" : ""
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-gray-700 hover:bg-red-50 hover:text-red-600 ${!expanded ? "lg:justify-center" : ""
+              }`}
           >
             <LogOut className="w-6 h-6 flex-shrink-0" />
             {expanded && <span className="lg:block hidden">Đăng xuất</span>}

@@ -477,7 +477,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               </button>
             </div>
 
-            {onResultClick && (
+            {onResultClick && status === "done" && (
               <button
                 onClick={onResultClick}
                 disabled={resultLoading}

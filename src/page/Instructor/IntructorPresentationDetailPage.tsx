@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { ArrowLeft, Clock, Calendar, User, BookOpen } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, BookOpen, MessageSquare, XCircle } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
 import {
   clearCurrentReport,
   confirmPresentationReport,
+  rejectPresentationReport,
   fetchPresentationReport,
+  fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
+import CriterionFeedbackModal from "@/components/CriterionFeedback/CriterionFeedbackModal";
 
 const statusConfig: Record<
   string,
@@ -65,10 +68,14 @@ const IntructorPresentationDetailPage: React.FC = () => {
     currentReport,
     loading: reportLoading,
     confirmLoading,
+    rejectLoading,
+    criterionFeedbacks,
+    feedbackLoading,
     error: reportError,
   } = useAppSelector((state) => state.report);
 
   const [showReport, setShowReport] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   const presentationIdNumber = presentationId
@@ -140,6 +147,24 @@ const IntructorPresentationDetailPage: React.FC = () => {
       scrollToReportSection();
     }
   }, [showReport, reportLoading, currentReport]);
+
+  useEffect(() => {
+    if (reportError) toast.error(reportError);
+  }, [reportError]);
+
+  useEffect(() => {
+    if (showReport && currentReport?.reportId) {
+      dispatch(fetchCriterionFeedbacks(currentReport.reportId));
+    }
+  }, [showReport, currentReport?.reportId, dispatch]);
+
+  // Sync criterionFeedbacks from currentReport when it arrives
+  const syncedFeedbacks = useMemo(() => {
+    if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
+      return currentReport.criterionFeedbacks;
+    }
+    return criterionFeedbacks;
+  }, [currentReport?.criterionFeedbacks, criterionFeedbacks]);
 
   if (
     isValidPresentationId &&
@@ -215,12 +240,35 @@ const IntructorPresentationDetailPage: React.FC = () => {
       ).unwrap();
       await dispatch(fetchPresentationReport(presentationIdNumber)).unwrap();
       toast.success("Đã xác nhận AI report");
-    } catch (error: any) {
-      toast.error(
+    } catch (error: unknown) {
+      const msg =
         typeof error === "string"
           ? error
-          : error?.message || "Không thể xác nhận AI report",
-      );
+          : (error as { message?: string })?.message || "Không thể xác nhận AI report";
+      toast.error(msg);
+    }
+  };
+
+  const handleRejectReport = async () => {
+    if (!currentReport?.reportId || !presentationIdNumber) return;
+
+    const confirmed = window.confirm(
+      "Bạn có chắc chắn muốn từ chối AI report này không?",
+    );
+    if (!confirmed) return;
+
+    try {
+      await dispatch(
+        rejectPresentationReport(currentReport.reportId),
+      ).unwrap();
+      await dispatch(fetchPresentationReport(presentationIdNumber)).unwrap();
+      toast.success("Đã từ chối AI report");
+    } catch (error: unknown) {
+      const msg =
+        typeof error === "string"
+          ? error
+          : (error as { message?: string })?.message || "Không thể từ chối AI report";
+      toast.error(msg);
     }
   };
 
@@ -340,31 +388,100 @@ const IntructorPresentationDetailPage: React.FC = () => {
               className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4"
             >
               <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                  Kết quả đánh giá AI
-                </h2>
                 <div className="flex items-center gap-3">
-                  {currentReport && !currentReport.confirmedAt && (
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                    Kết quả đánh giá AI
+                  </h2>
+                  {currentReport && (
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        currentReport.reportStatus === "confirmed"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : currentReport.reportStatus === "rejected"
+                          ? "bg-red-100 text-red-700"
+                          : currentReport.reportStatus === "pending_review"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {currentReport.reportStatus === "confirmed"
+                        ? "Đã xác nhận"
+                        : currentReport.reportStatus === "rejected"
+                        ? "Đã từ chối"
+                        : currentReport.reportStatus === "pending_review"
+                        ? "Chờ duyệt"
+                        : currentReport.reportStatus}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {currentReport?.generatedAt && (
+                    <span className="text-sm text-slate-500 hidden sm:block">
+                      {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                    </span>
+                  )}
+                  {currentReport && currentReport.reportStatus === "confirmed" && (
                     <button
                       type="button"
-                      onClick={handleConfirmReport}
-                      disabled={confirmLoading}
-                      className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={handleRejectReport}
+                      disabled={rejectLoading}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
-                      {confirmLoading ? "Đang xác nhận..." : "Confirm"}
+                      {rejectLoading ? (
+                        <div className="w-4 h-4 border-2 border-red-200/30 border-t-red-600 rounded-full animate-spin" />
+                      ) : (
+                        <XCircle className="w-4 h-4" />
+                      )}
+                      Từ chối
                     </button>
                   )}
-                  {currentReport?.confirmedAt && (
-                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                      Đã xác nhận
-                    </span>
+                  {currentReport && currentReport.reportStatus !== "confirmed" && currentReport.reportStatus !== "rejected" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleRejectReport}
+                        disabled={rejectLoading}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {rejectLoading ? (
+                          <div className="w-4 h-4 border-2 border-red-200/30 border-t-red-600 rounded-full animate-spin" />
+                        ) : (
+                          <XCircle className="w-4 h-4" />
+                        )}
+                        Từ chối
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmReport}
+                        disabled={confirmLoading}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {confirmLoading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : null}
+                        Xác nhận
+                      </button>
+                    </>
                   )}
-                  {currentReport?.generatedAt && (
-                    <span className="text-sm text-slate-500">
-                      {new Date(currentReport.generatedAt).toLocaleString(
-                        "vi-VN",
+                  {currentReport && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedbackModal(true)}
+                      disabled={feedbackLoading}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 disabled:opacity-60 transition-colors"
+                    >
+                      {feedbackLoading ? (
+                        <div className="w-4 h-4 border-2 border-blue-200/30 border-t-blue-600 rounded-full animate-spin" />
+                      ) : (
+                        <                      MessageSquare className="w-4 h-4" />
                       )}
-                    </span>
+                      Feedback tiêu chí
+                      {syncedFeedbacks.length > 0 && (
+                        <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {syncedFeedbacks.length}
+                        </span>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
@@ -384,34 +501,63 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-3">
-                    {criteriaScores.map((criterion) => (
-                      <div
-                        key={criterion.criteriaId}
-                        className="rounded-xl border border-slate-200 p-4"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-slate-900">
-                            {criterion.criteriaName}
-                          </h3>
-                          <span className="text-sm font-semibold text-sky-700">
-                            {criterion.score}/{criterion.maxScore} (w:{" "}
-                            {criterion.weight}%)
-                          </span>
+                    {criteriaScores.map((criterion) => {
+                      const instructorFeedback = syncedFeedbacks.find(
+                        (f) => f.classRubricCriteriaId === criterion.criteriaId,
+                      );
+                      return (
+                        <div
+                          key={criterion.criteriaId}
+                          className="rounded-xl border border-slate-200 p-4"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <h3 className="font-semibold text-slate-900">
+                              {criterion.criteriaName}
+                              {instructorFeedback && (
+                                <span className="ml-2 text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                  Có feedback GV
+                                </span>
+                              )}
+                            </h3>
+                            <span className="text-sm font-semibold text-sky-700">
+                              {criterion.score}/{criterion.maxScore} (w:{" "}
+                              {criterion.weight}%)
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 mb-3">
+                            {criterion.comment}
+                          </p>
+                          {instructorFeedback && (
+                            <div className="mb-3 rounded-lg bg-amber-50 border border-amber-100 p-3">
+                              <p className="text-xs font-semibold text-amber-700 mb-1">
+                                Feedback giảng viên ·{" "}
+                                {instructorFeedback.instructor?.firstName}{" "}
+                                {instructorFeedback.instructor?.lastName}
+                              </p>
+                              {instructorFeedback.score !== null && (
+                                <p className="text-sm font-semibold text-amber-800 mb-1">
+                                  Điểm: {Number(instructorFeedback.score).toFixed(2)}
+                                </p>
+                              )}
+                              {instructorFeedback.comment && (
+                                <p className="text-sm text-amber-700">
+                                  {instructorFeedback.comment}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {criterion.suggestions?.length > 0 && (
+                            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                              {criterion.suggestions.map((suggestion, index) => (
+                                <li key={`${criterion.criteriaId}-${index}`}>
+                                  {suggestion}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
-                        <p className="text-sm text-slate-600 mb-3">
-                          {criterion.comment}
-                        </p>
-                        {criterion.suggestions?.length > 0 && (
-                          <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-                            {criterion.suggestions.map((suggestion, index) => (
-                              <li key={`${criterion.criteriaId}-${index}`}>
-                                {suggestion}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : (
@@ -423,6 +569,18 @@ const IntructorPresentationDetailPage: React.FC = () => {
           )}
         </div>
       </main>
+
+      {/* Criterion Feedback Modal */}
+      {currentReport && (
+        <CriterionFeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          reportId={currentReport.reportId}
+          criteria={criteriaScores}
+          existingFeedbacks={syncedFeedbacks}
+          presentationId={presentationIdNumber!}
+        />
+      )}
     </div>
   );
 };

@@ -172,6 +172,14 @@ export const REPORT_PRESENTATION_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/ai-reports/presentation/${presentationId}`;
 export const CONFIRM_REPORT_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/confirm`;
+export const REJECT_REPORT_ENDPOINT = (reportId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/reject`;
+
+// Criterion Feedback endpoints
+export const CRITERION_FEEDBACKS_ENDPOINT = (reportId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/criterion-feedbacks`;
+export const CRITERION_FEEDBACK_ENDPOINT = (reportId: string, classRubricCriteriaId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/criterion-feedbacks/${classRubricCriteriaId}`;
 
 // Share presentation endpoints
 export const SHARE_PUBLIC_ENDPOINT = (presentationId: string) =>
