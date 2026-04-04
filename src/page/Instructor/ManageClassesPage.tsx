@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Sparkles,
   Plus,
+  RefreshCw,
   Users,
   Clock,
   Calendar,
@@ -214,6 +215,11 @@ const ManageClassesPage: React.FC = () => {
     }
   };
 
+  const handleRefreshData = () => {
+    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
+    dispatch(fetchCourses({ page: 1, limit: 100 }));
+  };
+
   // Mock pending submissions
   const pendingSubmissions: PendingSubmission[] = [
     {
@@ -337,7 +343,16 @@ const ManageClassesPage: React.FC = () => {
                   Manage classes and presentation assignments for your students.
                 </p>
               </div>
-             
+
+              <button
+                type="button"
+                onClick={handleRefreshData}
+                disabled={loading}
+                className="inline-flex items-center gap-2 self-start rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
             </div>
 
             {/* Stats Cards */}
@@ -740,11 +755,10 @@ const ManageClassesPage: React.FC = () => {
             {!loading && apiClasses.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 flex flex-col sm:flex-row items-center justify-end gap-3 mt-6">
                 <div className="text-sm text-gray-600">
-                  Page {currentPageLabel} of {totalPages} 
+                  Page {currentPageLabel} of {totalPages}
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    
                     <select
                       value={pageSize}
                       onChange={(e) => {

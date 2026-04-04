@@ -212,6 +212,7 @@ const ClassDetailPage: React.FC = () => {
   >(null);
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
   const [confirmApplyPick, setConfirmApplyPick] = useState(false);
+  const [showRubricInfo, setShowRubricInfo] = useState(false);
   const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
     rubricTemplateId: 0,
     enableAiReport: true,
@@ -276,20 +277,17 @@ const ClassDetailPage: React.FC = () => {
     (templateId: number): PickRubricTemplatePayload => {
       const payload: PickRubricTemplatePayload = {
         rubricTemplateId: templateId,
-        enableAiReport: pickSettings.enableAiReport,
+        enableAiReport: true,
       };
 
-      if (pickSettings.enableAiReport) {
-        payload.requireInstructorConfirmation =
-          pickSettings.requireInstructorConfirmation;
-        payload.allowInstructorEdit = pickSettings.allowInstructorEdit;
-        payload.feedbackLanguage = pickSettings.feedbackLanguage;
-        payload.reportFormat = pickSettings.reportFormat;
-        payload.includeCriterionComments =
-          pickSettings.includeCriterionComments;
-        payload.includeOverallSummary = pickSettings.includeOverallSummary;
-        payload.includeSuggestions = pickSettings.includeSuggestions;
-      }
+      payload.requireInstructorConfirmation =
+        pickSettings.requireInstructorConfirmation;
+      payload.allowInstructorEdit = pickSettings.allowInstructorEdit;
+      payload.feedbackLanguage = pickSettings.feedbackLanguage;
+      payload.reportFormat = pickSettings.reportFormat;
+      payload.includeCriterionComments = pickSettings.includeCriterionComments;
+      payload.includeOverallSummary = pickSettings.includeOverallSummary;
+      payload.includeSuggestions = pickSettings.includeSuggestions;
 
       return payload;
     },
@@ -489,10 +487,17 @@ const ClassDetailPage: React.FC = () => {
   const handleChooseTemplate = (templateId: number) => {
     setPendingTemplateId(templateId);
     setConfirmApplyPick(false);
-    setPickSettings((prev) => ({
-      ...prev,
+    setPickSettings({
       rubricTemplateId: templateId,
-    }));
+      enableAiReport: true,
+      requireInstructorConfirmation: false,
+      allowInstructorEdit: true,
+      feedbackLanguage: "en",
+      reportFormat: "detailed",
+      includeCriterionComments: true,
+      includeOverallSummary: true,
+      includeSuggestions: true,
+    });
     setIsTemplateConfigModalOpen(true);
     setToast({
       message: "Template selected. Configure AI settings in modal and use it.",
@@ -1122,11 +1127,34 @@ const ClassDetailPage: React.FC = () => {
                         </h3>
                         {!isRubricActive && (
                           <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
-                            InActive
+                            Inactive
                           </span>
                         )}
                       </div>
                     </div>
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowRubricInfo((prev) => !prev)}
+                      className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                    {showRubricInfo && (
+                      <div className="absolute right-0 top-10 z-10 w-72 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-xl">
+                        <p className="font-semibold text-slate-900">
+                          Rubric Instructions
+                        </p>
+                        <p className="mt-1 leading-relaxed">
+                          The rubric is active only when the total percentage is
+                          exactly 100%.
+                        </p>
+                        <p className="mt-1 leading-relaxed text-rose-700 font-medium">
+                          Adding criteria cannot exceed 100%.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1561,20 +1589,14 @@ const ClassDetailPage: React.FC = () => {
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <input
                   type="checkbox"
-                  checked={pickSettings.enableAiReport}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      enableAiReport: e.target.checked,
-                    }))
-                  }
+                  checked
+                  disabled
                   className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 />
                 Enable AI Report
               </label>
 
-              {pickSettings.enableAiReport && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4">
                   <label className="flex flex-col gap-1 text-sm text-slate-700">
                     <span className="font-medium">Feedback Language</span>
                     <select
@@ -1684,7 +1706,6 @@ const ClassDetailPage: React.FC = () => {
                     Include Suggestions
                   </label>
                 </div>
-              )}
 
               <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 space-y-3">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
