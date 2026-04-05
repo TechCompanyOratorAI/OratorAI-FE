@@ -514,6 +514,13 @@ const classSlice = createSlice({
           state.classes = data;
           if (action.payload.pagination) {
             state.pagination = action.payload.pagination;
+          } else {
+            state.pagination = {
+              ...state.pagination,
+              total: data.length,
+              page: 1,
+              totalPages: 1,
+            };
           }
         },
       )
