@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { ArrowLeft, Clock, Calendar, User, BookOpen, MessageSquare, XCircle } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, User, BookOpen, MessageSquare, XCircle, Cpu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
 import {
@@ -70,12 +70,12 @@ const IntructorPresentationDetailPage: React.FC = () => {
     confirmLoading,
     rejectLoading,
     criterionFeedbacks,
-    feedbackLoading,
     error: reportError,
   } = useAppSelector((state) => state.report);
 
   const [showReport, setShowReport] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [reportTab, setReportTab] = useState<"ai" | "instructor">("ai");
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   const presentationIdNumber = presentationId
@@ -463,27 +463,40 @@ const IntructorPresentationDetailPage: React.FC = () => {
                       </button>
                     </>
                   )}
-                  {currentReport && (
-                    <button
-                      type="button"
-                      onClick={() => setShowFeedbackModal(true)}
-                      disabled={feedbackLoading}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 disabled:opacity-60 transition-colors"
-                    >
-                      {feedbackLoading ? (
-                        <div className="w-4 h-4 border-2 border-blue-200/30 border-t-blue-600 rounded-full animate-spin" />
-                      ) : (
-                        <                      MessageSquare className="w-4 h-4" />
-                      )}
-                      Feedback tiêu chí
-                      {syncedFeedbacks.length > 0 && (
-                        <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {syncedFeedbacks.length}
-                        </span>
-                      )}
-                    </button>
-                  )}
                 </div>
+              </div>
+
+              {/* Tabs: AI vs Giảng viên */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setReportTab("ai")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    reportTab === "ai"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Cpu className="w-4 h-4" />
+                  Đánh giá AI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportTab("instructor")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    reportTab === "instructor"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Feedback giảng viên
+                  {syncedFeedbacks.length > 0 && (
+                    <span className="bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {syncedFeedbacks.length}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {reportLoading ? (
@@ -493,72 +506,181 @@ const IntructorPresentationDetailPage: React.FC = () => {
                 </div>
               ) : currentReport ? (
                 <>
-                  <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
-                    <p className="text-sm text-slate-600">Điểm tổng</p>
-                    <p className="text-2xl font-bold text-sky-700">
-                      {`${(Number(currentReport.overallScore) * 100).toFixed(0)}%`}
-                    </p>
-                  </div>
+                  {/* ── Tab AI ── */}
+                  {reportTab === "ai" && (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
+                        <p className="text-sm text-slate-600">Điểm tổng</p>
+                        <p className="text-2xl font-bold text-sky-700">
+                          {`${(Number(currentReport.overallScore) * 100).toFixed(0)}%`}
+                        </p>
+                      </div>
 
-                  <div className="space-y-3">
-                    {criteriaScores.map((criterion) => {
-                      const instructorFeedback = syncedFeedbacks.find(
-                        (f) => f.classRubricCriteriaId === criterion.criteriaId,
-                      );
-                      return (
-                        <div
-                          key={criterion.criteriaId}
-                          className="rounded-xl border border-slate-200 p-4"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                            <h3 className="font-semibold text-slate-900">
-                              {criterion.criteriaName}
-                              {instructorFeedback && (
-                                <span className="ml-2 text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                  Có feedback GV
-                                </span>
-                              )}
-                            </h3>
-                            <span className="text-sm font-semibold text-sky-700">
-                              {criterion.score}/{criterion.maxScore} (w:{" "}
-                              {criterion.weight}%)
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600 mb-3">
-                            {criterion.comment}
-                          </p>
-                          {instructorFeedback && (
-                            <div className="mb-3 rounded-lg bg-amber-50 border border-amber-100 p-3">
-                              <p className="text-xs font-semibold text-amber-700 mb-1">
-                                Feedback giảng viên ·{" "}
-                                {instructorFeedback.instructor?.firstName}{" "}
-                                {instructorFeedback.instructor?.lastName}
-                              </p>
-                              {instructorFeedback.score !== null && (
-                                <p className="text-sm font-semibold text-amber-800 mb-1">
-                                  Điểm: {Number(instructorFeedback.score).toFixed(2)}
-                                </p>
-                              )}
-                              {instructorFeedback.comment && (
-                                <p className="text-sm text-amber-700">
-                                  {instructorFeedback.comment}
-                                </p>
-                              )}
+                      <div className="space-y-3">
+                        {criteriaScores.map((criterion) => (
+                          <div
+                            key={criterion.criteriaId}
+                            className="rounded-xl border border-slate-200 p-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                              <h3 className="font-semibold text-slate-900">
+                                {criterion.criteriaName}
+                                {(() => {
+                                  const fb = syncedFeedbacks.find(
+                                    (f) =>
+                                      f.classRubricCriteriaId ===
+                                      criterion.criteriaId,
+                                  );
+                                  return fb ? (
+                                    <span className="ml-2 text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                      Có feedback GV
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </h3>
+                              <span className="text-sm font-semibold text-sky-700">
+                                {criterion.score}/{criterion.maxScore} (w:{" "}
+                                {criterion.weight}%)
+                              </span>
                             </div>
-                          )}
-                          {criterion.suggestions?.length > 0 && (
-                            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-                              {criterion.suggestions.map((suggestion, index) => (
-                                <li key={`${criterion.criteriaId}-${index}`}>
-                                  {suggestion}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+                            <p className="text-sm text-slate-600 mb-3">
+                              {criterion.comment}
+                            </p>
+                            {criterion.suggestions?.length > 0 && (
+                              <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                                {criterion.suggestions.map((suggestion, idx) => (
+                                  <li key={`${criterion.criteriaId}-${idx}`}>
+                                    {suggestion}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Tab Feedback Giảng viên ── */}
+                  {reportTab === "instructor" && (
+                    <div className="space-y-3">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setShowFeedbackModal(true)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          {syncedFeedbacks.length > 0
+                            ? "Sửa / Thêm feedback"
+                            : "Thêm feedback"}
+                        </button>
+                      </div>
+
+                      {syncedFeedbacks.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
+                          <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                          <p className="font-semibold text-slate-700 mb-1">
+                            Chưa có feedback giảng viên
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            Bấm &quot;Thêm feedback&quot; để nhập điểm và nhận xét theo
+                            từng tiêu chí.
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {[...syncedFeedbacks]
+                            .sort(
+                              (a, b) =>
+                                a.criterionFeedbackId - b.criterionFeedbackId,
+                            )
+                            .map((fb) => {
+                              const criteriaLabel =
+                                fb.classRubricCriteria?.criteriaName ||
+                                criteriaScores.find(
+                                  (c) =>
+                                    c.criteriaId ===
+                                    fb.classRubricCriteriaId,
+                                )?.criteriaName ||
+                                `Tiêu chí #${fb.classRubricCriteriaId}`;
+                              const instructorLabel = fb.instructor
+                                ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
+                                  fb.instructor.email ||
+                                  "Giảng viên"
+                                : "Giảng viên";
+                              const aiCriterion = criteriaScores.find(
+                                (c) =>
+                                  c.criteriaId === fb.classRubricCriteriaId,
+                              );
+                              return (
+                                <div
+                                  key={fb.criterionFeedbackId}
+                                  className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4"
+                                >
+                                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                                    <div>
+                                      <h3 className="font-semibold text-slate-900">
+                                        {criteriaLabel}
+                                      </h3>
+                                      <p className="text-xs text-slate-500 mt-0.5">
+                                        {instructorLabel}
+                                        {fb.updatedAt && (
+                                          <>
+                                            {" · "}
+                                            {new Date(
+                                              fb.updatedAt,
+                                            ).toLocaleString("vi-VN")}
+                                          </>
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                      {fb.score !== null &&
+                                        fb.score !== "" && (
+                                          <span className="text-sm font-bold text-indigo-700 tabular-nums">
+                                            {Number(fb.score).toFixed(2)}/100
+                                          </span>
+                                        )}
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setShowFeedbackModal(true)
+                                        }
+                                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                      >
+                                        Sửa
+                                      </button>
+                                    </div>
+                                  </div>
+                                  {fb.comment ? (
+                                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                                      {fb.comment}
+                                    </p>
+                                  ) : (
+                                    <p className="text-sm text-slate-400 italic">
+                                      Chưa có nhận xét.
+                                    </p>
+                                  )}
+                                  {aiCriterion && (
+                                    <div className="mt-3 pt-3 border-t border-indigo-100">
+                                      <p className="text-xs font-semibold text-slate-500 mb-1">
+                                        So sánh với điểm AI:{" "}
+                                        {aiCriterion.score}/
+                                        {aiCriterion.maxScore}
+                                      </p>
+                                      <p className="text-xs text-slate-600 line-clamp-2">
+                                        {aiCriterion.comment}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
