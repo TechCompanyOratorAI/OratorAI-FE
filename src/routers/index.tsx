@@ -30,6 +30,8 @@ import ForbiddenPage from "@/page/Error/ForbiddenPage";
 import NotFoundPage from "@/page/Error/NotFoundPage";
 import AdminCoursePage from "@/page/Admin/AdminCoursePage";
 import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
+import InstructorStudentsPage from "@/page/Instructor/InstructorStudentsPage";
+import InstructorClassStudentsPage from "@/page/Instructor/InstructorClassStudentsPage";
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
 import SharePage from "@/page/Share/SharePage";
@@ -80,6 +82,14 @@ const AppRouter = () => {
         <Route
           path="/intructor/presentation/:presentationId"
           element={<IntructorPresentationDetailPage />}
+        />
+        <Route
+          path="/instructor/students"
+          element={<InstructorStudentsPage />}
+        />
+        <Route
+          path="/instructor/class/:classId/students"
+          element={<InstructorClassStudentsPage />}
         />
       </Route>
 

@@ -1,6 +1,6 @@
-export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-// export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -122,6 +122,10 @@ export const DELETE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
 //get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
 
+// Scores by class (instructor view)
+export const CLASS_SCORES_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/scores`;
+
 // Temple rubric for instructor
 export const GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/rubric-templates`;
 export const PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT = (classId: string) =>
@@ -178,7 +182,10 @@ export const REJECT_REPORT_ENDPOINT = (reportId: string) =>
 // Criterion Feedback endpoints
 export const CRITERION_FEEDBACKS_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/criterion-feedbacks`;
-export const CRITERION_FEEDBACK_ENDPOINT = (reportId: string, classRubricCriteriaId: string) =>
+export const CRITERION_FEEDBACK_ENDPOINT = (
+  reportId: string,
+  classRubricCriteriaId: string,
+) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/criterion-feedbacks/${classRubricCriteriaId}`;
 
 // Share presentation endpoints
@@ -193,6 +200,7 @@ export const SHARE_REVOKE_PUBLIC_ENDPOINT = (presentationId: string) =>
 export const SHARE_REVOKE_INVITE_ENDPOINT = (
   presentationId: string,
   accessId: string,
-) => `${BASE_URL}/api/v1/presentations/${presentationId}/share/invite/${accessId}`;
+) =>
+  `${BASE_URL}/api/v1/presentations/${presentationId}/share/invite/${accessId}`;
 export const SHARE_VIEW_ENDPOINT = (token: string) =>
   `${BASE_URL}/api/v1/share/${token}`;

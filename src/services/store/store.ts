@@ -14,6 +14,7 @@ import reportReducer from "../features/report/reportSlice";
 import rubricReducer from "../features/rubric/rubricSilce";
 import rubricTemplateReducer from "../features/admin/rubricTempleSlice";
 import shareReducer from "../features/share/shareSlice";
+import classScoreReducer from "../features/classScore/classScoreSlice";
 
 const presistConfig = {
   key: "root",
@@ -35,6 +36,7 @@ const rootReducer = combineReducers({
   rubric: rubricReducer,
   rubricTemplate: rubricTemplateReducer,
   share: shareReducer,
+  classScore: classScoreReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
