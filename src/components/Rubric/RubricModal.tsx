@@ -95,6 +95,8 @@ const SortableCriterionItem = ({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       role="button"
       tabIndex={0}
       onClick={() => onSelect(criterion)}
@@ -104,9 +106,9 @@ const SortableCriterionItem = ({
           onSelect(criterion);
         }
       }}
-      className={`w-full rounded-3xl border p-3 text-left transition-all ${
+      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${
         isDragging
-          ? "border-sky-300 bg-sky-50/80 shadow-md"
+          ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
           : isEditing
             ? "border-sky-300 bg-sky-50/70 shadow-sm"
             : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
@@ -114,16 +116,9 @@ const SortableCriterionItem = ({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(event) => event.stopPropagation()}
-            className="mt-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-grab active:cursor-grabbing"
-            title="Drag to reorder"
-          >
+          <span className="mt-0.5 rounded-lg p-1.5 text-slate-400">
             <GripVertical className="h-4 w-4" />
-          </button>
+          </span>
 
           <div>
             <p className="text-sm font-semibold text-slate-900">
@@ -362,15 +357,15 @@ const RubricModal: React.FC<RubricModalProps> = ({
       ? Math.max(...localCriteria.map((item) => item.displayOrder)) + 1
       : 1;
 
-  // Keep display order synced with next order in create mode.
+  // Keep display order synced with next order when no criterion is selected.
   useEffect(() => {
-    if (selectedCriterionId === null && mode === "create") {
+    if (selectedCriterionId === null) {
       setFormData((prev) => ({
         ...prev,
         displayOrder: String(nextOrder),
       }));
     }
-  }, [nextOrder, selectedCriterionId, mode]);
+  }, [nextOrder, selectedCriterionId]);
 
   const normalizeNumberValue = (
     field: "persen" | "maxScore" | "displayOrder",
@@ -470,13 +465,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
   const handleSelectCriterion = useCallback(
     (criterion: RubricCriterionItem) => {
-      if (mode === "create") return;
       setSelectedCriterionId(criterion.classRubricCriteriaId);
       setFormFromCriterion(criterion);
       setErrors({});
       onSelectCriteria?.(criterion.classRubricCriteriaId);
     },
-    [mode, onSelectCriteria, setFormFromCriterion],
+    [onSelectCriteria, setFormFromCriterion],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -583,26 +577,24 @@ const RubricModal: React.FC<RubricModalProps> = ({
               <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Criteria List
               </h4>
-              {mode === "create" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCriterionId(null);
-                    setFormData({
-                      criteriaName: "",
-                      criteriaDescription: "",
-                      weight: "1",
-                      maxScore: "10",
-                      displayOrder: String(nextOrder),
-                      evaluationGuide: "",
-                    });
-                    setErrors({});
-                  }}
-                  className="text-xs font-semibold px-2 py-1 rounded-lg bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
-                >
-                  + Add New
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCriterionId(null);
+                  setFormData({
+                    criteriaName: "",
+                    criteriaDescription: "",
+                    weight: "1",
+                    maxScore: "10",
+                    displayOrder: String(nextOrder),
+                    evaluationGuide: "",
+                  });
+                  setErrors({});
+                }}
+                className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
+              >
+                + Add New
+              </button>
             </div>
 
             <div className="relative mb-3">
@@ -641,7 +633,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
                         key={criterion.classRubricCriteriaId}
                         criterion={criterion}
                         isEditing={
-                          mode === "edit" &&
                           selectedCriterionId ===
                             criterion.classRubricCriteriaId
                         }
@@ -681,8 +672,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
           <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
-                <h4 className="text-base font-semibold text-slate-800">
-                  {selectedCriterionId ? "Edit Criteria" : "Create Criteria"}
+                <h4
+                  className={`text-base font-semibold ${
+                    selectedCriterionId ? "text-slate-800" : "text-slate-700"
+                  }`}
+                >
+                  {selectedCriterionId ? "Edit Criteria" : "New Criteria"}
                 </h4>
                 <p className="text-xs text-slate-500">
                   {selectedCriterionId
@@ -690,26 +685,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     : "Create criteria for class rubric"}
                 </p>
               </div>
-              {mode === "edit" && selectedCriterionId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCriterionId(null);
-                    setFormData({
-                      criteriaName: "",
-                      criteriaDescription: "",
-                      weight: "1",
-                      maxScore: "10",
-                      displayOrder: String(nextOrder),
-                      evaluationGuide: "",
-                    });
-                    setErrors({});
-                  }}
-                  className="rounded-2xl border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-white"
-                >
-                  New Criteria
-                </button>
-              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -770,10 +745,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                       {errors.weight}
                     </p>
                   )}
-                  {isPercentageExceeded && formData.isActive && (
+                  {isPercentageExceeded && (
                     <p className="mt-1 text-xs text-amber-600 font-semibold">
-                      ⚠️ Total sẽ vượt 100% (
-                      {potentialTotalPercentage.toFixed(1)}%)
+                      ⚠️ Total sẽ vượt 100% 
+                     
                     </p>
                   )}
                 </div>
