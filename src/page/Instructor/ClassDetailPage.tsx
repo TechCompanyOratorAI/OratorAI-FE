@@ -99,8 +99,8 @@ const SortableCriterionItem = React.memo(
             : "cursor-grab"
         }`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
                 {criterion.displayOrder}
@@ -109,19 +109,7 @@ const SortableCriterionItem = React.memo(
                 {criterion.criteriaName}
               </p>
             </div>
-            {criterion.criteriaDescription && (
-              <p className="text-sm text-slate-600 mt-1">
-                {criterion.criteriaDescription}
-              </p>
-            )}
-            {criterion.evaluationGuide && (
-              <p className="text-xs text-slate-500 mt-1">
-                Guide: {criterion.evaluationGuide}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold">
+            <div className="flex items-center gap-2 text-xs font-semibold mt-2 ml-8">
               <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
                 Persen {Number(criterion.weight).toFixed(0)}%
               </span>
@@ -129,33 +117,28 @@ const SortableCriterionItem = React.memo(
                 Max {Number(criterion.maxScore).toFixed(0)}
               </span>
             </div>
-            <div className="group relative">
-              <button className="p-2 hover:bg-slate-200 rounded-lg transition">
-                <MoreVertical className="w-5 h-5 text-slate-600" />
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(criterion);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
-                  >
-                    <Edit className="w-4 h-4 text-sky-600" />
-                    Edit Rubric
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(criterion);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Rubric
-                  </button>
-                </div>
-              </button>
-            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(criterion);
+              }}
+              className="p-2 hover:bg-slate-200 rounded-lg transition"
+              title="Edit"
+            >
+              <Edit className="w-4 h-4 text-sky-600" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(criterion);
+              }}
+              className="p-2 hover:bg-red-100 rounded-lg transition"
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4 text-red-600" />
+            </button>
           </div>
         </div>
       </div>
@@ -194,8 +177,6 @@ const ClassDetailPage: React.FC = () => {
   const [showGroupDetail, setShowGroupDetail] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
-  const [isCreateCriteriaModalOpen, setIsCreateCriteriaModalOpen] =
-    useState(false);
   const [isDeleteRubricModalOpen, setIsDeleteRubricModalOpen] = useState(false);
   const [editingRubric, setEditingRubric] =
     useState<ClassRubricCriteria | null>(null);
@@ -593,67 +574,15 @@ const ClassDetailPage: React.FC = () => {
         });
       }
 
-      if (targetCriterionId) {
-        setIsRubricModalOpen(false);
-        setEditingRubric(null);
-      }
+      // Close modal for both create and edit
+      setIsRubricModalOpen(false);
+      setEditingRubric(null);
     } catch (error: any) {
       setToast({
         message:
           typeof error === "string"
             ? error
             : error?.message || "Rubric action failed.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleCreateCriteria = async (payload: RubricCriteriaPayload) => {
-    if (!classIdNumber) return;
-
-    try {
-      await dispatch(
-        createRubricCriteria({
-          classId: classIdNumber,
-          rubricData: payload,
-        }),
-      ).unwrap();
-
-      // Fetch updated rubric to calculate total percentage
-      const result = await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
-
-      // Calculate total percentage of active criteria
-      if (result && Array.isArray(result)) {
-        const totalPercentage = result
-          .filter((c: ClassRubricCriteria) => Number(c.isActive ?? 1) === 1)
-          .reduce(
-            (sum: number, c: ClassRubricCriteria) => sum + Number(c.weight),
-            0,
-          );
-
-        if (totalPercentage > 100) {
-          setToast({
-            message: `⚠️ Created criteria. Total % exceeded 100% (${totalPercentage.toFixed(1)}%)`,
-            type: "info",
-          });
-        } else {
-          setToast({
-            message: "Rubric criteria created successfully.",
-            type: "success",
-          });
-        }
-      } else {
-        setToast({
-          message: "Rubric criteria created successfully.",
-          type: "success",
-        });
-      }
-    } catch (error: any) {
-      setToast({
-        message:
-          typeof error === "string"
-            ? error
-            : error?.message || "Failed to create rubric criteria.",
         type: "error",
       });
     }
@@ -1112,7 +1041,7 @@ const ClassDetailPage: React.FC = () => {
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-2">
                     <div className="rounded-2xl bg-emerald-100 p-2">
                       <CheckCircle2 className="w-5 h-5 text-emerald-700" />
@@ -1130,32 +1059,46 @@ const ClassDetailPage: React.FC = () => {
                             Inactive
                           </span>
                         )}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setShowRubricInfo((prev) => !prev)}
+                            className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+                          >
+                            <Info className="h-4 w-4" />
+                          </button>
+                          {showRubricInfo && (
+                            <div className="absolute right-0 top-10 z-10 w-72 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-xl">
+                              <p className="font-semibold text-slate-900">
+                                Rubric Instructions
+                              </p>
+                              <p className="mt-1 leading-relaxed">
+                                The rubric is active only when the total
+                                percentage is exactly 100%.
+                              </p>
+                              <p className="mt-1 leading-relaxed text-rose-700 font-medium">
+                                Adding criteria cannot exceed 100%.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowRubricInfo((prev) => !prev)}
-                      className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                    >
-                      <Info className="h-4 w-4" />
-                    </button>
-                    {showRubricInfo && (
-                      <div className="absolute right-0 top-10 z-10 w-72 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-xl">
-                        <p className="font-semibold text-slate-900">
-                          Rubric Instructions
-                        </p>
-                        <p className="mt-1 leading-relaxed">
-                          The rubric is active only when the total percentage is
-                          exactly 100%.
-                        </p>
-                        <p className="mt-1 leading-relaxed text-rose-700 font-medium">
-                          Adding criteria cannot exceed 100%.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {selectedTemplateId && (
+                    <Button
+                      text="Create Criteria"
+                      variant="primary"
+                      fontSize="14px"
+                      borderRadius="999px"
+                      paddingWidth="18px"
+                      paddingHeight="9px"
+                      onClick={() => {
+                        setEditingRubric(null);
+                        setIsRubricModalOpen(true);
+                      }}
+                    />
+                  )}
                 </div>
 
                 {!selectedTemplateId && (
@@ -1528,7 +1471,7 @@ const ClassDetailPage: React.FC = () => {
         onSelectCriteria={handleSelectRubricFromModal}
         onReorderCriteria={handleReorderRubricFromModal}
         isLoading={rubricActionLoading}
-        mode="edit"
+        mode={editingRubric ? "edit" : "create"}
         initialData={
           editingRubric
             ? {
@@ -1545,20 +1488,6 @@ const ClassDetailPage: React.FC = () => {
         templateName={selectedClass.classCode}
         criteriaList={sortedRubricCriteria}
         activeCriteriaId={editingRubric?.classRubricCriteriaId}
-      />
-
-      <RubricModal
-        isOpen={isCreateCriteriaModalOpen}
-        onClose={() => {
-          if (rubricActionLoading) return;
-          setIsCreateCriteriaModalOpen(false);
-        }}
-        onSubmit={handleCreateCriteria}
-        isLoading={rubricActionLoading}
-        mode="create"
-        defaultDisplayOrder={sortedRubricCriteria.length + 1}
-        templateName={selectedClass.classCode}
-        criteriaList={sortedRubricCriteria}
       />
 
       {isTemplateConfigModalOpen && pendingTemplate && (
@@ -1597,115 +1526,115 @@ const ClassDetailPage: React.FC = () => {
               </label>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span className="font-medium">Feedback Language</span>
-                    <select
-                      value={pickSettings.feedbackLanguage || "en"}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          feedbackLanguage: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    >
-                      <option value="en">English</option>
-                      <option value="vi">Vietnamese</option>
-                    </select>
-                  </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span className="font-medium">Feedback Language</span>
+                  <select
+                    value={pickSettings.feedbackLanguage || "en"}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        feedbackLanguage: e.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="en">English</option>
+                    <option value="vi">Vietnamese</option>
+                  </select>
+                </label>
 
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span className="font-medium">Report Format</span>
-                    <select
-                      value={pickSettings.reportFormat || "detailed"}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          reportFormat: e.target.value,
-                        }))
-                      }
-                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    >
-                      <option value="detailed">Detailed</option>
-                      <option value="summary">Summary</option>
-                    </select>
-                  </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span className="font-medium">Report Format</span>
+                  <select
+                    value={pickSettings.reportFormat || "detailed"}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        reportFormat: e.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="detailed">Detailed</option>
+                    <option value="summary">Summary</option>
+                  </select>
+                </label>
 
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={!!pickSettings.requireInstructorConfirmation}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          requireInstructorConfirmation: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    />
-                    Require Instructor Confirmation
-                  </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={!!pickSettings.requireInstructorConfirmation}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        requireInstructorConfirmation: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  Require Instructor Confirmation
+                </label>
 
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={!!pickSettings.allowInstructorEdit}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          allowInstructorEdit: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    />
-                    Allow Instructor Edit
-                  </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={!!pickSettings.allowInstructorEdit}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        allowInstructorEdit: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  Allow Instructor Edit
+                </label>
 
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={!!pickSettings.includeCriterionComments}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          includeCriterionComments: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    />
-                    Include Criterion Comments
-                  </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={!!pickSettings.includeCriterionComments}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        includeCriterionComments: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  Include Criterion Comments
+                </label>
 
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={!!pickSettings.includeOverallSummary}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          includeOverallSummary: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    />
-                    Include Overall Summary
-                  </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={!!pickSettings.includeOverallSummary}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        includeOverallSummary: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  Include Overall Summary
+                </label>
 
-                  <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
-                    <input
-                      type="checkbox"
-                      checked={!!pickSettings.includeSuggestions}
-                      onChange={(e) =>
-                        setPickSettings((prev) => ({
-                          ...prev,
-                          includeSuggestions: e.target.checked,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    />
-                    Include Suggestions
-                  </label>
-                </div>
+                <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={!!pickSettings.includeSuggestions}
+                    onChange={(e) =>
+                      setPickSettings((prev) => ({
+                        ...prev,
+                        includeSuggestions: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  Include Suggestions
+                </label>
+              </div>
 
               <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 space-y-3">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
