@@ -5,14 +5,13 @@ import InstructorRegisterPage from "@/page/Authentication/InstructorRegisterPage
 import ForgotPasswordPage from "@/page/Authentication/ForgotPasswordPage/ForgotPasswordPage";
 import ResetPasswordPage from "@/page/Authentication/ResetPasswordPage/ResetPasswordPage";
 import VerifyEmailPage from "@/page/Authentication/VerifyEmailPage/VerifyEmailPage";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
 import IntructorTopicDetailPage from "@/page/Instructor/IntructorTopicDetailPage";
 import ClassDetailPage from "@/page/Instructor/ClassDetailPage";
 import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
-import StudentClassesPage from "@/page/Students/StudentClassesPage";
 import StudentMyCoursesPage from "@/page/Students/StudentMyClassesPage";
 import StudentCourseDetailPage from "@/page/Students/StudentClassDetailPage";
 import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
@@ -96,7 +95,7 @@ const AppRouter = () => {
       {/* Protected Student routes */}
       <Route element={<ProtectedRoute allowedRoles={["Student"]} />}>
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-        <Route path="/student/classes" element={<StudentClassesPage />} />
+        <Route path="/student/classes" element={<Navigate to="/student/dashboard" replace />} />
         <Route
           path="/student/course/:courseId"
           element={<StudentCourseDetailPage />}

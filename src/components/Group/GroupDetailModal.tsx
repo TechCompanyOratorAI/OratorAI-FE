@@ -1,5 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { X, Users, Crown, User } from "lucide-react";
+import React, { useEffect } from "react";
+import {
+  Modal,
+  Avatar,
+  Tag,
+  Typography,
+  Space,
+  List,
+  Spin,
+  Button,
+  Popconfirm,
+  Divider,
+  message,
+} from "antd";
+import {
+  TeamOutlined,
+  CrownOutlined,
+  UserOutlined,
+  AimOutlined,
+} from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchGroupDetail,
@@ -8,9 +26,9 @@ import {
   leaveGroup,
   GroupStudent,
 } from "@/services/features/group/groupSlice";
-import Button from "@/components/yoodli/Button";
-import Toast from "@/components/Toast/Toast";
 import { useNavigate } from "react-router-dom";
+
+const { Text, Title } = Typography;
 
 interface GroupDetailModalProps {
   isOpen: boolean;
@@ -32,50 +50,34 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   );
   const { user } = useAppSelector((state) => state.auth);
 
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
-
   useEffect(() => {
     if (isOpen && groupId) {
-      dispatch(fetchGroupDetail(groupId));
+      void dispatch(fetchGroupDetail(groupId));
     }
   }, [isOpen, groupId, dispatch]);
 
   useEffect(() => {
     if (error) {
-      setToast({ message: error, type: "error" });
+      void message.error(error);
     }
   }, [error]);
 
-  if (!isOpen) return null;
-
   const getMemberDisplayName = (member: GroupStudent) => {
-    if (!member) return "Member";
+    if (!member) return "Thành viên";
     const fullName = [member.firstName, member.lastName]
       .filter(Boolean)
       .join(" ")
       .trim();
-    return fullName || member.username || "Member";
+    return fullName || member.username || "Thành viên";
   };
 
-  const getRoleBadge = (role: string) => {
-    if (role === "leader") {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-          <Crown className="w-3 h-3" />
-          Leader
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
-        <User className="w-3 h-3" />
-        Member
-      </span>
-    );
-  };
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
   const isCurrentUserMember = groupDetail?.students?.some(
     (member) => `${member.userId ?? member.id}` === `${user?.userId}`,
@@ -85,209 +87,203 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     if (!groupId) return;
     try {
       const result = await dispatch(leaveGroup(groupId)).unwrap();
-      // Refresh groups data after leaving
       const classId = groupDetail?.class?.classId;
       if (classId) {
-        dispatch(fetchGroupsByClass(classId));
-        dispatch(fetchMyGroupByClass(classId));
+        void dispatch(fetchGroupsByClass(classId));
+        void dispatch(fetchMyGroupByClass(classId));
       }
-      // Show toast first, then close modal after a short delay
-      setToast({
-        message: result?.message || "Left group successfully.",
-        type: "success",
-      });
+      void message.success(result?.message || "Đã rời nhóm thành công.");
       setTimeout(() => {
         onClose();
-      }, 800);
+      }, 600);
     } catch (err: unknown) {
-      setToast({
-        message: err instanceof Error ? err.message : "Failed to leave group.",
-        type: "error",
-      });
+      void message.error(
+        err instanceof Error ? err.message : "Không thể rời nhóm.",
+      );
     }
   };
 
   const handleViewTopics = () => {
-    // Get classId from group detail and navigate to topics
     if (groupDetail?.classId || groupDetail?.class?.classId) {
       const classId = groupDetail.classId || groupDetail.class?.classId;
-      navigate(`/student/class/${classId}`);
+      void navigate(`/student/class/${classId}`);
       onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div
-        className="relative w-full max-w-2xl rounded-3xl border border-sky-200 bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-sky-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">
-                {groupDetail?.groupName || groupDetail?.name || "Group Details"}
-              </h2>
-              {groupDetail?.class?.classCode && (
-                <p className="text-sm text-slate-500">
-                  Class: {groupDetail.class.classCode}
-                </p>
-              )}
-            </div>
+    <Modal
+      title={
+        <Space size="middle">
+          <Avatar
+            style={{ backgroundColor: "#0ea5e9" }}
+            icon={<TeamOutlined />}
+            size={40}
+          />
+          <div>
+            <Title level={5} className="!mb-0">
+              {groupDetail?.groupName || groupDetail?.name || "Chi tiết nhóm"}
+            </Title>
+            {groupDetail?.class?.classCode && (
+              <Text type="secondary" className="text-xs">
+                Lớp: {groupDetail.class.classCode}
+              </Text>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-full p-2 text-slate-500 hover:bg-sky-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-slate-600">Loading group details...</p>
-              </div>
-            </div>
-          ) : groupDetail ? (
-            <div className="space-y-6">
-              {/* Group Info */}
-              {!hideFooterActions && (
-                <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Users className="w-4 h-4 text-sky-600" />
-                      <span>
+        </Space>
+      }
+      open={isOpen}
+      onCancel={onClose}
+      footer={null}
+      centered
+      width={520}
+      destroyOnClose
+      maskClosable={!actionLoading}
+    >
+      <Spin spinning={loading} tip="Đang tải chi tiết nhóm...">
+        {groupDetail && (
+          <div>
+            {/* Nhóm info */}
+            {!hideFooterActions && (
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 mb-4">
+                <div className="flex items-center gap-4">
+                  <Space size="small">
+                    <TeamOutlined className="text-sky-600" />
+                    <Text className="text-sm">
+                      <strong>
                         {groupDetail.memberCount ??
                           groupDetail.students?.length ??
-                          0}{" "}
-                        members
-                      </span>
-                    </div>
-                    {groupDetail.description && (
-                      <p className="text-sm text-slate-600 col-span-2">
-                        {groupDetail.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Members List */}
-              <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Members ({groupDetail.students?.length ?? 0})
-                </h3>
-                <div className="space-y-2">
-                  {groupDetail.students?.map((member, index) => {
-                    const memberId = member.userId ?? member.id;
-                    const isCurrentUser = `${memberId}` === `${user?.userId}`;
-                    return (
-                      <div
-                        key={`${memberId ?? index}`}
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
-                            <span className="text-white font-semibold text-xs">
-                              {getMemberDisplayName(member)
-                                .split(" ")
-                                .map((n: string) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                              {getMemberDisplayName(member)}
-                              {isCurrentUser && (
-                                <span className="text-xs text-sky-600">
-                                  (You)
-                                </span>
-                              )}
-                            </p>
-                            {member.email && (
-                              <p className="text-xs text-slate-500">
-                                {member.email}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getRoleBadge(member.GroupStudent?.role || "member")}
-                        </div>
-                      </div>
-                    );
-                  })}
+                          0}
+                      </strong>{" "}
+                      thành viên
+                    </Text>
+                  </Space>
+                  {groupDetail.description && (
+                    <Divider type="vertical" />
+                  )}
+                  {groupDetail.description && (
+                    <Text type="secondary" className="text-xs italic">
+                      {groupDetail.description}
+                    </Text>
+                  )}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-600">
-              No group details available.
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Footer */}
-        {!hideFooterActions && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-3xl">
-            <button
-              onClick={handleLeaveGroup}
-              disabled={actionLoading || !isCurrentUserMember}
-              className="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Leave Group
-            </button>
-            <div className="flex items-center gap-3">
-              <Button
-                text="Close"
-                variant="secondary"
-                fontSize="14px"
-                borderRadius="8px"
-                paddingWidth="16px"
-                paddingHeight="10px"
-                onClick={onClose}
-              />
-              <Button
-                text="View Topics"
-                variant="primary"
-                fontSize="14px"
-                borderRadius="8px"
-                paddingWidth="16px"
-                paddingHeight="10px"
-                onClick={handleViewTopics}
-                disabled={!groupDetail?.classId && !groupDetail?.class?.classId}
-              />
-            </div>
+            {/* Danh sách thành viên */}
+            <List
+              header={
+                <Text strong className="text-sm">
+                  <UserOutlined className="mr-1" />
+                  Thành viên ({groupDetail.students?.length ?? 0})
+                </Text>
+              }
+              dataSource={groupDetail.students ?? []}
+              renderItem={(member, index) => {
+                const memberId = member.userId ?? member.id;
+                const isCurrentUser =
+                  `${memberId}` === `${user?.userId}`;
+                const name = getMemberDisplayName(member);
+                const role = member.GroupStudent?.role;
+
+                return (
+                  <List.Item
+                    key={`${memberId ?? index}`}
+                    className="!py-3 !px-2 hover:bg-slate-50 rounded-lg transition"
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        <Avatar
+                          style={{
+                            background:
+                              role === "leader"
+                                ? "#f59e0b"
+                                : "linear-gradient(135deg, #0ea5e9, #06b6d4)",
+                          }}
+                        >
+                          {getInitials(name)}
+                        </Avatar>
+                      }
+                      title={
+                        <Space size={4}>
+                          <Text
+                            strong
+                            className={isCurrentUser ? "text-sky-700" : undefined}
+                          >
+                            {name}
+                          </Text>
+                          {isCurrentUser && (
+                            <Tag color="blue" className="text-xs">
+                              Bạn
+                            </Tag>
+                          )}
+                        </Space>
+                      }
+                      description={
+                        member.email ? (
+                          <Text type="secondary" className="text-xs">
+                            {member.email}
+                          </Text>
+                        ) : undefined
+                      }
+                    />
+                    <Tag
+                      color={role === "leader" ? "gold" : "processing"}
+                      icon={
+                        role === "leader" ? (
+                          <CrownOutlined />
+                        ) : (
+                          <UserOutlined />
+                        )
+                      }
+                    >
+                      {role === "leader" ? "Trưởng nhóm" : "Thành viên"}
+                    </Tag>
+                  </List.Item>
+                );
+              }}
+              locale={{ emptyText: "Không có thành viên nào." }}
+            />
           </div>
         )}
-      </div>
+      </Spin>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
+      {!hideFooterActions && groupDetail && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+          <Popconfirm
+            title="Rời nhóm?"
+            description="Bạn có chắc muốn rời nhóm này? Hành động này không thể hoàn tác."
+            okText="Rời nhóm"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+            onConfirm={handleLeaveGroup}
+            disabled={actionLoading || !isCurrentUserMember}
+          >
+            <Button
+              danger
+              type="text"
+              disabled={actionLoading || !isCurrentUserMember}
+              loading={actionLoading}
+            >
+              Rời nhóm
+            </Button>
+          </Popconfirm>
+          <Space>
+            <Button onClick={onClose}>Đóng</Button>
+            <Button
+              type="primary"
+              icon={<AimOutlined />}
+              onClick={handleViewTopics}
+              disabled={
+                !groupDetail?.classId && !groupDetail?.class?.classId
+              }
+            >
+              Xem chủ đề
+            </Button>
+          </Space>
         </div>
       )}
-    </div>
+    </Modal>
   );
 };
 

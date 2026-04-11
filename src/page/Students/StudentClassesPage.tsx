@@ -1,30 +1,39 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import Toast from "@/components/Toast/Toast";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Search,
-  ChevronDown,
-  BookOpen,
-  User,
+  GraduationCap,
+  Users,
   Calendar,
   CheckCircle2,
-  Bell,
-  Menu,
-  X,
-  LogOut,
+  ChevronRight,
+  KeyRound,
+  ShieldCheck,
+  BookOpen,
 } from "lucide-react";
+import {
+  Card,
+  Row,
+  Col,
+  Input,
+  Button,
+  Tag,
+  Select,
+  Skeleton,
+  Empty,
+  Modal,
+  Typography,
+  ConfigProvider,
+  Avatar,
+} from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import {
-  fetchClasses,
-  fetchClassesByCourse,
-} from "@/services/features/admin/classSlice";
-import {
-  enrollClassByKey,
-  fetchEnrolledClasses,
-} from "@/services/features/enrollment/enrollmentSlice";
-import { logout } from "@/services/features/auth/authSlice";
-import AppLogo from "@/components/AppLogo/AppLogo";
-import type { ClassData } from "@/services/features/admin/classSlice";
+import { fetchClassesByCourse } from "@/services/features/admin/classSlice";
+import { fetchCourses } from "@/services/features/course/courseSlice";
+import { enrollClassByKey, fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
+import StudentLayout from "@/components/StudentLayout/StudentLayout";
+
+const { Title, Text } = Typography;
 
 interface ClassItem {
   classId: number;
@@ -39,598 +48,488 @@ interface ClassItem {
   description: string;
   enrollmentCount: number;
   maxStudents?: number;
+  endDate: string;
 }
 
 const StudentClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const {
-    classes: apiClasses,
-    loading,
-    error,
-    pagination,
-  } = useAppSelector((state) => state.class);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const { classes: apiClasses, loading, error } = useAppSelector((state) => state.class);
+  const { courses } = useAppSelector((state) => state.course);
   const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
-  const { user } = useAppSelector((state) => state.auth);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState<"All Classes" | "Active Classes" | "Inactive Classes">("All Classes");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
-  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(
+    searchParams.get("courseId") ? parseInt(searchParams.get("courseId")!, 10) : null
+  );
+
+  // Modal ghi danh
+  const [enrollModal, setEnrollModal] = useState<{ open: boolean; data: ClassItem | null }>({
+    open: false,
+    data: null,
+  });
   const [enrollKey, setEnrollKey] = useState("");
   const [enrollError, setEnrollError] = useState("");
-  const [isEnrollSubmitting, setIsEnrollSubmitting] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
 
-  const courseIdFilter = searchParams.get("courseId");
-  const courseIdNumber = courseIdFilter ? parseInt(courseIdFilter, 10) : null;
-
-  // Fetch classes: either all classes or classes of a specific course,
-  // and enrolled classes for the current student.
   useEffect(() => {
-    if (courseIdNumber) {
-      dispatch(fetchClassesByCourse(courseIdNumber));
-    } else {
-      dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-    }
+    dispatch(fetchCourses({ page: 1, limit: 100 }));
     dispatch(fetchEnrolledClasses());
-  }, [dispatch, currentPage, pageSize, courseIdNumber]);
+  }, [dispatch]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedFilter]);
-
-  // Show error toast if there's an error
-  useEffect(() => {
-    if (error) {
-      setToast({
-        message: error,
-        type: "error",
-      });
+    if (selectedCourseId) {
+      dispatch(fetchClassesByCourse(selectedCourseId));
     }
+  }, [dispatch, selectedCourseId]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
   }, [error]);
 
-  // Transform API data to UI format
-  const transformClassData = (apiClass: ClassData): ClassItem => {
-    const instructorName = apiClass.instructors?.length
-      ? apiClass.instructors
-          .map(
-            (instructor) =>
-              `${instructor.firstName || ""} ${instructor.lastName || ""}`.trim() ||
-              instructor.username ||
-              "Unknown Instructor",
-          )
-          .join(", ")
-      : "Unknown Instructor";
-    const courseCode = apiClass.course?.courseCode || "";
-    const courseName = apiClass.course?.courseName || "";
-    const className = apiClass.className || courseName || apiClass.classCode;
-    const semester =
-      apiClass.course?.semester && apiClass.course?.academicYear
-        ? `${apiClass.course.semester} • ${apiClass.course.academicYear}`
-        : "";
+  const handleCourseChange = (courseId: number | null) => {
+    setSelectedCourseId(courseId);
+    setSearchQuery("");
+    if (courseId) {
+      setSearchParams({ courseId: String(courseId) });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const transformClass = (apiClass: any): ClassItem => {
+    const instructors = apiClass.instructors;
+    const instructorName = instructors?.length
+      ? instructors
+        .map((i: any) => `${i.firstName || ""} ${i.lastName || ""}`.trim() || i.username || "")
+        .filter(Boolean)
+        .join(", ")
+      : "Chưa có giảng viên";
     return {
       classId: apiClass.classId,
-      classCode: apiClass.classCode,
-      className,
-      courseCode,
-      courseName,
-      semester,
-      status: apiClass.status,
+      classCode: apiClass.classCode || "",
+      className: apiClass.className || apiClass.course?.courseName || "",
+      courseCode: apiClass.course?.courseCode || "",
+      courseName: apiClass.course?.courseName || "",
+      semester:
+        apiClass.course?.semester && apiClass.course?.academicYear
+          ? `${apiClass.course.semester} • ${apiClass.course.academicYear}`
+          : "",
+      status: apiClass.status === "active" ? "active" : "inactive",
       schedule: `${new Date(apiClass.startDate).toLocaleDateString("vi-VN")} – ${new Date(apiClass.endDate).toLocaleDateString("vi-VN")}`,
-      instructorName,
+      instructorName: instructorName || "Chưa có giảng viên",
       description: apiClass.description || "",
       enrollmentCount: apiClass.enrollmentCount ?? 0,
       maxStudents: apiClass.maxStudents,
+      endDate: apiClass.endDate || "",
     };
   };
 
-  const classes: ClassItem[] = apiClasses.map(transformClassData);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  // Filter courses based on selected filter and search query
-  const filteredClasses = classes.filter((classItem) => {
-    const matchesSearch =
-      classItem.className.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      classItem.classCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      classItem.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      classItem.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      classItem.instructorName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+  const classes: ClassItem[] = apiClasses
+    .map(transformClass)
+    .filter((c) => !(c.endDate && new Date(c.endDate) < today));
 
-    if (selectedFilter === "All Classes") {
-      return matchesSearch;
-    } else if (selectedFilter === "Active Classes") {
-      return matchesSearch && classItem.status === "active";
-    } else if (selectedFilter === "Inactive Classes") {
-      return matchesSearch && classItem.status !== "active";
-    }
-
-    return matchesSearch;
+  const filteredClasses = classes.filter((c) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      !q ||
+      c.className.toLowerCase().includes(q) ||
+      c.classCode.toLowerCase().includes(q) ||
+      c.instructorName.toLowerCase().includes(q)
+    );
   });
 
-  const isEnrolled = (classId: number): boolean => {
-    return enrolledClassIds.includes(classId);
-  };
+  const isEnrolled = (classId: number) => enrolledClassIds.includes(classId);
 
-  const openEnrollModal = (classItem: ClassItem) => {
-    setSelectedClass(classItem);
+  const openEnroll = (c: ClassItem) => {
+    setEnrollModal({ open: true, data: c });
     setEnrollKey("");
     setEnrollError("");
-    setIsEnrollModalOpen(true);
   };
-
-  const closeEnrollModal = () => {
-    setIsEnrollModalOpen(false);
-    setSelectedClass(null);
+  const closeEnroll = () => {
+    setEnrollModal({ open: false, data: null });
     setEnrollKey("");
     setEnrollError("");
   };
 
-  const handleEnrollSubmit = async () => {
-    if (!selectedClass) {
-      return;
-    }
-    const trimmedKey = enrollKey.trim();
-    if (!trimmedKey) {
+  const submitEnroll = async () => {
+    if (!enrollModal.data) return;
+    const trimmed = enrollKey.trim();
+    if (!trimmed) {
       setEnrollError("Vui lòng nhập mã ghi danh");
       return;
     }
-
     try {
-      setIsEnrollSubmitting(true);
-      await dispatch(
-        enrollClassByKey({
-          classId: selectedClass.classId,
-          enrollKey: trimmedKey,
-        }),
-      ).unwrap();
+      setEnrolling(true);
+      await dispatch(enrollClassByKey({ classId: enrollModal.data.classId, enrollKey: trimmed })).unwrap();
       await dispatch(fetchEnrolledClasses());
-      setToast({
-        message: "Successfully enrolled in class!",
-        type: "success",
-      });
-      closeEnrollModal();
-    } catch (error: unknown) {
-      const errorMessage =
-        typeof error === "string"
-          ? error
-          : (error as Error)?.message || "Ghi danh lớp thất bại";
-      setToast({
-        message: errorMessage,
-        type: "error",
-      });
+      toast.success(`Đã ghi danh thành công lớp "${enrollModal.data.className}"!`);
+      closeEnroll();
+    } catch (err: any) {
+      setEnrollError(err?.message || "Ghi danh thất bại. Vui lòng thử lại.");
     } finally {
-      setIsEnrollSubmitting(false);
+      setEnrolling(false);
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
+  const courseOptions = courses.map((c) => ({
+    value: c.courseId,
+    label: `${c.courseName}${c.semester ? ` • ${c.semester}` : ""}`,
+  }));
 
-  const userInitial =
-    user?.firstName?.[0]?.toUpperCase() ||
-    user?.username?.[0]?.toUpperCase() ||
-    "S";
-
-  const userDisplayName = user
-    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-      user.username ||
-      "Student"
-    : "Student";
+  const selectedCourseName = courses.find((c) => c.courseId === selectedCourseId)?.courseName;
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div>
-                <AppLogo to="/" size="md" />
-                <p className="text-xs text-slate-500 font-vn">Student workspace</p>
-              </div>
-            </div>
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8 font-vn">
-              <Link
-                to="/student/dashboard"
-                className={
-                  courseIdNumber
-                    ? "text-sm font-medium text-slate-900 border-b-2 border-sky-500 pb-1"
-                    : "text-sm font-medium text-slate-700 hover:text-slate-900"
-                }
-              >
-                Khóa học
-              </Link>
-              <Link
-                to="/student/my-class"
-                className={
-                  courseIdNumber
-                    ? "text-sm font-medium text-slate-700 hover:text-slate-900"
-                    : "text-sm font-medium text-slate-900 border-b-2 border-sky-500 pb-1"
-                }
-              >
-                Lớp của tôi
-              </Link>
-              <Link
-                to="/student/my-presentations"
-                className="text-sm font-medium text-slate-700 hover:text-slate-900"
-              >
-                Bài thuyết trình
-              </Link>
-            </nav>
+    <StudentLayout>
+      <ConfigProvider componentSize="large">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-sky-50 rounded-full transition">
-                <Bell className="w-5 h-5 text-slate-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-sky-50 rounded-full transition"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {userInitial}
-                    </span>
-                  </div>
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {userDisplayName}
-                      </p>
-                      <p className="text-xs text-slate-500">Student</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-slate-100 rounded-full"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-slate-600" />
-                ) : (
-                  <Menu className="w-5 h-5 text-slate-600" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Page Header */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 font-vn">
-                {courseIdNumber ? "Lớp thuộc khóa học" : "Tất cả lớp học"}
-              </h1>
-              <p className="text-sm sm:text-base text-slate-600 font-vn">
-                {courseIdNumber
-                  ? "Các lớp thuộc khóa học đã chọn."
-                  : "Xem và khám phá các lớp có sẵn để cải thiện kỹ năng thuyết trình."}
-              </p>
-            </div>
-            {courseIdNumber && (
-              <button
-                onClick={() => navigate("/student/classes")}
-                className="rounded-full border border-sky-200 bg-sky-50 text-sky-700 px-4 py-2 text-sm font-semibold hover:bg-sky-100 transition font-vn"
-              >
-                Xem tất cả lớp
-              </button>
-            )}
+          {/* Tiêu đề */}
+          <div
+            className="rounded-2xl px-6 py-5 sm:px-8 sm:py-6"
+            style={{ background: "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)", border: "1px solid #e0e7ff" }}
+          >
+            <Title level={2} className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold">
+              Khám phá lớp học
+            </Title>
+            <Text className="text-sm sm:text-base text-indigo-500/80">
+              Chọn khóa học để xem và ghi danh các lớp học phù hợp
+            </Text>
           </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-            <div className="relative flex-1 w-full sm:max-w-[448px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm lớp học..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[43px] pl-10 pr-4 border border-slate-200 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-vn placeholder:text-slate-500"
+          {/* Bộ lọc khóa học + tìm kiếm */}
+          <div
+            className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm space-y-5"
+            style={{ border: "1px solid #f1f5f9" }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Select
+                showSearch
+                allowClear
+                placeholder="Chọn khóa học..."
+                value={selectedCourseId ?? undefined}
+                onChange={(val) => handleCourseChange(val ?? null)}
+                options={courseOptions}
+                filterOption={(input, option) =>
+                  String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+                className="w-full sm:w-72"
+                style={{ borderRadius: 12 }}
+                suffixIcon={<BookOpen className="h-4 w-4 text-slate-400" />}
               />
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto font-vn">
-              <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
-                  selectedFilter === "All Classes"
-                    ? "bg-sky-100 border-sky-200 text-sky-800"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-                onClick={() => setSelectedFilter("All Classes")}
-              >
-                <span className="text-sm font-medium">Tất cả lớp</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
-                  selectedFilter === "Active Classes"
-                    ? "bg-sky-100 border-sky-200 text-sky-800"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-                onClick={() => setSelectedFilter("Active Classes")}
-              >
-                <span className="text-sm font-medium">Đang mở</span>
-              </button>
-              <button
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 h-[34px] rounded-full border whitespace-nowrap transition ${
-                  selectedFilter === "Inactive Classes"
-                    ? "bg-sky-100 border-sky-200 text-sky-800"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-                onClick={() => setSelectedFilter("Inactive Classes")}
-              >
-                <span className="text-sm font-medium">Đã đóng</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-slate-600 font-vn">Đang tải danh sách lớp...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Course Cards */}
-          {!loading && (
-            <div className="space-y-6">
-              {filteredClasses.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-12 text-center">
-                  <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                  <p className="text-lg font-medium text-slate-900 mb-2 font-vn">
-                    {searchQuery
-                      ? "Không tìm thấy lớp phù hợp"
-                      : "Chưa có lớp nào"}
-                  </p>
-                  <p className="text-sm text-slate-600 font-vn">
-                    {searchQuery
-                      ? "Thử đổi từ khóa hoặc bộ lọc"
-                      : "Hãy quay lại sau để xem lớp mới"}
-                  </p>
-                </div>
-              ) : (
-                filteredClasses.map((classItem) => (
-                  <div
-                    key={classItem.classId}
-                    className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden hover:shadow-lg hover:border-sky-100 transition"
-                  >
-                    {/* Course Info */}
-                    <div className="p-5">
-                      {/* Header */}
-                      <div className="mb-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                              classItem.status === "active"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {classItem.status === "active"
-                              ? "Đang mở"
-                              : "Đã đóng"}
-                          </span>
-                          {classItem.semester && (
-                            <span className="text-sm text-slate-600">
-                              {classItem.semester}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-1 font-vn">
-                          {classItem.className}
-                        </h3>
-                        <p className="text-sm text-slate-600 mb-2">
-                          {classItem.classCode}
-                          {classItem.courseCode &&
-                            classItem.courseName &&
-                            ` • ${classItem.courseCode} - ${classItem.courseName}`}
-                        </p>
-                        {classItem.description && (
-                          <p className="text-sm text-slate-700 mb-3 line-clamp-2">
-                            {classItem.description}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                          <User className="w-4 h-4 text-sky-600" />
-                          <div>
-                            <p className="text-xs text-slate-500 font-vn">Giảng viên</p>
-                            <p className="text-sm font-medium text-slate-900">
-                              {classItem.instructorName}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                          <BookOpen className="w-4 h-4 text-amber-600" />
-                          <div>
-                            <p className="text-xs text-slate-500 font-vn">Ghi danh</p>
-                            <p className="text-sm font-medium text-slate-900">
-                              {classItem.enrollmentCount}
-                              {classItem.maxStudents
-                                ? `/${classItem.maxStudents}`
-                                : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                          <Calendar className="w-4 h-4 text-sky-600" />
-                          <div>
-                            <p className="text-xs text-slate-500 font-vn">Lịch học</p>
-                            <p className="text-sm font-medium text-slate-900">
-                              {classItem.schedule}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
-                        {isEnrolled(classItem.classId) ? (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 font-vn">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-sm font-medium">Đã ghi danh</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => openEnrollModal(classItem)}
-                            className="rounded-full bg-sky-600 hover:bg-sky-500 text-white px-5 py-2.5 text-sm font-semibold transition font-vn"
-                          >
-                            Ghi danh
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
+              {selectedCourseId && (
+                <Input
+                  placeholder="Tìm kiếm lớp, mã lớp, giảng viên..."
+                  prefix={<Search className="h-4 w-4 text-slate-400" />}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  allowClear
+                  className="w-full sm:max-w-[320px]"
+                  style={{ borderRadius: 12 }}
+                />
               )}
             </div>
-          )}
 
-          {!loading && !error && pagination.total > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-8 px-4 py-4 border-t border-slate-200">
-              <div className="flex items-center gap-3 font-vn">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <span>Trang {pagination.page} / {pagination.totalPages}</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      const nextSize = parseInt(e.target.value);
-                      setPageSize(nextSize);
-                      setCurrentPage(1);
-                    }}
-                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
+            {/* Chưa chọn khóa học */}
+            {!selectedCourseId && (
+              <div className="flex flex-col items-center justify-center py-14 gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
+                  <BookOpen className="h-8 w-8 text-indigo-400" />
                 </div>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={pagination.page <= 1}
-                  className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Trước
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) =>
-                      Math.min(pagination.totalPages, prev + 1),
-                    )
-                  }
-                  disabled={pagination.page >= pagination.totalPages}
-                  className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Sau
-                </button>
+                <div className="text-center">
+                  <Text strong className="block text-slate-700 text-base mb-1">
+                    Chọn một khóa học để bắt đầu
+                  </Text>
+                  <Text type="secondary" className="text-sm">
+                    Danh sách lớp học sẽ hiển thị sau khi bạn chọn khóa học ở trên
+                  </Text>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {isEnrollModalOpen && selectedClass && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-              <div
-                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                onClick={closeEnrollModal}
-              />
-              <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-1 font-vn">
-                  Ghi danh vào {selectedClass.className}
-                </h3>
-                <p className="text-sm text-slate-600 mb-4 font-vn">
-                  Nhập mã ghi danh để tham gia lớp này.
-                </p>
-                <label className="block text-sm font-medium text-slate-700 mb-2 font-vn">
-                  Mã ghi danh
-                </label>
-                <input
-                  type="text"
-                  value={enrollKey}
-                  onChange={(event) => {
-                    setEnrollKey(event.target.value);
-                    if (enrollError) setEnrollError("");
-                  }}
-                  className={`w-full h-[42px] px-4 border rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-vn ${
-                    enrollError ? "border-red-500" : "border-slate-200"
-                  }`}
-                  placeholder="Nhập mã ghi danh"
-                />
-                {enrollError && (
-                  <p className="text-sm text-red-600 mt-2 font-vn">{enrollError}</p>
+            {/* Đã chọn khóa học — danh sách lớp */}
+            {selectedCourseId && (
+              <>
+                {selectedCourseName && (
+                  <div className="flex items-center gap-2">
+                    <Text type="secondary" className="text-sm">Lớp thuộc:</Text>
+                    <Tag color="blue" style={{ borderRadius: 8, fontSize: 12 }}>{selectedCourseName}</Tag>
+                  </div>
                 )}
-                <div className="mt-6 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-full font-vn"
-                    onClick={closeEnrollModal}
-                    disabled={isEnrollSubmitting}
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleEnrollSubmit}
-                    disabled={isEnrollSubmitting}
-                    className="rounded-full bg-sky-600 hover:bg-sky-500 text-white px-5 py-2 text-sm font-semibold transition disabled:opacity-50 font-vn"
-                  >
-                    {isEnrollSubmitting ? "Đang ghi danh..." : "Ghi danh"}
-                  </button>
-                </div>
+
+                {loading ? (
+                  <Row gutter={[20, 20]}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <Col xs={24} md={12} xl={8} xxl={6} key={i}>
+                        <Card style={{ borderRadius: 16 }} styles={{ body: { padding: "20px 18px" } }}>
+                          <Skeleton active paragraph={{ rows: 3 }} />
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
+                ) : filteredClasses.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <span className="text-sm text-slate-500">
+                          {searchQuery ? "Không tìm thấy lớp nào phù hợp" : "Khóa học này chưa có lớp học nào"}
+                        </span>
+                      }
+                    />
+                    {searchQuery && (
+                      <Button type="link" className="!text-sm" onClick={() => setSearchQuery("")}>
+                        Xóa tìm kiếm
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <Row gutter={[20, 20]}>
+                    {filteredClasses.map((c) => {
+                      const enrolled = isEnrolled(c.classId);
+                      const isActive = c.status === "active";
+                      return (
+                        <Col xs={24} md={12} xl={8} xxl={6} key={c.classId}>
+                          <Card
+                            hoverable
+                            style={{
+                              borderRadius: 16,
+                              border: "1px solid #e8e8e8",
+                              overflow: "hidden",
+                              transition: "all 0.2s",
+                            }}
+                            styles={{ body: { padding: 0 } }}
+                            className="group h-full"
+                          >
+                            {/* Header gradient */}
+                            <div
+                              className="relative p-5 pb-4"
+                              style={{
+                                background: isActive
+                                  ? "linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)"
+                                  : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+                              }}
+                            >
+                              <div className="mb-2.5 flex items-center justify-between">
+                                <Tag
+                                  style={{
+                                    borderRadius: 20,
+                                    border: "none",
+                                    fontSize: 11,
+                                    padding: "2px 10px",
+                                    background: isActive ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)",
+                                    color: "#fff",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {isActive ? "Đang mở" : "Đã đóng"}
+                                </Tag>
+                                {enrolled && (
+                                  <div className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
+                                    <ShieldCheck className="h-3 w-3" />
+                                    Đã ghi danh
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                                  <GraduationCap className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <Title
+                                    level={4}
+                                    className="!mb-0.5 !text-white !text-base sm:!text-lg !leading-snug !font-bold line-clamp-2"
+                                  >
+                                    {c.className}
+                                  </Title>
+                                  <Text className="text-white/80 text-xs sm:text-sm">
+                                    {c.classCode}
+                                    {c.courseCode ? ` • ${c.courseCode}` : ""}
+                                  </Text>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-4 space-y-3">
+                              <div className="space-y-2.5">
+                                {c.instructorName && c.instructorName !== "Chưa có giảng viên" && (
+                                  <div className="flex items-center gap-2.5">
+                                    <Avatar
+                                      size={30}
+                                      className="flex shrink-0 items-center justify-center bg-blue-100 text-blue-600 text-xs font-bold"
+                                    >
+                                      {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                      <Text type="secondary" className="block text-xs">Giảng viên</Text>
+                                      <Text className="text-xs sm:text-sm font-semibold text-slate-800 truncate block">
+                                        {c.instructorName}
+                                      </Text>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-2.5">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                                    <Users className="h-4 w-4 text-slate-500" />
+                                  </div>
+                                  <div>
+                                    <Text type="secondary" className="block text-xs">Học sinh</Text>
+                                    <Text className="text-xs sm:text-sm font-semibold text-slate-800">
+                                      {c.enrollmentCount}
+                                      {c.maxStudents ? ` / ${c.maxStudents}` : ""}
+                                    </Text>
+                                  </div>
+                                </div>
+
+                                {c.schedule && (
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                                      <Calendar className="h-4 w-4 text-slate-500" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <Text type="secondary" className="block text-xs">Lịch học</Text>
+                                      <Text className="text-xs sm:text-sm font-semibold text-slate-800 truncate block">
+                                        {c.schedule}
+                                      </Text>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {c.description && (
+                                <Text type="secondary" className="text-xs sm:text-sm line-clamp-2 block">
+                                  {c.description}
+                                </Text>
+                              )}
+
+                              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                                {enrolled ? (
+                                  <>
+                                    <Button
+                                      type="default"
+                                      icon={<CheckCircle2 className="h-4 w-4" />}
+                                      className="rounded-xl !text-sm !font-semibold !border-emerald-200 !text-emerald-700 !bg-emerald-50 h-10"
+                                      onClick={() => navigate(`/student/class/${c.classId}`)}
+                                    >
+                                      Vào lớp
+                                    </Button>
+                                    <Button
+                                      type="text"
+                                      className="rounded-xl h-10 w-10 !p-0 flex items-center justify-center"
+                                      onClick={() => navigate(`/student/class/${c.classId}`)}
+                                      icon={<ChevronRight className="h-4 w-4" />}
+                                      aria-label="Chi tiết lớp"
+                                    />
+                                  </>
+                                ) : (
+                                  <Button
+                                    type="primary"
+                                    icon={<KeyRound className="h-4 w-4" />}
+                                    className="rounded-xl !text-sm !font-semibold h-10"
+                                    onClick={() => openEnroll(c)}
+                                    disabled={!isActive}
+                                  >
+                                    Ghi danh
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Modal Ghi danh */}
+        <Modal
+          open={enrollModal.open}
+          onCancel={closeEnroll}
+          footer={null}
+          centered
+          width={440}
+          destroyOnClose
+          styles={{
+            content: { borderRadius: 16, padding: "24px 20px 20px" },
+            header: { display: "none" },
+          }}
+        >
+          <div className="space-y-5">
+            <div
+              className="flex items-center gap-3 rounded-xl p-4"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                <KeyRound className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <Title level={4} className="!mb-0.5 !text-white !text-lg !font-bold">
+                  Ghi danh lớp học
+                </Title>
+                <Text className="text-white/80 text-sm">
+                  {enrollModal.data?.className}
+                </Text>
               </div>
             </div>
-          )}
 
-          {/* Toast Notification */}
-          {toast && (
-            <div className="fixed top-4 right-4 z-50 max-w-md">
-              <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(null)}
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-800">
+                Mã ghi danh
+              </label>
+              <Input
+                placeholder="Nhập mã ghi danh do giáo viên cung cấp"
+                prefix={<KeyRound className="h-4 w-4 text-slate-400" />}
+                value={enrollKey}
+                onChange={(e) => {
+                  setEnrollKey(e.target.value);
+                  if (enrollError) setEnrollError("");
+                }}
+                status={enrollError ? "error" : undefined}
+                style={{ borderRadius: 12, height: 44 }}
+                className="text-sm"
               />
+              {enrollError && (
+                <Text type="danger" className="mt-1.5 block text-sm">
+                  {enrollError}
+                </Text>
+              )}
             </div>
-          )}
-        </div>
-      </main>
-    </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                onClick={closeEnroll}
+                disabled={enrolling}
+                style={{ borderRadius: 10, height: 40 }}
+                className="!text-sm !font-semibold min-w-[90px]"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                onClick={submitEnroll}
+                loading={enrolling}
+                style={{ borderRadius: 10, height: 40 }}
+                className="!text-sm !font-semibold min-w-[130px]"
+              >
+                {enrolling ? "Đang ghi danh..." : "Xác nhận"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </ConfigProvider>
+    </StudentLayout>
   );
 };
 

@@ -5,9 +5,7 @@ import ClassModal from "@/components/Course/ClassModal";
 import Toast from "@/components/Toast/Toast";
 import {
   Search,
-  MoreVertical,
   Sparkles,
-  Plus,
   RefreshCw,
   Users,
   Clock,
@@ -19,12 +17,9 @@ import type { ColumnsType } from "antd/es/table";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchClassesByInstructor,
-  createClass,
   updateClass,
-  deleteClass,
   ClassData,
 } from "@/services/features/admin/classSlice";
-import { fetchCourses } from "@/services/features/course/courseSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 
 interface ClassCard {
@@ -55,6 +50,18 @@ interface PendingSubmission {
   status: "pending" | "reviewed";
 }
 
+// Kiểm tra lớp học đã hết hạn (endDate < giờ hiện tại theo múi giờ Beijing)
+const isClassExpired = (endDate: string): boolean => {
+  const now = new Date();
+  // Chuyển về múi giờ Beijing (UTC+8)
+  const beijingOffset = 8 * 60; // phút
+  const localOffset = now.getTimezoneOffset(); // phút (ví dụ UTC+7 = -420)
+  const diffMinutes = localOffset + beijingOffset; // hiệu số phút giữa local và Beijing
+  const beijingNow = new Date(now.getTime() + diffMinutes * 60 * 1000);
+  const classEnd = new Date(endDate);
+  return classEnd < beijingNow;
+};
+
 const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -63,13 +70,11 @@ const ManageClassesPage: React.FC = () => {
     loading,
     pagination,
   } = useAppSelector((state) => state.class);
-  const { courses } = useAppSelector((state) => state.course);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "active" | "archived"
   >("all");
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,14 +84,10 @@ const ManageClassesPage: React.FC = () => {
     type: "success" | "error" | "info";
   } | null>(null);
 
-  // Fetch classes and courses
+  // Fetch classes
   useEffect(() => {
     dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
   }, [dispatch, currentPage, pageSize]);
-
-  useEffect(() => {
-    dispatch(fetchCourses({ page: 1, limit: 100 }));
-  }, [dispatch]);
 
   // Transform API data to UI format
   const transformClassData = (apiClass: ClassData): ClassCard => {
@@ -134,46 +135,31 @@ const ManageClassesPage: React.FC = () => {
     pagination.totalPages || Math.max(1, Math.ceil(totalRecords / pageSize));
   const currentPageLabel = pagination.page || currentPage;
 
-  // Filter courses based on selected filter and search query
+  // Filter courses based on selected filter and search query, đồng thời ẩn lớp đã hết hạn
   const filteredCourses = classes.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
 
+    // Ẩn lớp đã hết hạn (endDate < giờ hiện tại Beijing)
+    const expired = isClassExpired(course.endDate);
+
     if (selectedFilter === "active") {
-      return matchesSearch && course.isActive;
+      return matchesSearch && course.isActive && !expired;
     } else if (selectedFilter === "archived") {
       return matchesSearch && !course.isActive;
     }
 
-    return matchesSearch;
+    return matchesSearch && !expired;
   });
 
-  const handleDeleteCourse = async (classId: number) => {
-    try {
-      await dispatch(deleteClass(classId)).unwrap();
-      setDeleteConfirm(null);
-      setToast({
-        message: "Class deleted successfully!",
-        type: "success",
-      });
-      dispatch(
-        fetchClassesByInstructor({ page: currentPage, limit: pageSize }),
-      );
-    } catch {
-      setToast({
-        message: "Failed to delete class. Please try again.",
-        type: "error",
-      });
-    }
+  const handleRefreshData = () => {
+    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
   };
 
-  const handleCourseModalOpen = (classItem?: ClassData) => {
-    if (classItem) {
-      setEditingClass(classItem);
-    } else {
-      setEditingClass(null);
-    }
+  // Mở modal chỉnh sửa class
+  const handleCourseModalOpen = (classItem: ClassData) => {
+    setEditingClass(classItem);
     setClassModalOpen(true);
   };
 
@@ -182,42 +168,30 @@ const ManageClassesPage: React.FC = () => {
     setEditingClass(null);
   };
 
+  // Cập nhật class (chỉ update, không tạo mới)
   const handleCourseSubmit = async (classData: any) => {
+    if (!editingClass) return;
     try {
-      if (editingClass) {
-        await dispatch(
-          updateClass({
-            classId: editingClass.classId,
-            classData: classData,
-          }),
-        ).unwrap();
-        setToast({
-          message: "Class updated successfully!",
-          type: "success",
-        });
-      } else {
-        await dispatch(createClass(classData)).unwrap();
-        setToast({
-          message: "Class created successfully!",
-          type: "success",
-        });
-        setTimeout(() => window.location.reload(), 500);
-      }
+      await dispatch(
+        updateClass({
+          classId: editingClass.classId,
+          classData: classData,
+        }),
+      ).unwrap();
+      setToast({
+        message: "Class updated successfully!",
+        type: "success",
+      });
       handleCourseModalClose();
       dispatch(
         fetchClassesByInstructor({ page: currentPage, limit: pageSize }),
       );
     } catch {
       setToast({
-        message: `Failed to ${editingClass ? "update" : "create"} class. Please try again.`,
+        message: "Failed to update class. Please try again.",
         type: "error",
       });
     }
-  };
-
-  const handleRefreshData = () => {
-    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
-    dispatch(fetchCourses({ page: 1, limit: 100 }));
   };
 
   // Mock pending submissions
@@ -457,24 +431,11 @@ const ManageClassesPage: React.FC = () => {
                           ? "No classes found matching your search"
                           : "No classes available"}
                       </p>
-                      <p className="text-sm text-gray-600 mb-4">
+                      <p className="text-sm text-gray-600">
                         {searchQuery
                           ? "Try adjusting your search terms"
-                          : "Create your first class to get started"}
+                          : "You have no active classes at the moment."}
                       </p>
-                      {!searchQuery && (
-                        <Button
-                          text="Create Class"
-                          variant="primary"
-                          fontSize="14px"
-                          borderRadius="6px"
-                          paddingWidth="16px"
-                          paddingHeight="8px"
-                          icon={<Plus className="w-4 h-4" />}
-                          iconPosition="left"
-                          onClick={() => handleCourseModalOpen()}
-                        />
-                      )}
                     </div>
                   ) : (
                     filteredCourses.map((course) => (
@@ -510,36 +471,23 @@ const ManageClassesPage: React.FC = () => {
                                 {course.courseName || "Course"}
                               </p>
                             </div>
-                            <div
-                              className="p-1 hover:bg-gray-100 rounded relative group cursor-pointer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-5 h-5 text-gray-600" />
-                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const classData = apiClasses.find(
-                                      (c) => c.classId === parseInt(course.id),
-                                    );
-                                    if (classData) {
-                                      handleCourseModalOpen(classData);
-                                    }
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-xl"
-                                >
-                                  Edit Class
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirm(parseInt(course.id));
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl"
-                                >
-                                  Delete Class
-                                </button>
-                              </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                text="Edit"
+                                variant="secondary"
+                                fontSize="13px"
+                                borderRadius="6px"
+                                paddingWidth="12px"
+                                paddingHeight="6px"
+                                onClick={() => {
+                                  const classData = apiClasses.find(
+                                    (c) => c.classId === parseInt(course.id),
+                                  );
+                                  if (classData) {
+                                    handleCourseModalOpen(classData);
+                                  }
+                                }}
+                              />
                             </div>
                           </div>
 
@@ -795,50 +743,15 @@ const ManageClassesPage: React.FC = () => {
               </div>
             )}
 
-            {/* Class Modal */}
+            {/* Class Modal (Edit only) */}
             <ClassModal
               isOpen={classModalOpen}
               onClose={handleCourseModalClose}
               onSubmit={handleCourseSubmit}
               initialData={editingClass || undefined}
               isLoading={loading}
-              courses={courses}
+              courses={[]}
             />
-
-            {/* Delete Confirmation Dialog */}
-            {deleteConfirm !== null && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">
-                    Delete Class
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    Are you sure you want to delete this class? This action
-                    cannot be undone.
-                  </p>
-                  <div className="flex gap-3 justify-end">
-                    <Button
-                      text="Cancel"
-                      variant="secondary"
-                      fontSize="14px"
-                      borderRadius="6px"
-                      paddingWidth="16px"
-                      paddingHeight="8px"
-                      onClick={() => setDeleteConfirm(null)}
-                    />
-                    <Button
-                      text="Delete"
-                      variant="primary"
-                      fontSize="14px"
-                      borderRadius="6px"
-                      paddingWidth="16px"
-                      paddingHeight="8px"
-                      onClick={() => handleDeleteCourse(deleteConfirm)}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Toast Notification */}
             {toast && (

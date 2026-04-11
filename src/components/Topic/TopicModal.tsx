@@ -7,6 +7,7 @@ export interface TopicClassOption {
   classId: number;
   className: string;
   classCode?: string;
+  endDate?: string; // Thêm trường endDate để kiểm tra lớp hết hạn
 }
 
 interface TopicModalProps {

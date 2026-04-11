@@ -74,6 +74,8 @@ export interface PresentationReport {
   reportStatus: string;
   confirmedByInstructorId: number | null;
   confirmedAt: string | null;
+  feedbackOfInstructor: string | null;
+  gradeForInstructor: number | null;
   generatedByModel: string | null;
   generatedAt: string;
   createdAt: string;
@@ -140,12 +142,26 @@ export const fetchPresentationReport = createAsyncThunk(
   },
 );
 
+export interface ConfirmReportPayload {
+  reportId: number;
+  gradeForInstructor: number;
+  feedbackOfInstructor?: string;
+}
+
 export const confirmPresentationReport = createAsyncThunk(
   "report/confirmPresentationReport",
-  async (reportId: number, { rejectWithValue }) => {
+  async (payload: ConfirmReportPayload, { rejectWithValue }) => {
     try {
-      await axiosInstance.put(CONFIRM_REPORT_ENDPOINT(reportId.toString()));
-      return reportId;
+      const response = await axiosInstance.put<ReportResponse>(
+        CONFIRM_REPORT_ENDPOINT(payload.reportId.toString()),
+        {
+          gradeForInstructor: payload.gradeForInstructor,
+          ...(payload.feedbackOfInstructor !== undefined && {
+            feedbackOfInstructor: payload.feedbackOfInstructor,
+          }),
+        },
+      );
+      return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể xác nhận AI report",
@@ -314,8 +330,9 @@ const reportSlice = createSlice({
         state.confirmLoading = true;
         state.error = null;
       })
-      .addCase(confirmPresentationReport.fulfilled, (state) => {
+      .addCase(confirmPresentationReport.fulfilled, (state, action) => {
         state.confirmLoading = false;
+        state.currentReport = action.payload;
       })
       .addCase(confirmPresentationReport.rejected, (state, action) => {
         state.confirmLoading = false;

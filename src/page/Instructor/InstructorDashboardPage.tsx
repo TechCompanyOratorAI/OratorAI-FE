@@ -46,6 +46,17 @@ interface RecentActivity {
   icon: string;
 }
 
+// Kiểm tra lớp học đã hết hạn (endDate < giờ hiện tại theo múi giờ Beijing)
+const isClassExpired = (endDate: string): boolean => {
+  const now = new Date();
+  const beijingOffset = 8 * 60; // phút
+  const localOffset = now.getTimezoneOffset(); // phút
+  const diffMinutes = localOffset + beijingOffset;
+  const beijingNow = new Date(now.getTime() + diffMinutes * 60 * 1000);
+  const classEnd = new Date(endDate);
+  return classEnd < beijingNow;
+};
+
 const InstructorDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -64,12 +75,19 @@ const InstructorDashboardPage: React.FC = () => {
     dispatch(fetchEnrolledClasses());
   }, [dispatch]);
 
+  // Lọc bỏ các lớp đã hết hạn (endDate < giờ hiện tại Beijing)
+  const activeEnrolledClasses = enrolledClasses.filter((enrollment) => {
+    const classEndDate = enrollment.class?.endDate;
+    if (!classEndDate) return true; // Không có endDate thì giữ lại
+    return !isClassExpired(classEndDate);
+  });
+
   // Calculate metrics
-  const totalStudents = enrolledClasses.reduce((acc, cls) => {
+  const totalStudents = activeEnrolledClasses.reduce((acc, cls) => {
     return acc + (cls.class.maxStudents || 0);
   }, 0);
 
-  const pendingReviews = enrolledClasses.length > 0 ? 12 : 0;
+  const pendingReviews = activeEnrolledClasses.length > 0 ? 12 : 0;
   const averageScore = 85;
 
   const pendingPresentations: Presentation[] = [
