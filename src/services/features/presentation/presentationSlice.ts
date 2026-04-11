@@ -384,6 +384,9 @@ const presentationSlice = createSlice({
     setCurrentPresentation: (state, action: PayloadAction<Presentation | null>) => {
       state.currentPresentation = action.payload;
     },
+    clearProgress: (state) => {
+      state.progress = null;
+    },
   },
   extraReducers: (builder) => {
     // Fetch presentations
@@ -530,6 +533,5 @@ const presentationSlice = createSlice({
   },
 });
 
-export const { clearError, setCurrentPresentation } = presentationSlice.actions;
-export const clearProgress = presentationSlice.actions.clearError; // re-use pattern
+export const { clearError, setCurrentPresentation, clearProgress } = presentationSlice.actions;
 export default presentationSlice.reducer;

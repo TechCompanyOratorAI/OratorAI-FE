@@ -17,6 +17,7 @@ import {
   Crown,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
@@ -66,6 +67,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isUploadResubmit, setIsUploadResubmit] = useState(false);
   const [presentationTitle, setPresentationTitle] = useState("");
   const [presentationDescription, setPresentationDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -140,6 +142,14 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const handleOpenUploadModal = (presentationId: number, title: string) => {
     setSelectedPresentationId(presentationId);
     setPresentationTitle(title);
+    setIsUploadResubmit(false);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleRetry = (presentationId: number, title: string) => {
+    setSelectedPresentationId(presentationId);
+    setPresentationTitle(title);
+    setIsUploadResubmit(true);
     setIsUploadModalOpen(true);
   };
 
@@ -284,11 +294,11 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 <div className="space-y-3">
                   {presentations.map((presentation) => {
                     const sc = statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
+                    const isFailed = presentation.status === "failed";
                     return (
-                      <Link
+                      <div
                         key={presentation.presentationId}
-                        to={`/student/presentation/${presentation.presentationId}`}
-                        className="group flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200 block"
+                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200"
                       >
                         <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
                           <FileTextIcon className="w-4 h-4 text-indigo-600" />
@@ -307,7 +317,23 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                             )}
                           </div>
                         </div>
-                      </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Link
+                            to={`/student/presentation/${presentation.presentationId}`}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                          >
+                            Xem
+                          </Link>
+                          {isFailed && (
+                            <button
+                              onClick={() => handleRetry(presentation.presentationId, presentation.title)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition shadow-sm"
+                            >
+                              <RefreshCw className="w-3 h-3" /> Gửi lại
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -408,18 +434,22 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         <CheckCircle2 className="w-7 h-7 text-emerald-600" />
                       </div>
                       <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
-                      <p className="text-sm text-slate-500 mb-4">
-                        {myPresentation.status === "draft"
-                          ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
-                          : myPresentation.status === "submitted" || myPresentation.status === "processing"
-                            ? "Bài đã được nộp và đang xử lý AI."
-                            : myPresentation.status === "done"
-                              ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
-                              : myPresentation.status === "failed"
-                                ? "Xử lý thất bại. Vui lòng liên hệ giảng viên."
-                                : ""}
-                      </p>
-                      <div className="space-y-3">
+                        {myPresentation.status === "failed" ? (
+                          <p className="text-sm text-red-600 font-medium mb-3">
+                            Xử lý thất bại. Bạn có thể gửi lại bài để thử lại.
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-500 mb-4">
+                            {myPresentation.status === "draft"
+                              ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
+                              : myPresentation.status === "submitted" || myPresentation.status === "processing"
+                                ? "Bài đã được nộp và đang xử lý AI."
+                                : myPresentation.status === "done"
+                                  ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
+                                  : ""}
+                          </p>
+                        )}
+                        <div className="space-y-3">
                         {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
                         {myPresentation.status === "draft" && (
                           <button
@@ -427,6 +457,14 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
                           >
                             <Upload className="w-4 h-4" /> Tải lên file
+                          </button>
+                        )}
+                        {myPresentation.status === "failed" && (
+                          <button
+                            onClick={() => handleRetry(myPresentation.presentationId, myPresentation.title)}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                          >
+                            <RefreshCw className="w-4 h-4" /> Gửi lại bài (upload file mới)
                           </button>
                         )}
                         <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
@@ -528,8 +566,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
           }}
           presentationId={selectedPresentationId}
           presentationTitle={presentationTitle}
+          isResubmit={isUploadResubmit}
         />
       )}
+
     </StudentLayout>
   );
 };

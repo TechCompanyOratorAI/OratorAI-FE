@@ -11,6 +11,7 @@ import {
   RESET_PASSWORD_ENDPOINT,
   RESEND_VERIFICATION_ENDPOINT,
   VERIFY_EMAIL_ENDPOINT,
+  LOGOUT_ENDPOINT,
 } from "../../constant/apiConfig";
 import {
   AuthState,
@@ -49,8 +50,8 @@ const getUserFromStorage = (): User | null => {
 // Initial state
 const initialState: AuthState = {
   user: getUserFromStorage(),
-  token: localStorage.getItem("token"),
-  isAuthenticated: !!localStorage.getItem("token"),
+  token: localStorage.getItem("accessToken"),
+  isAuthenticated: !!localStorage.getItem("accessToken"),
   loading: false,
   error: null,
 };
@@ -77,7 +78,7 @@ export const loginUser = createAsyncThunk<
 
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Đăng nhập thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -93,7 +94,7 @@ export const registerUser = createAsyncThunk<
     const response = await axiosInstance.post(REGISTER_ENDPOINT, credentials);
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Đăng ký thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -109,7 +110,7 @@ export const registerInstructor = createAsyncThunk<
     const response = await axiosInstance.post(REGISTER_INSTRUCTOR_ENDPOINT, credentials);
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Đăng ký Instructor thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -122,16 +123,19 @@ export const logoutUser = createAsyncThunk<
   { rejectValue: { message: string } }
 >("auth/logoutUser", async (_, { rejectWithValue }) => {
   try {
-    // Clear local storage
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    // Gọi API logout để server xóa httpOnly cookie
+    await axiosInstance.post(LOGOUT_ENDPOINT);
+    // Dọn localStorage phía FE
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
     return { success: true, message: "Đăng xuất thành công" };
   } catch (err: unknown) {
-    const error = err as any;
-    const errorMessage =
-      error.response?.data?.message || error.message || "Đăng xuất thất bại";
-    return rejectWithValue({ message: errorMessage });
+    // Dù API thất bại hay không, vẫn dọn localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
+    const msg = error.response?.data?.message ?? "Đăng xuất thất bại";
+    return rejectWithValue({ message: msg });
   }
 });
 
@@ -144,7 +148,7 @@ export const getProfile = createAsyncThunk<
     const response = await axiosInstance.get(PROFILE_ENDPOINT);
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Lấy thông tin profile thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -163,7 +167,7 @@ export const changePassword = createAsyncThunk<
     );
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Đổi mật khẩu thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -182,7 +186,7 @@ export const forgotPassword = createAsyncThunk<
     );
     return response.data;
   } catch (err: unknown) {
-    const error = err as any;
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
     const errorMessage =
       error.response?.data?.message || error.message || "Gửi email đặt lại mật khẩu thất bại";
     return rejectWithValue({ message: errorMessage });
@@ -270,8 +274,7 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       state.error = null;
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
       message.success("Đăng xuất thành công");
     },
@@ -296,7 +299,8 @@ const authSlice = createSlice({
         state.token = action.payload.tokens.accessToken;
         state.isAuthenticated = true;
         state.error = null;
-        localStorage.setItem("token", action.payload.tokens.accessToken);
+        // Lưu accessToken vào localStorage để interceptor đọc được
+        localStorage.setItem("accessToken", action.payload.tokens.accessToken);
         localStorage.setItem("user", JSON.stringify(action.payload.user));
         message.success(action.payload.message || "Đăng nhập thành công");
       })
@@ -360,13 +364,12 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
-        // Still logout locally even if API call fails
+        // Vẫn logout cục bộ dù API thất bại
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
         state.error = null;
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
         message.error(action.payload?.message || "Đăng xuất thất bại");
       })
