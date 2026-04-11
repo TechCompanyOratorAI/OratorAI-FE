@@ -403,72 +403,72 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     </button>
                   ) : null}
                   {myPresentation ? (
-                <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
-                  <p className="text-sm text-slate-500 mb-4">
-                    {myPresentation.status === "draft"
-                      ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
-                      : myPresentation.status === "submitted" || myPresentation.status === "processing"
-                      ? "Bài đã được nộp và đang xử lý AI."
-                      : myPresentation.status === "done"
-                      ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
-                      : myPresentation.status === "failed"
-                      ? "Xử lý thất bại. Vui lòng liên hệ giảng viên."
-                      : ""}
-                  </p>
-                  <div className="space-y-3">
-                    {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
-                    {myPresentation.status === "draft" && (
-                      <button
-                        onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-                      >
-                        <Upload className="w-4 h-4" /> Tải lên file
-                      </button>
-                    )}
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
-                      {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
-                      {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).label}
+                    <div className="text-center py-4">
+                      <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
+                      <p className="text-sm text-slate-500 mb-4">
+                        {myPresentation.status === "draft"
+                          ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
+                          : myPresentation.status === "submitted" || myPresentation.status === "processing"
+                            ? "Bài đã được nộp và đang xử lý AI."
+                            : myPresentation.status === "done"
+                              ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
+                              : myPresentation.status === "failed"
+                                ? "Xử lý thất bại. Vui lòng liên hệ giảng viên."
+                                : ""}
+                      </p>
+                      <div className="space-y-3">
+                        {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
+                        {myPresentation.status === "draft" && (
+                          <button
+                            onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                          >
+                            <Upload className="w-4 h-4" /> Tải lên file
+                          </button>
+                        )}
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
+                          {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
+                          {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).label}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ) : myGroupForClass && isCurrentUserLeader ? (
-                <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Crown className="w-7 h-7 text-blue-600" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 mb-1">Tạo bài thuyết trình</h3>
-                  <p className="text-sm text-slate-500 mb-5">Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.</p>
-                  <button onClick={() => setIsCreateModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" /> Tạo bài thuyết trình
-                  </button>
-                </div>
-              ) : myGroupForClass ? (
-                <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-7 h-7 text-slate-500" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
-                  <p className="text-sm text-slate-500 mb-4">Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ.</p>
-                  <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
-                    <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-7 h-7 text-slate-400" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
-                  <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để tạo bài thuyết trình.</p>
-                  <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                    <Users className="w-4 h-4" /> Đến quản lý nhóm
-                  </Link>
-                </div>
-              )}
+                  ) : myGroupForClass && isCurrentUserLeader ? (
+                    <div className="text-center py-4">
+                      <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Crown className="w-7 h-7 text-blue-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Tạo bài thuyết trình</h3>
+                      <p className="text-sm text-slate-500 mb-5">Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.</p>
+                      <button onClick={() => setIsCreateModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> Tạo bài thuyết trình
+                      </button>
+                    </div>
+                  ) : myGroupForClass ? (
+                    <div className="text-center py-4">
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-7 h-7 text-slate-500" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
+                      <p className="text-sm text-slate-500 mb-4">Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ.</p>
+                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
+                        <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
+                      <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để tạo bài thuyết trình.</p>
+                      <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+                        <Users className="w-4 h-4" /> Đến quản lý nhóm
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

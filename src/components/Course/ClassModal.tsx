@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  DatePicker,
+  Space,
+  Typography,
+} from "antd";
+import dayjs, { Dayjs } from "dayjs";
 import { ClassData } from "@/services/features/admin/classSlice";
+
+const { Text } = Typography;
 
 interface ClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (classData: any) => void;
+  onSubmit: (classData: Record<string, unknown>) => void;
   initialData?: ClassData;
   isLoading?: boolean;
   courses?: Array<{ courseId: number; courseCode: string; courseName: string }>;
@@ -15,12 +26,12 @@ interface ClassModalProps {
 interface ClassFormData {
   courseId: number;
   classCode: string;
-  startDate: string;
-  endDate: string;
+  startDate: Dayjs;
+  endDate: Dayjs;
   maxStudents: number;
   maxGroupMembers: number | null;
   enrollKey: string;
-  keyExpiresAt: string;
+  keyExpiresAt: Dayjs;
   keyMaxUses: number;
 }
 
@@ -32,414 +43,240 @@ const ClassModal: React.FC<ClassModalProps> = ({
   isLoading = false,
   courses = [],
 }) => {
-  const getTodayISO = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  const [form] = Form.useForm<ClassFormData>();
+  const [submitting, setSubmitting] = useState(false);
 
-  const toLocalDateTimeInput = (iso?: string) => {
-    if (!iso) return "";
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const [formData, setFormData] = useState<ClassFormData>({
-    courseId: 0,
-    classCode: "",
-    startDate: "",
-    endDate: "",
-    maxStudents: 35,
-    maxGroupMembers: null,
-    enrollKey: "",
-    keyExpiresAt: "",
-    keyMaxUses: 0,
-  });
-
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof ClassFormData, string>>
-  >({});
-
-  // Populate form with initial data when editing
+  // 填充初始数据
   useEffect(() => {
+    if (!isOpen) return;
     if (initialData) {
       const keySource =
         initialData.activeKeys?.[0] || initialData.enrollKeys?.[0];
-      setFormData({
+      form.setFieldsValue({
         courseId: initialData.courseId,
         classCode: initialData.classCode,
-        startDate: initialData.startDate,
-        endDate: initialData.endDate,
+        startDate: initialData.startDate
+          ? dayjs(initialData.startDate)
+          : undefined,
+        endDate: initialData.endDate ? dayjs(initialData.endDate) : undefined,
         maxStudents: initialData.maxStudents,
-        maxGroupMembers: initialData.maxGroupMembers ?? null,
+        maxGroupMembers: initialData.maxGroupMembers ?? undefined,
         enrollKey: keySource?.keyValue || "",
-        keyExpiresAt: toLocalDateTimeInput(keySource?.expiresAt),
-        keyMaxUses: keySource?.maxUses || 0,
+        keyExpiresAt: keySource?.expiresAt
+          ? dayjs(keySource.expiresAt)
+          : undefined,
+        keyMaxUses: keySource?.maxUses || 1,
       });
     } else {
-      setFormData({
-        courseId: courses.length > 0 ? courses[0].courseId : 0,
-        classCode: "",
-        startDate: "",
-        endDate: "",
+      form.resetFields();
+      form.setFieldsValue({
+        courseId: courses.length > 0 ? courses[0].courseId : undefined,
         maxStudents: 35,
-        maxGroupMembers: null,
-        enrollKey: "",
-        keyExpiresAt: "",
-        keyMaxUses: 0,
+        maxGroupMembers: undefined,
+        keyMaxUses: 1,
       });
     }
-    setErrors({});
-  }, [initialData, isOpen, courses]);
+  }, [initialData, isOpen, courses, form]);
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof ClassFormData, string>> = {};
-    const todayISO = getTodayISO();
-
-    if (formData.courseId <= 0) {
-      newErrors.courseId = "Please select a course";
-    }
-    if (!formData.classCode.trim()) {
-      newErrors.classCode = "Class code is required";
-    }
-    if (formData.maxStudents < 1 || formData.maxStudents > 35) {
-      newErrors.maxStudents = "Max students must be between 1 and 35";
-    }
-    
-    if (
-      formData.maxGroupMembers !== null &&  
-      (formData.maxGroupMembers <= 0 || Number.isNaN(formData.maxGroupMembers))
-    ) {
-      newErrors.maxGroupMembers = "Max group members must be greater than 0";
-    }
-    
-    if (!formData.startDate) {
-      newErrors.startDate = "Start date is required";
-    }
-    if (!formData.endDate) {
-      newErrors.endDate = "End date is required";
-    }
-    if (formData.endDate && formData.endDate < todayISO) {
-      newErrors.endDate = "End date cannot be in the past";
-    }
-    if (
-      formData.startDate &&
-      formData.endDate &&
-      formData.startDate > formData.endDate
-    ) {
-      newErrors.endDate = "End date must be after start date";
-    }
-    if (!formData.maxStudents || Number.isNaN(formData.maxStudents)) {
-      newErrors.maxStudents = "Max students is required";
-    } else if (formData.maxStudents <= 0) {
-      newErrors.maxStudents = "Max students must be greater than 0";
-    }
-    const enrollKeyTrimmed = formData.enrollKey.trim();
-    if (!enrollKeyTrimmed) {
-      newErrors.enrollKey = "Enroll key is required";
-    } else if (enrollKeyTrimmed.length < 6 || enrollKeyTrimmed.length > 50) {
-      newErrors.enrollKey = "Enroll key must be 6-50 characters";
-    }
-    if (!formData.keyExpiresAt) {
-      newErrors.keyExpiresAt = "Key expiry is required";
-    }
-    if (!formData.keyMaxUses || Number.isNaN(formData.keyMaxUses)) {
-      newErrors.keyMaxUses = "Key max uses is required";
-    } else if (formData.keyMaxUses <= 0) {
-      newErrors.keyMaxUses = "Key max uses must be greater than 0";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "maxStudents" || name === "courseId" || name === "keyMaxUses"
-          ? parseInt(value)
-          : name === "maxGroupMembers"
-            ? value === ""
-              ? null
-              : parseInt(value)
-            : value,
-    }));
-    // Clear error for this field
-    if (errors[name as keyof ClassFormData]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
+  const handleFinish = async (values: ClassFormData) => {
+    setSubmitting(true);
+    try {
       const payload = {
-        ...formData,
-        keyExpiresAt: formData.keyExpiresAt
-          ? new Date(formData.keyExpiresAt).toISOString()
-          : formData.keyExpiresAt,
+        courseId: values.courseId,
+        classCode: values.classCode,
+        startDate: values.startDate.format("YYYY-MM-DD"),
+        endDate: values.endDate.format("YYYY-MM-DD"),
+        maxStudents: values.maxStudents,
+        maxGroupMembers: values.maxGroupMembers ?? null,
+        enrollKey: values.enrollKey,
+        keyExpiresAt: values.keyExpiresAt.toISOString(),
+        keyMaxUses: values.keyMaxUses ?? 1,
       };
       onSubmit(payload);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
+  const handleCancel = () => {
+    form.resetFields();
+    onClose();
+  };
 
-  const todayISO = getTodayISO();
-  const minEndDate =
-    formData.startDate && formData.startDate > todayISO
-      ? formData.startDate
-      : todayISO;
+  const courseDisabled = !!initialData || courses.length === 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? "Edit Class" : "Create New Class"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+    <Modal
+      title={initialData ? "Chỉnh sửa lớp học" : "Tạo lớp học mới"}
+      open={isOpen}
+      onCancel={handleCancel}
+      footer={null}
+      centered
+      width={560}
+      destroyOnClose
+      confirmLoading={submitting || isLoading}
+      maskClosable={!(submitting || isLoading)}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFinish}
+        requiredMark="optional"
+        disabled={submitting || isLoading}
+        className="mt-4"
+      >
+        <Form.Item
+          name="courseId"
+          label={<Text strong>Khóa học</Text>}
+          rules={[{ required: true, message: "Vui lòng chọn khóa học" }]}
+        >
+          <Select
+            placeholder="Chọn khóa học..."
+            disabled={courseDisabled}
+            options={courses.map((c) => ({
+              value: c.courseId,
+              label: `${c.courseCode} – ${c.courseName}`,
+            }))}
+          />
+        </Form.Item>
+
+        {courseDisabled && (
+          <Text type="secondary" className="text-xs block mb-3 -mt-2">
+            Không thể đổi khóa học khi đang chỉnh sửa lớp.
+          </Text>
+        )}
+
+        <Form.Item
+          name="classCode"
+          label={<Text strong>Mã lớp</Text>}
+          rules={[
+            { required: true, message: "Mã lớp không được để trống" },
+            {
+              min: 2,
+              max: 50,
+              message: "Mã lớp từ 2 – 50 ký tự",
+            },
+          ]}
+        >
+          <Input placeholder="VD: SE101-L01" />
+        </Form.Item>
+
+        <div className="grid grid-cols-2 gap-x-4">
+          <Form.Item
+            name="maxStudents"
+            label={<Text strong>Số sinh viên tối đa</Text>}
+            rules={[
+              { required: true, message: "Bắt buộc" },
+              { type: "number", min: 1, message: "Tối thiểu 1" },
+              { type: "number", max: 1000, message: "Tối đa 1000" },
+            ]}
           >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+            <InputNumber className="w-full" min={1} max={1000} />
+          </Form.Item>
+
+          <Form.Item
+            name="maxGroupMembers"
+            label={<Text strong>Số thành viên nhóm tối đa</Text>}
+          >
+            <InputNumber
+              className="w-full"
+              min={1}
+              placeholder="Không giới hạn"
+            />
+          </Form.Item>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Course Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="courseId"
-              value={formData.courseId}
-              onChange={handleChange}
-              disabled={initialData !== undefined || courses.length === 0}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.courseId ? "border-red-500" : "border-gray-300"
-              } ${initialData !== undefined ? "bg-gray-100 cursor-not-allowed" : ""}`}
+        <div className="grid grid-cols-2 gap-x-4">
+          <Form.Item
+            name="startDate"
+            label={<Text strong>Ngày bắt đầu</Text>}
+            rules={[{ required: true, message: "Bắt buộc" }]}
+          >
+            <DatePicker className="w-full" format="YYYY-MM-DD" />
+          </Form.Item>
+
+          <Form.Item
+            name="endDate"
+            label={<Text strong>Ngày kết thúc</Text>}
+            dependencies={["startDate"]}
+            rules={[
+              { required: true, message: "Bắt buộc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const start = getFieldValue("startDate");
+                  if (!value) return Promise.resolve();
+                  if (start && value.isBefore(start)) {
+                    return Promise.reject(
+                      new Error("Ngày kết thúc phải sau ngày bắt đầu"),
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+          >
+            <DatePicker className="w-full" format="YYYY-MM-DD" />
+          </Form.Item>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-4">
+          <Form.Item
+            name="enrollKey"
+            label={<Text strong>Mã đăng ký</Text>}
+            rules={[
+              { required: true, message: "Bắt buộc" },
+              { min: 6, message: "Tối thiểu 6 ký tự" },
+              { max: 50, message: "Tối đa 50 ký tự" },
+            ]}
+          >
+            <Input placeholder="VD: SE1025" />
+          </Form.Item>
+
+          <Form.Item
+            name="keyExpiresAt"
+            label={<Text strong>Thời hạn mã</Text>}
+            rules={[{ required: true, message: "Bắt buộc" }]}
+          >
+            <DatePicker
+              className="w-full"
+              format="YYYY-MM-DD HH:mm"
+              showTime={{ format: "HH:mm" }}
+            />
+          </Form.Item>
+        </div>
+
+        <Form.Item
+          name="keyMaxUses"
+          label={<Text strong>Số lượt sử dụng mã</Text>}
+          rules={[
+            { required: true, message: "Bắt buộc" },
+            { type: "number", min: 1, message: "Tối thiểu 1" },
+          ]}
+        >
+          <InputNumber className="w-full" min={1} max={10000} />
+        </Form.Item>
+
+        <Form.Item className="!mb-0">
+          <Space className="w-full justify-end pt-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={submitting || isLoading}
+              className="px-5 py-2 rounded-full border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              <option value="0">Select a course...</option>
-              {courses.map((course) => (
-                <option key={course.courseId} value={course.courseId}>
-                  {course.courseCode} - {course.courseName}
-                </option>
-              ))}
-            </select>
-            {errors.courseId && (
-              <p className="text-red-600 text-sm mt-1">{errors.courseId}</p>
-            )}
-            {courses.length === 0 && (
-              <p className="text-amber-600 text-sm mt-1">
-                Please create a course first
-              </p>
-            )}
-          </div>
-
-          {/* Class Code */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Class Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="classCode"
-              value={formData.classCode}
-              onChange={handleChange}
-              placeholder="e.g., SE101-L01"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.classCode ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.classCode && (
-              <p className="text-red-600 text-sm mt-1">{errors.classCode}</p>
-            )}
-          </div>
-
-          {/* Max Students */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Students <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="maxStudents"
-              value={formData.maxStudents}
-              onChange={handleChange}
-              placeholder="e.g., 35"
-              min="1"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.maxStudents ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.maxStudents && (
-              <p className="text-red-600 text-sm mt-1">{errors.maxStudents}</p>
-            )}
-          </div>
-
-          {/* Max Group Members */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Group Members <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="maxGroupMembers"
-              value={formData.maxGroupMembers ?? ""}
-              onChange={handleChange}
-              placeholder="e.g., 5"
-              min="1"
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 border-gray-300"
-            />
-          </div>
-
-          {/* Start Date and End Date */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Start Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.startDate ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.startDate && (
-                <p className="text-red-600 text-sm mt-1">{errors.startDate}</p>
-              )}
-            </div>
-
-            {/* End Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-                min={minEndDate}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.endDate ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.endDate && (
-                <p className="text-red-600 text-sm mt-1">{errors.endDate}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Enroll Key */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Enroll Key <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="enrollKey"
-              value={formData.enrollKey}
-              onChange={handleChange}
-              placeholder="e.g., SE1025"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.enrollKey ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.enrollKey && (
-              <p className="text-red-600 text-sm mt-1">{errors.enrollKey}</p>
-            )}
-          </div>
-
-          {/* Key Expiry and Max Uses */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Key Expires At <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                name="keyExpiresAt"
-                value={formData.keyExpiresAt}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.keyExpiresAt ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.keyExpiresAt && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.keyExpiresAt}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Key Max Uses <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="keyMaxUses"
-                value={formData.keyMaxUses}
-                onChange={handleChange}
-                placeholder="e.g., 50"
-                min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.keyMaxUses ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.keyMaxUses && (
-                <p className="text-red-600 text-sm mt-1">{errors.keyMaxUses}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
-            <Button
-              text="Cancel"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="999px"
-              paddingWidth="18px"
-              paddingHeight="10px"
-              onClick={() => onClose()}
-            />
+              Hủy
+            </button>
             <button
               type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              disabled={submitting || isLoading}
+              className="px-6 py-2 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition"
             >
-              {isLoading ? "Saving..." : "Save Class"}
+              {(submitting || isLoading) ? "Đang lưu..." : "Lưu lớp học"}
             </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 

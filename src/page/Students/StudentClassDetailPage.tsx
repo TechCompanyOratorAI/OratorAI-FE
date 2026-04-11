@@ -105,6 +105,17 @@ const StudentClassDetailPage: React.FC = () => {
     }
   }, [myGroupId, dispatch]);
 
+  useEffect(() => {
+    if (loading || !classDetail || !user?.userId) return;
+    const enrolled = classDetail.enrollments?.some(
+      (e) => e.studentId === user.userId,
+    );
+    if (!enrolled) {
+      toast.warning("Bạn cần ghi danh lớp này trước khi xem chi tiết.");
+      navigate("/student/dashboard", { replace: true });
+    }
+  }, [loading, classDetail, user?.userId, navigate]);
+
   const isClassEnrolled = (targetClassId: number): boolean => {
     if (!classDetail || !user?.userId) return false;
     return (
@@ -220,6 +231,20 @@ const StudentClassDetailPage: React.FC = () => {
     );
   }
 
+  if (
+    user?.userId &&
+    !classDetail.enrollments?.some((e) => e.studentId === user.userId)
+  ) {
+    return (
+      <StudentLayout>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-slate-500">Đang chuyển hướng...</p>
+        </div>
+      </StudentLayout>
+    );
+  }
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
@@ -230,15 +255,15 @@ const StudentClassDetailPage: React.FC = () => {
   const classDuration = Math.ceil(
     (new Date(classDetail.endDate).getTime() -
       new Date(classDetail.startDate).getTime()) /
-      (1000 * 60 * 60 * 24),
+    (1000 * 60 * 60 * 24),
   );
   const instructorName = classDetail.instructors?.length
     ? classDetail.instructors
-        .map(
-          (i) =>
-            `${i.firstName || ""} ${i.lastName || ""}`.trim() || i.username,
-        )
-        .join(", ")
+      .map(
+        (i) =>
+          `${i.firstName || ""} ${i.lastName || ""}`.trim() || i.username,
+      )
+      .join(", ")
     : "Unknown Instructor";
   const courseInfo = classDetail.course;
   const classTitle = classDetail.className || classDetail.classCode;
@@ -272,46 +297,64 @@ const StudentClassDetailPage: React.FC = () => {
           className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xl shadow-blue-200/40 p-6 sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
           <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
-          <div className="relative">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${classDetail.status === "active" ? "bg-emerald-400/30 text-white" : "bg-white/20 text-white/80"}`}>
-                {classDetail.status === "active" ? "✓ Đang mở" : "Đã đóng"}
-              </span>
-              <span className="bg-white/20 text-white/90 text-xs px-2.5 py-1 rounded-full font-mono">
-                {classDetail.classCode}
-              </span>
-              {classId && isClassEnrolled(parseInt(classId)) && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh
+
+          {/* Hai cột: trái tiêu đề — phải thống kê (lưới đều, không trống một bên) */}
+          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between lg:gap-8 xl:gap-10">
+            <div className="min-w-0 flex-1 flex flex-col justify-center gap-3 lg:max-w-[48%] xl:max-w-[42%]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${classDetail.status === "active" ? "bg-emerald-400/30 text-white" : "bg-white/20 text-white/80"}`}>
+                  {classDetail.status === "active" ? "✓ Đang mở" : "Đã đóng"}
                 </span>
-              )}
+                <span className="bg-white/20 text-white/90 text-xs px-2.5 py-1 rounded-full font-mono">
+                  {classDetail.classCode}
+                </span>
+                {classId && isClassEnrolled(parseInt(classId)) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh
+                  </span>
+                )}
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
+                {classTitle}
+              </h1>
+              <p className="text-white/80 text-sm sm:text-base">
+                {courseInfo?.courseCode && courseInfo?.courseName
+                  ? `${courseInfo.courseCode} — ${courseInfo.courseName}`
+                  : classDetail.classCode}
+                {courseInfo?.semester && courseInfo?.academicYear && (
+                  <span className="block sm:inline sm:before:content-['_•_'] sm:before:whitespace-pre">
+                    {courseInfo.semester} — {courseInfo.academicYear}
+                  </span>
+                )}
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1">
-              {classTitle}
-            </h1>
-            <p className="text-white/80 mb-4">
-              {courseInfo?.courseCode && courseInfo?.courseName
-                ? `${courseInfo.courseCode} — ${courseInfo.courseName}`
-                : classDetail.classCode}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { icon: Calendar, label: `${classDuration} ngày` },
-                {
-                  icon: Users,
-                  label: `${enrollmentCount}${classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""} học viên`,
-                },
-                { icon: User, label: instructorName },
-                { icon: BookOpen, label: `${topics.length} chủ đề` },
-              ].map(({ icon: Icon, label }, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                  <Icon className="w-4 h-4 text-white/80" />
-                  <span className="text-white/90 font-medium">{label}</span>
-                </div>
-              ))}
+
+            <div className="w-full min-w-0 flex-1 lg:min-w-[min(100%,20rem)]">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4 xl:gap-3 h-full">
+                {[
+                  { icon: Calendar, label: "Thời lượng", value: `${classDuration} ngày` },
+                  {
+                    icon: Users,
+                    label: "Học viên",
+                    value: `${enrollmentCount}${classDetail.maxStudents ? ` / ${classDetail.maxStudents}` : ""}`,
+                  },
+                  { icon: User, label: "Giảng viên", value: instructorName },
+                  { icon: BookOpen, label: "Chủ đề", value: `${topics.length}` },
+                ].map(({ icon: Icon, label, value }, i) => (
+                  <div
+                    key={i}
+                    className="flex min-h-[4.5rem] flex-col justify-center gap-1 rounded-xl border border-white/25 bg-white/15 px-3 py-2.5 text-center backdrop-blur-sm sm:min-h-[5rem] sm:px-3.5 sm:py-3">
+                    <Icon className="mx-auto h-4 w-4 shrink-0 text-white/85 sm:h-5 sm:w-5" />
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-white/60 sm:text-[11px]">
+                      {label}
+                    </span>
+                    <span className="line-clamp-2 break-words text-xs font-semibold leading-snug text-white sm:text-sm">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -356,7 +399,7 @@ const StudentClassDetailPage: React.FC = () => {
                   {topics.map((topic) => {
                     const isTopicEnrolled = Boolean(
                       myGroupForClass &&
-                        groupTopic?.topicId === topic.topicId,
+                      groupTopic?.topicId === topic.topicId,
                     );
                     const urgency = getDeadlineUrgency(topic.dueDate);
                     return (
@@ -413,21 +456,21 @@ const StudentClassDetailPage: React.FC = () => {
                             !isTopicEnrolled &&
                             isMyGroupLeader &&
                             myGroupId && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePickTopicForGroup(topic.topicId);
-                              }}
-                              disabled={groupActionLoading}
-                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50">
-                              {groupActionLoading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Plus className="w-3 h-3" />
-                              )}
-                              Chọn cho nhóm
-                            </button>
-                          )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePickTopicForGroup(topic.topicId);
+                                }}
+                                disabled={groupActionLoading}
+                                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+                                {groupActionLoading ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Plus className="w-3 h-3" />
+                                )}
+                                Chọn cho nhóm
+                              </button>
+                            )}
                           {!isGroupEnrolled && (
                             <button
                               onClick={(e) => {
@@ -530,7 +573,7 @@ const StudentClassDetailPage: React.FC = () => {
                       group.memberCount ?? group.students?.length ?? 0;
                     const isFull =
                       memberCount >=
-                        (group.maxGroupMembers || groupLimit || 0) &&
+                      (group.maxGroupMembers || groupLimit || 0) &&
                       (group.maxGroupMembers || groupLimit);
                     return (
                       <div
@@ -618,12 +661,13 @@ const StudentClassDetailPage: React.FC = () => {
 
           {/* Info Tab */}
           <Tabs.Content value="info" className="mt-4 outline-none">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div
+              className={`max-w-4xl mx-auto w-full grid gap-4 ${classDetail.description ? "sm:grid-cols-2" : ""}`}>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-w-0">
                 <h3 className="text-base font-bold text-slate-900 mb-4">
                   Thông tin lớp
                 </h3>
-                <div className="space-y-3 text-sm">
+                <div className="overflow-hidden rounded-xl border border-slate-100 text-sm">
                   {[
                     { label: "Mã lớp", value: classDetail.classCode },
                     {
@@ -652,12 +696,16 @@ const StudentClassDetailPage: React.FC = () => {
                       label: "Số học viên",
                       value: `${enrollmentCount}${classDetail.maxStudents ? `/${classDetail.maxStudents}` : ""}`,
                     },
-                  ].map(({ label, value }) => (
+                  ].map(({ label, value }, rowIndex) => (
                     <div
                       key={label}
-                      className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                      <span className="text-slate-500">{label}</span>
-                      <span className="font-semibold text-slate-900 text-right max-w-[200px] truncate">
+                      className={`flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-4 ${
+                        rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50"
+                      }`}>
+                      <span className="shrink-0 text-slate-500 sm:min-w-[5.5rem]">
+                        {label}
+                      </span>
+                      <span className="min-w-0 flex-1 font-semibold text-slate-900 sm:text-right break-words">
                         {value}
                       </span>
                     </div>

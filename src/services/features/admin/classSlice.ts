@@ -23,6 +23,7 @@ export interface EnrollKey {
 
 export interface Enrollment {
   enrollmentId: number;
+  studentId?: number;
 }
 
 export interface CourseInfo {

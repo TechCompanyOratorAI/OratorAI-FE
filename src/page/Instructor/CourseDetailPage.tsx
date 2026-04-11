@@ -26,6 +26,17 @@ import {
   updateTopic,
   deleteTopic,
 } from "@/services/features/topic/topicSlice";
+
+// Kiểm tra lớp học đã hết hạn (endDate < giờ hiện tại theo múi giờ Beijing)
+const isClassExpired = (endDate: string): boolean => {
+  const now = new Date();
+  const beijingOffset = 8 * 60; // phút
+  const localOffset = now.getTimezoneOffset(); // phút
+  const diffMinutes = localOffset + beijingOffset;
+  const beijingNow = new Date(now.getTime() + diffMinutes * 60 * 1000);
+  const classEnd = new Date(endDate);
+  return classEnd < beijingNow;
+};
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 
 const CourseDetailPage: React.FC = () => {
@@ -671,11 +682,18 @@ const CourseDetailPage: React.FC = () => {
         onClose={() => setTopicModalOpen(false)}
         onSubmit={handleTopicSubmit}
         isLoading={topicLoading}
-        classOptions={classesForCourse.map((c) => ({
-          classId: c.classId,
-          className: c.className,
-          classCode: c.classCode,
-        }))}
+        classOptions={classesForCourse
+          .filter((c) => {
+            // Lọc bỏ các lớp đã hết hạn
+            if (!c.endDate) return true;
+            return !isClassExpired(c.endDate);
+          })
+          .map((c) => ({
+            classId: c.classId,
+            className: c.className,
+            classCode: c.classCode,
+            endDate: c.endDate,
+          }))}
       />
 
       {/* Edit Topic Modal */}

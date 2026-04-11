@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   uploadSlide,
@@ -6,19 +6,29 @@ import {
   submitPresentation,
   setCurrentPresentation,
 } from "@/services/features/presentation/presentationSlice";
-import Button from "@/components/yoodli/Button";
-import Toast from "@/components/Toast/Toast";
 import {
-  X,
+  Modal,
   Upload,
-  Eye,
-  RotateCcw,
-  CheckCircle,
-  FileText,
-  Video,
-  File,
-  Loader2,
-} from "lucide-react";
+  Progress,
+  Typography,
+  Space,
+  Button,
+  message,
+  Tag,
+} from "antd";
+import {
+  InboxOutlined,
+  FilePdfOutlined,
+  VideoCameraOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+  CheckCircleOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
+import type { UploadProps } from "antd";
+
+const { Text, Title } = Typography;
+const { Dragger } = Upload;
 
 interface PresentationUploadModalProps {
   isOpen: boolean;
@@ -26,8 +36,6 @@ interface PresentationUploadModalProps {
   presentationId: number;
   presentationTitle: string;
 }
-
-type UploadType = "slide" | "media" | null;
 
 interface UploadedFile {
   name: string;
@@ -43,14 +51,9 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
   presentationTitle,
 }) => {
   const dispatch = useAppDispatch();
-
-  // ✅ Fix "not used": only take what we use
-  const { uploadProgress, error } = useAppSelector((state) => state.presentation);
-
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
+  const { uploadProgress, error } = useAppSelector(
+    (state) => state.presentation,
+  );
 
   const [slideFile, setSlideFile] = useState<UploadedFile | null>(null);
   const [mediaFile, setMediaFile] = useState<UploadedFile | null>(null);
@@ -58,588 +61,414 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
   const [mediaConfirmed, setMediaConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const slideInputRef = useRef<HTMLInputElement>(null);
-  const mediaInputRef = useRef<HTMLInputElement>(null);
-
-  const [uploadType, setUploadType] = useState<UploadType>(null);
-
-  // ✅ Optional: show toast if redux error changes
   useEffect(() => {
     if (error) {
-      setToast({ message: String(error), type: "error" });
+      void message.error(String(error));
     }
   }, [error]);
 
-  const validateFile = (
-    file: File,
-    allowedTypes: string[]
-  ): { valid: boolean; message?: string } => {
-    if (!allowedTypes.includes(file.type)) {
-      return {
-        valid: false,
-        message: `Invalid file type. Allowed: ${allowedTypes.join(", ")}`,
-      };
-    }
-    const maxSize = 500 * 1024 * 1024; // 500MB
-    if (file.size > maxSize) {
-      return { valid: false, message: "File size exceeds 500MB" };
-    }
-    return { valid: true };
-  };
-
-  const handleSlideUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const validation = validateFile(file, [
-      "application/pdf",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ]);
-
-    if (!validation.valid) {
-      setToast({ message: validation.message || "Invalid file", type: "error" });
-      return;
-    }
-
-    setUploadType("slide");
-
-    try {
-      const result = await dispatch(uploadSlide({ presentationId, file })).unwrap();
-
-      setSlideFile({
-        name: result.slide.fileName,
-        url: result.slide.filePath,
-        type: result.slide.fileFormat,
-        size: result.slide.fileSizeBytes,
-      });
-      setSlideConfirmed(false);
-      setToast({ message: "Slide uploaded successfully", type: "success" });
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to upload slide",
-        type: "error",
-      });
-    } finally {
-      setUploadType(null);
-      if (slideInputRef.current) slideInputRef.current.value = "";
-    }
-  };
-
-  const handleMediaUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const validation = validateFile(file, [
-      "video/mp4",
-      "video/mpeg",
-      "video/quicktime",
-      "video/x-msvideo",
-      "video/webm",
-    ]);
-
-    if (!validation.valid) {
-      setToast({ message: validation.message || "Invalid file", type: "error" });
-      return;
-    }
-
-    setUploadType("media");
-
-    // Detect video duration from file metadata
-    let durationSeconds: number | undefined;
-    try {
-      durationSeconds = await new Promise<number>((resolve) => {
-        const videoEl = document.createElement("video");
-        videoEl.preload = "metadata";
-        const url = URL.createObjectURL(file);
-        videoEl.src = url;
-        videoEl.onloadedmetadata = () => {
-          URL.revokeObjectURL(url);
-          resolve(Math.round(videoEl.duration));
-        };
-        videoEl.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve(0);
-        };
-      });
-    } catch {
-      durationSeconds = undefined;
-    }
-
-    try {
-      const result = await dispatch(
-        uploadMedia({
-          presentationId,
-          file,
-          durationSeconds: durationSeconds || undefined,
-          sampleRate: 44100,
-          recordingMethod: "upload",
-        })
-      ).unwrap();
-
-      setMediaFile({
-        name: result.audioRecord.fileName,
-        url: result.audioRecord.filePath,
-        type: result.audioRecord.fileFormat,
-        size: result.audioRecord.fileSizeBytes,
-      });
-      setMediaConfirmed(false);
-      setToast({ message: "Media uploaded successfully", type: "success" });
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to upload media",
-        type: "error",
-      });
-    } finally {
-      setUploadType(null);
-      if (mediaInputRef.current) mediaInputRef.current.value = "";
-    }
-  };
-
-  // Cho phép gửi khi đã confirm ít nhất một loại: slides hoặc video (không bắt buộc cả hai)
-  const canSubmit =
-    (slideFile != null && slideConfirmed) || (mediaFile != null && mediaConfirmed);
-
-  const handleSubmit = async () => {
-    if (!canSubmit) {
-      setToast({
-        message: "Vui lòng upload và xác nhận ít nhất slides hoặc video",
-        type: "error",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      await dispatch(submitPresentation(presentationId)).unwrap();
-
-      // ✅ Close immediately (no waiting)
-      handleClose();
-
-      // ❌ Avoid reload (better refetch outside modal)
-      // window.location.reload();
-    } catch (err: any) {
-      setToast({
-        message: err?.message || "Failed to submit presentation",
-        type: "error",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // Đóng modal → reset toàn bộ state
   const handleClose = () => {
-    dispatch(setCurrentPresentation(null));
+    void dispatch(setCurrentPresentation(null));
     setSlideFile(null);
     setMediaFile(null);
     setSlideConfirmed(false);
     setMediaConfirmed(false);
     setIsSubmitting(false);
-    setUploadType(null);
-
-    // Clear file inputs (avoid stale file selection)
-    if (slideInputRef.current) slideInputRef.current.value = "";
-    if (mediaInputRef.current) mediaInputRef.current.value = "";
-
     onClose();
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (!bytes) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  // Validate file: loại + kích thước
+  const validateFile = (
+    file: File,
+    allowedTypes: string[],
+    maxMB = 500,
+  ): { valid: boolean; message?: string } => {
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        valid: false,
+        message: `Định dạng không hợp lệ. Chỉ chấp nhận: ${allowedTypes.join(", ")}`,
+      };
+    }
+    const maxBytes = maxMB * 1024 * 1024;
+    if (file.size > maxBytes) {
+      return {
+        valid: false,
+        message: `Dung lượng vượt quá ${maxMB}MB`,
+      };
+    }
+    return { valid: true };
   };
 
-  const getFileIcon = (fileType: string) => {
-    const ft = String(fileType || "").toLowerCase();
-    if (ft.includes("pdf")) {
-      return <FileText className="w-8 h-8 text-red-500" />;
-    }
-    if (ft.includes("powerpoint") || ft.includes("presentation")) {
-      return <FileText className="w-8 h-8 text-orange-500" />;
-    }
-    if (ft.includes("video")) {
-      return <Video className="w-8 h-8 text-blue-500" />;
-    }
-    return <File className="w-8 h-8 text-gray-500" />;
+  // Lấy duration từ video file
+  const getVideoDuration = (file: File): Promise<number> =>
+    new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(Math.round(video.duration));
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+    });
+
+  // Upload props cho Slides (PDF / PPT)
+  const slideUploadProps: UploadProps = {
+    name: "file",
+    accept: ".pdf,.ppt,.pptx",
+    showUploadList: false,
+    beforeUpload: async (file) => {
+      const validation = validateFile(file, [
+        "application/pdf",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ]);
+      if (!validation.valid) {
+        void message.error(validation.message);
+        return Upload.LIST_IGNORE;
+      }
+      try {
+        const result = await dispatch(
+          uploadSlide({ presentationId, file }),
+        ).unwrap();
+        setSlideFile({
+          name: result.slide.fileName,
+          url: result.slide.filePath,
+          type: result.slide.fileFormat,
+          size: result.slide.fileSizeBytes,
+        });
+        setSlideConfirmed(false);
+        void message.success("Tải lên slides thành công!");
+      } catch (err: unknown) {
+        void message.error(
+          err instanceof Error ? err.message : "Tải lên slides thất bại",
+        );
+      }
+      return false;
+    },
   };
 
-  if (!isOpen) return null;
+  // Upload props cho Video
+  const mediaUploadProps: UploadProps = {
+    name: "file",
+    accept: "video/*",
+    showUploadList: false,
+    beforeUpload: async (file) => {
+      const validation = validateFile(file, [
+        "video/mp4",
+        "video/mpeg",
+        "video/quicktime",
+        "video/x-msvideo",
+        "video/webm",
+      ]);
+      if (!validation.valid) {
+        void message.error(validation.message);
+        return Upload.LIST_IGNORE;
+      }
+      try {
+        const duration = await getVideoDuration(file);
+        const result = await dispatch(
+          uploadMedia({
+            presentationId,
+            file,
+            durationSeconds: duration || undefined,
+            sampleRate: 44100,
+            recordingMethod: "upload",
+          }),
+        ).unwrap();
+        setMediaFile({
+          name: result.audioRecord.fileName,
+          url: result.audioRecord.filePath,
+          type: result.audioRecord.fileFormat,
+          size: result.audioRecord.fileSizeBytes,
+        });
+        setMediaConfirmed(false);
+        void message.success("Tải lên video thành công!");
+      } catch (err: unknown) {
+        void message.error(
+          err instanceof Error ? err.message : "Tải lên video thất bại",
+        );
+      }
+      return false;
+    },
+  };
+
+  const canSubmit =
+    (slideFile !== null && slideConfirmed) ||
+    (mediaFile !== null && mediaConfirmed);
+
+  const handleSubmit = async () => {
+    if (!canSubmit) {
+      void message.error(
+        "Vui lòng tải lên và xác nhận ít nhất slides hoặc video.",
+      );
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await dispatch(submitPresentation(presentationId)).unwrap();
+      void message.success("Nộp bài thuyết trình thành công!");
+      handleClose();
+    } catch (err: unknown) {
+      void message.error(
+        err instanceof Error ? err.message : "Nộp bài thất bại.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatSize = (bytes: number) => {
+    if (!bytes) return "0 B";
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const statusItems = [
+    {
+      label: "Slides",
+      uploaded: !!slideFile,
+      confirmed: slideConfirmed,
+    },
+    {
+      label: "Video",
+      uploaded: !!mediaFile,
+      confirmed: mediaConfirmed,
+    },
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+    <Modal
+      title={
+        <Space>
+          <InboxOutlined className="text-sky-500" />
+          <span>Tải lên file bài thuyết trình</span>
+        </Space>
+      }
+      open={isOpen}
+      onCancel={handleClose}
+      footer={null}
+      centered
+      width={720}
+      bodyStyle={{ maxHeight: "calc(90vh - 180px)", overflowY: "auto" }}
+      destroyOnClose
+      maskClosable={!isSubmitting}
+    >
+      {/* Tiêu đề phụ */}
+      <Text type="secondary" className="block mb-4 -mt-1">
+        <strong>{presentationTitle}</strong> — Chỉ cần tải lên slides (PDF /
+        PowerPoint) hoặc video, không bắt buộc cả hai.
+      </Text>
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              Upload Presentation Files
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">{presentationTitle}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Chỉ cần upload slides (PDF/PowerPoint) hoặc video — không bắt buộc cả hai.
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* ── Slides ── */}
+        <div>
+          <Title level={5} className="!mb-3 flex items-center gap-2">
+            <FilePdfOutlined className="text-red-500" />
+            Slides
+          </Title>
+
+          {!slideFile ? (
+            <Dragger {...slideUploadProps} className="!rounded-xl">
+              <p className="ant-upload-drag-icon">
+                {uploadProgress > 0 && uploadProgress < 100 ? (
+                  <LoadingOutlined className="text-sky-500 text-3xl" />
+                ) : (
+                  <InboxOutlined className="text-gray-400 text-3xl" />
+                )}
+              </p>
+              <p className="ant-upload-text">
+                Kéo thả hoặc click để chọn file slides
+              </p>
+              <p className="ant-upload-hint">PDF, PowerPoint — Tối đa 500MB</p>
+            </Dragger>
+          ) : (
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <div className="flex items-center gap-3 mb-3">
+                <FilePdfOutlined className="text-2xl text-red-500" />
+                <div className="flex-1 min-w-0">
+                  <Text
+                    ellipsis
+                    className="block font-medium"
+                    title={slideFile.name}
+                  >
+                    {slideFile.name}
+                  </Text>
+                  <Text type="secondary" className="text-xs">
+                    {formatSize(slideFile.size)}
+                  </Text>
+                </div>
+                {slideConfirmed && (
+                  <CheckCircleOutlined className="text-green-500 text-lg" />
+                )}
+              </div>
+
+              <Space size={4} wrap>
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => window.open(slideFile.url, "_blank")}
+                >
+                  Xem
+                </Button>
+                <Upload {...slideUploadProps} showUploadList={false}>
+                  <Button size="small" icon={<ReloadOutlined />}>
+                    Tải lại
+                  </Button>
+                </Upload>
+                <Button
+                  size="small"
+                  type="primary"
+                  disabled={slideConfirmed}
+                  onClick={() => setSlideConfirmed(true)}
+                >
+                  {slideConfirmed ? "Đã xác nhận" : "Xác nhận"}
+                </Button>
+              </Space>
+            </div>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Slide Upload Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-sky-500" />
-                Presentation Slides
-              </h3>
+        {/* ── Video ── */}
+        <div>
+          <Title level={5} className="!mb-3 flex items-center gap-2">
+            <VideoCameraOutlined className="text-blue-500" />
+            Video
+          </Title>
 
-              {!slideFile ? (
-                <div
-                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${uploadType === "slide"
-                      ? "border-sky-500 bg-sky-50"
-                      : "border-gray-300 hover:border-sky-400 hover:bg-gray-50"
-                    }`}
-                >
-                  {uploadType === "slide" ? (
-                    <div className="flex flex-col items-center">
-                      <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-3" />
-                      <p className="text-sm text-gray-600">Uploading slide...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                      <p className="text-sm text-gray-600 mb-2">
-                        Upload PDF or PowerPoint file
-                      </p>
-                      <p className="text-xs text-gray-500 mb-4">
-                        Max file size: 500MB
-                      </p>
-                      <input
-                        ref={slideInputRef}
-                        type="file"
-                        accept=".pdf,.ppt,.pptx"
-                        onChange={handleSlideUpload}
-                        className="hidden"
-                        id="slide-upload"
-                      />
-                      <label htmlFor="slide-upload">
-                        <Button
-                          text="Choose File"
-                          variant="primary"
-                          fontSize="14px"
-                          borderRadius="8px"
-                          paddingWidth="16px"
-                          paddingHeight="8px"
-                          onClick={() =>
-                            document.getElementById("slide-upload")?.click()
-                          }
-                        />
-                      </label>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    {getFileIcon(slideFile.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {slideFile.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(slideFile.size)}
-                      </p>
-                    </div>
-                    {slideConfirmed && (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      text="View File"
-                      variant="secondary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      icon={<Eye className="w-4 h-4" />}
-                      onClick={() => window.open(slideFile.url, "_blank")}
-                    />
-                    <Button
-                      text="Upload Again"
-                      variant="secondary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      icon={<RotateCcw className="w-4 h-4" />}
-                      onClick={() => {
-                        setSlideFile(null);
-                        setSlideConfirmed(false);
-                        document.getElementById("slide-upload")?.click();
-                      }}
-                    />
-                    <Button
-                      text="Confirm"
-                      variant="primary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      disabled={slideConfirmed}
-                      onClick={() => setSlideConfirmed(true)}
-                    />
-                  </div>
-                </div>
+          {!mediaFile ? (
+            <Dragger {...mediaUploadProps} className="!rounded-xl">
+              <p className="ant-upload-drag-icon">
+                {uploadProgress > 0 && uploadProgress < 100 ? (
+                  <LoadingOutlined className="text-sky-500 text-3xl" />
+                ) : (
+                  <InboxOutlined className="text-gray-400 text-3xl" />
+                )}
+              </p>
+              <p className="ant-upload-text">
+                Kéo thả hoặc click để chọn file video
+              </p>
+              <p className="ant-upload-hint">
+                MP4, MOV, AVI, WebM — Tối đa 500MB
+              </p>
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <Progress
+                  percent={uploadProgress}
+                  size="small"
+                  className="mt-3 mx-4"
+                  strokeColor="#0ea5e9"
+                />
               )}
-            </div>
-
-            {/* Media Upload Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Video className="w-5 h-5 text-sky-500" />
-                Presentation Video
-              </h3>
-
-              {!mediaFile ? (
-                <div
-                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${uploadType === "media"
-                      ? "border-sky-500 bg-sky-50"
-                      : "border-gray-300 hover:border-sky-400 hover:bg-gray-50"
-                    }`}
-                >
-                  {uploadType === "media" ? (
-                    <div className="flex flex-col items-center">
-                      <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-3" />
-                      <p className="text-sm text-gray-600">Uploading media...</p>
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <div className="w-full max-w-xs mt-2">
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-sky-500 transition-all duration-300"
-                              style={{ width: `${uploadProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <Video className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                      <p className="text-sm text-gray-600 mb-2">
-                        Upload video file (MP4, MOV, etc.)
-                      </p>
-                      <p className="text-xs text-gray-500 mb-4">
-                        Max file size: 500MB
-                      </p>
-                      <input
-                        ref={mediaInputRef}
-                        type="file"
-                        accept="video/*"
-                        onChange={handleMediaUpload}
-                        className="hidden"
-                        id="media-upload"
-                      />
-                      <label htmlFor="media-upload">
-                        <Button
-                          text="Choose File"
-                          variant="primary"
-                          fontSize="14px"
-                          borderRadius="8px"
-                          paddingWidth="16px"
-                          paddingHeight="8px"
-                          onClick={() =>
-                            document.getElementById("media-upload")?.click()
-                          }
-                        />
-                      </label>
-                    </>
-                  )}
+            </Dragger>
+          ) : (
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+              <div className="flex items-center gap-3 mb-3">
+                <VideoCameraOutlined className="text-2xl text-blue-500" />
+                <div className="flex-1 min-w-0">
+                  <Text
+                    ellipsis
+                    className="block font-medium"
+                    title={mediaFile.name}
+                  >
+                    {mediaFile.name}
+                  </Text>
+                  <Text type="secondary" className="text-xs">
+                    {formatSize(mediaFile.size)}
+                  </Text>
                 </div>
-              ) : (
-                <div className="border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    {getFileIcon(mediaFile.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {mediaFile.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(mediaFile.size)}
-                      </p>
-                    </div>
-                    {mediaConfirmed && (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    )}
-                  </div>
+                {mediaConfirmed && (
+                  <CheckCircleOutlined className="text-green-500 text-lg" />
+                )}
+              </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      text="Preview"
-                      variant="secondary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      icon={<Eye className="w-4 h-4" />}
-                      onClick={() => window.open(mediaFile.url, "_blank")}
-                    />
-                    <Button
-                      text="Upload Again"
-                      variant="secondary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      icon={<RotateCcw className="w-4 h-4" />}
-                      onClick={() => {
-                        setMediaFile(null);
-                        setMediaConfirmed(false);
-                        document.getElementById("media-upload")?.click();
-                      }}
-                    />
-                    <Button
-                      text="Confirm"
-                      variant="primary"
-                      fontSize="13px"
-                      borderRadius="6px"
-                      paddingWidth="10px"
-                      paddingHeight="6px"
-                      disabled={mediaConfirmed}
-                      onClick={() => setMediaConfirmed(true)}
-                    />
-                  </div>
-                </div>
-              )}
+              <Space size={4} wrap>
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => window.open(mediaFile.url, "_blank")}
+                >
+                  Xem
+                </Button>
+                <Upload {...mediaUploadProps} showUploadList={false}>
+                  <Button size="small" icon={<ReloadOutlined />}>
+                    Tải lại
+                  </Button>
+                </Upload>
+                <Button
+                  size="small"
+                  type="primary"
+                  disabled={mediaConfirmed}
+                  onClick={() => setMediaConfirmed(true)}
+                >
+                  {mediaConfirmed ? "Đã xác nhận" : "Xác nhận"}
+                </Button>
+              </Space>
             </div>
-          </div>
-
-          {/* Status Summary */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
-              Upload Status
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                {slideFile ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                <span
-                  className={`text-sm ${slideFile ? "text-gray-900" : "text-gray-500"
-                    }`}
-                >
-                  Slides {slideFile ? "(uploaded)" : "(not uploaded)"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {mediaFile ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                <span
-                  className={`text-sm ${mediaFile ? "text-gray-900" : "text-gray-500"
-                    }`}
-                >
-                  Media {mediaFile ? "(uploaded)" : "(not uploaded)"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {slideConfirmed ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                <span
-                  className={`text-sm ${slideConfirmed ? "text-gray-900" : "text-gray-500"
-                    }`}
-                >
-                  Slides confirmed
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {mediaConfirmed ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                <span
-                  className={`text-sm ${mediaConfirmed ? "text-gray-900" : "text-gray-500"
-                    }`}
-                >
-                  Media confirmed
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <Button
-            text="Cancel"
-            variant="secondary"
-            fontSize="14px"
-            borderRadius="8px"
-            paddingWidth="16px"
-            paddingHeight="10px"
-            onClick={handleClose}
-          />
-          <Button
-            text={
-              isSubmitting
-                ? "Submitting..."
-                : canSubmit
-                  ? "Submit Presentation"
-                  : "Confirm Files First"
-            }
-            variant="primary"
-            fontSize="14px"
-            borderRadius="8px"
-            paddingWidth="20px"
-            paddingHeight="10px"
-            disabled={!canSubmit || isSubmitting}
-            icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : undefined}
-            onClick={handleSubmit}
-          />
+          )}
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        </div>
-      )}
-    </div>
+      {/* Trạng thái tổng hợp */}
+      <div className="mt-5 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+        <Text strong className="text-sm mb-2 block">
+          Trạng thái tải lên
+        </Text>
+        <Space size="middle" wrap>
+          {statusItems.map((item) => (
+            <Tag
+              key={item.label}
+              color={
+                item.confirmed
+                  ? "green"
+                  : item.uploaded
+                    ? "blue"
+                    : "default"
+              }
+              icon={
+                item.confirmed ? (
+                  <CheckCircleOutlined />
+                ) : item.uploaded ? (
+                  <LoadingOutlined />
+                ) : undefined
+              }
+            >
+              {item.label}:{" "}
+              {item.confirmed
+                ? "Đã xác nhận"
+                : item.uploaded
+                  ? "Đã tải"
+                  : "Chưa tải"}
+            </Tag>
+          ))}
+        </Space>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-slate-100">
+        <Button onClick={handleClose} disabled={isSubmitting}>
+          Hủy
+        </Button>
+        <Button
+          type="primary"
+          disabled={!canSubmit}
+          loading={isSubmitting}
+          onClick={handleSubmit}
+          icon={isSubmitting ? undefined : <CheckCircleOutlined />}
+        >
+          {isSubmitting
+            ? "Đang nộp..."
+            : canSubmit
+              ? "Nộp bài thuyết trình"
+              : "Chưa xác nhận file"}
+        </Button>
+      </div>
+    </Modal>
   );
 };
 
