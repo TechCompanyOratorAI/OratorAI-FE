@@ -15,6 +15,7 @@ import {
   Button,
   message,
   Tag,
+  Spin,
 } from "antd";
 import {
   InboxOutlined,
@@ -23,7 +24,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
-  LoadingOutlined,
+  CloudUploadOutlined,
 } from "@ant-design/icons";
 import type { UploadProps } from "antd";
 
@@ -35,6 +36,7 @@ interface PresentationUploadModalProps {
   onClose: () => void;
   presentationId: number;
   presentationTitle: string;
+  isResubmit?: boolean;
 }
 
 interface UploadedFile {
@@ -49,9 +51,10 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
   onClose,
   presentationId,
   presentationTitle,
+  isResubmit = false,
 }) => {
   const dispatch = useAppDispatch();
-  const { uploadProgress, error } = useAppSelector(
+  const { error } = useAppSelector(
     (state) => state.presentation,
   );
 
@@ -60,6 +63,10 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
   const [slideConfirmed, setSlideConfirmed] = useState(false);
   const [mediaConfirmed, setMediaConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slideUploading, setSlideUploading] = useState(false);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [slideUploadPct, setSlideUploadPct] = useState(0);
+  const [mediaUploadPct, setMediaUploadPct] = useState(0);
 
   useEffect(() => {
     if (error) {
@@ -75,6 +82,10 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     setSlideConfirmed(false);
     setMediaConfirmed(false);
     setIsSubmitting(false);
+    setSlideUploading(false);
+    setMediaUploading(false);
+    setSlideUploadPct(0);
+    setMediaUploadPct(0);
     onClose();
   };
 
@@ -122,6 +133,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     name: "file",
     accept: ".pdf,.ppt,.pptx",
     showUploadList: false,
+    disabled: slideUploading,
     beforeUpload: async (file) => {
       const validation = validateFile(file, [
         "application/pdf",
@@ -133,9 +145,19 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
         return Upload.LIST_IGNORE;
       }
       try {
+        setSlideUploading(true);
+        setSlideUploadPct(0);
+        const progressInterval = setInterval(() => {
+          setSlideUploadPct((prev) => {
+            if (prev >= 90) { clearInterval(progressInterval); return prev; }
+            return prev + Math.floor(Math.random() * 15) + 5;
+          });
+        }, 400);
         const result = await dispatch(
           uploadSlide({ presentationId, file }),
         ).unwrap();
+        clearInterval(progressInterval);
+        setSlideUploadPct(100);
         setSlideFile({
           name: result.slide.fileName,
           url: result.slide.filePath,
@@ -148,6 +170,9 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
         void message.error(
           err instanceof Error ? err.message : "Tải lên slides thất bại",
         );
+      } finally {
+        setSlideUploading(false);
+        setSlideUploadPct(0);
       }
       return false;
     },
@@ -158,6 +183,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     name: "file",
     accept: "video/*",
     showUploadList: false,
+    disabled: mediaUploading,
     beforeUpload: async (file) => {
       const validation = validateFile(file, [
         "video/mp4",
@@ -171,6 +197,14 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
         return Upload.LIST_IGNORE;
       }
       try {
+        setMediaUploading(true);
+        setMediaUploadPct(0);
+        const progressInterval = setInterval(() => {
+          setMediaUploadPct((prev) => {
+            if (prev >= 90) { clearInterval(progressInterval); return prev; }
+            return prev + Math.floor(Math.random() * 15) + 5;
+          });
+        }, 400);
         const duration = await getVideoDuration(file);
         const result = await dispatch(
           uploadMedia({
@@ -181,6 +215,8 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
             recordingMethod: "upload",
           }),
         ).unwrap();
+        clearInterval(progressInterval);
+        setMediaUploadPct(100);
         setMediaFile({
           name: result.audioRecord.fileName,
           url: result.audioRecord.filePath,
@@ -193,6 +229,9 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
         void message.error(
           err instanceof Error ? err.message : "Tải lên video thất bại",
         );
+      } finally {
+        setMediaUploading(false);
+        setMediaUploadPct(0);
       }
       return false;
     },
@@ -248,7 +287,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
       title={
         <Space>
           <InboxOutlined className="text-sky-500" />
-          <span>Tải lên file bài thuyết trình</span>
+          <span>{isResubmit ? "Gửi lại bài thuyết trình (upload file mới)" : "Tải lên file bài thuyết trình"}</span>
         </Space>
       }
       open={isOpen}
@@ -262,8 +301,9 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     >
       {/* Tiêu đề phụ */}
       <Text type="secondary" className="block mb-4 -mt-1">
-        <strong>{presentationTitle}</strong> — Chỉ cần tải lên slides (PDF /
-        PowerPoint) hoặc video, không bắt buộc cả hai.
+        <strong>{presentationTitle}</strong> — {isResubmit
+          ? "Upload file mới để thay thế file cũ. Bài sẽ được xử lý lại từ đầu."
+          : "Chỉ cần tải lên slides (PDF / PowerPoint) hoặc video, không bắt buộc cả hai."}
       </Text>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -277,16 +317,32 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
           {!slideFile ? (
             <Dragger {...slideUploadProps} className="!rounded-xl">
               <p className="ant-upload-drag-icon">
-                {uploadProgress > 0 && uploadProgress < 100 ? (
-                  <LoadingOutlined className="text-sky-500 text-3xl" />
+                {slideUploading ? (
+                  <Spin indicator={<CloudUploadOutlined className="text-sky-500" style={{ fontSize: 40 }} />} />
                 ) : (
-                  <InboxOutlined className="text-gray-400 text-3xl" />
+                  <CloudUploadOutlined className="text-gray-300 text-3xl" style={{ fontSize: 40 }} />
                 )}
               </p>
               <p className="ant-upload-text">
-                Kéo thả hoặc click để chọn file slides
+                {slideUploading
+                  ? "Đang tải slides lên..."
+                  : "Kéo thả hoặc click để chọn file slides"}
               </p>
               <p className="ant-upload-hint">PDF, PowerPoint — Tối đa 500MB</p>
+              {slideUploading && (
+                <Progress
+                  percent={slideUploadPct}
+                  size="small"
+                  className="mt-3 mx-6"
+                  strokeColor={{
+                    "0%": "#0ea5e9",
+                    "100%": "#6366f1",
+                  }}
+                  format={(p) => (
+                    <span className="text-xs font-medium text-sky-600">{p}%</span>
+                  )}
+                />
+              )}
             </Dragger>
           ) : (
             <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
@@ -345,24 +401,32 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
           {!mediaFile ? (
             <Dragger {...mediaUploadProps} className="!rounded-xl">
               <p className="ant-upload-drag-icon">
-                {uploadProgress > 0 && uploadProgress < 100 ? (
-                  <LoadingOutlined className="text-sky-500 text-3xl" />
+                {mediaUploading ? (
+                  <Spin indicator={<CloudUploadOutlined className="text-blue-500 text-3xl" style={{ fontSize: 40 }} />} />
                 ) : (
-                  <InboxOutlined className="text-gray-400 text-3xl" />
+                  <CloudUploadOutlined className="text-gray-300 text-3xl" style={{ fontSize: 40 }} />
                 )}
               </p>
               <p className="ant-upload-text">
-                Kéo thả hoặc click để chọn file video
+                {mediaUploading
+                  ? "Đang tải video lên..."
+                  : "Kéo thả hoặc click để chọn file video"}
               </p>
               <p className="ant-upload-hint">
                 MP4, MOV, AVI, WebM — Tối đa 500MB
               </p>
-              {uploadProgress > 0 && uploadProgress < 100 && (
+              {mediaUploading && (
                 <Progress
-                  percent={uploadProgress}
+                  percent={mediaUploadPct}
                   size="small"
-                  className="mt-3 mx-4"
-                  strokeColor="#0ea5e9"
+                  className="mt-3 mx-6"
+                  strokeColor={{
+                    "0%": "#3b82f6",
+                    "100%": "#6366f1",
+                  }}
+                  format={(p) => (
+                    <span className="text-xs font-medium text-blue-600">{p}%</span>
+                  )}
                 />
               )}
             </Dragger>
@@ -434,7 +498,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
                 item.confirmed ? (
                   <CheckCircleOutlined />
                 ) : item.uploaded ? (
-                  <LoadingOutlined />
+                  <CloudUploadOutlined />
                 ) : undefined
               }
             >

@@ -127,22 +127,17 @@ const StudentClassesPage: React.FC = () => {
     };
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const classes: ClassItem[] = apiClasses
+  const filteredClasses: ClassItem[] = apiClasses
     .map(transformClass)
-    .filter((c) => !(c.endDate && new Date(c.endDate) < today));
-
-  const filteredClasses = classes.filter((c) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      !q ||
-      c.className.toLowerCase().includes(q) ||
-      c.classCode.toLowerCase().includes(q) ||
-      c.instructorName.toLowerCase().includes(q)
-    );
-  });
+    .filter((c) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        !q ||
+        c.className.toLowerCase().includes(q) ||
+        c.classCode.toLowerCase().includes(q) ||
+        c.instructorName.toLowerCase().includes(q)
+      );
+    });
 
   const isEnrolled = (classId: number) => enrolledClassIds.includes(classId);
 

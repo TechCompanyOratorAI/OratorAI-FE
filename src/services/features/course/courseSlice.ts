@@ -42,6 +42,7 @@ export interface CourseData {
   instructors?: Instructor[];
   topics?: Topic[];
   enrollmentCount?: number;
+  totalActiveClasses?: number;
 }
 
 export interface CreateCourseData {

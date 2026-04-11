@@ -15,9 +15,12 @@ import {
   Star,
   Award,
   CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
+import {
+  fetchPresentationDetail,
+} from "@/services/features/presentation/presentationSlice";
 import {
   clearCurrentReport,
   fetchPresentationReport,
@@ -25,6 +28,7 @@ import {
 } from "@/services/features/report/reportSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import PresentationProgressTracker from "@/components/Presentation/PresentationProgressTracker";
+import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import ShareModal from "@/components/Share/ShareModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
@@ -86,6 +90,8 @@ const PresentationDetailPage: React.FC = () => {
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [reportTab, setReportTab] = useState<"ai" | "instructor">("ai");
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadResubmit, setUploadResubmit] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
@@ -357,6 +363,37 @@ const PresentationDetailPage: React.FC = () => {
           </motion.div>
         )}
 
+        {/* Retry button when presentation failed — hiển thị ngoài report section */}
+        {presentation.status === "failed" && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-red-700">Xử lý AI thất bại</p>
+                <p className="text-xs text-red-600">
+                  Bài thuyết trình không thể được phân tích. Bạn có thể gửi lại để thử lại.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setUploadResubmit(true);
+                setUploadModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm flex-shrink-0"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Gửi lại
+            </button>
+          </motion.div>
+        )}
+
         {showReport && (
           <motion.div
             ref={reportSectionRef}
@@ -374,6 +411,33 @@ const PresentationDetailPage: React.FC = () => {
                 </span>
               )}
             </div>
+
+            {/* Retry button when report is rejected */}
+            {currentReport?.reportStatus === "rejected" && (
+              <div className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-red-700">Báo cáo AI bị từ chối</p>
+                    <p className="text-xs text-red-600">
+                      Bạn có thể gửi lại bài thuyết trình để được đánh giá lại.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setUploadResubmit(true);
+                    setUploadModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Gửi lại
+                </button>
+              </div>
+            )}
 
             {/* Tabs: AI vs Giảng viên */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
@@ -697,6 +761,23 @@ const PresentationDetailPage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {presentationIdNumber && (
+        <PresentationUploadModal
+          isOpen={uploadModalOpen}
+          onClose={() => {
+            setUploadModalOpen(false);
+            if (presentationIdNumber) {
+              dispatch(fetchPresentationDetail(presentationIdNumber));
+              dispatch(clearCurrentReport());
+              setShowReport(false);
+            }
+          }}
+          presentationId={presentationIdNumber}
+          presentationTitle={presentation?.title || ""}
+          isResubmit={uploadResubmit}
+        />
+      )}
 
       {presentationIdNumber && (
         <ShareModal

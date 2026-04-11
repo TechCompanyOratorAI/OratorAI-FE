@@ -14,7 +14,7 @@ import {
   Space,
   Skeleton,
   Empty,
-  Progress,
+  Tooltip,
   List,
   Avatar,
   Modal,
@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   X,
+  BookOpen,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourses } from "@/services/features/course/courseSlice";
@@ -126,15 +127,6 @@ const StudentDashboardPage: React.FC = () => {
     return { color: "default" as const, label: "Đã kết thúc", dot: "default" as const };
   };
 
-  const getProgress = (course: typeof courses[0]) => {
-    const now = new Date();
-    const start = new Date(course.startDate);
-    const end = new Date(course.endDate);
-    if (start > now) return 0;
-    if (end < now) return 100;
-    return Math.min(100, Math.round(((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100));
-  };
-
   const formatDate = (d: Date) => d.toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" });
 
   const filteredCourses = courses
@@ -154,9 +146,6 @@ const StudentDashboardPage: React.FC = () => {
     );
 
   // Class helpers
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const transformClass = (apiClass: ClassData): ClassItem => {
     const instructors = apiClass.instructors;
     const instructorName = instructors?.length
@@ -177,9 +166,7 @@ const StudentDashboardPage: React.FC = () => {
     };
   };
 
-  const classes: ClassItem[] = apiClasses
-    .map(transformClass)
-    .filter((c) => !(c.endDate && new Date(c.endDate) < today));
+  const classes: ClassItem[] = apiClasses.map(transformClass);
 
   const filteredClasses = classes.filter((c) => {
     const q = classSearch.toLowerCase();
@@ -286,8 +273,8 @@ const StudentDashboardPage: React.FC = () => {
                 dataSource={filteredCourses}
                 renderItem={(course) => {
                   const status = getStatusConfig(course);
-                  const progress = getProgress(course);
                   const isSelected = selectedCourseId === course.courseId;
+                  const activeClassCount = course.totalActiveClasses ?? 0;
                   const instructorNames = (course.instructors || (course.instructor ? [course.instructor] : []))
                     .filter(Boolean)
                     .map((i) => `${i?.firstName || ""} ${i?.lastName || ""}`.trim() || i?.username)
@@ -348,15 +335,16 @@ const StudentDashboardPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
-                          {course.isActive && (
-                            <Progress
-                              type="circle"
-                              percent={progress}
-                              size={44}
-                              strokeWidth={7}
-                              strokeColor={isSelected ? "#6366f1" : "#3b82f6"}
-                              format={(p) => <span className="text-[10px] font-semibold">{p}%</span>}
-                            />
+                          {course.isActive && activeClassCount > 0 && (
+                            <Tooltip title={`Có ${activeClassCount} lớp đang mở — bấm để xem`} placement="left">
+                              <div
+                                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-indigo-600"
+                                style={{ background: isSelected ? "rgba(99,102,241,0.1)" : "#eff6ff", border: "1px solid #c7d2fe" }}
+                              >
+                                <BookOpen className="h-3.5 w-3.5" />
+                                <span>{activeClassCount} lớp</span>
+                              </div>
+                            </Tooltip>
                           )}
                           <ChevronRight
                             className={`h-4 w-4 transition-transform ${isSelected ? "rotate-90 text-indigo-400" : "text-slate-300"}`}

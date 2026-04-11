@@ -6,134 +6,112 @@ import {
   REGISTER_ENDPOINT,
 } from "./apiConfig";
 
-// Track if we're currently refreshing token to avoid multiple concurrent refresh calls
+// ─── Token storage keys ────────────────────────────────────────────────────────
+export const TOKEN_KEY = "accessToken";
+// refreshToken KHÔNG lưu ở FE — nó nằm trong httpOnly cookie của browser
+
+// ─── Subscriber queue — tránh gọi refresh nhiều lần cùng lúc ───────────────
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];
 
-// Function to add subscribers waiting for token refresh
 const addRefreshSubscriber = (callback: (token: string) => void) => {
   refreshSubscribers.push(callback);
 };
 
-// Function to notify all subscribers when refresh is complete
 const onRefreshed = (token: string) => {
-  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers.forEach((cb) => cb(token));
   refreshSubscribers = [];
 };
 
-// Function to handle token refresh
+// ─── Refresh token ────────────────────────────────────────────────────────────
+// Server dùng httpOnly cookie → browser tự động gửi, FE không cần làm gì.
+// Chỉ cần POST rỗng đến endpoint refresh.
 const refreshTokenRequest = async (): Promise<string | null> => {
   try {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) {
-      throw new Error("No refresh token available");
-    }
-
     const response = await axios.post(
       REFRESH_TOKEN_ENDPOINT,
-      {
-        refreshToken: refreshToken,
-      },
+      {}, // body rỗng — cookie tự động được gửi kèm
       {
         baseURL: BASE_URL,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        // withCredentials: true là cần thiết để browser gửi httpOnly cookie
+        withCredentials: true,
       }
     );
 
-    const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-    // Update stored tokens
-    localStorage.setItem("token", accessToken);
-    if (newRefreshToken) {
-      localStorage.setItem("refreshToken", newRefreshToken);
+    if (!response.data.success) {
+      throw new Error(response.data.message ?? "Refresh failed");
     }
 
-    return accessToken;
-  } catch (error) {
-    // If refresh fails, clear all tokens and redirect to login
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    const newAccessToken = response.data.tokens.accessToken;
+
+    // Lưu accessToken mới
+    localStorage.setItem(TOKEN_KEY, newAccessToken);
+
+    return newAccessToken;
+  } catch {
+    // Refresh thất bại → xóa token và đá về login
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem("user");
-
-    // Dispatch logout action to update store state
-    if (typeof window !== "undefined" && window.location) {
-      // Redirect to login page
-      window.location.href = "/login";
-    }
-
-    throw error;
+    window.location.href = "/login";
+    return null;
   }
 };
 
+// ─── Axios instance chính (có auth interceptor) ───────────────────────────────
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
-// Request interceptor to add token
+// Request interceptor — gắn accessToken vào header
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle errors and automatic token refresh
+// Response interceptor — xử lý 401 → refresh token → retry request
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // Không cố refresh token cho các request auth cơ bản (login/register/refresh-token)
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      originalRequest.url !== LOGIN_ENDPOINT &&
-      originalRequest.url !== REGISTER_ENDPOINT &&
-      originalRequest.url !== REFRESH_TOKEN_ENDPOINT
-    ) {
+    const isAuthRequest =
+      originalRequest.url === LOGIN_ENDPOINT ||
+      originalRequest.url === REGISTER_ENDPOINT ||
+      originalRequest.url === REFRESH_TOKEN_ENDPOINT;
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
+      originalRequest._retry = true;
+
       if (isRefreshing) {
-        // If a refresh is already in progress, wait for it to complete
+        // Đợi refresh đang chạy hoàn thành
         return new Promise((resolve) => {
           addRefreshSubscriber((token: string) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+            originalRequest.headers!.Authorization = `Bearer ${token}`;
             resolve(axiosInstance(originalRequest));
           });
         });
       }
 
-      originalRequest._retry = true;
       isRefreshing = true;
 
       try {
         const newToken = await refreshTokenRequest();
         if (newToken) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          originalRequest.headers!.Authorization = `Bearer ${newToken}`;
           onRefreshed(newToken);
           return axiosInstance(originalRequest);
         }
-      } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-
-        // Notify waiting requests that refresh failed
+      } catch {
         onRefreshed("");
-
-        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
@@ -143,94 +121,44 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Separate axios instance for public endpoints (no auth / token refresh)
+// ─── Axios instance công khai — không có auth interceptor (dùng cho share page) ──
 const publicAxiosInstance = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
-// HTTP Methods
+// ─── API wrapper ──────────────────────────────────────────────────────────────
 export const api = {
-  // GET request
-  get: <T = any>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.get(url, config);
-  },
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.get(url, config),
 
-  // POST request
-  post: <T = any>(
-    url: string,
-    data?: any,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.post(url, data, config);
-  },
+  post: <T = any>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.post(url, data, config),
 
-  // PUT request
-  put: <T = any>(
-    url: string,
-    data?: any,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.put(url, data, config);
-  },
+  put: <T = any>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.put(url, data, config),
 
-  // PATCH request
-  patch: <T = any>(
-    url: string,
-    data?: any,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.patch(url, data, config);
-  },
+  patch: <T = any>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.patch(url, data, config),
 
-  // DELETE request
-  delete: <T = any>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.delete(url, config);
-  },
+  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.delete(url, config),
 
-  // Upload file
-  upload: <T = any>(
-    url: string,
-    formData: FormData,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return axiosInstance.post(url, formData, {
+  upload: <T = any>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.post(url, formData, {
       ...config,
-      headers: {
-        "Content-Type": "multipart/form-data",
-        ...config?.headers,
-      },
-    });
-  },
+      headers: { "Content-Type": "multipart/form-data", ...config?.headers },
+    }),
 
-  // Download file
-  download: (
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<Blob>> => {
-    return axiosInstance.get(url, {
-      ...config,
-      responseType: "blob",
-    });
-  },
+  download: (url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<Blob>> =>
+    axiosInstance.get(url, { ...config, responseType: "blob" }),
 };
 
-// Public API (no auth interceptor)
+// ─── Public API wrapper (không auth interceptor) ───────────────────────────────
 export const publicApi = {
-  get: <T = any>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> => {
-    return publicAxiosInstance.get<T>(url, config);
-  },
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    publicAxiosInstance.get<T>(url, config),
 };
 
 export { axiosInstance, publicAxiosInstance, refreshTokenRequest };

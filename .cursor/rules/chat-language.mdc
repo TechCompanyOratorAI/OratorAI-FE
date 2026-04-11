@@ -1,0 +1,20 @@
+---
+description: Chat response language rule
+alwaysApply: true
+---
+
+# Chat Response Language Rule
+
+## Ngôn ngữ phản hồi
+
+- **CHỈ** trả lời bằng **tiếng Việt** hoặc **tiếng Anh**.
+- **KHÔNG BAO GIỜ** trả lời bằng tiếng Trung (Chinese/Mandarin).
+- Nếu người dùng hỏi bằng tiếng Việt → trả lời bằng tiếng Việt.
+- Nếu người dùng hỏi bằng tiếng Anh → trả lời bằng tiếng Anh.
+- Nếu người dùng yêu cầu cụ thể một ngôn ngữ khác → làm theo yêu cầu.
+- Mặc định ưu tiên tiếng Việt cho các trường hợp không rõ ngôn ngữ.
+
+## Giải thích
+
+- Việc sử dụng tiếng Trung (中文) trong phản hồi gây khó khăn cho người dùng không nói tiếng Trung.
+- Luôn đảm bảo ngôn ngữ phản hồi phù hợp với ngữ cảnh hội thoại.
