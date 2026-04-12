@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, GraduationCap, UserCog, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { loginUser, logout } from "@/services/features/auth/authSlice";
+import { loginUser } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
 import { message } from "antd";
@@ -13,25 +13,12 @@ type SelectedRole = "Student" | "Instructor" | "Admin" | null;
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { loading, user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { loading } = useAppSelector((state) => state.auth);
   const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Check if user is logged in and handle role selection
-  useEffect(() => {
-    if (isAuthenticated && user && selectedRole) {
-      const primaryRole = user.roles?.[0]?.roleName;
-      // If Student selects Instructor, force logout
-      if (primaryRole === "Student" && selectedRole === "Instructor") {
-        dispatch(logout());
-        message.warning("Vui lòng đăng nhập lại với tài khoản Instructor");
-        setSelectedRole(null);
-      }
-    }
-  }, [selectedRole, isAuthenticated, user, dispatch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,18 +30,19 @@ const LoginForm: React.FC = () => {
 
     try {
       const resultAction = await dispatch(
-        loginUser({ usernameOrEmail, password })
+        loginUser({ usernameOrEmail, password, selectedRole })
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
-        const user = resultAction.payload.user;
-        const primaryRole = user.roles?.[0]?.roleName;
+        const payload = resultAction.payload;
 
-        if (primaryRole !== selectedRole) {
-          message.error(`Bạn không có quyền truy cập với vai trò ${selectedRole}`);
-          dispatch(logout());
+        if (!payload.success) {
+          message.error(payload.message);
           return;
         }
+
+        const user = payload.user;
+        const primaryRole = user.roles?.[0]?.roleName;
 
         if (!user.isEmailVerified) {
           navigate("/verify-email");

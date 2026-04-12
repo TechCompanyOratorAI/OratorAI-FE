@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import { Button } from "antd";
 import {
   ArrowLeft,
   Calendar,
@@ -318,19 +319,19 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <Link
-                            to={`/student/presentation/${presentation.presentationId}`}
-                            className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
-                          >
-                            Xem
+                          <Link to={`/student/presentation/${presentation.presentationId}`}>
+                            <Button type="primary" size="small">Xem</Button>
                           </Link>
                           {isFailed && (
-                            <button
+                            <Button
+                              type="primary"
+                              danger
+                              size="small"
+                              icon={<RefreshCw className="w-3 h-3" />}
                               onClick={() => handleRetry(presentation.presentationId, presentation.title)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition shadow-sm"
                             >
-                              <RefreshCw className="w-3 h-3" /> Gửi lại
-                            </button>
+                              Gửi lại
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -392,15 +393,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                       <p className="text-sm text-slate-500 mb-5">
                         Chọn chủ đề này cho cả nhóm — các thành viên sẽ được ghi danh cùng lúc.
                       </p>
-                      <button
-                        type="button"
+                      <Button
+                        type="primary"
+                        block
+                        icon={groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         onClick={handlePickTopicForGroup}
-                        disabled={groupActionLoading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        loading={groupActionLoading}
                       >
-                        {groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         Chọn chủ đề này cho nhóm
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
@@ -418,15 +419,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
               ) : (
                 <div className="space-y-4">
                   {isCurrentUserLeader && isGroupTopicThis && myGroupId ? (
-                    <button
-                      type="button"
+                    <Button
+                      type="text"
+                      danger
+                      block
+                      icon={groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       onClick={handleClearGroupTopic}
-                      disabled={groupActionLoading}
-                      className="w-full border border-red-200 bg-red-50 text-red-800 font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-red-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                      loading={groupActionLoading}
                     >
-                      {groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       Hủy chọn chủ đề cho nhóm
-                    </button>
+                    </Button>
                   ) : null}
                   {myPresentation ? (
                     <div className="text-center py-4">
@@ -452,20 +454,25 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         <div className="space-y-3">
                         {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
                         {myPresentation.status === "draft" && (
-                          <button
+                          <Button
+                            type="primary"
+                            block
+                            icon={<Upload className="w-4 h-4" />}
                             onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
                           >
-                            <Upload className="w-4 h-4" /> Tải lên file
-                          </button>
+                            Tải lên file
+                          </Button>
                         )}
                         {myPresentation.status === "failed" && (
-                          <button
+                          <Button
+                            type="primary"
+                            danger
+                            block
+                            icon={<RefreshCw className="w-4 h-4" />}
                             onClick={() => handleRetry(myPresentation.presentationId, myPresentation.title)}
-                            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
                           >
-                            <RefreshCw className="w-4 h-4" /> Gửi lại bài (upload file mới)
-                          </button>
+                            Gửi lại bài (upload file mới)
+                          </Button>
                         )}
                         <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
                           {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
@@ -480,9 +487,14 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                       </div>
                       <h3 className="font-bold text-slate-900 mb-1">Tạo bài thuyết trình</h3>
                       <p className="text-sm text-slate-500 mb-5">Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.</p>
-                      <button onClick={() => setIsCreateModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                        <Plus className="w-4 h-4" /> Tạo bài thuyết trình
-                      </button>
+                      <Button
+                        type="primary"
+                        block
+                        icon={<Plus className="w-4 h-4" />}
+                        onClick={() => setIsCreateModalOpen(true)}
+                      >
+                        Tạo bài thuyết trình
+                      </Button>
                     </div>
                   ) : myGroupForClass ? (
                     <div className="text-center py-4">
@@ -547,10 +559,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 )}
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Hủy</button>
-                <button onClick={handleCreatePresentation} disabled={isCreating || !presentationTitle.trim()} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2">
-                  {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Đang tạo...</> : "Tạo bài thuyết trình"}
-                </button>
+                <Button block onClick={() => setIsCreateModalOpen(false)}>Hủy</Button>
+                <Button
+                  type="primary"
+                  block
+                  onClick={handleCreatePresentation}
+                  loading={isCreating}
+                  disabled={!presentationTitle.trim()}
+                >
+                  Tạo bài thuyết trình
+                </Button>
               </div>
             </motion.div>
           </div>

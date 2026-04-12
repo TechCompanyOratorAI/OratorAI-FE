@@ -12,6 +12,7 @@ import {
   RESEND_VERIFICATION_ENDPOINT,
   VERIFY_EMAIL_ENDPOINT,
   LOGOUT_ENDPOINT,
+  UPLOAD_AVATAR_ENDPOINT,
 } from "../../constant/apiConfig";
 import {
   AuthState,
@@ -32,6 +33,7 @@ import {
   VerifyEmailResponse,
   ResetPasswordRequest,
   ResetPasswordResponse,
+  UploadAvatarResponse,
 } from "../../../interfaces/auth";
 
 // Helper function to get user from localStorage
@@ -66,6 +68,7 @@ export const loginUser = createAsyncThunk<
     const requestBody = {
       emailOrUsername: credentials.usernameOrEmail,
       password: credentials.password,
+      ...(credentials.selectedRole && { selectedRole: credentials.selectedRole }),
     };
 
     const response = await axiosInstance.post(LOGIN_ENDPOINT, requestBody);
@@ -264,6 +267,40 @@ export const resetPassword = createAsyncThunk<
   }
 });
 
+export const uploadAvatar = createAsyncThunk<
+  UploadAvatarResponse,
+  File,
+  { rejectValue: { message: string } }
+>("auth/uploadAvatar", async (file, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await axiosInstance.post(
+      UPLOAD_AVATAR_ENDPOINT,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    if (response.data && response.data.success === false) {
+      return rejectWithValue({
+        message: response.data.message ?? "Upload avatar thất bại",
+      });
+    }
+
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as { response?: { data?: { message?: string } }; message?: string };
+    const errorMessage =
+      error.response?.data?.message || error.message || "Upload avatar thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
 // Auth slice
 const authSlice = createSlice({
   name: "auth",
@@ -276,7 +313,6 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
-      message.success("Đăng xuất thành công");
     },
     clearError: (state) => {
       state.error = null;
@@ -380,13 +416,13 @@ const authSlice = createSlice({
       })
       .addCase(getProfile.fulfilled, (state, action) => {
         state.loading = false;
-        // Update user info if needed
         if (state.user) {
-          state.user.firstName = action.payload.user.firstName;
-          state.user.lastName = action.payload.user.lastName;
-          state.user.email = action.payload.user.email;
-          state.user.username = action.payload.user.username;
-          state.user.isEmailVerified = action.payload.user.isEmailVerified;
+          state.user.firstName = action.payload.data.firstName;
+          state.user.lastName = action.payload.data.lastName;
+          state.user.email = action.payload.data.email;
+          state.user.username = action.payload.data.username;
+          state.user.isEmailVerified = action.payload.data.isEmailVerified;
+          state.user.avatar = action.payload.data.avatar;
           localStorage.setItem("user", JSON.stringify(state.user));
         }
         state.error = null;
@@ -463,6 +499,25 @@ const authSlice = createSlice({
       })
       .addCase(resetPassword.rejected, (state) => {
         state.loading = false;
+      })
+      // Upload Avatar cases
+      .addCase(uploadAvatar.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user.avatar = action.payload.data.avatarUrl;
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
+        state.error = null;
+        message.success(action.payload.message || "Cập nhật avatar thành công");
+      })
+      .addCase(uploadAvatar.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Upload avatar thất bại";
+        message.error(state.error);
       });
   },
 });

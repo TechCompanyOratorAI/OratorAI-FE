@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Button } from "antd";
 import {
   ChevronLeft,
   ChevronRight,
@@ -478,14 +479,14 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             </div>
 
             {onResultClick && status === "done" && (
-              <button
+              <Button
+                type="primary"
+                icon={<FileText className="h-4 w-4" />}
                 onClick={onResultClick}
-                disabled={resultLoading}
-                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                loading={resultLoading}
               >
-                <FileText className="h-4 w-4" />
                 {resultLoading ? "Đang tải..." : "Kết quả"}
-              </button>
+              </Button>
             )}
           </div>
         </div>

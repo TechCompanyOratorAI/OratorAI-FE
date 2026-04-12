@@ -59,6 +59,8 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
     .toUpperCase()
     .slice(0, 2);
 
+  const avatarSrc = user?.avatar || null;
+
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
@@ -158,9 +160,10 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                 >
                   <Avatar
                     size={38}
+                    src={avatarSrc}
                     className="flex shrink-0 items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white"
                   >
-                    {initials}
+                    {!avatarSrc && initials}
                   </Avatar>
                   <div className="hidden min-w-0 flex-col items-start text-left sm:flex">
                     <Text className="max-w-full truncate text-sm font-semibold text-slate-800">
@@ -199,8 +202,8 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
         styles={{ body: { padding: 0 } }}
         extra={
           <div className="flex items-center gap-2 px-1">
-            <Avatar size={28} className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-semibold">
-              {initials}
+            <Avatar size={28} src={avatarSrc} className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-semibold">
+              {!avatarSrc && initials}
             </Avatar>
             <Text className="text-sm font-medium text-slate-700">{fullName}</Text>
           </div>
