@@ -7,19 +7,24 @@ export interface Role {
 }
 
 export interface User {
-  userId: number;
+  userId?: number;
   username: string;
   email: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
+  avatar?: string | null;
   isEmailVerified: boolean;
   lastLoginAt?: string;
   roles?: Role[];
+  dob?: string | null;
+  studyMajor?: string | null;
 }
 
 export interface LoginCredentials {
   usernameOrEmail: string;
   password: string;
+  selectedRole?: string;
 }
 
 export interface RegisterCredentials {
@@ -74,13 +79,17 @@ export interface ProfileUser {
   email: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
+  avatar?: string | null;
+  dob?: string | null;
+  studyMajor?: string | null;
   isActive: boolean;
   isEmailVerified: boolean;
 }
 
 export interface ProfileResponse {
   success: boolean;
-  user: ProfileUser;
+  data: ProfileUser;
 }
 
 export interface ChangePasswordRequest {
@@ -132,4 +141,12 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
+}
+
+export interface UploadAvatarResponse {
+  success: boolean;
+  message: string;
+  data: {
+    avatarUrl: string;
+  };
 }

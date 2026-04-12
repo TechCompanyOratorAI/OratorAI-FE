@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { Button, Avatar as AntAvatar, Upload } from "antd";
+import type { UploadProps } from "antd";
 import {
   User,
   Lock,
@@ -13,9 +15,10 @@ import {
   Mail,
   AtSign,
   IdCard,
+  Camera,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { changePassword } from "@/services/features/auth/authSlice";
+import { changePassword, uploadAvatar, getProfile } from "@/services/features/auth/authSlice";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const StudentSettingsPage: React.FC = () => {
@@ -31,9 +34,45 @@ const StudentSettingsPage: React.FC = () => {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [isChangingPwd, setIsChangingPwd] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    dispatch(getProfile());
+  }, [dispatch]);
+
+  const avatarUrl = user?.avatar || null;
 
   const fullName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "Student" : "Student";
   const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const uploadProps: UploadProps = {
+    accept: "image/jpeg,image/png,image/gif,image/webp",
+    showUploadList: false,
+    beforeUpload: (file) => {
+      const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Chỉ chấp nhận file ảnh: JPEG, PNG, GIF, WebP");
+        return Upload.LIST_IGNORE;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File ảnh không được vượt quá 5MB");
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+    customRequest: async ({ file, onSuccess, onError }) => {
+      setIsUploadingAvatar(true);
+      try {
+        await dispatch(uploadAvatar(file as File)).unwrap();
+        onSuccess?.({});
+      } catch (err: unknown) {
+        const error = err as { message?: string };
+        onError?.(new Error(error.message || "Upload avatar thất bại"));
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    },
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +88,9 @@ const StudentSettingsPage: React.FC = () => {
       setPasswordSuccess(true);
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 3000);
-    } catch (err: any) {
-      toast.error(err?.message || "Đổi mật khẩu thất bại.");
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error?.message || "Đổi mật khẩu thất bại.");
     } finally {
       setIsChangingPwd(false);
     }
@@ -94,15 +134,32 @@ const StudentSettingsPage: React.FC = () => {
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               {/* Avatar header */}
               <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-8 flex flex-col items-center gap-4">
-                <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-4xl font-bold text-white shadow-xl">
-                  {initials}
-                </div>
+                <Upload {...uploadProps}>
+                  <div className="relative group cursor-pointer">
+                    <AntAvatar
+                      size={96}
+                      src={avatarUrl}
+                      className="ring-4 ring-white/30 shadow-xl text-3xl font-bold"
+                    >
+                      {!avatarUrl && initials}
+                    </AntAvatar>
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
+                    {isUploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </Upload>
                 <div className="text-center">
                   <h2 className="text-xl font-bold text-white">{fullName}</h2>
                   <p className="text-blue-100 text-sm mt-0.5">{user?.email}</p>
                   <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full border border-white/30">
                     <User className="w-3.5 h-3.5" /> Student
                   </span>
+                  <p className="mt-2 text-blue-100/70 text-xs">Click vào avatar để thay đổi ảnh</p>
                 </div>
               </div>
 
@@ -214,17 +271,16 @@ const StudentSettingsPage: React.FC = () => {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isChangingPwd || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                <Button
+                  type="primary"
+                  block
+                  icon={isChangingPwd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  htmlType="submit"
+                  loading={isChangingPwd}
+                  disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
                 >
-                  {isChangingPwd ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Đang đổi...</>
-                  ) : (
-                    <><Save className="w-4 h-4" /> Đổi mật khẩu</>
-                  )}
-                </button>
+                  Đổi mật khẩu
+                </Button>
               </form>
             </motion.div>
           </Tabs.Content>

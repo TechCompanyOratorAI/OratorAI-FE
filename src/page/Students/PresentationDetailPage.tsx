@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   RefreshCw,
 } from "lucide-react";
+import { Button } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchPresentationDetail,
@@ -273,13 +274,12 @@ const PresentationDetailPage: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              icon={<Link2 className="w-4 h-4" />}
               onClick={() => setShareModalOpen(true)}
-              className="flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 font-medium transition border border-sky-200 hover:border-sky-300 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg"
             >
-              <Link2 className="w-4 h-4" />
               Chia sẻ
-            </button>
+            </Button>
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}
             >
@@ -381,16 +381,17 @@ const PresentationDetailPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
+            <Button
+              type="primary"
+              danger
+              icon={<RefreshCw className="w-4 h-4" />}
               onClick={() => {
                 setUploadResubmit(true);
                 setUploadModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm flex-shrink-0"
             >
-              <RefreshCw className="w-4 h-4" />
               Gửi lại
-            </button>
+            </Button>
           </motion.div>
         )}
 
@@ -426,16 +427,17 @@ const PresentationDetailPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
+                  type="primary"
+                  danger
+                  icon={<RefreshCw className="w-4 h-4" />}
                   onClick={() => {
                     setUploadResubmit(true);
                     setUploadModalOpen(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                 >
-                  <RefreshCw className="w-4 h-4" />
                   Gửi lại
-                </button>
+                </Button>
               </div>
             )}
 

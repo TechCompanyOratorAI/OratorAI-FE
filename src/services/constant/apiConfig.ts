@@ -8,13 +8,16 @@ export const REGISTER_ENDPOINT = `${BASE_URL}/api/v1/auth/register`;
 export const REGISTER_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/auth/register-instructor`;
 export const REFRESH_TOKEN_ENDPOINT = `${BASE_URL}/api/v1/auth/refresh-token`;
 export const LOGOUT_ENDPOINT = `${BASE_URL}/api/v1/auth/logout`;
-export const PROFILE_ENDPOINT = `${BASE_URL}/api/v1/auth/profile`;
+export const PROFILE_ENDPOINT = `${BASE_URL}/api/v1/users/profile`;
 export const CHANGE_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/change-password`;
 export const FORGOT_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/forgot-password`;
 export const RESET_PASSWORD_ENDPOINT = `${BASE_URL}/api/v1/auth/reset-password`;
 export const RESEND_VERIFICATION_ENDPOINT = `${BASE_URL}/api/v1/auth/resend-verification`;
 export const VERIFY_EMAIL_ENDPOINT = (token: string) =>
   `${BASE_URL}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
+
+// User endpoints
+export const UPLOAD_AVATAR_ENDPOINT = `${BASE_URL}/api/v1/users/avatar`;
 
 // Course endpoints
 export const COURSES_ENDPOINT = `${BASE_URL}/api/v1/courses`;
