@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { getProfile } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
@@ -15,16 +15,32 @@ const LoginPage: React.FC = () => {
   const [profileChecked, setProfileChecked] = useState(false);
   const refreshDone = useRef(false);
 
-  // Khi đã đăng nhập: gọi getProfile để lấy isEmailVerified mới nhất (sau khi user verify qua link)
+  // Chỉ gọi getProfile khi user chưa verify email (trường hợp quay lại sau khi click verify link)
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setProfileChecked(false);
       refreshDone.current = false;
       return;
     }
+
+    // Nếu email đã verified → không cần gọi getProfile, proceed redirect luôn
+    if (user.isEmailVerified) {
+      setProfileChecked(true);
+      refreshDone.current = true;
+      return;
+    }
+
+    // Chưa verified → gọi getProfile để lấy isEmailVerified mới nhất
     if (refreshDone.current) return;
     refreshDone.current = true;
-    dispatch(getProfile()).finally(() => setProfileChecked(true));
+    dispatch(getProfile())
+      .unwrap()
+      .catch(() => {
+        // Nếu getProfile fail (token hết hạn, refresh cũng fail),
+        // hardLogout trong axiosInstance sẽ redirect về /login rồi clear persist
+        // -> state sẽ reset, không loop
+      })
+      .finally(() => setProfileChecked(true));
   }, [isAuthenticated, user, dispatch]);
 
   // Redirect chỉ sau khi đã refresh profile để tránh dùng user cũ (isEmailVerified chưa cập nhật)
@@ -46,7 +62,7 @@ const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, user, profileChecked, navigate]);
 
-  const headerVariants = {
+  const headerVariants: Variants = {
     hidden: { y: -20, opacity: 0 },
     visible: {
       y: 0,
@@ -55,7 +71,7 @@ const LoginPage: React.FC = () => {
     },
   };
 
-  const fadeInVariants = {
+  const fadeInVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
@@ -70,7 +86,7 @@ const LoginPage: React.FC = () => {
         className="px-4 py-4"
         initial="hidden"
         animate="visible"
-        variants={headerVariants as any}
+        variants={headerVariants}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <motion.div

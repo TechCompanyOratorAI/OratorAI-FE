@@ -23,6 +23,14 @@ const onRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
+// ─── Hard-logout: xóa toàn bộ session phía FE & redirect về login ─────────────
+const hardLogout = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem("user");
+  localStorage.removeItem("persist:root"); // xóa redux-persist để ngăn rehydration loop
+  window.location.href = "/login";
+};
+
 // ─── Refresh token ────────────────────────────────────────────────────────────
 // Server dùng httpOnly cookie → browser tự động gửi, FE không cần làm gì.
 // Chỉ cần POST rỗng đến endpoint refresh.
@@ -50,10 +58,8 @@ const refreshTokenRequest = async (): Promise<string | null> => {
 
     return newAccessToken;
   } catch {
-    // Refresh thất bại → xóa token và đá về login
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem("user");
-    window.location.href = "/login";
+    // Refresh thất bại → hard logout (xóa persist + redirect)
+    hardLogout();
     return null;
   }
 };
@@ -93,8 +99,12 @@ axiosInstance.interceptors.response.use(
 
       if (isRefreshing) {
         // Đợi refresh đang chạy hoàn thành
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           addRefreshSubscriber((token: string) => {
+            if (!token) {
+              reject(error);
+              return;
+            }
             originalRequest.headers!.Authorization = `Bearer ${token}`;
             resolve(axiosInstance(originalRequest));
           });
