@@ -51,7 +51,8 @@ body {
   height: 100%;
   padding: clamp(1px, 1%, 2px);
   background: linear-gradient(to right, #1da9e6, #6966fe);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: destination-out;
   mask-composite: exclude;

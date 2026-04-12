@@ -310,12 +310,9 @@ const ManageClassesPage: React.FC = () => {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-bold text-gray-900">
                   My Classes
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600">
-                  Manage classes and presentation assignments for your students.
-                </p>
               </div>
 
               <button
@@ -332,40 +329,31 @@ const ManageClassesPage: React.FC = () => {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-600">Total Students</span>
-                  <Users className="w-5 h-5 text-blue-500" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Students</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-blue-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {totalStudents}
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  Across {filteredCourses.length} classes
-                </p>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-600">Active Classes</span>
-                  <BookOpen className="w-5 h-5 text-green-500" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Active Classes</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{activeCourses}</p>
+                  </div>
+                  <BookOpen className="w-8 h-8 text-green-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {activeCourses}
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  {filteredCourses.length} total classes
-                </p>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-600">Pending Reviews</span>
-                  <Clock className="w-5 h-5 text-amber-500" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Pending</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{pendingReviews}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-amber-500" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {pendingReviews}
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  Presentations awaiting feedback
-                </p>
               </div>
             </div>
 
@@ -492,80 +480,40 @@ const ManageClassesPage: React.FC = () => {
                           </div>
 
                           {/* Info Grid */}
-                          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                              <Calendar className="w-4 h-4 text-indigo-500" />
-                              <div>
-                                <p className="text-xs text-gray-500">
-                                  Duration
-                                </p>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {new Date(
-                                    course.startDate,
-                                  ).toLocaleDateString()}{" "}
-                                  - {""}
-                                  {new Date(
-                                    course.endDate,
-                                  ).toLocaleDateString()}
-                                </p>
-                              </div>
+                          <div className="mt-4 flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-600">
+                                {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                              <Users className="w-4 h-4 text-sky-500" />
-                              <div>
-                                <p className="text-xs text-gray-500">
-                                  Enrollment
-                                </p>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {course.studentsCount} / {course.maxStudents}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Users className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-600">
+                                {course.studentsCount}/{course.maxStudents}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                              <BookOpen className="w-4 h-4 text-emerald-500" />
-                              <div>
-                                <p className="text-xs text-gray-500">
-                                  Semester
-                                </p>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {course.semester || "N/A"}
-                                  {course.academicYear
-                                    ? ` • ${course.academicYear}`
-                                    : ""}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                              <BookOpen className="w-4 h-4 text-emerald-500" />
-                              <div>
-                                <p className="text-xs text-gray-500">
-                                  Enroll Key
-                                </p>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {course.enrollKey || "N/A"}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <BookOpen className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-600">
+                                {course.courseCode} • {course.semester || "N/A"}
+                              </span>
                             </div>
                           </div>
 
-                          {/* Actions */}
-                          <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-gray-200 pt-4">
-                            <div className="text-sm text-gray-600">
-                              Instructor:{" "}
-                              <span className="font-semibold text-gray-900">
-                                {course.instructorName}
-                              </span>
-                            </div>
+                          {/* Footer */}
+                          <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-100">
+                            <span className="text-sm text-gray-500">
+                              {course.instructorName}
+                            </span>
                             <Button
                               text="View Class"
                               variant="primary"
-                              fontSize="14px"
+                              fontSize="13px"
                               borderRadius="999px"
-                              paddingWidth="18px"
-                              paddingHeight="8px"
-                              onClick={() => {
-                                navigate(`/instructor/class/${course.id}`);
-                              }}
+                              paddingWidth="16px"
+                              paddingHeight="6px"
+                              onClick={() => navigate(`/instructor/class/${course.id}`)}
                             />
                           </div>
                         </div>
