@@ -35,7 +35,7 @@ const SettingsPage: React.FC = () => {
     try {
       const result = await dispatch(getProfile());
       if (getProfile.fulfilled.match(result)) {
-        setProfileData(result.payload.user);
+        setProfileData(result.payload.data);
       }
     } catch (error) {
       console.error("Error loading profile:", error);

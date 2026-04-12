@@ -1,6 +1,6 @@
-// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-export const BASE_URL = "http://localhost:8080";
+// export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -122,8 +122,12 @@ export const DELETE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT = (
   rubricCriteriaId: string,
 ) => `${BASE_URL}/api/v1/rubric-criteria/${rubricCriteriaId}`;
 
-//get class by instructor
+// get class by instructor
 export const GET_CLASSES_BY_INSTRUCTOR_ENDPOINT = `${BASE_URL}/api/v1/me/teaching-classes`;
+
+// Class students
+export const CLASS_STUDENTS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/students`;
 
 // Scores by class (instructor view)
 export const CLASS_SCORES_ENDPOINT = (classId: string) =>
@@ -183,6 +187,11 @@ export const CONFIRM_REPORT_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/confirm`;
 export const REJECT_REPORT_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/reject`;
+
+// AI Reports endpoints
+export const AI_REPORTS_ENDPOINT = `${BASE_URL}/api/v1/ai-reports`;
+export const AI_REPORTS_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/classes/${classId}/ai-reports`;
 
 // Criterion Feedback endpoints
 export const CRITERION_FEEDBACKS_ENDPOINT = (reportId: string) =>

@@ -89,11 +89,10 @@ const AdminDashboardPage: React.FC = () => {
       width: 162,
       render: (status: string) => (
         <div
-          className={`inline-flex items-center px-3 py-1 rounded ${
-            status === "completed"
+          className={`inline-flex items-center px-3 py-1 rounded ${status === "completed"
               ? "bg-green-50 text-green-700"
               : "bg-orange-50 text-orange-700"
-          }`}
+            }`}
         >
           <span className="text-xs font-medium capitalize">{status}</span>
         </div>
