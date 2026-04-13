@@ -38,6 +38,8 @@ interface GroupDetailModalProps {
   onClose: () => void;
   groupId: number;
   hideFooterActions?: boolean;
+  /** Set to true when opened by an instructor to show Reopen/Finalize controls */
+  isInstructor?: boolean;
 }
 
 const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
@@ -45,6 +47,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   onClose,
   groupId,
   hideFooterActions = false,
+  isInstructor = false,
 }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -127,12 +130,12 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       title={
         <Space size="middle">
           <Avatar
-            style={{ backgroundColor: "#0ea5e9" }}
+            style={{ backgroundColor: "#0ea5e9", width: 44, height: 44 }}
             icon={<TeamOutlined />}
-            size={40}
+            size={44}
           />
           <div>
-            <Title level={5} className="!mb-0">
+            <Title level={4} className="!mb-0">
               {groupDetail?.groupName || groupDetail?.name || "Chi tiết nhóm"}
             </Title>
             {groupDetail?.class?.classCode && (
@@ -147,9 +150,10 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       onCancel={onClose}
       footer={null}
       centered
-      width={560}
+      width={740}
       destroyOnClose
       maskClosable={!actionLoading}
+      styles={{ body: { padding: "8px 0" } }}
     >
       <Spin spinning={loading} tip="Đang tải chi tiết nhóm...">
         {groupDetail && (
@@ -214,25 +218,29 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                         return (
                           <List.Item
                             key={`${memberId ?? index}`}
-                            className="!py-3 !px-2 hover:bg-slate-50 rounded-lg transition"
+                            className="!py-3 !px-4 hover:bg-slate-50 rounded-xl transition"
                           >
                             <List.Item.Meta
                               avatar={
                                 <Avatar
+                                  size={42}
                                   style={{
                                     background:
                                       role === "leader"
-                                        ? "#f59e0b"
+                                        ? "linear-gradient(135deg,#f59e0b,#d97706)"
                                         : "linear-gradient(135deg, #0ea5e9, #06b6d4)",
+                                    fontSize: 16,
+                                    fontWeight: 700,
                                   }}
                                 >
                                   {getInitials(name)}
                                 </Avatar>
                               }
                               title={
-                                <Space size={4}>
+                                <Space size={6}>
                                   <Text
                                     strong
+                                    style={{ fontSize: 14 }}
                                     className={
                                       isCurrentUser ? "text-sky-700" : undefined
                                     }
@@ -256,6 +264,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                             />
                             <Tag
                               color={role === "leader" ? "gold" : "processing"}
+                              style={{ fontSize: 13, padding: "3px 10px" }}
                               icon={
                                 role === "leader" ? (
                                   <CrownOutlined />
@@ -288,6 +297,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                       groupId={groupId}
                       currentUserId={user?.userId}
                       leaderId={leaderId}
+                      isInstructor={isInstructor}
                     />
                   </div>
                 ),

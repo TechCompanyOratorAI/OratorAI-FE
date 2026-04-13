@@ -19,8 +19,8 @@ import {
   RefreshCw,
   Trophy,
 } from "lucide-react";
-import { TrophyOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
-import { Button, Tag, Tooltip } from "antd";
+import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined } from "@ant-design/icons";
+import { Button, Tag, Tooltip, Input, message as antdMessage } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchPresentationDetail,
@@ -33,6 +33,7 @@ import {
 import {
   fetchGradeDistributionByReport,
   clearCurrentDistribution,
+  submitMemberFeedback,
 } from "@/services/features/groupGrade/groupGradeSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import PresentationProgressTracker from "@/components/Presentation/PresentationProgressTracker";
@@ -84,6 +85,61 @@ const statusConfig: Record<
 
 const REPORT_SCROLL_TOP_GAP = 12;
 
+// ── Inline member feedback sub-component ──────────────────────────────────────
+
+const MemberFeedbackInline: React.FC<{
+  groupId: number;
+  distributionId: number;
+  existingFeedback: string | null;
+}> = ({ groupId, distributionId, existingFeedback }) => {
+  const dispatch = useAppDispatch();
+  const { actionLoading } = useAppSelector((s) => s.groupGrade);
+  const [text, setText] = useState(existingFeedback || "");
+  const [sent, setSent] = useState(!!existingFeedback);
+
+  const handleSend = async () => {
+    if (!text.trim()) { void antdMessage.warning("Vui lòng nhập nội dung phản hồi."); return; }
+    try {
+      await dispatch(submitMemberFeedback({ groupId, distributionId, feedback: text })).unwrap();
+      void antdMessage.success("Gửi phản hồi thành công!");
+      setSent(true);
+    } catch (e: any) {
+      void antdMessage.error(e?.message || "Không thể gửi phản hồi.");
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-sky-100 space-y-2">
+      <p className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+        <MessageOutlined className="text-blue-400" />
+        {sent ? "Phản hồi của bạn" : "Gửi phản hồi về điểm này"}
+      </p>
+      <Input.TextArea
+        rows={2}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Nếu không đồng ý với điểm này, hãy nhập lý do..."
+        maxLength={500}
+        showCount
+        disabled={actionLoading}
+        className="!text-sm"
+      />
+      <Button
+        size="small"
+        type={sent ? "default" : "primary"}
+        icon={<SendOutlined />}
+        loading={actionLoading}
+        onClick={handleSend}
+        style={sent ? {} : { background: "linear-gradient(135deg,#0284c7,#06b6d4)", borderColor: "#0284c7" }}
+      >
+        {sent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
+      </Button>
+    </div>
+  );
+};
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 const PresentationDetailPage: React.FC = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
   const navigate = useNavigate();
@@ -102,7 +158,7 @@ const PresentationDetailPage: React.FC = () => {
   } = useAppSelector((state) => state.report);
   const { myGroupForClass: group } = useAppSelector((state) => state.group);
   const { user } = useAppSelector((state) => state.auth);
-  const { currentDistribution, loading: distributionLoading } = useAppSelector(
+  const { currentDistribution } = useAppSelector(
     (state) => state.groupGrade,
   );
 
@@ -617,7 +673,11 @@ const PresentationDetailPage: React.FC = () => {
                               <div className="flex items-center gap-4">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
                                   hasDistribution
-                                    ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+                                    ? currentDistribution?.status === "finalized"
+                                      ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+                                      : currentDistribution?.status === "reopened"
+                                        ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+                                        : "bg-gradient-to-br from-orange-400 to-amber-500"
                                     : "bg-gradient-to-br from-amber-500 to-orange-600"
                                 }`}>
                                   <Trophy className="w-7 h-7 text-white" />
@@ -633,24 +693,55 @@ const PresentationDetailPage: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Action buttons for leader */}
+                              {/* ── Leader actions ── */}
                               {isCurrentUserLeader && (
-                                <Button
-                                  type="primary"
-                                  size="large"
-                                  icon={hasDistribution ? <EditOutlined /> : <TrophyOutlined />}
-                                  style={hasDistribution
-                                    ? { background: "linear-gradient(135deg, #059669, #0d9488)", borderColor: "#059669", borderRadius: 12, height: 44, fontWeight: 600 }
-                                    : { background: "linear-gradient(135deg, #d97706, #ea580c)", borderColor: "#d97706", borderRadius: 12, height: 44, fontWeight: 600 }
-                                  }
-                                  onClick={handleOpenGradeDistribution}
-                                  className="shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                  {hasDistribution ? "Cập nhật phân chia" : "Chia điểm cho nhóm"}
-                                </Button>
+                                <div className="flex flex-col items-end gap-1.5">
+                                  {/* Not yet submitted */}
+                                  {!hasDistribution && (
+                                    <Button
+                                      type="primary"
+                                      size="large"
+                                      icon={<TrophyOutlined />}
+                                      style={{ background: "linear-gradient(135deg,#d97706,#ea580c)", borderColor: "#d97706", borderRadius: 12, height: 44, fontWeight: 600 }}
+                                      onClick={handleOpenGradeDistribution}
+                                      className="shadow-md"
+                                    >
+                                      Chia điểm cho nhóm
+                                    </Button>
+                                  )}
+                                  {/* Submitted — locked, waiting */}
+                                  {hasDistribution && currentDistribution?.status === "submitted" && (
+                                    <Tooltip title="Đã nộp. Chờ instructor xem xét hoặc mở lại.">
+                                      <Tag icon={<LockOutlined />} color="orange" className="!py-1.5 !px-3 !text-sm cursor-not-allowed">
+                                        Đã nộp — chờ instructor xem xét
+                                      </Tag>
+                                    </Tooltip>
+                                  )}
+                                  {/* Reopened — can edit again */}
+                                  {hasDistribution && currentDistribution?.status === "reopened" && (
+                                    <Button
+                                      type="primary"
+                                      size="large"
+                                      icon={<EditOutlined />}
+                                      style={{ background: "linear-gradient(135deg,#0284c7,#0ea5e9)", borderColor: "#0284c7", borderRadius: 12, height: 44, fontWeight: 600 }}
+                                      onClick={handleOpenGradeDistribution}
+                                      className="shadow-md"
+                                    >
+                                      Cập nhật điểm (lần cuối)
+                                    </Button>
+                                  )}
+                                  {/* Finalized — permanently locked */}
+                                  {hasDistribution && currentDistribution?.status === "finalized" && (
+                                    <Tooltip title="Điểm đã được chốt bởi instructor. Không thể thay đổi.">
+                                      <Tag icon={<LockOutlined />} color="green" className="!py-1.5 !px-3 !text-sm cursor-not-allowed">
+                                        Đã chốt điểm
+                                      </Tag>
+                                    </Tooltip>
+                                  )}
+                                </div>
                               )}
 
-                              {/* View button for non-leader members */}
+                              {/* ── Non-leader members ── */}
                               {!isCurrentUserLeader && hasDistribution && (
                                 <Button
                                   icon={<EyeOutlined />}
@@ -658,18 +749,18 @@ const PresentationDetailPage: React.FC = () => {
                                   style={{ borderRadius: 12, height: 44, fontWeight: 600 }}
                                   onClick={handleOpenGradeDistribution}
                                 >
-                                  Xem phân chia
+                                  Xem chi tiết
                                 </Button>
                               )}
                             </div>
 
-                            {/* Status info */}
+                            {/* Status info row */}
                             <div className="mt-4 pt-3 border-t border-slate-100">
                               {hasDistribution ? (
                                 <div className="flex items-center gap-2">
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                                   <p className="text-sm text-emerald-700 font-medium">
-                                    Đã phân chia điểm bởi{" "}
+                                    Phân chia bởi{" "}
                                     <span className="font-bold">
                                       {currentDistribution.leader?.firstName ?? ""}{" "}
                                       {currentDistribution.leader?.lastName ?? ""}
@@ -697,7 +788,7 @@ const PresentationDetailPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* ── Personal Received Grade Card (after distribution) ── */}
+                          {/* ── Personal received grade card ── */}
                           {hasDistribution && myDistributionGrade && (
                             <motion.div
                               initial={{ opacity: 0, scale: 0.98 }}
@@ -711,9 +802,7 @@ const PresentationDetailPage: React.FC = () => {
                                     <User className="w-6 h-6 text-white" />
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
-                                      Điểm cá nhân của bạn
-                                    </p>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">Điểm cá nhân của bạn</p>
                                     <div className="flex items-baseline gap-2">
                                       <p className="text-2xl font-bold text-sky-700">
                                         {Number(myDistributionGrade.receivedGrade).toFixed(2)}
@@ -724,20 +813,15 @@ const PresentationDetailPage: React.FC = () => {
                                     </div>
                                   </div>
                                 </div>
-
                                 <div className="text-right">
                                   <Tooltip title="Phần trăm đóng góp được phân chia">
-                                    <Tag
-                                      color="blue"
-                                      className="!text-base !font-bold !px-3 !py-1 !rounded-lg"
-                                    >
+                                    <Tag color="blue" className="!text-base !font-bold !px-3 !py-1 !rounded-lg">
                                       {Number(myDistributionGrade.percentage).toFixed(0)}%
                                     </Tag>
                                   </Tooltip>
                                   <p className="text-xs text-slate-400 mt-1">tỷ lệ đóng góp</p>
                                 </div>
                               </div>
-
                               {myDistributionGrade.reason && (
                                 <div className="mt-3 pt-3 border-t border-sky-100">
                                   <p className="text-xs text-slate-500">
@@ -746,10 +830,26 @@ const PresentationDetailPage: React.FC = () => {
                                   </p>
                                 </div>
                               )}
+
+                              {/* ── Inline member feedback (non-leader only, not finalized) ── */}
+                              {!isCurrentUserLeader && currentDistribution?.status !== "finalized" && (
+                                <MemberFeedbackInline
+                                  groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
+                                  distributionId={currentDistribution?.id ?? 0}
+                                  existingFeedback={myDistributionGrade.memberFeedback ?? null}
+                                />
+                              )}
+                              {/* Finalized notice for member */}
+                              {!isCurrentUserLeader && currentDistribution?.status === "finalized" && (
+                                <div className="mt-3 pt-3 border-t border-sky-100 flex items-center gap-2">
+                                  <LockOutlined className="text-emerald-500" />
+                                  <p className="text-xs text-emerald-600 font-medium">Điểm đã được chốt. Không thể phản hồi.</p>
+                                </div>
+                              )}
                             </motion.div>
                           )}
 
-                          {/* ── Distribution Members Summary (compact, for leader) ── */}
+                          {/* ── Summary grid for leader ── */}
                           {hasDistribution && isCurrentUserLeader && currentDistribution.members && currentDistribution.members.length > 0 && (
                             <motion.div
                               initial={{ opacity: 0, y: 6 }}
@@ -764,36 +864,30 @@ const PresentationDetailPage: React.FC = () => {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {currentDistribution.members.map((member) => {
                                   const isMe = member.studentId === user?.userId;
+                                  const hasFeedback = !!member.memberFeedback;
                                   return (
                                     <div
                                       key={member.studentId}
-                                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
-                                        isMe
-                                          ? "bg-sky-50 border border-sky-200 shadow-sm"
-                                          : "bg-slate-50 border border-transparent"
-                                      }`}
+                                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${isMe ? "bg-sky-50 border border-sky-200 shadow-sm" : hasFeedback ? "bg-blue-50 border border-blue-200" : "bg-slate-50 border border-transparent"}`}
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${
-                                          isMe
-                                            ? "bg-gradient-to-br from-sky-500 to-indigo-500"
-                                            : "bg-gradient-to-br from-slate-400 to-slate-500"
-                                        }`}>
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${isMe ? "bg-gradient-to-br from-sky-500 to-indigo-500" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}>
                                           {member.student?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
                                         </div>
                                         <div className="min-w-0">
-                                          <p className={`text-sm truncate ${
-                                            isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"
-                                          }`}>
+                                          <p className={`text-sm truncate ${isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"}`}>
                                             {member.student?.firstName} {member.student?.lastName}
                                             {isMe && <span className="text-sky-500 text-xs ml-1">(Bạn)</span>}
+                                            {hasFeedback && !isMe && (
+                                              <Tooltip title={member.memberFeedback}>
+                                                <MessageOutlined className="text-blue-400 ml-1 text-xs" />
+                                              </Tooltip>
+                                            )}
                                           </p>
                                         </div>
                                       </div>
                                       <div className="text-right flex-shrink-0 ml-2">
-                                        <span className={`text-sm font-bold tabular-nums ${
-                                          isMe ? "text-sky-700" : "text-slate-700"
-                                        }`}>
+                                        <span className={`text-sm font-bold tabular-nums ${isMe ? "text-sky-700" : "text-slate-700"}`}>
                                           {Number(member.receivedGrade).toFixed(2)}
                                         </span>
                                         <span className="text-xs text-slate-400 ml-1">({Number(member.percentage).toFixed(0)}%)</span>
@@ -1103,14 +1197,9 @@ const PresentationDetailPage: React.FC = () => {
           return Number(leader?.userId ?? leader?.id ?? 0);
         })()}
         currentUserId={user?.userId}
+        groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
         onSuccess={() => {
-          if (presentationIdNumber) {
-            void dispatch(fetchPresentationReport(presentationIdNumber));
-          }
-          if (currentReport?.reportId) {
-            void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
-          }
-          setGradeDistributionModalOpen(false);
+          void dispatch(fetchGradeDistributionByReport(currentReport?.reportId ?? 0));
         }}
       />
     </StudentLayout>
