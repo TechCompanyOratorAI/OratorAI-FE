@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Avatar,
@@ -11,12 +11,14 @@ import {
   Popconfirm,
   Divider,
   message,
+  Tabs,
 } from "antd";
 import {
   TeamOutlined,
   CrownOutlined,
   UserOutlined,
   AimOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
@@ -27,6 +29,7 @@ import {
   GroupStudent,
 } from "@/services/features/group/groupSlice";
 import { useNavigate } from "react-router-dom";
+import GradeDistributionList from "./GradeDistributionList";
 
 const { Text, Title } = Typography;
 
@@ -49,6 +52,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     (state) => state.group,
   );
   const { user } = useAppSelector((state) => state.auth);
+  const [activeTab, setActiveTab] = useState("members");
 
   useEffect(() => {
     if (isOpen && groupId) {
@@ -82,6 +86,13 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   const isCurrentUserMember = groupDetail?.students?.some(
     (member) => `${member.userId ?? member.id}` === `${user?.userId}`,
   );
+
+  const leaderId = (() => {
+    const leader = groupDetail?.students?.find(
+      (m) => m.GroupStudent?.role === "leader",
+    );
+    return Number(leader?.userId ?? leader?.id ?? 0);
+  })();
 
   const handleLeaveGroup = async () => {
     if (!groupId) return;
@@ -136,115 +147,153 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       onCancel={onClose}
       footer={null}
       centered
-      width={520}
+      width={560}
       destroyOnClose
       maskClosable={!actionLoading}
     >
       <Spin spinning={loading} tip="Đang tải chi tiết nhóm...">
         {groupDetail && (
-          <div>
-            {/* Nhóm info */}
-            {!hideFooterActions && (
-              <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 mb-4">
-                <div className="flex items-center gap-4">
-                  <Space size="small">
-                    <TeamOutlined className="text-sky-600" />
-                    <Text className="text-sm">
-                      <strong>
-                        {groupDetail.memberCount ??
-                          groupDetail.students?.length ??
-                          0}
-                      </strong>{" "}
-                      thành viên
-                    </Text>
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => setActiveTab(key)}
+            className="mb-2"
+            items={[
+              {
+                key: "members",
+                label: (
+                  <Space>
+                    <UserOutlined />
+                    Thành viên
                   </Space>
-                  {groupDetail.description && (
-                    <Divider type="vertical" />
-                  )}
-                  {groupDetail.description && (
-                    <Text type="secondary" className="text-xs italic">
-                      {groupDetail.description}
-                    </Text>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Danh sách thành viên */}
-            <List
-              header={
-                <Text strong className="text-sm">
-                  <UserOutlined className="mr-1" />
-                  Thành viên ({groupDetail.students?.length ?? 0})
-                </Text>
-              }
-              dataSource={groupDetail.students ?? []}
-              renderItem={(member, index) => {
-                const memberId = member.userId ?? member.id;
-                const isCurrentUser =
-                  `${memberId}` === `${user?.userId}`;
-                const name = getMemberDisplayName(member);
-                const role = member.GroupStudent?.role;
-
-                return (
-                  <List.Item
-                    key={`${memberId ?? index}`}
-                    className="!py-3 !px-2 hover:bg-slate-50 rounded-lg transition"
-                  >
-                    <List.Item.Meta
-                      avatar={
-                        <Avatar
-                          style={{
-                            background:
-                              role === "leader"
-                                ? "#f59e0b"
-                                : "linear-gradient(135deg, #0ea5e9, #06b6d4)",
-                          }}
-                        >
-                          {getInitials(name)}
-                        </Avatar>
-                      }
-                      title={
-                        <Space size={4}>
-                          <Text
-                            strong
-                            className={isCurrentUser ? "text-sky-700" : undefined}
-                          >
-                            {name}
-                          </Text>
-                          {isCurrentUser && (
-                            <Tag color="blue" className="text-xs">
-                              Bạn
-                            </Tag>
+                ),
+                children: (
+                  <div>
+                    {/* Nhóm info */}
+                    {!hideFooterActions && (
+                      <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 mb-4">
+                        <div className="flex items-center gap-4">
+                          <Space size="small">
+                            <TeamOutlined className="text-sky-600" />
+                            <Text className="text-sm">
+                              <strong>
+                                {groupDetail.memberCount ??
+                                  groupDetail.students?.length ??
+                                  0}
+                              </strong>{" "}
+                              thành viên
+                            </Text>
+                          </Space>
+                          {groupDetail.description && (
+                            <>
+                              <Divider type="vertical" />
+                              <Text type="secondary" className="text-xs italic">
+                                {groupDetail.description}
+                              </Text>
+                            </>
                           )}
-                        </Space>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Danh sách thành viên */}
+                    <List
+                      header={
+                        <Text strong className="text-sm">
+                          <UserOutlined className="mr-1" />
+                          Thành viên ({groupDetail.students?.length ?? 0})
+                        </Text>
                       }
-                      description={
-                        member.email ? (
-                          <Text type="secondary" className="text-xs">
-                            {member.email}
-                          </Text>
-                        ) : undefined
-                      }
+                      dataSource={groupDetail.students ?? []}
+                      renderItem={(member, index) => {
+                        const memberId = member.userId ?? member.id;
+                        const isCurrentUser =
+                          `${memberId}` === `${user?.userId}`;
+                        const name = getMemberDisplayName(member);
+                        const role = member.GroupStudent?.role;
+
+                        return (
+                          <List.Item
+                            key={`${memberId ?? index}`}
+                            className="!py-3 !px-2 hover:bg-slate-50 rounded-lg transition"
+                          >
+                            <List.Item.Meta
+                              avatar={
+                                <Avatar
+                                  style={{
+                                    background:
+                                      role === "leader"
+                                        ? "#f59e0b"
+                                        : "linear-gradient(135deg, #0ea5e9, #06b6d4)",
+                                  }}
+                                >
+                                  {getInitials(name)}
+                                </Avatar>
+                              }
+                              title={
+                                <Space size={4}>
+                                  <Text
+                                    strong
+                                    className={
+                                      isCurrentUser ? "text-sky-700" : undefined
+                                    }
+                                  >
+                                    {name}
+                                  </Text>
+                                  {isCurrentUser && (
+                                    <Tag color="blue" className="text-xs">
+                                      Bạn
+                                    </Tag>
+                                  )}
+                                </Space>
+                              }
+                              description={
+                                member.email ? (
+                                  <Text type="secondary" className="text-xs">
+                                    {member.email}
+                                  </Text>
+                                ) : undefined
+                              }
+                            />
+                            <Tag
+                              color={role === "leader" ? "gold" : "processing"}
+                              icon={
+                                role === "leader" ? (
+                                  <CrownOutlined />
+                                ) : (
+                                  <UserOutlined />
+                                )
+                              }
+                            >
+                              {role === "leader" ? "Trưởng nhóm" : "Thành viên"}
+                            </Tag>
+                          </List.Item>
+                        );
+                      }}
+                      locale={{ emptyText: "Không có thành viên nào." }}
                     />
-                    <Tag
-                      color={role === "leader" ? "gold" : "processing"}
-                      icon={
-                        role === "leader" ? (
-                          <CrownOutlined />
-                        ) : (
-                          <UserOutlined />
-                        )
-                      }
-                    >
-                      {role === "leader" ? "Trưởng nhóm" : "Thành viên"}
-                    </Tag>
-                  </List.Item>
-                );
-              }}
-              locale={{ emptyText: "Không có thành viên nào." }}
-            />
-          </div>
+                  </div>
+                ),
+              },
+              {
+                key: "grades",
+                label: (
+                  <Space>
+                    <TrophyOutlined />
+                    Điểm nhóm
+                  </Space>
+                ),
+                children: (
+                  <div className="pt-2">
+                    <GradeDistributionList
+                      groupId={groupId}
+                      currentUserId={user?.userId}
+                      leaderId={leaderId}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
         )}
       </Spin>
 

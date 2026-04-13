@@ -218,3 +218,13 @@ export const SHARE_REVOKE_INVITE_ENDPOINT = (
   `${BASE_URL}/api/v1/presentations/${presentationId}/share/invite/${accessId}`;
 export const SHARE_VIEW_ENDPOINT = (token: string) =>
   `${BASE_URL}/api/v1/share/${token}`;
+
+// Group Grade Distribution endpoints (leader chia điểm cho thành viên nhóm)
+export const DISTRIBUTE_GRADE_ENDPOINT = (reportId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/distribute-grade`;
+export const GET_GRADE_DISTRIBUTION_ENDPOINT = (reportId: string) =>
+  `${BASE_URL}/api/v1/ai-reports/${reportId}/grade-distribution`;
+export const GROUP_GRADE_DISTRIBUTIONS_ENDPOINT = (groupId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions`;
+export const GROUP_MEMBER_GRADES_ENDPOINT = (groupId: string, studentId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/members/${studentId}/grades`;
