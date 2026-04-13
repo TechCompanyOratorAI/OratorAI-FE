@@ -401,10 +401,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                   {/* Điểm nhận được */}
                   <div className="text-right">
                     <Text strong className="text-lg text-sky-700">
-                      {member.receivedGrade.toFixed(2)}
+                      {Number(member.receivedGrade).toFixed(2)}
                     </Text>
                     <Text type="secondary" className="text-xs block">
-                      / {instructorGrade.toFixed(2)} điểm
+                      / {Number(instructorGrade).toFixed(2)} điểm
                     </Text>
                   </div>
                 </div>
