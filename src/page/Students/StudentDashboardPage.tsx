@@ -420,105 +420,125 @@ const StudentDashboardPage: React.FC = () => {
                   {filteredClasses.map((c) => {
                     const enrolled = isEnrolled(c.classId);
                     const isActive = c.status === "active";
+                    const GRADIENTS = [
+                      "linear-gradient(145deg, #3b82f6 0%, #6366f1 55%, #8b5cf6 100%)",
+                      "linear-gradient(145deg, #10b981 0%, #059669 100%)",
+                      "linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%)",
+                      "linear-gradient(145deg, #f59e0b 0%, #ea580c 100%)",
+                      "linear-gradient(145deg, #ec4899 0%, #db2777 100%)",
+                      "linear-gradient(145deg, #06b6d4 0%, #2563eb 100%)",
+                    ];
+                    const getGradient = (code: string) => {
+                      let hash = 0;
+                      for (let i = 0; i < code.length; i++)
+                        hash = code.charCodeAt(i) + ((hash << 5) - hash);
+                      return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
+                    };
+                    const cardGradient = getGradient(c.classCode || c.className);
+
                     return (
-                      <Col xs={24} md={12} xl={8} key={c.classId}>
+                      <Col xs={24} sm={12} lg={8} key={c.classId}>
                         <Card
                           hoverable
-                          style={{ borderRadius: 14, border: "1px solid #e8e8e8", overflow: "hidden" }}
+                          bordered={false}
+                          style={{ borderRadius: 22, overflow: "hidden", boxShadow: "0 4px 14px rgba(15, 23, 42, 0.08)" }}
                           styles={{ body: { padding: 0 } }}
-                          className="group h-full"
+                          className="group cursor-pointer"
+                          onClick={() => enrolled ? navigate(`/student/class/${c.classId}`) : !isActive ? null : openEnroll(c)}
                         >
-                          {/* Gradient header */}
+                          {/* Header với gradient */}
                           <div
-                            className="p-4 pb-3"
-                            style={{
-                              background: isActive
-                                ? "linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)"
-                                : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-                            }}
+                            className="relative px-5 pt-5 pb-4 text-white overflow-hidden"
+                            style={{ background: cardGradient }}
                           >
-                            <div className="mb-2 flex items-center justify-between">
-                              <Tag style={{ borderRadius: 20, border: "none", fontSize: 11, padding: "2px 10px", background: isActive ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)", color: "#fff", fontWeight: 600 }}>
-                                {isActive ? "Đang mở" : "Đã đóng"}
-                              </Tag>
-                              {enrolled && (
-                                <div className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white">
-                                  <ShieldCheck className="h-3 w-3" />Đã ghi danh
+                            {/* Hiệu ứng blob */}
+                            <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+                            <div className="pointer-events-none absolute -left-4 bottom-0 h-20 w-20 rounded-full bg-white/10" />
+
+                            <div className="relative">
+                              {/* Top row: course badge + status */}
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-white border border-white/25">
+                                  {selectedCourse?.courseName || "—"}
+                                </span>
+                                {enrolled && (
+                                  <div className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white">
+                                    <ShieldCheck className="h-3 w-3" />Đã ghi danh
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Mã lớp nổi bật */}
+                              <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-4 py-2.5 border border-white/25 mb-3">
+                                <Text className="!block !text-[10px] !font-semibold !uppercase !tracking-widest !text-white/70 !mb-0.5">
+                                  Mã lớp
+                                </Text>
+                                <div className="flex items-center gap-2">
+                                  <span className="!text-white !text-lg sm:!text-xl !font-black !tracking-tight">
+                                    {c.classCode}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Tên lớp */}
+                              <Title
+                                level={4}
+                                className="!mb-2 !text-white !text-base sm:!text-lg !font-bold !leading-snug">
+                                {c.className}
+                              </Title>
+
+                              {/* Giảng viên */}
+                              {c.instructorName !== "Chưa có giảng viên" && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Avatar
+                                    size={30}
+                                    className="bg-white/25 text-white text-xs font-bold border-2 border-white/30"
+                                  >
+                                    {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <Text className="!block !text-[10px] !text-white/60 !uppercase !tracking-wide">
+                                      Giảng viên
+                                    </Text>
+                                    <Text className="!text-white !text-xs !font-semibold truncate block">
+                                      {c.instructorName}
+                                    </Text>
+                                  </div>
                                 </div>
                               )}
-                            </div>
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                                <GraduationCap className="h-5 w-5 text-white" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <Title level={5} className="!mb-0.5 !text-white !leading-snug !font-bold line-clamp-2">
-                                  {c.className}
-                                </Title>
-                                <Text className="text-white/80 text-xs">
-                                  {c.classCode}{c.courseCode ? ` • ${c.courseCode}` : ""}
-                                </Text>
-                              </div>
                             </div>
                           </div>
 
-                          {/* Body */}
-                          <div className="p-4 space-y-2.5">
-                            {c.instructorName !== "Chưa có giảng viên" && (
-                              <div className="flex items-center gap-2.5">
-                                <Avatar size={28} className="bg-blue-100 text-blue-600 text-xs font-bold shrink-0">
-                                  {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
-                                  <Text type="secondary" className="block text-[11px]">Giảng viên</Text>
-                                  <Text className="text-xs font-semibold text-slate-800 truncate block">{c.instructorName}</Text>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                                <Users className="h-3.5 w-3.5 text-slate-500" />
-                              </div>
-                              <div>
-                                <Text type="secondary" className="block text-[11px]">Học sinh</Text>
-                                <Text className="text-xs font-semibold text-slate-800">
-                                  {c.enrollmentCount}{c.maxStudents ? ` / ${c.maxStudents}` : ""}
-                                </Text>
-                              </div>
-                            </div>
-                            {c.schedule && (
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                                  <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                                </div>
-                                <div className="min-w-0">
-                                  <Text type="secondary" className="block text-[11px]">Lịch học</Text>
-                                  <Text className="text-xs font-semibold text-slate-800 truncate block">{c.schedule}</Text>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
-                              {enrolled ? (
-                                <Button
-                                  type="default"
-                                  icon={<CheckCircle2 className="h-4 w-4" />}
-                                  className="rounded-xl !text-xs !font-semibold !border-emerald-200 !text-emerald-700 !bg-emerald-50 h-9"
-                                  onClick={() => navigate(`/student/class/${c.classId}`)}
+                          {/* Footer */}
+                          <div className="px-5 py-4 bg-gradient-to-b from-slate-50/80 to-white">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 text-xs text-slate-500">
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3.5 w-3.5" />
+                                  {c.enrollmentCount}{c.maxStudents ? `/${c.maxStudents}` : ""}
+                                </span>
+                                <Tag
+                                  color={isActive ? "success" : "default"}
+                                  className="!m-0 !text-[10px] !font-semibold"
+                                  style={{ borderRadius: 20 }}
                                 >
-                                  Vào lớp
-                                </Button>
-                              ) : (
-                                <Button
-                                  type="primary"
-                                  icon={<KeyRound className="h-4 w-4" />}
-                                  className="rounded-xl !text-xs !font-semibold h-9"
-                                  onClick={() => openEnroll(c)}
-                                  disabled={!isActive}
-                                >
-                                  Ghi danh
-                                </Button>
-                              )}
+                                  {isActive ? "Đang mở" : "Đã đóng"}
+                                </Tag>
+                              </div>
+                              <Button
+                                type={enrolled ? "default" : "primary"}
+                                size="small"
+                                icon={enrolled ? <CheckCircle2 className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (enrolled) navigate(`/student/class/${c.classId}`);
+                                  else if (isActive) openEnroll(c);
+                                }}
+                                disabled={!isActive && !enrolled}
+                                className={enrolled ? "!border-emerald-200 !text-emerald-600 !bg-emerald-50 !rounded-xl !text-xs !font-semibold" : "!rounded-xl !text-xs !font-semibold"}
+                              >
+                                {enrolled ? "Vào lớp" : "Ghi danh"}
+                              </Button>
                             </div>
                           </div>
                         </Card>
