@@ -46,7 +46,7 @@ interface Pagination {
   totalPages: number;
 }
 
-interface RubricTemplateState {
+export interface RubricTemplateState {
   templates: RubricTemplate[];
   pagination: Pagination | null;
   loading: boolean;

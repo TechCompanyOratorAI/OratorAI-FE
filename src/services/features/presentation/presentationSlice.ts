@@ -169,7 +169,7 @@ export interface PresentationProgress {
   lastUpdated: string;
 }
 
-interface PresentationState {
+export interface PresentationState {
   presentations: Presentation[];
   total: number;
   loading: boolean;

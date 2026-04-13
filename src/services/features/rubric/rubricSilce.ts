@@ -80,7 +80,7 @@ export interface ClassRubricCriteria {
   sourceCriteria?: RubricSourceCriteria;
 }
 
-interface RubricState {
+export interface RubricState {
   criteria: ClassRubricCriteria[];
   templates: RubricTemplateForInstructor[];
   selectedTemplateId: number | null;

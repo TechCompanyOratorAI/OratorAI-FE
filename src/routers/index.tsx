@@ -95,7 +95,10 @@ const AppRouter = () => {
       {/* Protected Student routes */}
       <Route element={<ProtectedRoute allowedRoles={["Student"]} />}>
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-        <Route path="/student/classes" element={<Navigate to="/student/dashboard" replace />} />
+        <Route
+          path="/student/classes"
+          element={<Navigate to="/student/dashboard" replace />}
+        />
         <Route
           path="/student/course/:courseId"
           element={<StudentCourseDetailPage />}
