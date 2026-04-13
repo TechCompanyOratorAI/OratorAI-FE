@@ -1,8 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
-import Toast from "@/components/Toast/Toast";
-import RubricTemplateModal from "@/components/RubricTemplate/RubricTemplateModal";
-import CriteriaModal from "@/components/RubricTemplate/CriteriaModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   createRubricTemplateCriterion,
@@ -19,15 +15,28 @@ import {
   updateRubricTemplate,
 } from "@/services/features/admin/rubricTempleSlice";
 import {
-  AlertCircle,
-  BadgeCheck,
   ClipboardList,
-  Edit,
+  Edit2,
   ListChecks,
   Plus,
   RefreshCw,
-  Trash2,
 } from "lucide-react";
+import { DeleteOutlined } from "@ant-design/icons";
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Tag,
+  Space,
+  Card,
+  Popconfirm,
+  App,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
+import RubricTemplateModal from "@/components/RubricTemplate/RubricTemplateModal";
+import CriteriaModal from "@/components/RubricTemplate/CriteriaModal";
 
 const AdminRubricTemplePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -44,10 +53,9 @@ const AdminRubricTemplePage: React.FC = () => {
   const [editingTemplate, setEditingTemplate] = useState<RubricTemplate | null>(
     null,
   );
-  const [showDeleteConfirm, setShowDeleteConfirm] =
-    useState<RubricTemplate | null>(null);
   const [selectedTemplateForCriteriaId, setSelectedTemplateForCriteriaId] =
     useState<number | null>(null);
+
   const selectedTemplateForCriteria = useMemo(
     () =>
       templates.find(
@@ -57,12 +65,10 @@ const AdminRubricTemplePage: React.FC = () => {
     [templates, selectedTemplateForCriteriaId],
   );
 
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const { message: antdMessage } = App.useApp();
 
   useEffect(() => {
     dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
@@ -70,10 +76,10 @@ const AdminRubricTemplePage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      setToast({ message: error, type: "error" });
+      antdMessage.error(error);
       dispatch(clearRubricTemplateError());
     }
-  }, [error, dispatch]);
+  }, [error, dispatch, antdMessage]);
 
   const filteredTemplates = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -114,7 +120,6 @@ const AdminRubricTemplePage: React.FC = () => {
     if (!value) return "-";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "-";
-
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -122,45 +127,23 @@ const AdminRubricTemplePage: React.FC = () => {
     });
   };
 
-  const openCreateModal = () => {
-    setIsCreateModalOpen(true);
-  };
-
-  const openEditModal = (template: RubricTemplate) => {
-    setEditingTemplate(template);
-    setIsEditModalOpen(true);
-  };
-
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingTemplate(null);
-  };
-
   const handleCreateTemplate = async (payload: RubricTemplatePayload) => {
     try {
       await dispatch(createRubricTemplate(payload)).unwrap();
-      setToast({ message: "Tạo template thành công", type: "success" });
-
-      handleCloseCreateModal();
+      antdMessage.success("Tạo template thành công");
+      setIsCreateModalOpen(false);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
-      setToast({
-        message:
-          typeof createError === "string"
-            ? createError
-            : createError?.message || "Không thể tạo rubric template",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof createError === "string"
+          ? createError
+          : createError?.message || "Không thể tạo rubric template",
+      );
     }
   };
 
   const handleUpdateTemplate = async (payload: RubricTemplatePayload) => {
     if (!editingTemplate) return;
-
     try {
       await dispatch(
         updateRubricTemplate({
@@ -168,48 +151,31 @@ const AdminRubricTemplePage: React.FC = () => {
           data: payload,
         }),
       ).unwrap();
-      setToast({ message: "Cập nhật template thành công", type: "success" });
-
-      handleCloseEditModal();
+      antdMessage.success("Cập nhật template thành công");
+      setIsEditModalOpen(false);
+      setEditingTemplate(null);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (updateError: any) {
-      setToast({
-        message:
-          typeof updateError === "string"
-            ? updateError
-            : updateError?.message || "Không thể cập nhật rubric template",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof updateError === "string"
+          ? updateError
+          : updateError?.message || "Không thể cập nhật rubric template",
+      );
     }
   };
 
-  const handleDeleteTemplate = async () => {
-    if (!showDeleteConfirm) return;
-
+  const handleDeleteTemplate = async (rubricTemplateId: number) => {
     try {
-      await dispatch(
-        deleteRubricTemplate(showDeleteConfirm.rubricTemplateId),
-      ).unwrap();
-      setToast({ message: "Xóa template thành công", type: "success" });
-      setShowDeleteConfirm(null);
+      await dispatch(deleteRubricTemplate(rubricTemplateId)).unwrap();
+      antdMessage.success("Xóa template thành công");
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
-      setToast({
-        message:
-          typeof deleteError === "string"
-            ? deleteError
-            : deleteError?.message || "Không thể xóa rubric template",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof deleteError === "string"
+          ? deleteError
+          : deleteError?.message || "Không thể xóa rubric template",
+      );
     }
-  };
-
-  const openCriteriaModal = (template: RubricTemplate) => {
-    setSelectedTemplateForCriteriaId(template.rubricTemplateId);
-  };
-
-  const closeCriteriaModal = () => {
-    setSelectedTemplateForCriteriaId(null);
   };
 
   const handleCreateCriteria = async (
@@ -220,18 +186,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         createRubricTemplateCriterion({ rubricTemplateId, data: payload }),
       ).unwrap();
-      setToast({ message: "Tạo criteria thành công", type: "success" });
+      antdMessage.success("Tạo criteria thành công");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (createCriteriaError: any) {
-      setToast({
-        message:
-          typeof createCriteriaError === "string"
-            ? createCriteriaError
-            : createCriteriaError?.message || "Không thể tạo criteria",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof createCriteriaError === "string"
+          ? createCriteriaError
+          : createCriteriaError?.message || "Không thể tạo criteria",
+      );
       throw createCriteriaError;
     }
   };
@@ -244,18 +208,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         updateRubricTemplateCriterion({ criteriaId, data: payload }),
       ).unwrap();
-      setToast({ message: "Cập nhật criteria thành công", type: "success" });
+      antdMessage.success("Cập nhật criteria thành công");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (updateCriteriaError: any) {
-      setToast({
-        message:
-          typeof updateCriteriaError === "string"
-            ? updateCriteriaError
-            : updateCriteriaError?.message || "Không thể cập nhật criteria",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof updateCriteriaError === "string"
+          ? updateCriteriaError
+          : updateCriteriaError?.message || "Không thể cập nhật criteria",
+      );
       throw updateCriteriaError;
     }
   };
@@ -268,18 +230,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         deleteRubricTemplateCriterion({ criteriaId, rubricTemplateId }),
       ).unwrap();
-      setToast({ message: "Xóa criteria thành công", type: "success" });
+      antdMessage.success("Xóa criteria thành công");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (deleteCriteriaError: any) {
-      setToast({
-        message:
-          typeof deleteCriteriaError === "string"
-            ? deleteCriteriaError
-            : deleteCriteriaError?.message || "Không thể xóa criteria",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof deleteCriteriaError === "string"
+          ? deleteCriteriaError
+          : deleteCriteriaError?.message || "Không thể xóa criteria",
+      );
       throw deleteCriteriaError;
     }
   };
@@ -306,46 +266,162 @@ const AdminRubricTemplePage: React.FC = () => {
           ).unwrap(),
         ),
       );
-
-      setToast({
-        message: "Cập nhật thứ tự criteria thành công",
-        type: "success",
-      });
+      antdMessage.success("Cập nhật thứ tự criteria thành công");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (reorderCriteriaError: any) {
-      setToast({
-        message:
-          typeof reorderCriteriaError === "string"
-            ? reorderCriteriaError
-            : reorderCriteriaError?.message ||
-              "Không thể cập nhật thứ tự criteria",
-        type: "error",
-      });
+      antdMessage.error(
+        typeof reorderCriteriaError === "string"
+          ? reorderCriteriaError
+          : reorderCriteriaError?.message ||
+            "Không thể cập nhật thứ tự criteria",
+      );
       throw reorderCriteriaError;
     }
   };
 
+  const columns: ColumnsType<RubricTemplate> = [
+    {
+      title: "Template",
+      key: "template",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">{record.templateName}</div>
+          <div className="text-xs text-gray-400 line-clamp-1">
+            {record.description || "-"}
+          </div>
+          {record.isDefault && (
+            <Tag color="blue" className="mt-1">Default</Tag>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Type",
+      dataIndex: "assignmentType",
+      key: "assignmentType",
+    },
+    {
+      title: "Criteria",
+      key: "criteria",
+      render: (_, record) => {
+        const sortedCriteria = [...(record.criteria || [])].sort(
+          (a, b) => a.displayOrder - b.displayOrder,
+        );
+        if (sortedCriteria.length === 0) {
+          return <span className="text-xs text-gray-400">No criteria</span>;
+        }
+        return (
+          <div className="space-y-1 max-w-xs">
+            {sortedCriteria.slice(0, 3).map((criterion) => (
+              <div
+                key={criterion.criteriaId}
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+              >
+                <span className="font-medium text-gray-800 truncate">
+                  {criterion.displayOrder}. {criterion.criteriaName}
+                </span>
+                <Tag className="text-[10px]" color="blue">
+                  {Number(criterion.weight)}% · {criterion.maxScore}
+                </Tag>
+              </div>
+            ))}
+            {sortedCriteria.length > 3 && (
+              <div
+                className="text-xs text-gray-400 cursor-pointer hover:text-gray-600"
+                onClick={() =>
+                  setSelectedTemplateForCriteriaId(record.rubricTemplateId)
+                }
+              >
+                +{sortedCriteria.length - 3} more
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Active" : "Inactive"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Updated",
+      key: "updated",
+      render: (_, record) =>
+        formatDate(record.updatedAt || record.createdAt),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 140,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<ListChecks size={14} />}
+            onClick={() =>
+              setSelectedTemplateForCriteriaId(record.rubricTemplateId)
+            }
+            className="text-green-500 hover:text-green-600"
+            title="Manage Criteria"
+          />
+          <Button
+            type="text"
+            icon={<Edit2 size={14} />}
+            onClick={() => {
+              setEditingTemplate(record);
+              setIsEditModalOpen(true);
+            }}
+            className="text-blue-500 hover:text-blue-600"
+            title="Edit"
+          />
+          <Popconfirm
+            title="Xác nhận xóa template"
+            description={`Bạn có chắc muốn xóa template "${record.templateName}"?`}
+            onConfirm={() => handleDeleteTemplate(record.rubricTemplateId)}
+            okText="Xóa"
+            okButtonProps={{ danger: true }}
+            cancelText="Hủy"
+          >
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              danger
+              title="Delete"
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-gray-50">
       <SidebarAdmin activeItem="rubric-templates" />
       <main className="flex-1 overflow-y-auto p-6 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                 Administration
               </p>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Rubric Template Management
               </h1>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-gray-600">
                 Quản lý bộ rubric mẫu cho các loại bài nộp
               </p>
             </div>
-            <div className="flex gap-2">
-              <button
+            <Space>
+              <Button
+                icon={<RefreshCw size={14} />}
                 onClick={() =>
                   dispatch(
                     fetchRubricTemplates({
@@ -354,307 +430,145 @@ const AdminRubricTemplePage: React.FC = () => {
                     }),
                   )
                 }
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-200 hover:text-sky-700"
+                loading={loading}
               >
-                <RefreshCw className="w-4 h-4" />
                 Refresh
-              </button>
-              <button
-                onClick={openCreateModal}
-                className="inline-flex items-center gap-2 rounded-full border bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+              </Button>
+              <Button
+                type="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setIsCreateModalOpen(true)}
               >
-                <Plus className="w-4 h-4" />
                 New Template
-              </button>
-            </div>
+              </Button>
+            </Space>
           </div>
 
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-sky-100 text-sky-700 p-2">
-                <ClipboardList className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Total Templates
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.total}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-emerald-100 text-emerald-700 p-2">
-                <BadgeCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Active
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.active}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-100 text-indigo-700 p-2">
-                <ListChecks className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Default
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.defaults}
-                </p>
-              </div>
-            </div>
-          </section>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
+                  <ClipboardList size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Total Templates
+                  </p>
+                  <p className="text-xl font-bold">{stats.total}</p>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-green-100 text-green-600 p-2">
+                  <ClipboardList size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Active
+                  </p>
+                  <p className="text-xl font-bold">{stats.active}</p>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
+                  <ListChecks size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Default
+                  </p>
+                  <p className="text-xl font-bold">{stats.defaults}</p>
+                </div>
+              </Space>
+            </Card>
+          </div>
 
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-slate-200">
+          <Card>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                   Directory
                 </p>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-gray-900">
                   Rubric Templates
                 </h2>
               </div>
-              <div className="flex rounded-2xl flex-col sm:flex-row gap-2 sm:items-center w-full md:w-auto">
-                <input
-                  type="text"
+              <Space wrap>
+                <Input.Search
+                  placeholder="Search by name, description, type..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by template name, description, type..."
-                  className="w-full sm:w-72 rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-72"
+                  allowClear
                 />
-                <select
+                <Select
                   value={filterStatus}
-                  onChange={(e) =>
-                    setFilterStatus(
-                      e.target.value as "all" | "active" | "inactive",
-                    )
-                  }
-                  className="w-full sm:w-40 rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none bg-white"
-                >
-                  <option value="all">All status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-                <select
+                  onChange={(val) => {
+                    setFilterStatus(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 140 }}
+                  options={[
+                    { value: "all", label: "All status" },
+                    { value: "active", label: "Active" },
+                    { value: "inactive", label: "Inactive" },
+                  ]}
+                />
+                <Select
                   value={filterAssignmentType}
-                  onChange={(e) => setFilterAssignmentType(e.target.value)}
-                  className="w-full sm:w-44 rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none bg-white"
-                >
-                  <option value="all">All types</option>
-                  {assignmentTypes.map((assignmentType) => (
-                    <option key={assignmentType} value={assignmentType}>
-                      {assignmentType}
-                    </option>
-                  ))}
-                </select>
-                <div className="text-xs text-slate-500 whitespace-nowrap">
-                  {filteredTemplates.length} records
-                </div>
-              </div>
+                  onChange={(val) => {
+                    setFilterAssignmentType(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 160 }}
+                  options={[
+                    { value: "all", label: "All types" },
+                    ...assignmentTypes.map((t) => ({ value: t, label: t })),
+                  ]}
+                />
+              </Space>
             </div>
 
-            {loading ? (
-              <div className="px-6 py-10 text-center text-slate-500">
-                <div className="mx-auto mb-3 h-10 w-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
-                Loading rubric templates...
-              </div>
-            ) : error ? (
-              <div className="px-6 py-8 flex items-center gap-3 text-rose-600">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            ) : filteredTemplates.length === 0 ? (
-              <div className="px-6 py-12 text-center text-slate-500 flex flex-col items-center gap-3">
-                <ClipboardList className="w-10 h-10 text-slate-300" />
-                <p>
-                  {searchTerm ||
-                  filterStatus !== "all" ||
-                  filterAssignmentType !== "all"
+            <Table
+              columns={columns}
+              dataSource={filteredTemplates}
+              rowKey="rubricTemplateId"
+              loading={loading}
+              pagination={
+                pagination && pagination.total > 0
+                  ? {
+                      current: currentPage,
+                      pageSize,
+                      total: pagination.total,
+                      showSizeChanger: true,
+                      showQuickJumper: false,
+                      pageSizeOptions: ["10", "20", "50"],
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} of ${total} templates`,
+                      onChange: (p, ps) => {
+                        setCurrentPage(p);
+                        setPageSize(ps);
+                      },
+                    }
+                  : false
+              }
+              locale={{
+                emptyText: error
+                  ? error
+                  : searchTerm ||
+                    filterStatus !== "all" ||
+                    filterAssignmentType !== "all"
                     ? "No rubric templates found matching your filters"
-                    : "No rubric templates available. Create your first template to get started."}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wide">
-                    <tr>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Template
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Criteria
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Updated
-                      </th>
-                      <th className="px-6 py-3 text-right font-semibold">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredTemplates.map((template) => {
-                      const sortedCriteria = [
-                        ...(template.criteria || []),
-                      ].sort((a, b) => a.displayOrder - b.displayOrder);
-
-                      return (
-                        <tr
-                          key={template.rubricTemplateId}
-                          className="hover:bg-slate-50"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-900">
-                              {template.templateName}
-                            </div>
-                            <div className="text-xs text-slate-500 line-clamp-1">
-                              {template.description || "-"}
-                            </div>
-                            {template.isDefault && (
-                              <span className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-700">
-                                Default
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-slate-600">
-                            {template.assignmentType}
-                          </td>
-                          <td className="px-6 py-4 align-top">
-                            {sortedCriteria.length === 0 ? (
-                              <div className="text-xs text-slate-500">
-                                No criteria
-                              </div>
-                            ) : (
-                              <div className="space-y-1">
-                                {sortedCriteria.map((criterion) => (
-                                  <div
-                                    key={criterion.criteriaId}
-                                    onClick={() => openCriteriaModal(template)}
-                                    className="cursor-pointer rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition-colors hover:border-sky-200 hover:bg-sky-50/40"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <p className="text-xs font-semibold text-slate-800 leading-5">
-                                        {criterion.displayOrder}.{" "}
-                                        {criterion.criteriaName}
-                                      </p>
-                                      <span className="shrink-0 inline-flex items-center rounded-full bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 text-[11px] font-medium">
-                                        {Number(criterion.weight)}% ·{" "}
-                                        {criterion.maxScore}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                                template.isActive
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-rose-50 text-rose-700 border-rose-200"
-                              }`}
-                            >
-                              {template.isActive ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-slate-600">
-                            {formatDate(
-                              template.updatedAt || template.createdAt,
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex justify-end gap-1">
-                              <button
-                                onClick={() => openEditModal(template)}
-                                className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
-                                title="Edit Template"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => openCriteriaModal(template)}
-                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                title="Manage Criteria"
-                              >
-                                <ListChecks className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setShowDeleteConfirm(template)}
-                                className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                title="Delete Template"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {!loading && !error && pagination && pagination.total > 0 && (
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <div className="text-sm text-slate-600">
-                      Page {pagination.page} of {pagination.totalPages}
-                    </div>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        const nextSize = parseInt(e.target.value, 10);
-                        setPageSize(nextSize);
-                        setCurrentPage(1);
-                      }}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={pagination.page <= 1}
-                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) =>
-                        Math.min(pagination.totalPages, prev + 1),
-                      )
-                    }
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
+                    : "No rubric templates available. Create your first template to get started.",
+              }}
+            />
+          </Card>
         </div>
       </main>
 
@@ -662,7 +576,7 @@ const AdminRubricTemplePage: React.FC = () => {
         isOpen={isCreateModalOpen}
         mode="create"
         isLoading={actionLoading}
-        onClose={handleCloseCreateModal}
+        onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTemplate}
       />
 
@@ -680,7 +594,10 @@ const AdminRubricTemplePage: React.FC = () => {
               }
             : undefined
         }
-        onClose={handleCloseEditModal}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingTemplate(null);
+        }}
         onSubmit={handleUpdateTemplate}
       />
 
@@ -688,59 +605,12 @@ const AdminRubricTemplePage: React.FC = () => {
         isOpen={Boolean(selectedTemplateForCriteria)}
         template={selectedTemplateForCriteria}
         isLoading={actionLoading}
-        onClose={closeCriteriaModal}
+        onClose={() => setSelectedTemplateForCriteriaId(null)}
         onCreate={handleCreateCriteria}
         onUpdate={handleUpdateCriteria}
         onReorder={handleReorderCriteria}
         onDelete={handleDeleteCriteria}
       />
-
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-slate-200">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg bg-rose-100 p-2 text-rose-600">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">
-                  Xác nhận xóa template
-                </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  Bạn có chắc muốn xóa template “
-                  {showDeleteConfirm.templateName}”?
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteTemplate}
-                disabled={actionLoading}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {actionLoading ? "Deleting..." : "Xóa"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 };

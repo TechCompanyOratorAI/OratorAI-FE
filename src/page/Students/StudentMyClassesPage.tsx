@@ -7,12 +7,10 @@ import {
   Col,
   Input,
   Button,
-  Tag,
   Typography,
   Space,
   Skeleton,
   ConfigProvider,
-  Avatar,
   Segmented,
   Badge,
   Flex,
@@ -21,11 +19,10 @@ import {
 import type { SegmentedProps } from "antd";
 import {
   SearchOutlined,
-  CalendarOutlined,
-  BookOutlined,
   CheckCircleOutlined,
   RightOutlined,
   ReadOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
@@ -59,6 +56,7 @@ const StudentMyClassesPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchEnrolledClasses());
@@ -68,19 +66,11 @@ const StudentMyClassesPage: React.FC = () => {
     if (error) toast.error(error);
   }, [error]);
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-
-  const getInstructorNames = (cls: (typeof enrolledClasses)[0]) => {
-    if (!cls.class.instructors || cls.class.instructors.length === 0)
-      return "Chưa gán giảng viên";
-    return cls.class.instructors
-      .map((i) => `${i.firstName} ${i.lastName}`.trim())
-      .join(", ");
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    toast.success(`Đã sao chép mã lớp: ${code}`);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const filteredClasses = enrolledClasses.filter((cls) => {
@@ -274,7 +264,6 @@ const StudentMyClassesPage: React.FC = () => {
                 const gradient = getGradient(
                   cls.class.className || cls.class.classCode,
                 );
-                const instructorName = getInstructorNames(cls);
 
                 return (
                   <Col xs={24} sm={12} lg={8} key={cls.enrollmentId}>
@@ -304,41 +293,59 @@ const StudentMyClassesPage: React.FC = () => {
                           <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-white/10" />
                           <Flex
                             vertical
-                            gap={12}
+                            gap={10}
                             className="relative">
-                            <Flex justify="space-between" align="flex-start" wrap="wrap" gap={8}>
-                              <Space size={8} wrap>
-                                <Tag
-                                  className="!m-0 !border-0 !text-xs !font-semibold !rounded-full !px-3 !py-0.5"
-                                  style={{
-                                    background: "rgba(255,255,255,0.22)",
-                                    color: "#fff",
-                                  }}>
+
+                            <div className="flex items-center justify-between w-full">
+                              <Badge
+                                status={isActive ? "processing" : "default"}
+                                text={
+                                  <span className="text-white/90 text-xs font-medium">
+                                    {isActive ? "Đang mở" : "Đã đóng"}
+                                  </span>
+                                }
+                                className="[&_.ant-badge-status-dot]:!bg-emerald-300"
+                              />
+                            </div>
+
+                            <div className="w-full">
+                              <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-4 py-2.5 border border-white/25 mb-3">
+                                <Text className="!block !text-[10px] !font-semibold !uppercase !tracking-widest !text-white/70 !mb-0.5">
+                                  Mã lớp
+                                </Text>
+                                <div className="flex items-center gap-2">
+                                <span className="!text-white !text-lg sm:!text-xl !font-black !tracking-tight">
                                   {cls.class.classCode}
-                                </Tag>
-                                <Badge
-                                  status={isActive ? "processing" : "default"}
-                                  text={
-                                    <span className="text-white/90 text-xs font-medium">
-                                      {isActive ? "Đang mở" : "Đã đóng"}
-                                    </span>
-                                  }
-                                  className="[&_.ant-badge-status-dot]:!bg-emerald-300"
-                                />
-                              </Space>
-                            </Flex>
-                            <div>
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyCode(cls.class.classCode);
+                                  }}
+                                  className="bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-1"
+                                  title="Sao chép mã lớp">
+                                  {copiedCode === cls.class.classCode ? (
+                                    <CheckCircleOutlined className="!text-emerald-300 !text-xs" />
+                                  ) : (
+                                    <CopyOutlined className="!text-white/50 !text-xs" />
+                                  )}
+                                </button>
+                                </div>
+                              </div>
+
                               <Title
-                                level={4}
-                                className="!mb-1.5 !text-white !text-lg sm:!text-xl !font-bold !leading-snug !line-clamp-2">
+                                level={3}
+                                className="!mb-2 !text-white !text-xl sm:!text-2xl !font-bold !leading-snug">
                                 {cls.class.className}
                               </Title>
-                              <Text className="!text-white/75 !text-xs sm:!text-sm block">
-                                {cls.class.course?.courseCode}
-                                {cls.class.course?.courseName
-                                  ? ` — ${cls.class.course.courseName}`
-                                  : ""}
-                              </Text>
+                              <Flex align="center" gap={6} className="flex-wrap">
+                                <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-white border border-white/20">
+                                  {cls.class.course?.courseCode || "—"}
+                                </span>
+                                <span className="text-white/80 text-sm font-medium truncate">
+                                  {cls.class.course?.courseName || "Chưa có khóa học"}
+                                </span>
+                              </Flex>
                             </div>
                           </Flex>
                         </div>
@@ -348,97 +355,31 @@ const StudentMyClassesPage: React.FC = () => {
                             direction="vertical"
                             size={14}
                             className="w-full">
-                            {instructorName && (
-                              <Flex align="center" gap={12}>
-                                <Avatar
-                                  size={36}
-                                  className="!bg-blue-100 !text-blue-600 !text-xs !font-bold shrink-0 !border-2 !border-white !shadow-sm">
-                                  {instructorName
-                                    .split(" ")
-                                    .slice(0, 2)
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
+                            {cls.enrolledAt && (
+                              <div className="flex items-center gap-3 bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-100">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+                                  <CheckCircleOutlined />
+                                </div>
+                                <div>
                                   <Text
                                     type="secondary"
                                     className="!text-[11px] !block !uppercase !tracking-wide">
-                                    Giảng viên
+                                    Ngày ghi danh
                                   </Text>
-                                  <Text
-                                    className="!text-sm !font-semibold !text-slate-800 !truncate !block">
-                                    {instructorName}
-                                  </Text>
-                                </div>
-                              </Flex>
-                            )}
-
-                            {cls.class.startDate && cls.class.endDate && (
-                              <Flex align="flex-start" gap={12}>
-                                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-inner">
-                                  <CalendarOutlined />
-                                </div>
-                                <div className="min-w-0">
-                                  <Text
-                                    type="secondary"
-                                    className="!text-[11px] !block !uppercase !tracking-wide">
-                                    Thời gian
-                                  </Text>
-                                  <Text className="!text-sm !font-semibold !text-slate-700">
-                                    {formatDate(cls.class.startDate)} –{" "}
-                                    {formatDate(cls.class.endDate)}
+                                  <Text className="!text-sm !font-bold !text-emerald-700">
+                                    {new Date(cls.enrolledAt).toLocaleDateString(
+                                      "vi-VN",
+                                      { year: "numeric", month: "long", day: "numeric" },
+                                    )}
                                   </Text>
                                 </div>
-                              </Flex>
-                            )}
-
-                            {cls.class.course?.semester && (
-                              <Flex align="flex-start" gap={12}>
-                                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-inner">
-                                  <BookOutlined />
-                                </div>
-                                <div className="min-w-0">
-                                  <Text
-                                    type="secondary"
-                                    className="!text-[11px] !block !uppercase !tracking-wide">
-                                    Học kỳ
-                                  </Text>
-                                  <Text className="!text-sm !font-semibold !text-slate-700">
-                                    {cls.class.course.semester}
-                                    {cls.class.course.academicYear
-                                      ? ` • ${cls.class.course.academicYear}`
-                                      : ""}
-                                  </Text>
-                                </div>
-                              </Flex>
-                            )}
-
-                            <Flex align="flex-start" gap={12}>
-                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-inner">
-                                <CheckCircleOutlined />
                               </div>
-                              <div>
-                                <Text
-                                  type="secondary"
-                                  className="!text-[11px] !block !uppercase !tracking-wide">
-                                  Ngày ghi danh
-                                </Text>
-                                <Text className="!text-sm !font-semibold !text-emerald-600">
-                                  {new Date(cls.enrolledAt).toLocaleDateString(
-                                    "vi-VN",
-                                  )}
-                                </Text>
-                              </div>
-                            </Flex>
+                            )}
                           </Space>
 
                           <Divider className="!my-4 !border-slate-100" />
 
-                          <Flex justify="space-between" align="center">
-                            <Text type="secondary" className="!text-xs">
-                              #{cls.classId}
-                            </Text>
+                          <Flex justify="flex-end" align="center">
                             <Button
                               type="link"
                               size="small"
