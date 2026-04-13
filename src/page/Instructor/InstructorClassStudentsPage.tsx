@@ -1,29 +1,32 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
+  Card,
+  Button,
+  Tag,
+  Space,
+  Typography,
+  Spin,
+  Table,
+  Tooltip,
+  Empty,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
   ArrowLeft,
   Users,
   BarChart3,
   CheckCircle,
   Clock,
-  XCircle,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
   RefreshCw,
-  Loader2,
   Presentation,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import {
-  fetchClassScores,
-  ClassScoreCriterion,
-} from "@/services/features/classScore/classScoreSlice";
+import { fetchClassScores, ClassScoreCriterion } from "@/services/features/classScore/classScoreSlice";
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+const { Text } = Typography;
 
 const scoreColor = (score: number | null): string => {
   if (score === null) return "text-slate-400";
@@ -32,103 +35,35 @@ const scoreColor = (score: number | null): string => {
   return "text-red-600";
 };
 
-const scoreBg = (score: number | null): string => {
-  if (score === null) return "bg-slate-50";
-  if (score >= 80) return "bg-emerald-50";
-  if (score >= 60) return "bg-amber-50";
-  return "bg-red-50";
+const statusConfig: Record<string, { label: string; tag: string }> = {
+  confirmed: { label: "Đã duyệt", tag: "green" },
+  pending: { label: "Chờ duyệt", tag: "orange" },
+  rejected: { label: "Từ chối", tag: "red" },
+  processing: { label: "Đang xử lý", tag: "blue" },
+  submitted: { label: "Đã nộp", tag: "purple" },
 };
 
-const statusConfig: Record<
-  string,
-  { label: string; icon: React.ElementType; color: string; bg: string }
-> = {
-  confirmed: {
-    label: "Đã duyệt",
-    icon: CheckCircle,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-  },
-  pending_review: {
-    label: "Chờ duyệt",
-    icon: Clock,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-  },
-  rejected: {
-    label: "Từ chối",
-    icon: XCircle,
-    color: "text-red-600",
-    bg: "bg-red-50",
-  },
-  processing: {
-    label: "Đang xử lý",
-    icon: Loader2,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  submitted: {
-    label: "Đã nộp",
-    icon: CheckCircle,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-  },
+const presentationStatusConfig: Record<string, { label: string; tag: string }> = {
+  submitted: { label: "Đã nộp", tag: "purple" },
+  processing: { label: "Đang xử lý", tag: "blue" },
+  completed: { label: "Hoàn thành", tag: "green" },
+  failed: { label: "Thất bại", tag: "red" },
 };
-
-const presentationStatusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  submitted: { label: "Đã nộp", color: "text-violet-600", bg: "bg-violet-50" },
-  processing: { label: "Đang xử lý", color: "text-blue-600", bg: "bg-blue-50" },
-  completed: { label: "Hoàn thành", color: "text-emerald-600", bg: "bg-emerald-50" },
-  failed: { label: "Thất bại", color: "text-red-600", bg: "bg-red-50" },
-};
-
-const getReportStatusDisplay = (
-  status: string | null,
-): { label: string; color: string; bg: string } => {
-  if (!status) return { label: "—", color: "text-slate-400", bg: "bg-slate-50" };
-  const cfg = statusConfig[status];
-  return cfg
-    ? { label: cfg.label, color: cfg.color, bg: cfg.bg }
-    : { label: status, color: "text-slate-600", bg: "bg-slate-50" };
-};
-
-const getPresentationDisplay = (
-  status: string | undefined,
-): { label: string; color: string; bg: string } => {
-  if (!status) return { label: "—", color: "text-slate-400", bg: "bg-slate-50" };
-  const cfg = presentationStatusConfig[status];
-  return cfg
-    ? { label: cfg.label, color: cfg.color, bg: cfg.bg }
-    : { label: status, color: "text-slate-600", bg: "bg-slate-50" };
-};
-
-// ── ScoreBadge component ───────────────────────────────────────────────────────
 
 const ScoreBadge: React.FC<{ score: number | null; size?: "sm" | "md" }> = ({
   score,
   size = "sm",
 }) => {
-  if (score === null) {
-    return (
-      <span className="text-slate-400 text-xs italic">
-        —
-      </span>
-    );
-  }
+  if (score === null) return <Text type="secondary">—</Text>;
   return (
-    <span
-      className={`inline-block font-bold tabular-nums ${scoreColor(
-        score,
-      )} ${scoreBg(score)} px-2 py-0.5 rounded-md ${
-        size === "sm" ? "text-xs" : "text-sm"
-      }`}
+    <Tag
+      color={score >= 80 ? "green" : score >= 60 ? "orange" : "red"}
+      className={`font-bold ${size === "md" ? "text-sm" : "text-xs"}`}
     >
       {score.toFixed(1)}
-    </span>
+    </Tag>
   );
 };
-
-// ── Main component ─────────────────────────────────────────────────────────────
 
 const InstructorClassStudentsPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
@@ -145,8 +80,6 @@ const InstructorClassStudentsPage: React.FC = () => {
   const scoresError =
     numericClassId != null ? errorByClassId[numericClassId] ?? null : null;
 
-  const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
-
   useEffect(() => {
     if (numericClassId) {
       dispatch(fetchClassScores(numericClassId));
@@ -159,52 +92,27 @@ const InstructorClassStudentsPage: React.FC = () => {
 
   const sortedCriteria: ClassScoreCriterion[] = useMemo(() => {
     if (!data?.criteria) return [];
-    return [...data.criteria].sort(
-      (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
-    );
+    return [...data.criteria].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }, [data]);
-
-  const classAverageByCriterion = useMemo(() => {
-    if (!data?.students || !sortedCriteria.length) return {};
-    const result: Record<number, number | null> = {};
-    sortedCriteria.forEach((c) => {
-      const scores = data.students
-        .flatMap((s) => s.rubricScores)
-        .filter((rs) => rs.classRubricCriteriaId === c.classRubricCriteriaId)
-        .map((rs) => rs.averageScore)
-        .filter((v): v is number => v !== null);
-      result[c.classRubricCriteriaId] =
-        scores.length > 0
-          ? scores.reduce((a, b) => a + b, 0) / scores.length
-          : null;
-    });
-    return result;
-  }, [data, sortedCriteria]);
 
   const overallClassAverage = useMemo(() => {
     if (!data?.students) return null;
-    const scores = data.students
-      .map((s) => s.instructorAverageScore)
-      .filter((v): v is number => v !== null);
-    return scores.length > 0
-      ? scores.reduce((a, b) => a + b, 0) / scores.length
-      : null;
+    const scores = data.students.map((s) => s.instructorAverageScore).filter((v): v is number => v !== null);
+    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   }, [data]);
+
+  const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
 
   if (numericClassId == null) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3 text-slate-500">
-          <AlertCircle className="w-12 h-12 text-slate-300" />
-          <p className="font-semibold text-slate-700">Mã lớp không hợp lệ</p>
-          <button
-            type="button"
-            onClick={() => navigate("/instructor/students")}
-            className="text-blue-600 hover:underline"
-          >
-            Quay lại danh sách lớp
-          </button>
-        </div>
+        <Card>
+          <Empty description="Mã lớp không hợp lệ">
+            <Button type="primary" onClick={() => navigate("/instructor/students")}>
+              Quay lại danh sách lớp
+            </Button>
+          </Empty>
+        </Card>
       </div>
     );
   }
@@ -212,10 +120,7 @@ const InstructorClassStudentsPage: React.FC = () => {
   if (scoresLoading && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3 text-slate-500">
-          <Loader2 className="w-8 h-8 animate-spin" />
-          <p>Đang tải dữ liệu lớp...</p>
-        </div>
+        <Spin size="large" />
       </div>
     );
   }
@@ -223,520 +128,279 @@ const InstructorClassStudentsPage: React.FC = () => {
   if (!data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3 text-slate-500">
-          <AlertCircle className="w-12 h-12 text-slate-300" />
-          <p className="font-semibold text-slate-700">
-            {scoresError || "Không tìm thấy dữ liệu lớp học"}
-          </p>
-          <button
-            type="button"
-            onClick={() => dispatch(fetchClassScores(numericClassId))}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Thử lại
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/instructor/students")}
-            className="text-blue-600 hover:underline"
-          >
-            Quay lại danh sách lớp
-          </button>
-        </div>
+        <Card>
+          <Empty description={scoresError || "Không tìm thấy dữ liệu lớp học"}>
+            <Space>
+              <Button onClick={() => dispatch(fetchClassScores(numericClassId!))}>Thử lại</Button>
+              <Button onClick={() => navigate("/instructor/students")}>Quay lại danh sách lớp</Button>
+            </Space>
+          </Empty>
+        </Card>
       </div>
     );
   }
 
+  const gradedCount = data.students.filter((s) => s.instructorAverageScore !== null).length;
+  const ungradedCount = data.students.filter((s) => s.instructorAverageScore === null).length;
+
+  // Build table columns
+  const columns: ColumnsType<typeof data.students[0]> = [
+    {
+      title: "#",
+      key: "index",
+      width: 50,
+      render: (_, __, idx) => <Text type="secondary">{idx + 1}</Text>,
+    },
+    {
+      title: "Sinh viên",
+      key: "student",
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>
+            {record.student.firstName} {record.student.lastName}
+          </Text>
+          <Text type="secondary" className="text-xs">{record.student.email}</Text>
+        </Space>
+      ),
+    },
+    ...sortedCriteria.map((c) => ({
+      title: (
+        <Tooltip title={`${c.criteriaName} (w:${c.weight}%)`}>
+          <span>{c.criteriaName}</span>
+        </Tooltip>
+      ),
+      key: `criteria-${c.classRubricCriteriaId}`,
+      align: "center" as const,
+      width: 80,
+      render: (_: any, record: typeof data.students[0]) => {
+        const rubricScore = record.rubricScores.find(
+          (rs) => rs.classRubricCriteriaId === c.classRubricCriteriaId,
+        );
+        return <ScoreBadge score={rubricScore?.averageScore ?? null} />;
+      },
+    })),
+    {
+      title: "Điểm GV",
+      key: "instructorScore",
+      align: "center" as const,
+      width: 80,
+      render: (_, record) => <ScoreBadge score={record.instructorAverageScore} size="md" />,
+    },
+    {
+      title: "Điểm AI",
+      key: "aiScore",
+      align: "center" as const,
+      width: 80,
+      render: (_, record) => (
+        <ScoreBadge
+          score={record.overallAverageScore !== null ? Number(record.overallAverageScore) * 10 : null}
+          size="md"
+        />
+      ),
+    },
+    {
+      title: "Bài TL",
+      key: "presentations",
+      align: "center" as const,
+      width: 80,
+      render: (_, record) => (
+        <Tag>
+          {record.totalReports} / {record.totalPresentations}
+        </Tag>
+      ),
+    },
+    {
+      title: "",
+      key: "expand",
+      width: 50,
+      render: (_, record) => (
+        <Button
+          type="text"
+          size="small"
+          icon={expandedStudent === record.enrollmentId ? <span>▲</span> : <span>▼</span>}
+          onClick={() =>
+            setExpandedStudent(expandedStudent === record.enrollmentId ? null : record.enrollmentId)
+          }
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <SidebarInstructor activeItem="students" />
-      <main className="flex-1 overflow-y-auto lg:ml-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          {/* Back + Header */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/instructor/students")}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+      <main className="flex-1 overflow-y-auto p-6 sm:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <Space>
+              <Button icon={<ArrowLeft />} onClick={() => navigate("/instructor/students")}>
+                Quay lại
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <Text strong className="text-lg">{data.class.classCode}</Text>
+                  <div className="text-xs text-gray-500">
+                    {data.totalStudents} sinh viên · {sortedCriteria.length} tiêu chí đánh giá
+                  </div>
+                </div>
+              </div>
+            </Space>
+            <Button
+              icon={<RefreshCw size={14} />}
+              onClick={() => dispatch(fetchClassScores(numericClassId!))}
+              loading={scoresLoading}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại
-            </button>
-            <div className="h-4 w-px bg-slate-200" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  {data.class.classCode}
-                </h1>
-                <p className="text-xs text-slate-500">
-                  {data.totalStudents} sinh viên ·{" "}
-                  {sortedCriteria.length} tiêu chí đánh giá
-                </p>
-              </div>
-            </div>
-            <div className="ml-auto">
-              <button
-                type="button"
-                onClick={() => dispatch(fetchClassScores(numericClassId))}
-                disabled={scoresLoading}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-60 transition-colors"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${scoresLoading ? "animate-spin" : ""}`}
-                />
-                Làm mới
-              </button>
-            </div>
+              Làm mới
+            </Button>
           </div>
 
-          {/* Stat cards */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4"
-            >
-              <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                  Tổng SV
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {data.totalStudents}
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4"
-            >
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                  Đã chấm
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {
-                    data.students.filter(
-                      (s) => s.instructorAverageScore !== null,
-                    ).length
-                  }
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4"
-            >
-              <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                  Chưa chấm
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {
-                    data.students.filter(
-                      (s) => s.instructorAverageScore === null,
-                    ).length
-                  }
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4"
-            >
-              <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-violet-600" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                  Điểm TB lớp
-                </p>
-                <p className={`text-xl font-bold ${scoreColor(overallClassAverage)}`}>
-                  {overallClassAverage !== null
-                    ? `${overallClassAverage.toFixed(1)} / 10`
-                    : "—"}
-                </p>
-              </div>
-            </motion.div>
+            <Card size="small">
+              <Space>
+                <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <Text type="secondary" className="text-xs">Tổng SV</Text>
+                  <div className="text-xl font-bold">{data.totalStudents}</div>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <Text type="secondary" className="text-xs">Đã chấm</Text>
+                  <div className="text-xl font-bold">{gradedCount}</div>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <Text type="secondary" className="text-xs">Chưa chấm</Text>
+                  <div className="text-xl font-bold">{ungradedCount}</div>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <Text type="secondary" className="text-xs">Điểm TB lớp</Text>
+                  <div className={`text-xl font-bold ${overallClassAverage !== null ? scoreColor(overallClassAverage) : ""}`}>
+                    {overallClassAverage !== null ? `${overallClassAverage.toFixed(1)} / 10` : "—"}
+                  </div>
+                </div>
+              </Space>
+            </Card>
           </div>
 
-          {/* Criteria summary bar */}
-          {sortedCriteria.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5"
-            >
-              <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-slate-600" />
-                Điểm trung bình theo tiêu chí
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {sortedCriteria.map((c) => {
-                  const avg = classAverageByCriterion[c.classRubricCriteriaId];
-                  return (
-                    <div
-                      key={c.classRubricCriteriaId}
-                      className="rounded-xl border border-slate-100 p-3 flex flex-col gap-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-800 leading-tight">
-                          {c.criteriaName}
-                        </p>
-                        <ScoreBadge score={avg} size="md" />
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span>Trọng số: {c.weight}%</span>
-                        <span>Max: {c.maxScore}</span>
-                      </div>
-                      {avg !== null && (
-                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                          <div
-                            className={`h-1.5 rounded-full transition-all ${
-                              avg >= 80
-                                ? "bg-emerald-500"
-                                : avg >= 60
-                                ? "bg-amber-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{ width: `${Math.min(100, avg)}%` }}
-                          />
-                        </div>
+          {/* Students Table */}
+          <Card title="Điểm theo sinh viên">
+            <Table
+              columns={columns}
+              dataSource={data.students}
+              rowKey="enrollmentId"
+              loading={scoresLoading}
+              pagination={false}
+              size="small"
+              expandable={{
+                expandedRowKeys: expandedStudent ? [expandedStudent] : [],
+                onExpand: (expanded, record) => {
+                  setExpandedStudent(expanded ? record.enrollmentId : null);
+                },
+                expandedRowRender: (record) => (
+                  <div className="p-4 space-y-4 bg-blue-50/30">
+                    {/* Presentations */}
+                    <div>
+                      <Text strong className="text-xs uppercase tracking-wide text-gray-600 flex items-center gap-1.5 mb-2">
+                        <Presentation size={12} />
+                        Bài thuyết trình ({record.totalPresentations})
+                      </Text>
+                      {record.presentations.length === 0 ? (
+                        <Text type="secondary" italic>Chưa có bài thuyết trình nào.</Text>
+                      ) : (
+                        <Space direction="vertical" className="w-full" size={2}>
+                          {record.presentations.map((p) => {
+                            const reportCfg = statusConfig[p.reportStatus || ""] || { label: p.reportStatus || "—", tag: "default" };
+                            const presCfg = presentationStatusConfig[p.status || ""] || { label: p.status || "—", tag: "default" };
+                            return (
+                              <Card key={p.presentationId} size="small">
+                                <div className="flex items-center justify-between">
+                                  <Space direction="vertical" size={2}>
+                                    <Text strong className="text-sm">{p.title}</Text>
+                                    <Space>
+                                      <Tag color={presCfg.tag}>{presCfg.label}</Tag>
+                                      <Tag color={reportCfg.tag}>{reportCfg.label}</Tag>
+                                      {p.submittedAt && (
+                                        <Text type="secondary" className="text-xs">
+                                          Nộp: {new Date(p.submittedAt).toLocaleString("vi-VN")}
+                                        </Text>
+                                      )}
+                                    </Space>
+                                  </Space>
+                                  <Space>
+                                    {p.receivedGrade !== null ? (
+                                      <Tag color="gold">{Number(p.receivedGrade).toFixed(1)} ({p.percentage}%)</Tag>
+                                    ) : p.overallScore !== null ? (
+                                      <ScoreBadge score={Number(p.overallScore) * 100} size="md" />
+                                    ) : (
+                                      <Text type="secondary">—</Text>
+                                    )}
+                                    {p.hasReport && (
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        onClick={() => navigate(`/instructor/presentation/${p.presentationId}`)}
+                                      >
+                                        Xem báo cáo →
+                                      </Button>
+                                    )}
+                                  </Space>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </Space>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
 
-          {/* Students score table */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
-          >
-            <div className="p-5 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-slate-600" />
-                Điểm theo sinh viên
-              </h3>
-            </div>
-
-            {/* Table header */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50">
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700 w-8">
-                      #
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700 min-w-48">
-                      Sinh viên
-                    </th>
-                    {sortedCriteria.map((c) => (
-                      <th
-                        key={c.classRubricCriteriaId}
-                        className="px-3 py-3 text-center font-semibold text-slate-700 whitespace-nowrap"
-                      >
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="text-xs">{c.criteriaName}</span>
-                          <span className="text-xs text-slate-400 font-normal">
-                            (w:{c.weight}%)
-                          </span>
-                        </div>
-                      </th>
-                    ))}
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-xs">Điểm GV</span>
-                        <span className="text-xs text-slate-400 font-normal">(đã chia)</span>
+                    {/* Rubric breakdown */}
+                    <div>
+                      <Text strong className="text-xs uppercase tracking-wide text-gray-600 flex items-center gap-1.5 mb-2">
+                        <BarChart3 size={12} />
+                        Chi tiết điểm rubric
+                      </Text>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {record.rubricScores.map((rs) => (
+                          <Card key={rs.classRubricCriteriaId} size="small">
+                            <Space className="w-full justify-between">
+                              <Text className="text-sm">{rs.criteriaName}</Text>
+                              <ScoreBadge score={rs.averageScore} size="md" />
+                            </Space>
+                            <Text type="secondary" className="text-xs">/ {rs.maxScore} (w:{rs.weight}%)</Text>
+                          </Card>
+                        ))}
                       </div>
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-xs">Điểm AI</span>
-                        <span className="text-xs text-slate-400 font-normal">(AI)</span>
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
-                      Bài TL
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700 w-10">
-                      Chi tiết
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.students.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={
-                          3 + sortedCriteria.length + 3
-                        }
-                        className="px-4 py-12 text-center text-slate-500"
-                      >
-                        Chưa có sinh viên trong lớp này.
-                      </td>
-                    </tr>
-                  ) : (
-                    data.students.map((student, idx) => {
-                      const isExpanded = expandedStudent === student.enrollmentId;
-                      return (
-                        <React.Fragment key={student.enrollmentId}>
-                          <tr
-                            className={`border-t border-slate-100 hover:bg-slate-50 transition-colors ${
-                              isExpanded ? "bg-blue-50/30" : ""
-                            }`}
-                          >
-                            <td className="px-4 py-3 text-slate-500">{idx + 1}</td>
-                            <td className="px-4 py-3">
-                              <div>
-                                <p className="font-semibold text-slate-900">
-                                  {student.student.firstName}{" "}
-                                  {student.student.lastName}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {student.student.email}
-                                </p>
-                              </div>
-                            </td>
-                            {sortedCriteria.map((c) => {
-                              const rubricScore = student.rubricScores.find(
-                                (rs) =>
-                                  rs.classRubricCriteriaId ===
-                                  c.classRubricCriteriaId,
-                              );
-                              return (
-                                <td
-                                  key={c.classRubricCriteriaId}
-                                  className="px-3 py-3 text-center"
-                                >
-                                  <ScoreBadge
-                                    score={rubricScore?.averageScore ?? null}
-                                  />
-                                </td>
-                              );
-                            })}
-                            <td className="px-4 py-3 text-center">
-                              <ScoreBadge
-                                score={student.instructorAverageScore}
-                                size="md"
-                              />
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <ScoreBadge
-                                score={student.overallAverageScore !== null ? Number(student.overallAverageScore) * 10 : null}
-                                size="md"
-                              />
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex flex-col items-center gap-0.5">
-                                <span className="text-xs font-semibold text-slate-700">
-                                  {student.totalReports} /{" "}
-                                  {student.totalPresentations}
-                                </span>
-                                <span className="text-xs text-slate-400">
-                                  đã chấm
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <button
-                                onClick={() =>
-                                  setExpandedStudent(
-                                    isExpanded ? null : student.enrollmentId,
-                                  )
-                                }
-                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
-                                title={isExpanded ? "Thu gọn" : "Xem chi tiết"}
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </button>
-                            </td>
-                          </tr>
-
-                          {/* Expanded row */}
-                          {isExpanded && (
-                            <tr className="border-t border-blue-100 bg-blue-50/30">
-                              <td colSpan={3 + sortedCriteria.length + 3}>
-                                <div className="p-4 space-y-4">
-                                  {/* Presentations */}
-                                  <div>
-                                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                                      <Presentation className="w-3.5 h-3.5" />
-                                      Bài thuyết trình ({student.totalPresentations})
-                                    </p>
-                                    {student.presentations.length === 0 ? (
-                                      <p className="text-sm text-slate-400 italic">
-                                        Chưa có bài thuyết trình nào.
-                                      </p>
-                                    ) : (
-                                      <div className="space-y-2">
-                                        {student.presentations.map((p) => {
-                                          const reportDisplay =
-                                            getReportStatusDisplay(
-                                              p.reportStatus,
-                                            );
-                                          const presDisplay =
-                                            getPresentationDisplay(p.status);
-                                          return (
-                                            <div
-                                              key={p.presentationId}
-                                              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white bg-white p-3 shadow-sm"
-                                            >
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-slate-900 mb-1">
-                                                  {p.title}
-                                                </p>
-                                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                                                  <span
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${presDisplay.bg} ${presDisplay.color}`}
-                                                  >
-                                                    {presDisplay.label}
-                                                  </span>
-                                                  <span
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${reportDisplay.bg} ${reportDisplay.color}`}
-                                                  >
-                                                    {reportDisplay.label}
-                                                  </span>
-                                                  {p.submittedAt && (
-                                                    <span>
-                                                      Nộp lúc{" "}
-                                                      {new Date(
-                                                        p.submittedAt,
-                                                      ).toLocaleString(
-                                                        "vi-VN",
-                                                      )}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                              <div className="flex items-center gap-3">
-                                                {p.receivedGrade !== null ? (
-                                                  <div className="text-right">
-                                                    <span className="text-xs font-semibold text-amber-700 block">
-                                                      {Number(p.receivedGrade).toFixed(1)}
-                                                    </span>
-                                                    <span className="text-xs text-slate-400">
-                                                      ({p.percentage}%)
-                                                    </span>
-                                                  </div>
-                                                ) : p.overallScore !== null ? (
-                                                  <ScoreBadge
-                                                    score={Number(p.overallScore) * 100}
-                                                    size="md"
-                                                  />
-                                                ) : (
-                                                  <span className="text-slate-400 text-xs italic">—</span>
-                                                )}
-                                                {p.hasReport && (
-                                                  <button
-                                                    onClick={() =>
-                                                      navigate(
-                                                        `/instructor/presentation/${p.presentationId}`,
-                                                      )
-                                                    }
-                                                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap"
-                                                  >
-                                                    Xem báo cáo →
-                                                  </button>
-                                                )}
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Rubric breakdown */}
-                                  <div>
-                                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                                      <BarChart3 className="w-3.5 h-3.5" />
-                                      Chi tiết điểm rubric
-                                    </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                      {student.rubricScores.map((rs) => {
-                                        return (
-                                          <div
-                                            key={rs.classRubricCriteriaId}
-                                            className="rounded-xl border border-white bg-white p-3 shadow-sm"
-                                          >
-                                            <p className="text-xs font-semibold text-slate-700 mb-1">
-                                              {rs.criteriaName}
-                                            </p>
-                                            <div className="flex items-center justify-between gap-2">
-                                              <ScoreBadge
-                                                score={rs.averageScore}
-                                                size="md"
-                                              />
-                                              <span className="text-xs text-slate-400">
-                                                / {rs.maxScore} (w:{rs.weight}
-                                                %)
-                                              </span>
-                                            </div>
-                                            {rs.averageScore !== null && (
-                                              <div className="w-full bg-slate-100 rounded-full h-1 mt-2">
-                                                <div
-                                                  className={`h-1 rounded-full ${
-                                                    rs.averageScore >= 80
-                                                      ? "bg-emerald-500"
-                                                      : rs.averageScore >= 60
-                                                      ? "bg-amber-500"
-                                                      : "bg-red-500"
-                                                  }`}
-                                                  style={{
-                                                    width: `${Math.min(
-                                                      100,
-                                                      rs.averageScore,
-                                                    )}%`,
-                                                  }}
-                                                />
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
+                    </div>
+                  </div>
+                ),
+              }}
+            />
+          </Card>
         </div>
       </main>
     </div>

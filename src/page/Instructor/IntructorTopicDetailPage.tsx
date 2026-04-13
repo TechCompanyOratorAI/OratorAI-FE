@@ -1,65 +1,64 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  FileText as FileTextIcon,
-  CheckCircle2,
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+  Card,
+  Button,
+  Tag,
+  Typography,
+  Spin,
+  Table,
+  Empty,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  BookOutlined,
+  UserOutlined,
+  TeamOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
-import {
-  fetchPresentationsByClassAndTopic,
-  fetchPresentationsByTopic,
-} from "@/services/features/presentation/presentationSlice";
+import { fetchPresentationsByClassAndTopic } from "@/services/features/presentation/presentationSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 
-const statusConfig: Record<
-  string,
-  { label: string; color: string; icon: React.ReactNode }
-> = {
-  draft: {
-    label: "Nháp",
-    color: "bg-slate-100 text-slate-700 border-slate-200",
-    icon: <FileTextIcon className="w-3 h-3" />,
-  },
-  submitted: {
-    label: "Đã nộp",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  processing: {
-    label: "Đang xử lý",
-    color: "bg-amber-100 text-amber-700 border-amber-200",
-    icon: <Loader2 className="w-3 h-3 animate-spin" />,
-  },
-  analyzed: {
-    label: "Đã chấm",
-    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  done: {
-    label: "Hoàn thành",
-    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  failed: {
-    label: "Thất bại",
-    color: "bg-red-100 text-red-700 border-red-200",
-    icon: <FileTextIcon className="w-3 h-3" />,
-  },
+const { Text, Title } = Typography;
+
+const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
+  draft:      { color: "default",  label: "Draft" },
+  submitted:  { color: "blue",     label: "Submitted" },
+  processing: { color: "orange",   label: "Processing" },
+  analyzed:   { color: "cyan",     label: "Analyzed" },
+  done:       { color: "green",    label: "Done" },
+  failed:     { color: "red",      label: "Failed" },
 };
 
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatDuration = (seconds?: number | null) => {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPresentation = any;
+
 const IntructorTopicDetailPage: React.FC = () => {
-  const { topicId, classId } = useParams<{
-    topicId: string;
-    classId: string;
-  }>();
+  const { topicId, classId } = useParams<{ topicId: string; classId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -72,16 +71,12 @@ const IntructorTopicDetailPage: React.FC = () => {
     (state) => state.presentation,
   );
 
-  const [showRequirements, setShowRequirements] = useState(true);
-
-  const topicIdNumber = topicId ? parseInt(topicId) : null;
-  const classIdNumber = classId ? parseInt(classId) : null;
+  const topicIdNumber = topicId ? parseInt(topicId, 10) : null;
+  const classIdNumber = classId ? parseInt(classId, 10) : null;
 
   useEffect(() => {
     if (!topicIdNumber) return;
-
     dispatch(fetchTopicDetail(topicIdNumber));
-
     if (classIdNumber) {
       dispatch(
         fetchPresentationsByClassAndTopic({
@@ -89,10 +84,7 @@ const IntructorTopicDetailPage: React.FC = () => {
           topicId: topicIdNumber,
         }),
       );
-      return;
     }
-
-    dispatch(fetchPresentationsByTopic(topicIdNumber));
   }, [topicIdNumber, classIdNumber, dispatch]);
 
   const isPageLoading = topicLoading || presentationLoading;
@@ -102,19 +94,135 @@ const IntructorTopicDetailPage: React.FC = () => {
     return topic?.presentations || [];
   }, [presentations, topic?.presentations]);
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      submitted: 0,
+      processing: 0,
+      done: 0,
+      failed: 0,
+      draft: 0,
+    };
+    mergedPresentations.forEach((p: AnyPresentation) => {
+      const key = p.status?.toLowerCase() || "draft";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [mergedPresentations]);
+
+  const columns: ColumnsType<AnyPresentation> = [
+    {
+      title: "#",
+      width: 52,
+      render: (_: unknown, __: unknown, index: number) => (
+        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-500">
+          {String(index + 1).padStart(2, "0")}
+        </div>
+      ),
+    },
+    {
+      title: "Student",
+      render: (_: unknown, record: AnyPresentation) => (
+        <div>
+          <Text strong className="text-slate-800 block text-sm">
+            {record.student
+              ? `${record.student.firstName} ${record.student.lastName}`
+              : `Student #${record.studentId}`}
+          </Text>
+          {record.student?.email && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {record.student.email}
+            </Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Group",
+      dataIndex: "groupCode",
+      width: 120,
+      render: (groupCode: string | null) =>
+        groupCode ? (
+          <Tag
+            icon={<TeamOutlined />}
+            color="purple"
+            style={{ borderRadius: 20 }}
+          >
+            {groupCode}
+          </Tag>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            —
+          </Text>
+        ),
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      render: (title: string) => (
+        <Text className="text-slate-700 text-sm">{title || "—"}</Text>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      width: 120,
+      render: (status: string) => {
+        const sc = STATUS_CONFIG[status?.toLowerCase()] || STATUS_CONFIG.draft;
+        return (
+          <Tag
+            color={sc.color}
+            style={{ borderRadius: 20, margin: 0, fontWeight: 500 }}
+          >
+            {sc.label}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Submitted",
+      dataIndex: "submissionDate",
+      width: 155,
+      render: (date: string | null) => (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {formatDate(date)}
+        </Text>
+      ),
+    },
+    {
+      title: "Duration",
+      dataIndex: "durationSeconds",
+      width: 90,
+      align: "center" as const,
+      render: (d: number | null) => (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {formatDuration(d)}
+        </Text>
+      ),
+    },
+    {
+      title: "",
+      width: 48,
+      render: (_: unknown, record: AnyPresentation) => (
+        <Link
+          to={`/intructor/presentation/${record.presentationId}`}
+          state={{ presentation: record }}
+        >
+          <Button
+            type="text"
+            icon={<RightOutlined style={{ color: "#94a3b8" }} />}
+            size="small"
+          />
+        </Link>
+      ),
+    },
+  ];
 
   if (isPageLoading && !topic) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-slate-50">
         <SidebarInstructor activeItem="manage-classes" />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-slate-500">Đang tải thông tin chủ đề...</p>
-          </div>
+          <Spin size="large" />
         </main>
       </div>
     );
@@ -122,208 +230,420 @@ const IntructorTopicDetailPage: React.FC = () => {
 
   if (topicError || !topic) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-slate-50">
         <SidebarInstructor activeItem="manage-classes" />
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6"
-            >
-              <ArrowLeft className="w-5 h-5" /> Quay lại
-            </button>
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-              <p className="text-red-700 font-medium">
-                {topicError || "Không tìm thấy chủ đề"}
-              </p>
-            </div>
-          </div>
+        <main className="flex-1 overflow-y-auto p-8">
+          <Button
+            type="link"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(-1)}
+            style={{ paddingLeft: 0, marginBottom: 24, fontWeight: 600 }}
+          >
+            Back
+          </Button>
+          <Card>
+            <Text type="danger">{topicError || "Topic not found"}</Text>
+          </Card>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50">
       <SidebarInstructor activeItem="manage-classes" />
-      <main className="flex-1 overflow-y-auto lg:ml-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          <div className="flex items-center gap-2 text-sm">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition"
-            >
-              <ArrowLeft className="w-4 h-4" /> Quay lại
-            </button>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-500 truncate">{topic.topicName}</span>
-          </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-[1280px] mx-auto px-6 py-6 space-y-6">
 
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8"
+          {/* Back button */}
+          <Button
+            type="link"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(-1)}
+            style={{ paddingLeft: 0, fontWeight: 600, color: "#0369a1" }}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-            <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
-            <div className="relative">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
-                  Chủ đề #{topic.sequenceNumber}
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                {topic.topicName}
-              </h1>
-              {topic.description && (
-                <p className="text-white/80 mb-4 max-w-2xl">
-                  {topic.description}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-3">
-                {topic.dueDate && (
-                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                    <Calendar className="w-4 h-4 text-white/80" />
-                    <div>
-                      <p className="text-white/60 text-xs">Hạn nộp</p>
-                      <p className="text-white font-semibold text-xs">
-                        {new Date(topic.dueDate).toLocaleDateString("vi-VN")}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {topic.maxDurationMinutes && (
-                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                    <Clock className="w-4 h-4 text-white/80" />
-                    <div>
-                      <p className="text-white/60 text-xs">Thời lượng</p>
-                      <p className="text-white font-semibold text-xs">
-                        {topic.maxDurationMinutes} phút
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                  <FileTextIcon className="w-4 h-4 text-white/80" />
-                  <div>
-                    <p className="text-white/60 text-xs">Bài nộp</p>
-                    <p className="text-white font-semibold text-xs">
-                      {mergedPresentations.length}
-                    </p>
-                  </div>
+            Back to class
+          </Button>
+
+          {/* ── Hero banner ─────────────────────────────── */}
+          <section
+            className="relative overflow-hidden rounded-3xl shadow-lg text-white"
+            style={{
+              background:
+                "linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #7c3aed 100%)",
+            }}
+          >
+            <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/5" />
+            <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-white/5" />
+
+            <div className="relative px-8 py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              {/* Left: identity */}
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-black shadow shrink-0">
+                  #{topic.sequenceNumber}
                 </div>
+                <div>
+                  <Text
+                    style={{ fontSize: 11, letterSpacing: "0.1em" }}
+                    className="font-semibold uppercase text-white/50 block"
+                  >
+                    Presentation Topic
+                  </Text>
+                  <Title
+                    level={3}
+                    style={{ color: "white", margin: 0, lineHeight: 1.25 }}
+                  >
+                    {topic.topicName}
+                  </Title>
+                  {topic.description && (
+                    <Text className="text-sm text-white/70 mt-1 block">
+                      {topic.description}
+                    </Text>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: stat pills */}
+              <div className="flex flex-wrap gap-3 shrink-0">
+                {[
+                  {
+                    icon: <CalendarOutlined />,
+                    label: "Due date",
+                    value: topic.dueDate ? formatDate(topic.dueDate) : "No deadline",
+                  },
+                  {
+                    icon: <ClockCircleOutlined />,
+                    label: "Duration",
+                    value: topic.maxDurationMinutes
+                      ? `${topic.maxDurationMinutes} min`
+                      : "—",
+                  },
+                  {
+                    icon: <FileTextOutlined />,
+                    label: "Submissions",
+                    value: `${mergedPresentations.length} total`,
+                  },
+                ].map(({ icon, label, value }) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl px-4 py-3 backdrop-blur-md"
+                    style={{ background: "rgba(255,255,255,0.13)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/60 text-sm">{icon}</span>
+                      <div>
+                        <Text
+                          style={{ fontSize: 10, letterSpacing: "0.08em" }}
+                          className="font-medium text-white/40 uppercase block"
+                        >
+                          {label}
+                        </Text>
+                        <Text className="text-xs font-semibold text-white leading-none">
+                          {value}
+                        </Text>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </motion.div>
+          </section>
 
-          <div className="space-y-6">
-            {topic.requirements && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <button
-                  onClick={() => setShowRequirements(!showRequirements)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-                      <FileTextIcon className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <span className="font-bold text-slate-900">
-                      Yêu cầu chủ đề
-                    </span>
-                  </div>
-                  {showRequirements ? (
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-slate-400" />
-                  )}
-                </button>
-                <AnimatePresence initial={false}>
-                  {showRequirements && (
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      className="overflow-hidden"
+          {/* ── Body: 2-column ──────────────────────────── */}
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start">
+
+            {/* LEFT: Stats + Table */}
+            <div className="space-y-4">
+
+              {/* Status summary */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[
+                  {
+                    label: "Total",
+                    count: mergedPresentations.length,
+                    color: "#6366f1",
+                    bg: "#eef2ff",
+                  },
+                  {
+                    label: "Submitted",
+                    count: statusCounts.submitted,
+                    color: "#3b82f6",
+                    bg: "#eff6ff",
+                  },
+                  {
+                    label: "Processing",
+                    count: statusCounts.processing,
+                    color: "#f59e0b",
+                    bg: "#fffbeb",
+                  },
+                  {
+                    label: "Done",
+                    count: statusCounts.done,
+                    color: "#10b981",
+                    bg: "#ecfdf5",
+                  },
+                  {
+                    label: "Failed",
+                    count: statusCounts.failed,
+                    color: "#ef4444",
+                    bg: "#fef2f2",
+                  },
+                ].map(({ label, count, color }) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-center shadow-sm"
+                    style={{ borderTopColor: color, borderTopWidth: 3 }}
+                  >
+                    <div
+                      className="text-2xl font-black"
+                      style={{ color }}
                     >
-                      <div className="p-5 pt-0">
-                        <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed">
-                          {topic.requirements}
-                        </pre>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                    <FileTextIcon className="w-5 h-5 text-indigo-600" />
+                      {count}
+                    </div>
+                    <div className="text-xs text-slate-400 font-medium mt-0.5">
+                      {label}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">
-                      Bài thuyết trình
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {mergedPresentations.length} bài đã nộp
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {mergedPresentations.length > 0 ? (
+              {/* Presentations table */}
+              <Card
+                variant="borderless"
+                style={{
+                  borderRadius: 16,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                }}
+                styles={{
+                  header: {
+                    padding: "16px 20px",
+                    borderBottom: "1px solid #f1f5f9",
+                  },
+                  body: { padding: 0 },
+                }}
+                title={
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+                      <FileTextOutlined style={{ color: "#6366f1" }} />
+                    </div>
+                    <Text strong style={{ fontSize: 15 }}>
+                      Presentations
+                    </Text>
+                    <Tag
+                      color="purple"
+                      style={{ borderRadius: 20, marginLeft: 4 }}
+                    >
+                      {mergedPresentations.length}
+                    </Tag>
+                  </div>
+                }
+              >
+                {presentationLoading ? (
+                  <div className="flex justify-center py-14">
+                    <Spin size="large" />
+                  </div>
+                ) : mergedPresentations.length > 0 ? (
+                  <Table
+                    dataSource={mergedPresentations}
+                    columns={columns}
+                    rowKey="presentationId"
+                    pagination={
+                      mergedPresentations.length > 10
+                        ? { pageSize: 10, size: "small" }
+                        : false
+                    }
+                    size="middle"
+                    rowClassName="hover:bg-slate-50/60"
+                    style={{ borderRadius: "0 0 16px 16px" }}
+                  />
+                ) : (
+                  <div className="py-16">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div className="text-center space-y-1">
+                          <Text
+                            type="secondary"
+                            className="block text-base"
+                          >
+                            No presentations yet
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Students will submit when the deadline approaches
+                          </Text>
+                        </div>
+                      }
+                    />
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* RIGHT: Sidebar */}
+            <div className="space-y-4 xl:sticky xl:top-6">
+
+              {/* Topic Details */}
+              <Card
+                variant="borderless"
+                style={{
+                  borderRadius: 16,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                }}
+                styles={{
+                  header: {
+                    padding: "14px 20px",
+                    borderBottom: "1px solid #f1f5f9",
+                  },
+                  body: { padding: "16px 20px" },
+                }}
+                title={
+                  <div className="flex items-center gap-2">
+                    <ClockCircleOutlined style={{ color: "#8b5cf6" }} />
+                    <Text strong>Topic Details</Text>
+                  </div>
+                }
+              >
                 <div className="space-y-3">
-                  {mergedPresentations.map((presentation) => {
-                    const sc =
-                      statusConfig[presentation.status?.toLowerCase()] ||
-                      statusConfig.draft;
+                  <div className="flex items-center justify-between">
+                    <Text type="secondary" className="text-sm">
+                      Sequence
+                    </Text>
+                    <Tag color="purple" style={{ borderRadius: 20 }}>
+                      #{topic.sequenceNumber}
+                    </Tag>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Text type="secondary" className="text-sm">
+                      Due Date
+                    </Text>
+                    <Text strong className="text-sm text-right max-w-[160px]">
+                      {topic.dueDate ? formatDate(topic.dueDate) : "—"}
+                    </Text>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Text type="secondary" className="text-sm">
+                      Max Duration
+                    </Text>
+                    <Text strong className="text-sm">
+                      {topic.maxDurationMinutes
+                        ? `${topic.maxDurationMinutes} min`
+                        : "—"}
+                    </Text>
+                  </div>
+                </div>
+              </Card>
 
-                    return (
-                      <Link
-                        key={presentation.presentationId}
-                        to={`/intructor/presentation/${presentation.presentationId}`}
-                        state={{ presentation }}
-                        className="group flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200 block"
+              {/* Requirements */}
+              {topic.requirements && (
+                <Card
+                  variant="borderless"
+                  style={{
+                    borderRadius: 16,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  }}
+                  styles={{
+                    header: {
+                      padding: "14px 20px",
+                      borderBottom: "1px solid #f1f5f9",
+                    },
+                    body: { padding: "16px 20px" },
+                  }}
+                  title={
+                    <div className="flex items-center gap-2">
+                      <FileTextOutlined style={{ color: "#f59e0b" }} />
+                      <Text strong>Requirements</Text>
+                    </div>
+                  }
+                >
+                  <pre
+                    className="whitespace-pre-wrap text-sm text-slate-600 bg-slate-50 p-3 rounded-xl leading-relaxed border border-slate-100 m-0"
+                    style={{
+                      fontFamily: "inherit",
+                      maxHeight: 220,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {topic.requirements}
+                  </pre>
+                </Card>
+              )}
+
+              {/* Course Info */}
+              {topic.course && (
+                <Card
+                  variant="borderless"
+                  style={{
+                    borderRadius: 16,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  }}
+                  styles={{
+                    header: {
+                      padding: "14px 20px",
+                      borderBottom: "1px solid #f1f5f9",
+                    },
+                    body: { padding: "16px 20px" },
+                  }}
+                  title={
+                    <div className="flex items-center gap-2">
+                      <BookOutlined style={{ color: "#0284c7" }} />
+                      <Text strong>Course</Text>
+                    </div>
+                  }
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11 }}
+                        className="uppercase tracking-wider block mb-0.5"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                          <FileTextIcon className="w-4 h-4 text-indigo-600" />
+                        Course Name
+                      </Text>
+                      <Text strong className="text-slate-800">
+                        {topic.course.courseName || "—"}
+                      </Text>
+                    </div>
+                    {topic.course.courseCode && (
+                      <div>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: 11 }}
+                          className="uppercase tracking-wider block mb-1"
+                        >
+                          Code
+                        </Text>
+                        <Tag
+                          color="blue"
+                          style={{ borderRadius: 20 }}
+                        >
+                          {topic.course.courseCode}
+                        </Tag>
+                      </div>
+                    )}
+                    {topic.course.instructor && (
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
+                          <UserOutlined
+                            style={{ fontSize: 13, color: "#0284c7" }}
+                          />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-slate-900 text-sm truncate">
-                              {presentation.title}
-                            </h4>
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${sc.color}`}
-                            >
-                              {sc.icon}
-                              {sc.label}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                            {presentation.submissionDate && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(
-                                  presentation.submissionDate,
-                                ).toLocaleDateString("vi-VN")}
-                              </span>
-                            )}
-                          </div>
+                        <div>
+                          <Text
+                            type="secondary"
+                            style={{ fontSize: 11 }}
+                            className="block"
+                          >
+                            Instructor
+                          </Text>
+                          <Text strong className="text-sm text-slate-800">
+                            {topic.course.instructor.firstName}{" "}
+                            {topic.course.instructor.lastName}
+                          </Text>
                         </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
-                  <FileTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500">
-                    Chưa có bài thuyết trình nào.
-                  </p>
-                </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
               )}
             </div>
           </div>

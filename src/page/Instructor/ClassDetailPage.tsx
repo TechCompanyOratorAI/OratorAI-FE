@@ -1,18 +1,41 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
+  Card,
+  List,
+  Tag,
+  Typography,
+  Spin,
+  Empty,
+  Avatar,
+  Badge,
+  Modal,
+  Button as AntButton,
+  Select,
+  Checkbox,
+  Tooltip,
+} from "antd";
+import {
+  TeamOutlined,
+  CrownOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  ArrowLeftOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
+import {
   Calendar,
   Users,
   BookOpen,
-  Info,
   CheckCircle2,
   Clock,
   KeyRound,
   MoreVertical,
   Edit,
   Trash2,
-  Plus,
 } from "lucide-react";
 import {
   DndContext,
@@ -33,7 +56,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
-import Button from "@/components/yoodli/Button";
 import TopicModal from "@/components/Topic/TopicModal";
 import TopicUpdateModal from "@/components/Topic/TopicUpdateModal";
 import GroupDetailModal from "@/components/Group/GroupDetailModal";
@@ -93,11 +115,10 @@ const SortableCriterionItem = React.memo(
         style={style}
         {...attributes}
         {...listeners}
-        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${
-          isDragging
+        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${isDragging
             ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
             : "cursor-grab"
-        }`}
+          }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex-1">
@@ -118,27 +139,18 @@ const SortableCriterionItem = React.memo(
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(criterion);
-              }}
-              className="p-2 hover:bg-slate-200 rounded-lg transition"
-              title="Edit"
-            >
-              <Edit className="w-4 h-4 text-sky-600" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(criterion);
-              }}
-              className="p-2 hover:bg-red-100 rounded-lg transition"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4 text-red-600" />
-            </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <AntButton
+              type="text"
+              icon={<EditOutlined style={{ color: "#0284c7" }} />}
+              onClick={(e) => { e.stopPropagation(); onEdit(criterion); }}
+            />
+            <AntButton
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={(e) => { e.stopPropagation(); onDelete(criterion); }}
+            />
           </div>
         </div>
       </div>
@@ -191,9 +203,7 @@ const ClassDetailPage: React.FC = () => {
   const [selectedTemplateOptionId, setSelectedTemplateOptionId] = useState<
     number | null
   >(null);
-  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
   const [confirmApplyPick, setConfirmApplyPick] = useState(false);
-  const [showRubricInfo, setShowRubricInfo] = useState(false);
   const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
     rubricTemplateId: 0,
     enableAiReport: true,
@@ -714,13 +724,14 @@ const ClassDetailPage: React.FC = () => {
         <SidebarInstructor activeItem="manage-classes" />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1280px] mx-auto px-4 py-8">
-            <button
+            <AntButton
+              type="link"
+              icon={<ArrowLeftOutlined />}
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-sky-600 hover:text-sky-700 font-medium mb-6"
+              style={{ fontWeight: 600, paddingLeft: 0, color: "#0369a1", marginBottom: 24 }}
             >
-              <ArrowLeft className="w-5 h-5" />
               Back
-            </button>
+            </AntButton>
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <p className="text-red-700 font-medium">
                 {error || "Class not found"}
@@ -803,15 +814,16 @@ const ClassDetailPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto lg:ml-0">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6">
           <div className="flex items-center justify-between">
-            <button
+            <AntButton
+              type="link"
+              icon={<ArrowLeftOutlined />}
               onClick={() => navigate("/instructor/manage-classes")}
-              className="inline-flex items-center gap-2 text-sky-700 hover:text-sky-800 font-semibold"
+              style={{ fontWeight: 600, paddingLeft: 0, color: "#0369a1" }}
             >
-              <ArrowLeft className="w-5 h-5" />
               Back to classes
-            </button>
+            </AntButton>
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Info className="w-4 h-4" />
+              <InfoCircleOutlined />
               Instructor class overview
             </div>
           </div>
@@ -828,15 +840,14 @@ const ClassDetailPage: React.FC = () => {
                     <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-white/20 text-white border border-white/30">
                       Class
                     </span>
-                    <span className="text-xs text-white/80">
-                      {selectedClass.course?.courseCode || ""}
-                    </span>
                   </div>
                   <h1 className="text-3xl sm:text-4xl font-bold">
                     {selectedClass.classCode}
                   </h1>
-                  <p className="text-white/90 text-lg">
-                    {selectedClass.course?.courseName || "Course"}
+                  <p className="text-white/90 text-lg font-semibold tracking-wide">
+                    {[selectedClass.course?.courseName, selectedClass.course?.courseCode]
+                      .filter(Boolean)
+                      .join(" - ") || "Course"}
                   </p>
                   <div className="flex flex-wrap items-center gap-4">
                     <span
@@ -907,135 +918,108 @@ const ClassDetailPage: React.FC = () => {
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_360px] gap-6 items-start">
             <div className="space-y-6">
-              {/* Presentation Topics for this class's course */}
+              {/* Student Groups - Main Section */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-start justify-between gap-3 mb-5">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-2xl bg-sky-100 p-2">
-                      <BookOpen className="w-5 h-5 text-sky-700" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                        Presentation topics
-                      </p>
-                      <h3 className="text-xl font-bold text-slate-900">
-                        Topics for student presentations
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-600 max-w-xl">
-                        Create and manage topics that students will use for
-                        their presentations in this class.
-                      </p>
+                <div className="flex items-center gap-3 mb-6">
+                  <Avatar
+                    icon={<TeamOutlined />}
+                    size={44}
+                    style={{ backgroundColor: "#7c3aed", flexShrink: 0 }}
+                  />
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
+                      Student Groups
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-bold text-slate-900">Groups</h3>
+                      <Badge
+                        count={groupsForClass.length}
+                        showZero
+                        style={{ backgroundColor: "#7c3aed" }}
+                      />
                     </div>
                   </div>
-                  <Button
-                    text="Create Topic"
-                    variant="primary"
-                    fontSize="14px"
-                    borderRadius="999px"
-                    paddingWidth="18px"
-                    paddingHeight="9px"
-                    onClick={() => setIsTopicModalOpen(true)}
-                  />
                 </div>
 
-                {(selectedClass.topics && selectedClass.topics.length > 0) ||
-                (courseForTopics?.topics &&
-                  courseForTopics.topics.length > 0) ? (
-                  <div className="space-y-3">
-                    {(
-                      selectedClass.topics ||
-                      courseForTopics?.topics ||
-                      []
-                    ).map((topic) => (
-                      <div
-                        key={topic.topicId}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-50/80 transition-colors"
-                      >
-                        <div className="px-4 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
-                              )
-                            }
-                            className="flex items-start gap-3 flex-1 text-left"
-                          >
-                            <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
-                              {topic.sequenceNumber}
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Topic {topic.sequenceNumber}
-                              </p>
-                              <h4 className="mt-0.5 text-sm sm:text-base font-semibold text-slate-900">
-                                {topic.topicName}
-                              </h4>
-                              {topic.description && (
-                                <p className="mt-1 text-sm text-slate-600 max-w-3xl">
-                                  {topic.description}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                              {topic.dueDate && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                  <Calendar className="w-3 h-3" />
-                                  Due {formatDate(topic.dueDate)}
-                                </span>
-                              )}
-                              {topic.maxDurationMinutes && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1">
-                                  <Clock className="w-3 h-3" />
-                                  {topic.maxDurationMinutes} mins
-                                </span>
-                              )}
-                            </div>
-                            <div className="group relative">
-                              <button className="p-2 hover:bg-slate-200 rounded-lg transition">
-                                <MoreVertical className="w-5 h-5 text-slate-600" />
-                                {/* Dropdown menu */}
-                                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditTopic(topic.topicId);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
-                                  >
-                                    <Edit className="w-4 h-4 text-sky-600" />
-                                    Edit Topic
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTopic({
-                                        topicId: topic.topicId,
-                                        topicName: topic.topicName,
-                                      });
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete Topic
-                                  </button>
-                                </div>
-                              </button>
+                {groupLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Spin size="large" />
+                  </div>
+                ) : groupsForClass.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {groupsForClass.map((group, index) => {
+                      const groupId = Number(getGroupId(group));
+                      const memberCount =
+                        group.memberCount ?? group.students?.length ?? 0;
+                      const leaderName = getGroupLeaderName(group);
+                      const hue = (groupId * 47) % 360;
+
+                      return (
+                        <div
+                          key={group.groupId ?? group.id ?? index}
+                          onClick={() => {
+                            if (!Number.isFinite(groupId)) return;
+                            setSelectedGroupId(groupId);
+                            dispatch(fetchGroupDetail(groupId));
+                            setShowGroupDetail(true);
+                          }}
+                          className="cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 p-4 hover:border-violet-300 hover:bg-white hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar
+                              size={46}
+                              style={{
+                                backgroundColor: `hsl(${hue}, 60%, 55%)`,
+                                fontWeight: 700,
+                                fontSize: 18,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {getGroupName(group).charAt(0).toUpperCase()}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <Typography.Text
+                                strong
+                                style={{ fontSize: 15, color: "#1e293b" }}
+                                className="block truncate"
+                              >
+                                {getGroupName(group)}
+                              </Typography.Text>
+                              <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                                <CrownOutlined
+                                  style={{ color: "#f59e0b", fontSize: 11 }}
+                                />
+                                <span className="truncate">{leaderName}</span>
+                              </div>
                             </div>
                           </div>
+                          <div className="flex justify-end">
+                            <Tag
+                              icon={<TeamOutlined />}
+                              color="purple"
+                              style={{
+                                borderRadius: 20,
+                                fontWeight: 600,
+                                padding: "2px 10px",
+                              }}
+                            >
+                              {memberCount} members
+                            </Tag>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                    No topics yet. Use{" "}
-                    <span className="font-semibold text-slate-800">
-                      Create Topic
-                    </span>{" "}
-                    to add the first presentation topic for this class.
+                  <div className="py-10">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <Typography.Text type="secondary">
+                          No groups found for this class.
+                        </Typography.Text>
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -1059,45 +1043,36 @@ const ClassDetailPage: React.FC = () => {
                             Inactive
                           </span>
                         )}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setShowRubricInfo((prev) => !prev)}
-                            className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                          >
-                            <Info className="h-4 w-4" />
-                          </button>
-                          {showRubricInfo && (
-                            <div className="absolute right-0 top-10 z-10 w-72 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-xl">
-                              <p className="font-semibold text-slate-900">
-                                Rubric Instructions
-                              </p>
-                              <p className="mt-1 leading-relaxed">
-                                The rubric is active only when the total
-                                percentage is exactly 100%.
-                              </p>
-                              <p className="mt-1 leading-relaxed text-rose-700 font-medium">
-                                Adding criteria cannot exceed 100%.
-                              </p>
+                        <Tooltip
+                          title={
+                            <div>
+                              <p className="font-semibold">Rubric Instructions</p>
+                              <p className="mt-1">The rubric is active only when the total percentage is exactly 100%.</p>
+                              <p className="mt-1 text-red-300 font-medium">Adding criteria cannot exceed 100%.</p>
                             </div>
-                          )}
-                        </div>
+                          }
+                          trigger="click"
+                          placement="bottomRight"
+                        >
+                          <AntButton
+                            type="text"
+                            shape="circle"
+                            icon={<InfoCircleOutlined />}
+                            size="small"
+                          />
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
                   {selectedTemplateId && (
-                    <Button
-                      text="Create Criteria"
-                      variant="primary"
-                      fontSize="14px"
-                      borderRadius="999px"
-                      paddingWidth="18px"
-                      paddingHeight="9px"
-                      onClick={() => {
-                        setEditingRubric(null);
-                        setIsRubricModalOpen(true);
-                      }}
-                    />
+                    <AntButton
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      shape="round"
+                      onClick={() => { setEditingRubric(null); setIsRubricModalOpen(true); }}
+                    >
+                      Create Criteria
+                    </AntButton>
                   )}
                 </div>
 
@@ -1113,135 +1088,105 @@ const ClassDetailPage: React.FC = () => {
                     </div>
 
                     {localCriteria.length >
-                    0 ? null : rubricTemplatesLoading ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 text-center">
-                        Loading rubric templates...
-                      </div>
-                    ) : rubricTemplates.length > 0 ? (
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="flex-1 relative">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setIsTemplateDropdownOpen((prev) => !prev)
-                              }
-                              disabled={
-                                rubricPickLoading || rubricTemplatesLoading
-                              }
-                              className="w-full px-4 py-2.5 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-left bg-white hover:border-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                            >
-                              {selectedTemplateOptionId
-                                ? rubricTemplates.find(
-                                    (item) =>
-                                      item.rubricTemplateId ===
-                                      selectedTemplateOptionId,
-                                  )?.templateName || "Select template"
-                                : "Select template"}
-                            </button>
-                            {isTemplateDropdownOpen && (
-                              <div className="absolute top-full left-0 right-0 mt-1 border border-slate-300 rounded-2xl bg-white shadow-lg z-10 max-h-44 overflow-y-auto">
-                                {rubricTemplates.map((template) => (
-                                  <button
-                                    key={template.rubricTemplateId}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedTemplateOptionId(
-                                        template.rubricTemplateId,
-                                      );
-                                      setExpandedTemplateId(
-                                        template.rubricTemplateId,
-                                      );
-                                      setIsTemplateDropdownOpen(false);
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-sky-50 border-b border-slate-100 last:border-b-0"
-                                  >
-                                    <div className="font-medium text-slate-900">
-                                      {template.templateName}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                      {template.assignmentType}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            text="Add"
-                            variant="primary"
-                            fontSize="14px"
-                            borderRadius="999px"
-                            paddingWidth="18px"
-                            paddingHeight="9px"
-                            icon={<Plus className="w-4 h-4" />}
-                            onClick={() => {
-                              if (!selectedTemplateOptionId) return;
-                              handleChooseTemplate(selectedTemplateOptionId);
-                            }}
-                            disabled={
-                              rubricPickLoading || !selectedTemplateOptionId
-                            }
-                          />
+                      0 ? null : rubricTemplatesLoading ? (
+                        <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 text-center">
+                          Loading rubric templates...
                         </div>
-
-                        {expandedTemplateId && (
-                          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            {(() => {
-                              const expandedTemplate = rubricTemplates.find(
-                                (template) =>
-                                  template.rubricTemplateId ===
-                                  expandedTemplateId,
-                              );
-                              if (!expandedTemplate) return null;
-
-                              return (
-                                <>
-                                  <div className="flex items-center justify-between gap-2 mb-3">
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      {expandedTemplate.templateName}
-                                    </p>
+                      ) : rubricTemplates.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            <Select
+                              className="flex-1"
+                              placeholder="Select template"
+                              loading={rubricTemplatesLoading}
+                              disabled={rubricPickLoading || rubricTemplatesLoading}
+                              value={selectedTemplateOptionId ?? undefined}
+                              onChange={(val) => {
+                                setSelectedTemplateOptionId(val);
+                                setExpandedTemplateId(val);
+                              }}
+                              options={rubricTemplates.map((t) => ({
+                                value: t.rubricTemplateId,
+                                label: (
+                                  <div>
+                                    <div className="font-medium">{t.templateName}</div>
+                                    <div className="text-xs text-slate-500">{t.assignmentType}</div>
                                   </div>
-                                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                    {expandedTemplate.criteria?.length ? (
-                                      expandedTemplate.criteria
-                                        .slice()
-                                        .sort(
-                                          (a, b) =>
-                                            a.displayOrder - b.displayOrder,
-                                        )
-                                        .map((criterion) => (
-                                          <div
-                                            key={criterion.criteriaId}
-                                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                                          >
-                                            <div className="flex items-center justify-between gap-2">
-                                              <p className="text-sm font-semibold text-slate-800">
-                                                {criterion.displayOrder}.{" "}
-                                                {criterion.criteriaName}
-                                              </p>
-                                              <span className="text-xs text-slate-600">
-                                                {Number(
-                                                  criterion.weight,
-                                                ).toFixed(0)}
-                                                % | Max {criterion.maxScore}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))
-                                    ) : (
-                                      <p className="text-sm text-slate-500">
-                                        Template has no criteria.
-                                      </p>
-                                    )}
-                                  </div>
-                                </>
-                              );
-                            })()}
+                                ),
+                              }))}
+                            />
+                            <AntButton
+                              type="primary"
+                              shape="round"
+                              icon={<PlusOutlined />}
+                              loading={rubricPickLoading}
+                              disabled={!selectedTemplateOptionId}
+                              onClick={() => {
+                                if (!selectedTemplateOptionId) return;
+                                handleChooseTemplate(selectedTemplateOptionId);
+                              }}
+                            >
+                              Add
+                            </AntButton>
                           </div>
-                        )}
-                      </div>
-                    ) : (
+
+                          {expandedTemplateId && (
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                              {(() => {
+                                const expandedTemplate = rubricTemplates.find(
+                                  (template) =>
+                                    template.rubricTemplateId ===
+                                    expandedTemplateId,
+                                );
+                                if (!expandedTemplate) return null;
+
+                                return (
+                                  <>
+                                    <div className="flex items-center justify-between gap-2 mb-3">
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {expandedTemplate.templateName}
+                                      </p>
+                                    </div>
+                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                      {expandedTemplate.criteria?.length ? (
+                                        expandedTemplate.criteria
+                                          .slice()
+                                          .sort(
+                                            (a, b) =>
+                                              a.displayOrder - b.displayOrder,
+                                          )
+                                          .map((criterion) => (
+                                            <div
+                                              key={criterion.criteriaId}
+                                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                                            >
+                                              <div className="flex items-center justify-between gap-2">
+                                                <p className="text-sm font-semibold text-slate-800">
+                                                  {criterion.displayOrder}.{" "}
+                                                  {criterion.criteriaName}
+                                                </p>
+                                                <span className="text-xs text-slate-600">
+                                                  {Number(
+                                                    criterion.weight,
+                                                  ).toFixed(0)}
+                                                  % | Max {criterion.maxScore}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))
+                                      ) : (
+                                        <p className="text-sm text-slate-500">
+                                          Template has no criteria.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 text-center">
                         No rubric templates available.
                       </div>
@@ -1288,153 +1233,146 @@ const ClassDetailPage: React.FC = () => {
                 )}
                 {isRubricOrderChanged && (
                   <div className="mb-4 flex items-center justify-end gap-2 mt-6">
-                    <button
-                      type="button"
-                      onClick={handleSaveRubricReorder}
-                      disabled={rubricActionLoading}
-                      className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-                    >
-                      {rubricActionLoading ? "Processing..." : "Save"}
-                    </button>
-                    <Button
-                      text="Cancel"
-                      variant="secondary"
-                      fontSize="14px"
-                      borderRadius="999px"
-                      paddingWidth="18px"
-                      paddingHeight="10px"
+                    <AntButton
+                      shape="round"
                       onClick={handleCancelRubricReorder}
                       disabled={rubricActionLoading}
-                    />
+                    >
+                      Cancel
+                    </AntButton>
+                    <AntButton
+                      type="primary"
+                      shape="round"
+                      icon={<SaveOutlined />}
+                      loading={rubricActionLoading}
+                      onClick={handleSaveRubricReorder}
+                    >
+                      Save Order
+                    </AntButton>
                   </div>
                 )}
               </div>
             </div>
 
-            <aside className="space-y-6 xl:sticky xl:top-6">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="rounded-2xl bg-sky-100 p-2">
-                    <BookOpen className="w-5 h-5 text-sky-700" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Course
-                    </p>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {selectedClass.course?.courseName || "Course"}
-                    </h3>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600">Course code:</span>
-                    <span className="font-semibold text-slate-900">
-                      {selectedClass.course?.courseCode || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600">Schedule:</span>
-                    <span className="font-semibold text-slate-900">
-                      {formatDate(selectedClass.startDate)} - {""}
-                      {formatDate(selectedClass.endDate)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600">Academic year:</span>
-                    <span className="font-semibold text-slate-900">
-                      {selectedClass.course?.academicYear || "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="rounded-2xl bg-indigo-100 p-2">
-                    <Users className="w-5 h-5 text-indigo-700" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Enrollment
-                    </p>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {totalStudents} enrolled students
-                    </h3>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600">Capacity:</span>
-                    <span className="font-semibold text-slate-900">
-                      {selectedClass.maxStudents} students
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="rounded-2xl bg-violet-100 p-2">
-                    <Users className="w-5 h-5 text-violet-700" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                      Groups
-                    </p>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Student Groups ({groupsForClass.length})
-                    </h3>
-                  </div>
-                </div>
-
-                {groupLoading ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                    Loading groups...
-                  </div>
-                ) : groupsForClass.length > 0 ? (
-                  <div className="space-y-3">
-                    {groupsForClass.map((group, index) => {
-                      const groupId = Number(getGroupId(group));
-                      const memberCount =
-                        group.memberCount ?? group.students?.length ?? 0;
-
-                      return (
-                        <button
-                          key={group.groupId ?? group.id ?? index}
-                          type="button"
-                          onClick={() => {
-                            if (!Number.isFinite(groupId)) return;
-                            setSelectedGroupId(groupId);
-                            dispatch(fetchGroupDetail(groupId));
-                            setShowGroupDetail(true);
-                          }}
-                          className="w-full text-left rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:border-violet-200 hover:bg-white hover:shadow-sm transition"
+            <aside className="xl:sticky xl:top-6">
+              <Card
+                variant="borderless"
+                style={{ borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+                styles={{ body: { padding: 0 } }}
+                title={
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-xl bg-sky-100 p-2">
+                        <BookOpen className="w-4 h-4 text-sky-700" />
+                      </div>
+                      <div>
+                        <Typography.Text
+                          style={{ fontSize: 11, letterSpacing: "0.08em" }}
+                          className="text-xs uppercase text-slate-400 font-semibold block"
                         >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                {getGroupName(group)}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                Leader: {getGroupLeaderName(group)}
-                              </p>
-                            </div>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                              <Users className="w-3.5 h-3.5" />
-                              {memberCount} members
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          Presentation
+                        </Typography.Text>
+                        <Typography.Text strong style={{ fontSize: 15, color: "#1e293b" }}>
+                          Topics
+                          <Badge
+                            count={topicsForClass.length}
+                            showZero
+                            style={{ backgroundColor: "#0284c7", marginLeft: 8, fontSize: 11 }}
+                          />
+                        </Typography.Text>
+                      </div>
+                    </div>
+                    <AntButton
+                      type="primary"
+                      shape="round"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => setIsTopicModalOpen(true)}
+                    >
+                      Add
+                    </AntButton>
                   </div>
+                }
+              >
+                {topicsForClass.length > 0 ? (
+                  <List
+                    dataSource={topicsForClass}
+                    renderItem={(topic) => (
+                      <List.Item
+                        key={topic.topicId}
+                        style={{ padding: "10px 16px" }}
+                        className="hover:bg-sky-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700 shrink-0">
+                            {topic.sequenceNumber}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(
+                                `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
+                              )
+                            }
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-sm font-semibold text-slate-900 truncate">
+                              {topic.topicName}
+                            </p>
+                            {topic.dueDate && (
+                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-3 h-3" />
+                                Due {formatDate(topic.dueDate)}
+                              </p>
+                            )}
+                          </button>
+                          <div className="group relative shrink-0">
+                            <button className="p-1.5 hover:bg-slate-200 rounded-lg transition">
+                              <MoreVertical className="w-4 h-4 text-slate-500" />
+                              <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditTopic(topic.topicId);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
+                                >
+                                  <Edit className="w-3.5 h-3.5 text-sky-600" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteTopic({
+                                      topicId: topic.topicId,
+                                      topicName: topic.topicName,
+                                    });
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  Delete
+                                </button>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-600 bg-slate-50">
-                    No groups found for this class.
+                  <div className="py-10 px-6">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <Typography.Text type="secondary">
+                          No topics yet. Click + Add to create one.
+                        </Typography.Text>
+                      }
+                    />
                   </div>
                 )}
-              </div>
+              </Card>
             </aside>
           </div>
         </div>
@@ -1476,13 +1414,13 @@ const ClassDetailPage: React.FC = () => {
         initialData={
           editingRubric
             ? {
-                criteriaName: editingRubric.criteriaName,
-                criteriaDescription: editingRubric.criteriaDescription,
-                weight: Number(editingRubric.weight),
-                maxScore: Number(editingRubric.maxScore),
-                displayOrder: editingRubric.displayOrder,
-                evaluationGuide: editingRubric.evaluationGuide,
-              }
+              criteriaName: editingRubric.criteriaName,
+              criteriaDescription: editingRubric.criteriaDescription,
+              weight: Number(editingRubric.weight),
+              maxScore: Number(editingRubric.maxScore),
+              displayOrder: editingRubric.displayOrder,
+              evaluationGuide: editingRubric.evaluationGuide,
+            }
             : undefined
         }
         defaultDisplayOrder={sortedRubricCriteria.length + 1}
@@ -1491,233 +1429,165 @@ const ClassDetailPage: React.FC = () => {
         activeCriteriaId={editingRubric?.classRubricCriteriaId}
       />
 
-      {isTemplateConfigModalOpen && pendingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/40"
+      <Modal
+        open={isTemplateConfigModalOpen && !!pendingTemplate}
+        title={
+          <div className="flex items-center gap-2">
+            <CheckCircleOutlined style={{ color: "#0284c7" }} />
+            <span>Configure Rubric Template</span>
+          </div>
+        }
+        width={640}
+        closable={!rubricPickLoading}
+        maskClosable={!rubricPickLoading}
+        onCancel={() => {
+          if (rubricPickLoading) return;
+          setIsTemplateConfigModalOpen(false);
+          setPendingTemplateId(null);
+          setConfirmApplyPick(false);
+        }}
+        footer={[
+          <AntButton
+            key="cancel"
+            shape="round"
+            disabled={rubricPickLoading}
             onClick={() => {
-              if (rubricPickLoading) return;
               setIsTemplateConfigModalOpen(false);
               setPendingTemplateId(null);
               setConfirmApplyPick(false);
             }}
-          />
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-xl border border-slate-200 p-6 space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                Selected Template
-              </p>
-              <p className="text-lg font-bold text-slate-900 mt-1">
-                {pendingTemplate.templateName}
-              </p>
-              <p className="text-sm text-slate-600 mt-1">
-                Assignment: {pendingTemplate.assignmentType}
-              </p>
+          >
+            Cancel
+          </AntButton>,
+          <AntButton
+            key="apply"
+            type="primary"
+            shape="round"
+            loading={rubricPickLoading}
+            disabled={!confirmApplyPick}
+            onClick={handleApplyPickTemplate}
+          >
+            Use Template
+          </AntButton>,
+        ]}
+      >
+        {pendingTemplate && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Selected Template</p>
+              <p className="text-base font-bold text-slate-900 mt-1">{pendingTemplate.templateName}</p>
+              <p className="text-sm text-slate-500 mt-0.5">Assignment: {pendingTemplate.assignmentType}</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input
-                  type="checkbox"
-                  checked
-                  disabled
-                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                />
-                Enable AI Report
-              </label>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+              <Checkbox checked disabled>Enable AI Report</Checkbox>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                <label className="flex flex-col gap-1 text-sm text-slate-700">
-                  <span className="font-medium">Feedback Language</span>
-                  <select
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-700">Feedback Language</span>
+                  <Select
                     value={pickSettings.feedbackLanguage || "en"}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        feedbackLanguage: e.target.value,
-                      }))
-                    }
-                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  >
-                    <option value="en">English</option>
-                    <option value="vi">Vietnamese</option>
-                  </select>
-                </label>
-
-                <label className="flex flex-col gap-1 text-sm text-slate-700">
-                  <span className="font-medium">Report Format</span>
-                  <select
+                    onChange={(val) => setPickSettings((prev) => ({ ...prev, feedbackLanguage: val }))}
+                    options={[
+                      { value: "en", label: "English" },
+                      { value: "vi", label: "Vietnamese" },
+                    ]}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-700">Report Format</span>
+                  <Select
                     value={pickSettings.reportFormat || "detailed"}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        reportFormat: e.target.value,
-                      }))
-                    }
-                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  >
-                    <option value="detailed">Detailed</option>
-                    <option value="summary">Summary</option>
-                  </select>
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={!!pickSettings.requireInstructorConfirmation}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        requireInstructorConfirmation: e.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    onChange={(val) => setPickSettings((prev) => ({ ...prev, reportFormat: val }))}
+                    options={[
+                      { value: "detailed", label: "Detailed" },
+                      { value: "summary", label: "Summary" },
+                    ]}
                   />
+                </div>
+                <Checkbox
+                  checked={!!pickSettings.requireInstructorConfirmation}
+                  onChange={(e) => setPickSettings((prev) => ({ ...prev, requireInstructorConfirmation: e.target.checked }))}
+                >
                   Require Instructor Confirmation
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={!!pickSettings.allowInstructorEdit}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        allowInstructorEdit: e.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  />
+                </Checkbox>
+                <Checkbox
+                  checked={!!pickSettings.allowInstructorEdit}
+                  onChange={(e) => setPickSettings((prev) => ({ ...prev, allowInstructorEdit: e.target.checked }))}
+                >
                   Allow Instructor Edit
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={!!pickSettings.includeCriterionComments}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        includeCriterionComments: e.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  />
+                </Checkbox>
+                <Checkbox
+                  checked={!!pickSettings.includeCriterionComments}
+                  onChange={(e) => setPickSettings((prev) => ({ ...prev, includeCriterionComments: e.target.checked }))}
+                >
                   Include Criterion Comments
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={!!pickSettings.includeOverallSummary}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        includeOverallSummary: e.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  />
+                </Checkbox>
+                <Checkbox
+                  checked={!!pickSettings.includeOverallSummary}
+                  onChange={(e) => setPickSettings((prev) => ({ ...prev, includeOverallSummary: e.target.checked }))}
+                >
                   Include Overall Summary
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
-                  <input
-                    type="checkbox"
-                    checked={!!pickSettings.includeSuggestions}
-                    onChange={(e) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        includeSuggestions: e.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  />
+                </Checkbox>
+                <Checkbox
+                  className="md:col-span-2"
+                  checked={!!pickSettings.includeSuggestions}
+                  onChange={(e) => setPickSettings((prev) => ({ ...prev, includeSuggestions: e.target.checked }))}
+                >
                   Include Suggestions
-                </label>
+                </Checkbox>
               </div>
 
-              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 space-y-3">
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={confirmApplyPick}
-                    onChange={(e) => setConfirmApplyPick(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  />
-                  I confirm that I want to apply this template and overwrite
-                  existing rubric criteria for this class.
-                </label>
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                <Checkbox
+                  checked={confirmApplyPick}
+                  onChange={(e) => setConfirmApplyPick(e.target.checked)}
+                >
+                  I confirm that I want to apply this template and overwrite existing rubric criteria for this class.
+                </Checkbox>
               </div>
             </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (rubricPickLoading) return;
-                  setIsTemplateConfigModalOpen(false);
-                  setPendingTemplateId(null);
-                  setConfirmApplyPick(false);
-                }}
-                className="px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleApplyPickTemplate}
-                disabled={!confirmApplyPick || rubricPickLoading}
-                className="px-4 py-2 rounded-full bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {rubricPickLoading ? "Apply Template..." : "Use Template"}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
-      {isDeleteRubricModalOpen && editingRubric && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => {
-              if (rubricActionLoading) return;
-              setIsDeleteRubricModalOpen(false);
-              setEditingRubric(null);
-            }}
-          />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-900">Delete rubric</h3>
-            <p className="text-sm text-slate-600 mt-2">
-              Are you sure you want to delete rubric criteria{" "}
-              <span className="font-semibold">
-                {editingRubric.criteriaName}
-              </span>
-              ?
-            </p>
-            <div className="flex justify-end gap-2 mt-5">
-              <button
-                onClick={() => {
-                  setIsDeleteRubricModalOpen(false);
-                  setEditingRubric(null);
-                }}
-                disabled={rubricActionLoading}
-                className="px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteRubric}
-                disabled={rubricActionLoading}
-                className="px-4 py-2 rounded-full bg-rose-600 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-              >
-                {rubricActionLoading ? "Deleting..." : "Delete"}
-              </button>
-            </div>
+      <Modal
+        open={isDeleteRubricModalOpen && !!editingRubric}
+        title={
+          <div className="flex items-center gap-2 text-red-600">
+            <DeleteOutlined />
+            <span>Delete Rubric Criteria</span>
           </div>
-        </div>
-      )}
+        }
+        closable={!rubricActionLoading}
+        maskClosable={!rubricActionLoading}
+        onCancel={() => { setIsDeleteRubricModalOpen(false); setEditingRubric(null); }}
+        footer={[
+          <AntButton
+            key="cancel"
+            shape="round"
+            disabled={rubricActionLoading}
+            onClick={() => { setIsDeleteRubricModalOpen(false); setEditingRubric(null); }}
+          >
+            Cancel
+          </AntButton>,
+          <AntButton
+            key="delete"
+            danger
+            type="primary"
+            shape="round"
+            loading={rubricActionLoading}
+            onClick={handleDeleteRubric}
+          >
+            Delete
+          </AntButton>,
+        ]}
+      >
+        <p className="text-slate-600">
+          Are you sure you want to delete rubric criteria{" "}
+          <strong>{editingRubric?.criteriaName}</strong>? This action cannot be undone.
+        </p>
+      </Modal>
 
       {/* Edit Topic Modal */}
       <TopicUpdateModal
@@ -1738,76 +1608,52 @@ const ClassDetailPage: React.FC = () => {
       />
 
       {/* Delete Topic Modal */}
-      {isDeleteTopicModalOpen && editingTopic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => {
-              setIsDeleteTopicModalOpen(false);
-              setEditingTopic(null);
-            }}
-          />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full bg-rose-100 p-2">
-                <Trash2 className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Delete topic
-                </h3>
-                <p className="text-sm text-slate-600">
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold">
-                    {editingTopic.topicName}
-                  </span>
-                  ? This action cannot be undone.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => {
-                  setIsDeleteTopicModalOpen(false);
-                  setEditingTopic(null);
-                }}
-                className="px-4 py-2 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  if (!editingTopic) return;
-                  try {
-                    await dispatch(deleteTopic(editingTopic.topicId)).unwrap();
-                    setToast({
-                      message: "Topic deleted successfully.",
-                      type: "success",
-                    });
-                    if (selectedClass?.courseId) {
-                      dispatch(fetchCourseDetail(selectedClass.courseId));
-                    }
-                  } catch (error: any) {
-                    setToast({
-                      message:
-                        typeof error === "string"
-                          ? error
-                          : error?.message || "Failed to delete topic.",
-                      type: "error",
-                    });
-                  } finally {
-                    setIsDeleteTopicModalOpen(false);
-                    setEditingTopic(null);
-                  }
-                }}
-                className="px-4 py-2 rounded-full bg-rose-600 text-sm font-semibold text-white hover:bg-rose-700 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
+      <Modal
+        open={isDeleteTopicModalOpen && !!editingTopic}
+        title={
+          <div className="flex items-center gap-2 text-red-600">
+            <DeleteOutlined />
+            <span>Delete Topic</span>
           </div>
-        </div>
-      )}
+        }
+        onCancel={() => { setIsDeleteTopicModalOpen(false); setEditingTopic(null); }}
+        footer={[
+          <AntButton
+            key="cancel"
+            shape="round"
+            onClick={() => { setIsDeleteTopicModalOpen(false); setEditingTopic(null); }}
+          >
+            Cancel
+          </AntButton>,
+          <AntButton
+            key="delete"
+            danger
+            type="primary"
+            shape="round"
+            onClick={async () => {
+              if (!editingTopic) return;
+              try {
+                await dispatch(deleteTopic(editingTopic.topicId)).unwrap();
+                setToast({ message: "Topic deleted successfully.", type: "success" });
+                if (selectedClass?.courseId) dispatch(fetchCourseDetail(selectedClass.courseId));
+              } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : typeof error === "string" ? error : "Failed to delete topic.";
+                setToast({ message: msg, type: "error" });
+              } finally {
+                setIsDeleteTopicModalOpen(false);
+                setEditingTopic(null);
+              }
+            }}
+          >
+            Delete
+          </AntButton>,
+        ]}
+      >
+        <p className="text-slate-600">
+          Are you sure you want to delete topic{" "}
+          <strong>{editingTopic?.topicName}</strong>? This action cannot be undone.
+        </p>
+      </Modal>
 
       {/* Toast Notification */}
       {toast && (
