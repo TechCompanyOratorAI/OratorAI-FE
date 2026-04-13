@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   RefreshCw,
 } from "lucide-react";
+import { TrophyOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
@@ -32,6 +33,12 @@ import PresentationProgressTracker from "@/components/Presentation/PresentationP
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import ShareModal from "@/components/Share/ShareModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
+import GradeDistributionModal from "@/components/Group/GradeDistributionModal";
+import {
+  fetchMyGroupByClass,
+  fetchGroupDetail,
+  GroupStudent,
+} from "@/services/features/group/groupSlice";
 
 const statusConfig: Record<
   string,
@@ -87,6 +94,8 @@ const PresentationDetailPage: React.FC = () => {
     error: reportError,
     criterionFeedbacks,
   } = useAppSelector((state) => state.report);
+  const { myGroupForClass: group } = useAppSelector((state) => state.group);
+  const { user } = useAppSelector((state) => state.auth);
 
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -94,6 +103,12 @@ const PresentationDetailPage: React.FC = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadResubmit, setUploadResubmit] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
+  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] = useState(false);
+  const [groupDetail, setGroupDetail] = useState<{
+    groupId?: number | string;
+    students?: GroupStudent[];
+    myRole?: string | null;
+  } | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
 
@@ -121,6 +136,53 @@ const PresentationDetailPage: React.FC = () => {
       dispatch(fetchCriterionFeedbacks(currentReport.reportId));
     }
   }, [showReport, currentReport?.reportId, dispatch]);
+
+  // Fetch group info khi có classId để biết leader/students
+  useEffect(() => {
+    if (presentation?.classId) {
+      void dispatch(fetchMyGroupByClass(presentation.classId));
+    }
+  }, [presentation?.classId, dispatch]);
+
+  // Handler mở modal chia điểm cho leader
+  const handleOpenGradeDistribution = async () => {
+    if (!presentation?.classId || !currentReport?.reportId) return;
+    try {
+      const groupId = Number(group?.groupId);
+      if (!groupId) return;
+      const result = await dispatch(fetchGroupDetail(groupId)).unwrap();
+      if (result) {
+        setGroupDetail({
+          groupId: result.groupId ?? result.id,
+          students: result.students,
+          myRole: result.myRole,
+        });
+      } else {
+        // fallback: dùng myGroupForClass
+        if (group?.groupId) {
+          setGroupDetail({
+            groupId: group.groupId,
+            students: group.students,
+            myRole: group.myRole,
+          });
+        }
+      }
+      setGradeDistributionModalOpen(true);
+    } catch {
+      // fallback: dùng myGroupForClass khi API lỗi
+      if (group?.groupId) {
+        setGroupDetail({
+          groupId: group.groupId,
+          students: group.students,
+          myRole: group.myRole,
+        });
+      }
+      setGradeDistributionModalOpen(true);
+    }
+  };
+
+  // Kiểm tra user hiện tại có phải là leader không
+  const isCurrentUserLeader = group?.myRole === "leader";
 
   const syncedFeedbacks = useMemo(() => {
     if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
@@ -506,6 +568,30 @@ const PresentationDetailPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Điểm GV đã confirm - hiện nút chia điểm cho leader */}
+                    {currentReport?.reportStatus === "confirmed" &&
+                      currentReport.gradeForInstructor !== null &&
+                      isCurrentUserLeader && (
+                        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-amber-800">
+                              Điểm GV: <span className="text-amber-900">{currentReport.gradeForInstructor}/10</span>
+                            </p>
+                            <p className="text-xs text-amber-600">
+                              Là trưởng nhóm — bạn có thể phân chia điểm cho từng thành viên
+                            </p>
+                          </div>
+                          <Button
+                            type="primary"
+                            icon={<TrophyOutlined className="w-4 h-4" />}
+                            style={{ background: "#d97706", borderColor: "#d97706" }}
+                            onClick={handleOpenGradeDistribution}
+                          >
+                            Chia điểm
+                          </Button>
+                        </div>
+                      )}
+
                     <div className="space-y-3">
                       {criteriaScores.map((criterion) => {
                         const hasInstructorFeedback = syncedFeedbacks.some(
@@ -788,6 +874,27 @@ const PresentationDetailPage: React.FC = () => {
           onClose={() => setShareModalOpen(false)}
         />
       )}
+
+      {/* Modal phân chia điểm cho nhóm (Leader) */}
+      <GradeDistributionModal
+        isOpen={gradeDistributionModalOpen}
+        onClose={() => setGradeDistributionModalOpen(false)}
+        reportId={currentReport?.reportId ?? 0}
+        instructorGrade={currentReport?.gradeForInstructor ?? 0}
+        groupMembers={groupDetail?.students ?? group?.students ?? []}
+        leaderId={(() => {
+          const students = groupDetail?.students ?? group?.students ?? [];
+          const leader = students.find((s) => s.GroupStudent?.role === "leader");
+          return Number(leader?.userId ?? leader?.id ?? 0);
+        })()}
+        currentUserId={user?.userId}
+        onSuccess={() => {
+          if (presentationIdNumber) {
+            void dispatch(fetchPresentationReport(presentationIdNumber));
+          }
+          setGradeDistributionModalOpen(false);
+        }}
+      />
     </StudentLayout>
   );
 };

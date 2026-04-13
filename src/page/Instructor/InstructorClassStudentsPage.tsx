@@ -184,7 +184,7 @@ const InstructorClassStudentsPage: React.FC = () => {
   const overallClassAverage = useMemo(() => {
     if (!data?.students) return null;
     const scores = data.students
-      .map((s) => s.overallAverageScore)
+      .map((s) => s.instructorAverageScore)
       .filter((v): v is number => v !== null);
     return scores.length > 0
       ? scores.reduce((a, b) => a + b, 0) / scores.length
@@ -327,7 +327,7 @@ const InstructorClassStudentsPage: React.FC = () => {
                 <p className="text-xl font-bold text-slate-900">
                   {
                     data.students.filter(
-                      (s) => s.overallAverageScore !== null,
+                      (s) => s.instructorAverageScore !== null,
                     ).length
                   }
                 </p>
@@ -350,7 +350,7 @@ const InstructorClassStudentsPage: React.FC = () => {
                 <p className="text-xl font-bold text-slate-900">
                   {
                     data.students.filter(
-                      (s) => s.overallAverageScore === null,
+                      (s) => s.instructorAverageScore === null,
                     ).length
                   }
                 </p>
@@ -372,7 +372,7 @@ const InstructorClassStudentsPage: React.FC = () => {
                 </p>
                 <p className={`text-xl font-bold ${scoreColor(overallClassAverage)}`}>
                   {overallClassAverage !== null
-                    ? `${overallClassAverage.toFixed(1)}%`
+                    ? `${overallClassAverage.toFixed(1)} / 10`
                     : "—"}
                 </p>
               </div>
@@ -469,7 +469,16 @@ const InstructorClassStudentsPage: React.FC = () => {
                       </th>
                     ))}
                     <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
-                      TB chung
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs">Điểm GV</span>
+                        <span className="text-xs text-slate-400 font-normal">(đã chia)</span>
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs">Điểm AI</span>
+                        <span className="text-xs text-slate-400 font-normal">(AI)</span>
+                      </div>
                     </th>
                     <th className="px-4 py-3 text-center font-semibold text-slate-700 whitespace-nowrap">
                       Bài TL
@@ -484,7 +493,7 @@ const InstructorClassStudentsPage: React.FC = () => {
                     <tr>
                       <td
                         colSpan={
-                          3 + sortedCriteria.length + 2
+                          3 + sortedCriteria.length + 3
                         }
                         className="px-4 py-12 text-center text-slate-500"
                       >
@@ -532,7 +541,13 @@ const InstructorClassStudentsPage: React.FC = () => {
                             })}
                             <td className="px-4 py-3 text-center">
                               <ScoreBadge
-                                score={student.overallAverageScore}
+                                score={student.instructorAverageScore}
+                                size="md"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <ScoreBadge
+                                score={student.overallAverageScore !== null ? Number(student.overallAverageScore) * 10 : null}
                                 size="md"
                               />
                             </td>
@@ -623,18 +638,22 @@ const InstructorClassStudentsPage: React.FC = () => {
                                                 </div>
                                               </div>
                                               <div className="flex items-center gap-3">
-                                                {p.overallScore !== null ? (
+                                                {p.receivedGrade !== null ? (
+                                                  <div className="text-right">
+                                                    <span className="text-xs font-semibold text-amber-700 block">
+                                                      {Number(p.receivedGrade).toFixed(1)}
+                                                    </span>
+                                                    <span className="text-xs text-slate-400">
+                                                      ({p.percentage}%)
+                                                    </span>
+                                                  </div>
+                                                ) : p.overallScore !== null ? (
                                                   <ScoreBadge
-                                                    score={
-                                                      Number(p.overallScore) *
-                                                      100
-                                                    }
+                                                    score={Number(p.overallScore) * 100}
                                                     size="md"
                                                   />
                                                 ) : (
-                                                  <span className="text-slate-400 text-xs italic">
-                                                    —
-                                                  </span>
+                                                  <span className="text-slate-400 text-xs italic">—</span>
                                                 )}
                                                 {p.hasReport && (
                                                   <button

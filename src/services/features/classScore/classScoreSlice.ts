@@ -34,7 +34,11 @@ export interface StudentPresentation {
   status: string;
   hasReport: boolean;
   overallScore: number | null;
+  gradeForInstructor: number | null;
+  receivedGrade: number | null;
+  percentage: number | null;
   reportStatus: string | null;
+  confirmedAt: string | null;
 }
 
 export interface StudentScoreData {
@@ -49,6 +53,7 @@ export interface StudentScoreData {
     email: string;
   };
   overallAverageScore: number | null;
+  instructorAverageScore: number | null;
   rubricScores: StudentRubricScore[];
   presentations: StudentPresentation[];
   totalPresentations: number;
