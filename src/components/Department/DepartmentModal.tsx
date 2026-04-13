@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import React from "react";
+import { Modal, Form, Input, Switch, Button, Space, Typography } from "antd";
 import { Department } from "@/services/features/admin/adminSlice";
+
+const { Text } = Typography;
 
 interface DepartmentModalProps {
   isOpen: boolean;
@@ -25,213 +26,109 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   initialData,
   isLoading = false,
 }) => {
-  const [formData, setFormData] = useState<DepartmentFormData>({
-    departmentCode: "",
-    departmentName: "",
-    description: "",
-    isActive: true,
-  });
+  const [form] = Form.useForm<DepartmentFormData>();
 
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof DepartmentFormData, string>>
-  >({});
-
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        departmentCode: initialData.departmentCode,
-        departmentName: initialData.departmentName,
-        description: initialData.description || "",
-        isActive: initialData.isActive,
-      });
-    } else {
-      setFormData({
-        departmentCode: "",
-        departmentName: "",
-        description: "",
-        isActive: true,
-      });
-    }
-    setErrors({});
-  }, [initialData, isOpen]);
-
-  const validateForm = () => {
-    const nextErrors: Partial<Record<keyof DepartmentFormData, string>> = {};
-
-    if (!formData.departmentCode.trim() && !initialData) {
-      nextErrors.departmentCode = "Department code is required";
-    }
-    if (!formData.departmentName.trim()) {
-      nextErrors.departmentName = "Department name is required";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+  const handleFinish = (values: DepartmentFormData) => {
+    onSubmit(values);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value, type } = e.target;
-    const nextValue =
-      type === "checkbox" && e.target instanceof HTMLInputElement
-        ? e.target.checked
-        : value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: nextValue,
-    }));
-
-    if (errors[name as keyof DepartmentFormData]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
+  const handleCancel = () => {
+    form.resetFields();
+    onClose();
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
-    }
-  };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? "Edit Department" : "Create New Department"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+    <Modal
+      title={initialData ? "Chỉnh sửa khoa" : "Tạo khoa mới"}
+      open={isOpen}
+      onCancel={handleCancel}
+      footer={null}
+      centered
+      width={560}
+      destroyOnClose
+      loading={isLoading}
+      maskClosable={!isLoading}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFinish}
+        requiredMark="optional"
+        disabled={isLoading}
+        className="mt-4"
+        initialValues={{
+          departmentCode: initialData?.departmentCode || "",
+          departmentName: initialData?.departmentName || "",
+          description: initialData?.description || "",
+          isActive: initialData?.isActive ?? true,
+        }}
+      >
+        {!initialData && (
+          <Form.Item
+            name="departmentCode"
+            label={<Text strong>Mã khoa</Text>}
+            rules={[
+              { required: true, message: "Mã khoa không được để trống" },
+              { min: 2, max: 20, message: "Mã khoa từ 2 – 20 ký tự" },
+            ]}
           >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
+            <Input placeholder="VD: SE" />
+          </Form.Item>
+        )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {!initialData && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Department Code <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="departmentCode"
-                value={formData.departmentCode}
-                onChange={handleChange}
-                placeholder="e.g., SE"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.departmentCode ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.departmentCode && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.departmentCode}
-                </p>
-              )}
-            </div>
-          )}
+        {initialData && (
+          <Form.Item name="departmentCode" label={<Text strong>Mã khoa</Text>}>
+            <Input disabled />
+          </Form.Item>
+        )}
 
-          {initialData && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Department Code
-              </label>
-              <input
-                type="text"
-                value={formData.departmentCode}
-                disabled
-                className="w-full px-4 py-2 border rounded-xl bg-gray-50 text-gray-600 border-gray-200"
-              />
-            </div>
-          )}
+        <Form.Item
+          name="departmentName"
+          label={<Text strong>Tên khoa</Text>}
+          rules={[
+            { required: true, message: "Tên khoa không được để trống" },
+            { min: 2, max: 100, message: "Tên khoa từ 2 – 100 ký tự" },
+          ]}
+        >
+          <Input placeholder="VD: Software Engineering" />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Department Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="departmentName"
-              value={formData.departmentName}
-              onChange={handleChange}
-              placeholder="e.g., Software Engineering"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.departmentName ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.departmentName && (
-              <p className="text-red-600 text-sm mt-1">
-                {errors.departmentName}
-              </p>
-            )}
-          </div>
+        <Form.Item
+          name="description"
+          label={<Text strong>Mô tả</Text>}
+        >
+          <Input.TextArea
+            placeholder="Nhập mô tả khoa..."
+            rows={4}
+          />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Enter department description..."
-              rows={4}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none border-gray-300"
-            />
-          </div>
+        {initialData && (
+          <Form.Item
+            name="isActive"
+            label={<Text strong>Hoạt động</Text>}
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+        )}
 
-          {initialData && (
-            <div className="flex items-center gap-2">
-              <input
-                id="departmentIsActive"
-                type="checkbox"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-              />
-              <label
-                htmlFor="departmentIsActive"
-                className="text-sm font-medium text-gray-700"
-              >
-                Active
-              </label>
-            </div>
-          )}
-
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
+        <Form.Item className="!mb-0">
+          <Space className="w-full justify-end pt-2">
+            <Button onClick={handleCancel} disabled={isLoading}>
+              Hủy
+            </Button>
             <Button
-              text="Cancel"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="999px"
-              paddingWidth="18px"
-              paddingHeight="10px"
-              onClick={() => onClose()}
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              type="primary"
+              htmlType="submit"
+              loading={isLoading}
             >
-              {isLoading
-                ? "Saving..."
-                : initialData
-                  ? "Save Changes"
-                  : "Create Department"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {isLoading ? "Đang lưu..." : initialData ? "Lưu thay đổi" : "Tạo khoa"}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 

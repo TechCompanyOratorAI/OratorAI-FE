@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import React from "react";
+import { Modal, Form, Input, Switch, Button, Space, Typography } from "antd";
 import { RubricTemplatePayload } from "@/services/features/admin/rubricTempleSlice";
+
+const { Text } = Typography;
 
 interface RubricTemplateModalProps {
   isOpen: boolean;
@@ -11,20 +13,6 @@ interface RubricTemplateModalProps {
   onSubmit: (payload: RubricTemplatePayload) => void;
 }
 
-interface FormState {
-  templateName: string;
-  description: string;
-  assignmentType: string;
-  isDefault: boolean;
-}
-
-const defaultFormState: FormState = {
-  templateName: "",
-  description: "",
-  assignmentType: "presentation",
-  isDefault: false,
-};
-
 const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
   isOpen,
   mode,
@@ -33,191 +21,107 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [formState, setFormState] = useState<FormState>(defaultFormState);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof FormState, string>>
-  >({});
+  const [form] = Form.useForm();
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (mode === "edit" && initialData) {
-      setFormState({
-        templateName: initialData.templateName,
-        description: initialData.description,
-        assignmentType: initialData.assignmentType,
-        isDefault: initialData.isDefault,
-      });
-    } else {
-      setFormState(defaultFormState);
-    }
-
-    setErrors({});
-  }, [isOpen, mode, initialData]);
-
-  if (!isOpen) return null;
-
-  const validateForm = () => {
-    const nextErrors: Partial<Record<keyof FormState, string>> = {};
-
-    if (!formState.templateName.trim()) {
-      nextErrors.templateName = "Template name is required";
-    }
-
-    if (!formState.description.trim()) {
-      nextErrors.description = "Description is required";
-    }
-
-    if (!formState.assignmentType.trim()) {
-      nextErrors.assignmentType = "Assignment type is required";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  const handleFinish = (values: any) => {
     onSubmit({
-      templateName: formState.templateName.trim(),
-      description: formState.description.trim(),
-      assignmentType: formState.assignmentType.trim(),
-      isDefault: formState.isDefault,
+      templateName: values.templateName,
+      description: values.description,
+      assignmentType: values.assignmentType,
+      isDefault: values.isDefault ?? false,
     });
   };
 
+  const handleCancel = () => {
+    form.resetFields();
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h3 className="text-lg font-semibold text-slate-900">
-            {mode === "create"
-              ? "Create Rubric Template"
-              : "Edit Rubric Template"}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl p-1 text-slate-500 hover:bg-slate-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Modal
+      title={mode === "create" ? "Create Rubric Template" : "Edit Rubric Template"}
+      open={isOpen}
+      onCancel={handleCancel}
+      footer={null}
+      centered
+      width={520}
+      destroyOnClose
+      loading={isLoading}
+      maskClosable={!isLoading}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFinish}
+        requiredMark="optional"
+        disabled={isLoading}
+        className="mt-4"
+        initialValues={{
+          templateName: initialData?.templateName || "",
+          description: initialData?.description || "",
+          assignmentType: initialData?.assignmentType || "presentation",
+          isDefault: initialData?.isDefault ?? false,
+        }}
+      >
+        <Form.Item
+          name="templateName"
+          label={<Text strong>Template Name</Text>}
+          rules={[
+            { required: true, message: "Template name is required" },
+            { min: 2, max: 200, message: "Template name từ 2 – 200 ký tự" },
+          ]}
+        >
+          <Input placeholder="VD: Presentation Rubric v1" />
+        </Form.Item>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Template Name
-            </label>
-            <input
-              type="text"
-              value={formState.templateName}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  templateName: e.target.value,
-                }))
-              }
-              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                errors.templateName ? "border-rose-300" : "border-slate-300"
-              }`}
-              placeholder="Presentation Rubric v1"
-            />
-            {errors.templateName && (
-              <p className="mt-1 text-xs text-rose-600">
-                {errors.templateName}
-              </p>
-            )}
-          </div>
+        <Form.Item
+          name="description"
+          label={<Text strong>Description</Text>}
+          rules={[
+            { required: true, message: "Description is required" },
+            { min: 2, max: 1000, message: "Description từ 2 – 1000 ký tự" },
+          ]}
+        >
+          <Input.TextArea
+            placeholder="Rubric for group presentations"
+            rows={3}
+          />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Description
-            </label>
-            <textarea
-              value={formState.description}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              rows={3}
-              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                errors.description ? "border-rose-300" : "border-slate-300"
-              }`}
-              placeholder="Rubric for group presentations"
-            />
-            {errors.description && (
-              <p className="mt-1 text-xs text-rose-600">{errors.description}</p>
-            )}
-          </div>
+        <Form.Item
+          name="assignmentType"
+          label={<Text strong>Assignment Type</Text>}
+          rules={[
+            { required: true, message: "Assignment type is required" },
+          ]}
+        >
+          <Input placeholder="VD: presentation" />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Assignment Type
-            </label>
-            <input
-              type="text"
-              value={formState.assignmentType}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  assignmentType: e.target.value,
-                }))
-              }
-              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                errors.assignmentType ? "border-rose-300" : "border-slate-300"
-              }`}
-              placeholder="presentation"
-            />
-            {errors.assignmentType && (
-              <p className="mt-1 text-xs text-rose-600">
-                {errors.assignmentType}
-              </p>
-            )}
-          </div>
+        <Form.Item
+          name="isDefault"
+          label={<Text strong>Set as default template</Text>}
+          valuePropName="checked"
+        >
+          <Switch />
+        </Form.Item>
 
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={formState.isDefault}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  isDefault: e.target.checked,
-                }))
-              }
-            />
-            Set as default template
-          </label>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+        <Form.Item className="!mb-0">
+          <Space className="w-full justify-end pt-2">
+            <Button onClick={handleCancel} disabled={isLoading}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isLoading}
             >
-              {isLoading
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create"
-                  : "Update"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {isLoading ? "Saving..." : mode === "create" ? "Create" : "Update"}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 

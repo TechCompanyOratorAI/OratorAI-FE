@@ -16,19 +16,27 @@ import {
 import CourseModal from "@/components/Course/CourseModal";
 import InstructorModal from "@/components/Course/InstructorModal";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
-import Toast from "@/components/Toast/Toast";
 import {
   Plus,
-  Edit,
-  Trash2,
-  UserPlus,
+  Edit2,
+  Users,
   RefreshCw,
   Book,
-  GraduationCap,
-  Users as UsersIcon,
-  AlertCircle,
-  BookOpen,
+  Search,
 } from "lucide-react";
+import { DeleteOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Tag,
+  Space,
+  Card,
+  Popconfirm,
+  App,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
 import axiosInstance from "@/services/constant/axiosInstance";
 import {
   ADD_INSTRUCTOR_TO_COURSE_ENDPOINT,
@@ -37,7 +45,7 @@ import {
 
 const AdminCoursePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses, loading, error, pagination } = useSelector(
+  const { courses, loading, pagination } = useSelector(
     (state: RootState) => state.course,
   );
   const { users, departments } = useSelector((state: RootState) => state.admin);
@@ -49,15 +57,11 @@ const AdminCoursePage: React.FC = () => {
   >();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSemester, setFilterSemester] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
-    null,
-  );
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const { message: antdMessage } = App.useApp();
 
   useEffect(() => {
     dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
@@ -78,20 +82,18 @@ const AdminCoursePage: React.FC = () => {
   };
 
   const handleDeleteCourse = async (courseId: number) => {
+    setActionLoading(true);
     try {
       await dispatch(deleteCourse(courseId)).unwrap();
-      setShowDeleteConfirm(null);
-      setToast({ message: "Course deleted successfully", type: "success" });
-    } catch (error) {
-      console.error("Failed to delete course:", error);
-      setToast({
-        message: "Failed to delete course. Please try again.",
-        type: "error",
-      });
+      antdMessage.success("Course deleted successfully");
+    } catch {
+      antdMessage.error("Failed to delete course");
     }
+    setActionLoading(false);
   };
 
   const handleSubmitCourse = async (courseData: any) => {
+    setActionLoading(true);
     try {
       if (selectedCourse) {
         await dispatch(
@@ -100,57 +102,45 @@ const AdminCoursePage: React.FC = () => {
             data: courseData,
           }),
         ).unwrap();
-        setToast({ message: "Course updated successfully", type: "success" });
+        antdMessage.success("Course updated successfully");
       } else {
         await dispatch(createCourse(courseData)).unwrap();
-        setToast({ message: "Course created successfully", type: "success" });
+        antdMessage.success("Course created successfully");
       }
       setIsCourseModalOpen(false);
-    } catch (error) {
-      console.error("Failed to save course:", error);
-      setToast({
-        message: selectedCourse
-          ? "Failed to update course. Please try again."
-          : "Failed to create course. Please try again.",
-        type: "error",
-      });
+      setSelectedCourse(undefined);
+    } catch {
+      antdMessage.error(
+        selectedCourse
+          ? "Failed to update course"
+          : "Failed to create course",
+      );
     }
+    setActionLoading(false);
   };
 
   const handleManageInstructors = async (course: CourseData) => {
     setSelectedCourse(course);
     setIsInstructorModalOpen(true);
-    // Fetch available instructors for this specific course
     await dispatch(fetchInstructorByCourse(course.courseId.toString()));
   };
 
   const handleAddInstructor = async (userId: number) => {
     if (!selectedCourse) return;
-
     try {
       await axiosInstance.post(
         ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(selectedCourse.courseId.toString()),
         { instructorIds: [userId] },
       );
-      setToast({
-        message: "Instructor added successfully",
-        type: "success",
-      });
+      antdMessage.success("Instructor added successfully");
       await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
-      // Reload page after successful add
-      setTimeout(() => window.location.reload(), 500);
-    } catch (error) {
-      console.error("Failed to add instructor:", error);
-      setToast({
-        message: "Failed to add instructor. Please try again.",
-        type: "error",
-      });
+    } catch {
+      antdMessage.error("Failed to add instructor");
     }
   };
 
   const handleRemoveInstructor = async (userId: number) => {
     if (!selectedCourse) return;
-
     try {
       await axiosInstance.delete(
         REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT(
@@ -158,19 +148,10 @@ const AdminCoursePage: React.FC = () => {
           userId.toString(),
         ),
       );
-      setToast({
-        message: "Instructor removed successfully",
-        type: "success",
-      });
+      antdMessage.success("Instructor removed successfully");
       await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
-      // Reload page after successful remove
-      setTimeout(() => window.location.reload(), 500);
-    } catch (error) {
-      console.error("Failed to remove instructor:", error);
-      setToast({
-        message: "Failed to remove instructor. Please try again.",
-        type: "error",
-      });
+    } catch {
+      antdMessage.error("Failed to remove instructor");
     }
   };
 
@@ -194,7 +175,6 @@ const AdminCoursePage: React.FC = () => {
         ]
       : [];
 
-  // Use instructors from API (when InstructorModal is open, users contains available instructors)
   const availableInstructors = users.map((user) => ({
     userId: user.userId,
     username: user.username,
@@ -203,7 +183,6 @@ const AdminCoursePage: React.FC = () => {
     lastName: user.lastName || "",
   }));
 
-  // Filter courses
   const departmentLookup = useMemo(() => {
     return departments.reduce(
       (acc, department) => {
@@ -232,7 +211,6 @@ const AdminCoursePage: React.FC = () => {
     });
   }, [courses, searchTerm, filterSemester, departmentLookup]);
 
-  // Statistics
   const stats = useMemo(() => {
     const total = courses.length;
     const active = courses.filter((c) => c.isActive).length;
@@ -243,412 +221,289 @@ const AdminCoursePage: React.FC = () => {
     return { total, active, totalEnrollments };
   }, [courses]);
 
-  // Get unique semesters for filter
   const semesters = Array.from(new Set(courses.map((c) => c.semester)));
 
+  const columns: ColumnsType<CourseData> = [
+    {
+      title: "Course Info",
+      key: "courseInfo",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">{record.courseCode}</div>
+          <div className="text-xs text-gray-400">
+            Department:{" "}
+            {departmentLookup[record.departmentId]
+              ? `${departmentLookup[record.departmentId].departmentCode} – ${departmentLookup[record.departmentId].departmentName}`
+              : record.departmentId}
+          </div>
+          <div className="text-gray-700 font-medium">{record.courseName}</div>
+          <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+            {record.description}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Instructor",
+      key: "instructor",
+      render: (_, record) => {
+        const instructors = record.instructors && record.instructors.length > 0
+          ? record.instructors
+          : record.instructor ? [record.instructor] : [];
+        if (instructors.length === 0) {
+          return <span className="text-gray-400 italic text-xs">No instructor assigned</span>;
+        }
+        return (
+          <div className="space-y-1">
+            {instructors.map((instructor) => (
+              <div key={instructor.userId}>
+                <div className="font-semibold text-sm">
+                  {instructor.firstName} {instructor.lastName}
+                </div>
+                <div className="text-xs text-gray-400">{instructor.email}</div>
+              </div>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Semester",
+      dataIndex: "semester",
+      key: "semester",
+      render: (val) => <Tag>{val}</Tag>,
+    },
+    {
+      title: "Academic Year",
+      dataIndex: "academicYear",
+      key: "academicYear",
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Active" : "Inactive"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Enrollments",
+      dataIndex: "enrollmentCount",
+      key: "enrollmentCount",
+      render: (val) => val || 0,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 140,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<UsergroupAddOutlined size={14} />}
+            onClick={() => handleManageInstructors(record)}
+            className="text-purple-500 hover:text-purple-600"
+            title="Manage Instructors"
+          />
+          <Button
+            type="text"
+            icon={<Edit2 size={14} />}
+            onClick={() => handleEditCourse(record)}
+            className="text-blue-500 hover:text-blue-600"
+            title="Edit"
+          />
+          <Popconfirm
+            title="Delete Course"
+            description="Are you sure you want to delete this course? This action cannot be undone."
+            onConfirm={() => handleDeleteCourse(record.courseId)}
+            okText="Delete"
+            okButtonProps={{ danger: true, loading: actionLoading }}
+            cancelText="Cancel"
+          >
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              danger
+              title="Delete"
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-gray-50">
       <SidebarAdmin activeItem="manage-courses" />
       <main className="flex-1 overflow-y-auto p-6 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                 Administration
               </p>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Course Management
               </h1>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-gray-600">
                 Manage all courses, instructors, and course details
               </p>
             </div>
-            <div className="flex gap-2">
-              <button
+            <Space>
+              <Button
+                icon={<RefreshCw size={14} />}
                 onClick={() =>
                   dispatch(fetchCourses({ page: currentPage, limit: pageSize }))
                 }
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-200 hover:text-sky-700"
+                loading={loading}
               >
-                <RefreshCw className="w-4 h-4" />
                 Refresh
-              </button>
-              <button
+              </Button>
+              <Button
+                type="primary"
+                icon={<Plus size={14} />}
                 onClick={handleCreateCourse}
-                className="inline-flex items-center gap-2 rounded-full border bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" />
                 New Course
-              </button>
-            </div>
+              </Button>
+            </Space>
           </div>
 
-          {/* Statistics Cards */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-sky-100 text-sky-700 p-2">
-                <Book className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Total Courses
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.total}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-emerald-100 text-emerald-700 p-2">
-                <GraduationCap className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Active Courses
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.active}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-100 text-indigo-700 p-2">
-                <UsersIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase text-slate-500 font-semibold">
-                  Total Enrollments
-                </p>
-                <p className="text-xl font-bold text-slate-900">
-                  {stats.totalEnrollments}
-                </p>
-              </div>
-            </div>
-          </section>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
+                  <Book size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Total Courses
+                  </p>
+                  <p className="text-xl font-bold">{stats.total}</p>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-green-100 text-green-600 p-2">
+                  <Book size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Active Courses
+                  </p>
+                  <p className="text-xl font-bold">{stats.active}</p>
+                </div>
+              </Space>
+            </Card>
+            <Card size="small">
+              <Space>
+                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
+                  <Users size={20} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-gray-500 font-semibold">
+                    Total Enrollments
+                  </p>
+                  <p className="text-xl font-bold">{stats.totalEnrollments}</p>
+                </div>
+              </Space>
+            </Card>
+          </div>
 
-          {/* Main Content */}
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            {/* Search and Filter Bar */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-slate-200">
+          <Card>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                   Directory
                 </p>
-                <h2 className="text-lg font-bold text-slate-900">
-                  All Courses
-                </h2>
+                <h2 className="text-lg font-bold text-gray-900">All Courses</h2>
               </div>
-              <div className="flex rounded-2xl flex-col sm:flex-row gap-2 sm:items-center w-full md:w-auto">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+              <Space wrap>
+                <Input
                   placeholder="Search by name or code..."
-                  className="w-full sm:w-64 rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                  prefix={<Search size={14} className="text-gray-400" />}
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-64"
+                  allowClear
                 />
-                <div className="relative w-full sm:w-40">
-                  <select
-                    value={filterSemester}
-                    onChange={(e) => setFilterSemester(e.target.value)}
-                    className="w-full rounded-full border border-slate-200 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none bg-white appearance-none cursor-pointer pr-8"
-                  >
-                    <option value="">All Semesters</option>
-                    {semesters.map((semester) => (
-                      <option key={semester} value={semester}>
-                        {semester}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-500 whitespace-nowrap">
-                  {filteredCourses.length} records
-                </div>
-              </div>
+                <Select
+                  value={filterSemester}
+                  onChange={(val) => {
+                    setFilterSemester(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 160 }}
+                  allowClear
+                  placeholder="All Semesters"
+                  options={semesters.map((s) => ({ value: s, label: s }))}
+                />
+              </Space>
             </div>
-            {/* Table Content */}
-            {loading ? (
-              <div className="px-6 py-10 text-center text-slate-500">
-                <div className="mx-auto mb-3 h-10 w-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
-                Loading courses...
-              </div>
-            ) : error ? (
-              <div className="px-6 py-8 flex items-center gap-3 text-rose-600">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            ) : filteredCourses.length === 0 ? (
-              <div className="px-6 py-12 text-center text-slate-500 flex flex-col items-center gap-3">
-                <BookOpen className="w-10 h-10 text-slate-300" />
-                <p>
-                  {searchTerm || filterSemester
-                    ? "No courses found matching your filters"
-                    : "No courses available. Create your first course to get started."}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wide">
-                    <tr>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Course Info
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Instructor
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Semester
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Academic Year
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold">
-                        Enrollments
-                      </th>
-                      <th className="px-6 py-3 text-right font-semibold">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredCourses.map((course) => (
-                      <tr
-                        key={course.courseId}
-                        className="hover:bg-slate-50/80 transition"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-slate-900">
-                            {course.courseCode}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            Department:{" "}
-                            {departmentLookup[course.departmentId]
-                              ? `${departmentLookup[course.departmentId].departmentCode} - ${departmentLookup[course.departmentId].departmentName}`
-                              : course.departmentId}
-                          </div>
-                          <div className="text-slate-700 font-medium">
-                            {course.courseName}
-                          </div>
-                          <div className="text-xs text-slate-500 mt-1 line-clamp-1">
-                            {course.description}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {course.instructors &&
-                          course.instructors.length > 0 ? (
-                            <div className="space-y-2">
-                              {course.instructors.map((instructor) => (
-                                <div key={instructor.userId}>
-                                  <div className="font-semibold text-slate-900">
-                                    {instructor.firstName} {instructor.lastName}
-                                  </div>
-                                  <div className="text-xs text-slate-500">
-                                    {instructor.email}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : course.instructor ? (
-                            <div>
-                              <div className="font-semibold text-slate-900">
-                                {course.instructor.firstName}{" "}
-                                {course.instructor.lastName}
-                              </div>
-                              <div className="text-xs text-slate-500">
-                                {course.instructor.email}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 italic text-xs">
-                              No instructor assigned
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-700 border-slate-200">
-                            {course.semester}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700">
-                          {course.academicYear}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                              course.isActive
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : "bg-rose-50 text-rose-700 border-rose-200"
-                            }`}
-                          >
-                            {course.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 font-medium">
-                          {course.enrollmentCount || 0}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-1">
-                            <button
-                              onClick={() => handleManageInstructors(course)}
-                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Manage Instructors"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEditCourse(course)}
-                              className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
-                              title="Edit Course"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                setShowDeleteConfirm(course.courseId)
-                              }
-                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="Delete Course"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {!loading && !error && pagination.total > 0 && (
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-6 py-4 border-t border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <div className="text-sm text-slate-600">
-                      Page {pagination.page} of {pagination.totalPages}
-                    </div>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        const nextSize = parseInt(e.target.value);
-                        setPageSize(nextSize);
-                        setCurrentPage(1);
-                      }}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm focus:border-sky-500 focus:outline-none"
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
+
+            <Table
+              columns={columns}
+              dataSource={filteredCourses}
+              rowKey="courseId"
+              loading={loading}
+              pagination={
+                pagination.total > 0
+                  ? {
+                      current: currentPage,
+                      pageSize,
+                      total: pagination.total,
+                      showSizeChanger: true,
+                      showQuickJumper: false,
+                      pageSizeOptions: ["10", "20", "50"],
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} of ${total} courses`,
+                      onChange: (p, ps) => {
+                        setCurrentPage(p);
+                        setPageSize(ps);
+                      },
                     }
-                    disabled={pagination.page <= 1}
-                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) =>
-                        Math.min(pagination.totalPages, prev + 1),
-                      )
-                    }
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="px-3 py-1.5 rounded-full border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
+                  : false
+              }
+              locale={{
+                emptyText: searchTerm || filterSemester
+                  ? "No courses found matching your filters"
+                  : "No courses available. Create your first course to get started.",
+              }}
+            />
+          </Card>
         </div>
       </main>
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full bg-rose-100 p-2">
-                <Trash2 className="w-5 h-5 text-rose-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Delete Course
-              </h3>
-            </div>
-            <p className="text-slate-600 mb-6">
-              Are you sure you want to delete this course? This action cannot be
-              undone and will affect all enrolled students and course data.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteCourse(showDeleteConfirm)}
-                className="px-4 py-2 rounded-full bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors"
-              >
-                Delete Course
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Course Modal */}
       <CourseModal
         isOpen={isCourseModalOpen}
-        onClose={() => setIsCourseModalOpen(false)}
+        onClose={() => {
+          setIsCourseModalOpen(false);
+          setSelectedCourse(undefined);
+        }}
         onSubmit={handleSubmitCourse}
         initialData={selectedCourse}
-        isLoading={loading}
+        isLoading={actionLoading}
         departments={departments}
       />
 
-      {/* Instructor Modal */}
       <InstructorModal
         isOpen={isInstructorModalOpen}
-        onClose={() => setIsInstructorModalOpen(false)}
+        onClose={() => {
+          setIsInstructorModalOpen(false);
+          setSelectedCourse(undefined);
+        }}
         currentInstructors={currentInstructors}
         availableInstructors={availableInstructors}
         onAddInstructor={handleAddInstructor}
         onRemoveInstructor={handleRemoveInstructor}
         isLoading={loading}
       />
-
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 };

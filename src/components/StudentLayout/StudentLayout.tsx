@@ -108,12 +108,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
           <div className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-4 lg:gap-8">
             {/* Logo */}
             <div className="flex min-w-0 shrink-0 items-center">
-              <div className="flex flex-col justify-center leading-tight">
-                <AppLogo to="/" size="lg" className="!text-xl !font-bold !tracking-tight sm:!text-2xl" />
-                <Text className="text-[11px] sm:text-xs text-slate-400 font-vn font-normal -mt-0.5">
-                  Học sinh
-                </Text>
-              </div>
+              <AppLogo to="/" size="lg" className="!text-xl !font-bold !tracking-tight sm:!text-2xl" />
             </div>
 
             {/* Desktop Nav — custom (không dùng antd Menu ngang: tránh thu gọn … và ẩn "Bài thuyết trình") */}
@@ -169,7 +164,6 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                     <Text className="max-w-full truncate text-sm font-semibold text-slate-800">
                       {fullName}
                     </Text>
-                    <Text className="text-xs text-slate-400">Học sinh</Text>
                   </div>
                 </Button>
               </Dropdown>
@@ -191,7 +185,6 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
         title={
           <div className="flex flex-col gap-0.5 min-w-0">
             <AppLogo to="/" size="md" />
-            <Text className="text-[10px] text-slate-400 font-vn">Học sinh</Text>
           </div>
         }
         placement="left"

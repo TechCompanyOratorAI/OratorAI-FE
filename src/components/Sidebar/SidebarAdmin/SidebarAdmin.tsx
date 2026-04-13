@@ -158,8 +158,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
           >
             {expanded && (
               <div className="lg:block hidden">
-                <AppLogo to="/" size="sm" />
-                <p className="text-xs text-gray-500">Admin Console</p>
+                <AppLogo to="/" size="lg" />
               </div>
             )}
           </div>

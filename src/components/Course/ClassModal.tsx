@@ -8,6 +8,7 @@ import {
   DatePicker,
   Space,
   Typography,
+  Button,
 } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { ClassData } from "@/services/features/admin/classSlice";
@@ -114,7 +115,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
       centered
       width={560}
       destroyOnClose
-      confirmLoading={submitting || isLoading}
+      loading={submitting || isLoading}
       maskClosable={!(submitting || isLoading)}
     >
       <Form
@@ -258,21 +259,21 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
         <Form.Item className="!mb-0">
           <Space className="w-full justify-end pt-2">
-            <button
-              type="button"
+            <Button
               onClick={handleCancel}
               disabled={submitting || isLoading}
-              className="px-5 py-2 rounded-full border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="!rounded-full"
             >
               Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || isLoading}
-              className="px-6 py-2 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition"
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting || isLoading}
+              className="!rounded-full"
             >
               {(submitting || isLoading) ? "Đang lưu..." : "Lưu lớp học"}
-            </button>
+            </Button>
           </Space>
         </Form.Item>
       </Form>
