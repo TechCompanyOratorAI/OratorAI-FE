@@ -56,7 +56,7 @@ export interface DistributeGradePayload {
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-interface GroupGradeState {
+export interface GroupGradeState {
   /** Danh sách tất cả phân chia điểm của 1 nhóm */
   distributions: GradeDistribution[];
   /** Thông tin phân chia điểm của 1 report cụ thể */
