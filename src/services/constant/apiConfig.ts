@@ -1,6 +1,6 @@
-export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-// export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -226,5 +226,7 @@ export const GET_GRADE_DISTRIBUTION_ENDPOINT = (reportId: string) =>
   `${BASE_URL}/api/v1/ai-reports/${reportId}/grade-distribution`;
 export const GROUP_GRADE_DISTRIBUTIONS_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions`;
-export const GROUP_MEMBER_GRADES_ENDPOINT = (groupId: string, studentId: string) =>
-  `${BASE_URL}/api/v1/groups/${groupId}/members/${studentId}/grades`;
+export const GROUP_MEMBER_GRADES_ENDPOINT = (
+  groupId: string,
+  studentId: string,
+) => `${BASE_URL}/api/v1/groups/${groupId}/members/${studentId}/grades`;

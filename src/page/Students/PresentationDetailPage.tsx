@@ -8,6 +8,7 @@ import {
   Clock,
   Calendar,
   User,
+  Users,
   BookOpen,
   Link2,
   MessageSquare,
@@ -16,9 +17,10 @@ import {
   Award,
   CheckCircle2,
   RefreshCw,
+  Trophy,
 } from "lucide-react";
-import { TrophyOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { TrophyOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
+import { Button, Tag, Tooltip } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchPresentationDetail,
@@ -28,6 +30,10 @@ import {
   fetchPresentationReport,
   fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
+import {
+  fetchGradeDistributionByReport,
+  clearCurrentDistribution,
+} from "@/services/features/groupGrade/groupGradeSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import PresentationProgressTracker from "@/components/Presentation/PresentationProgressTracker";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
@@ -96,6 +102,9 @@ const PresentationDetailPage: React.FC = () => {
   } = useAppSelector((state) => state.report);
   const { myGroupForClass: group } = useAppSelector((state) => state.group);
   const { user } = useAppSelector((state) => state.auth);
+  const { currentDistribution, loading: distributionLoading } = useAppSelector(
+    (state) => state.groupGrade,
+  );
 
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -119,6 +128,7 @@ const PresentationDetailPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(clearCurrentReport());
+    dispatch(clearCurrentDistribution());
     setShowReport(false);
   }, [presentationIdNumber, dispatch]);
 
@@ -137,6 +147,17 @@ const PresentationDetailPage: React.FC = () => {
     }
   }, [showReport, currentReport?.reportId, dispatch]);
 
+  // Fetch grade distribution when report is confirmed
+  useEffect(() => {
+    if (
+      currentReport?.reportId &&
+      currentReport.reportStatus === "confirmed" &&
+      showReport
+    ) {
+      void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
+    }
+  }, [currentReport?.reportId, currentReport?.reportStatus, showReport, dispatch]);
+
   // Fetch group info khi có classId để biết leader/students
   useEffect(() => {
     if (presentation?.classId) {
@@ -144,7 +165,7 @@ const PresentationDetailPage: React.FC = () => {
     }
   }, [presentation?.classId, dispatch]);
 
-  // Handler mở modal chia điểm cho leader
+  // Handler mở modal chia điểm
   const handleOpenGradeDistribution = async () => {
     if (!presentation?.classId || !currentReport?.reportId) return;
     try {
@@ -158,7 +179,6 @@ const PresentationDetailPage: React.FC = () => {
           myRole: result.myRole,
         });
       } else {
-        // fallback: dùng myGroupForClass
         if (group?.groupId) {
           setGroupDetail({
             groupId: group.groupId,
@@ -169,7 +189,6 @@ const PresentationDetailPage: React.FC = () => {
       }
       setGradeDistributionModalOpen(true);
     } catch {
-      // fallback: dùng myGroupForClass khi API lỗi
       if (group?.groupId) {
         setGroupDetail({
           groupId: group.groupId,
@@ -183,6 +202,16 @@ const PresentationDetailPage: React.FC = () => {
 
   // Kiểm tra user hiện tại có phải là leader không
   const isCurrentUserLeader = group?.myRole === "leader";
+  const isGroupMember = !!group?.groupId;
+  const hasDistribution = !!currentDistribution;
+
+  // Tìm điểm cá nhân của user hiện tại trong distribution
+  const myDistributionGrade = useMemo(() => {
+    if (!currentDistribution?.members || !user?.userId) return null;
+    return currentDistribution.members.find(
+      (m) => m.studentId === user.userId,
+    ) ?? null;
+  }, [currentDistribution, user?.userId]);
 
   const syncedFeedbacks = useMemo(() => {
     if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
@@ -568,28 +597,214 @@ const PresentationDetailPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Điểm GV đã confirm - hiện nút chia điểm cho leader */}
+                    {/* ── Confirmed Grade & Distribution Section ── */}
                     {currentReport?.reportStatus === "confirmed" &&
                       currentReport.gradeForInstructor !== null &&
-                      isCurrentUserLeader && (
-                        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-amber-800">
-                              Điểm GV: <span className="text-amber-900">{currentReport.gradeForInstructor}/10</span>
-                            </p>
-                            <p className="text-xs text-amber-600">
-                              Là trưởng nhóm — bạn có thể phân chia điểm cho từng thành viên
-                            </p>
+                      isGroupMember && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-3"
+                        >
+                          {/* ── Instructor Grade Card ── */}
+                          <div className={`rounded-2xl border-2 p-5 transition-all ${
+                            hasDistribution
+                              ? "border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-teal-50"
+                              : "border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50"
+                          }`}>
+                            {/* Top row: grade info + action */}
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
+                                  hasDistribution
+                                    ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+                                    : "bg-gradient-to-br from-amber-500 to-orange-600"
+                                }`}>
+                                  <Trophy className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
+                                    Điểm giảng viên
+                                  </p>
+                                  <p className="text-2xl font-bold text-slate-900">
+                                    {currentReport.gradeForInstructor}
+                                    <span className="text-base font-semibold text-slate-400"> / 10</span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Action buttons for leader */}
+                              {isCurrentUserLeader && (
+                                <Button
+                                  type="primary"
+                                  size="large"
+                                  icon={hasDistribution ? <EditOutlined /> : <TrophyOutlined />}
+                                  style={hasDistribution
+                                    ? { background: "linear-gradient(135deg, #059669, #0d9488)", borderColor: "#059669", borderRadius: 12, height: 44, fontWeight: 600 }
+                                    : { background: "linear-gradient(135deg, #d97706, #ea580c)", borderColor: "#d97706", borderRadius: 12, height: 44, fontWeight: 600 }
+                                  }
+                                  onClick={handleOpenGradeDistribution}
+                                  className="shadow-md hover:shadow-lg transition-shadow"
+                                >
+                                  {hasDistribution ? "Cập nhật phân chia" : "Chia điểm cho nhóm"}
+                                </Button>
+                              )}
+
+                              {/* View button for non-leader members */}
+                              {!isCurrentUserLeader && hasDistribution && (
+                                <Button
+                                  icon={<EyeOutlined />}
+                                  size="large"
+                                  style={{ borderRadius: 12, height: 44, fontWeight: 600 }}
+                                  onClick={handleOpenGradeDistribution}
+                                >
+                                  Xem phân chia
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Status info */}
+                            <div className="mt-4 pt-3 border-t border-slate-100">
+                              {hasDistribution ? (
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                  <p className="text-sm text-emerald-700 font-medium">
+                                    Đã phân chia điểm bởi{" "}
+                                    <span className="font-bold">
+                                      {currentDistribution.leader?.firstName ?? ""}{" "}
+                                      {currentDistribution.leader?.lastName ?? ""}
+                                    </span>
+                                    {currentDistribution.distributedAt && (
+                                      <span className="text-emerald-500 font-normal">
+                                        {" "}— {new Date(currentDistribution.distributedAt).toLocaleDateString("vi-VN", {
+                                          day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+                                        })}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                  <p className="text-sm text-amber-700">
+                                    {isCurrentUserLeader
+                                      ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
+                                      : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."
+                                    }
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <Button
-                            type="primary"
-                            icon={<TrophyOutlined className="w-4 h-4" />}
-                            style={{ background: "#d97706", borderColor: "#d97706" }}
-                            onClick={handleOpenGradeDistribution}
-                          >
-                            Chia điểm
-                          </Button>
-                        </div>
+
+                          {/* ── Personal Received Grade Card (after distribution) ── */}
+                          {hasDistribution && myDistributionGrade && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.98 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.1 }}
+                              className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-5"
+                            >
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                                    <User className="w-6 h-6 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
+                                      Điểm cá nhân của bạn
+                                    </p>
+                                    <div className="flex items-baseline gap-2">
+                                      <p className="text-2xl font-bold text-sky-700">
+                                        {Number(myDistributionGrade.receivedGrade).toFixed(2)}
+                                      </p>
+                                      <span className="text-sm text-slate-400 font-medium">
+                                        / {currentReport.gradeForInstructor} điểm
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right">
+                                  <Tooltip title="Phần trăm đóng góp được phân chia">
+                                    <Tag
+                                      color="blue"
+                                      className="!text-base !font-bold !px-3 !py-1 !rounded-lg"
+                                    >
+                                      {Number(myDistributionGrade.percentage).toFixed(0)}%
+                                    </Tag>
+                                  </Tooltip>
+                                  <p className="text-xs text-slate-400 mt-1">tỷ lệ đóng góp</p>
+                                </div>
+                              </div>
+
+                              {myDistributionGrade.reason && (
+                                <div className="mt-3 pt-3 border-t border-sky-100">
+                                  <p className="text-xs text-slate-500">
+                                    <span className="font-semibold">Lý do: </span>
+                                    {myDistributionGrade.reason}
+                                  </p>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+
+                          {/* ── Distribution Members Summary (compact, for leader) ── */}
+                          {hasDistribution && isCurrentUserLeader && currentDistribution.members && currentDistribution.members.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.15 }}
+                              className="rounded-2xl border border-slate-200 bg-white p-4"
+                            >
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5" />
+                                Tổng quan phân chia ({currentDistribution.members.length} thành viên)
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {currentDistribution.members.map((member) => {
+                                  const isMe = member.studentId === user?.userId;
+                                  return (
+                                    <div
+                                      key={member.studentId}
+                                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
+                                        isMe
+                                          ? "bg-sky-50 border border-sky-200 shadow-sm"
+                                          : "bg-slate-50 border border-transparent"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${
+                                          isMe
+                                            ? "bg-gradient-to-br from-sky-500 to-indigo-500"
+                                            : "bg-gradient-to-br from-slate-400 to-slate-500"
+                                        }`}>
+                                          {member.student?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className={`text-sm truncate ${
+                                            isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"
+                                          }`}>
+                                            {member.student?.firstName} {member.student?.lastName}
+                                            {isMe && <span className="text-sky-500 text-xs ml-1">(Bạn)</span>}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right flex-shrink-0 ml-2">
+                                        <span className={`text-sm font-bold tabular-nums ${
+                                          isMe ? "text-sky-700" : "text-slate-700"
+                                        }`}>
+                                          {Number(member.receivedGrade).toFixed(2)}
+                                        </span>
+                                        <span className="text-xs text-slate-400 ml-1">({Number(member.percentage).toFixed(0)}%)</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
                       )}
 
                     <div className="space-y-3">
@@ -891,6 +1106,9 @@ const PresentationDetailPage: React.FC = () => {
         onSuccess={() => {
           if (presentationIdNumber) {
             void dispatch(fetchPresentationReport(presentationIdNumber));
+          }
+          if (currentReport?.reportId) {
+            void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
           }
           setGradeDistributionModalOpen(false);
         }}

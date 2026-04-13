@@ -135,7 +135,9 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
                               strong={isCurrentUser}
                               className={`text-sm ${isCurrentUser ? "text-sky-700" : ""}`}
                             >
-                              {member.student?.firstName} {member.student?.lastName}
+                              {member.student?.firstName || member.student?.lastName
+                                ? `${member.student?.firstName ?? ""} ${member.student?.lastName ?? ""}`.trim()
+                                : `Thành viên #${member.studentId}`}
                             </Text>
                             {isLeaderMember && (
                               <Tag color="gold" icon={<CrownOutlined />} className="text-xs">
@@ -147,8 +149,16 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
                             )}
                           </Space>
                           <div className="flex items-center gap-2 mt-0.5">
+                            {member.student?.email && (
+                              <>
+                                <Text type="secondary" className="text-xs">
+                                  {member.student.email}
+                                </Text>
+                                <Text type="secondary" className="text-xs">•</Text>
+                              </>
+                            )}
                             <Text type="secondary" className="text-xs">
-                              {member.percentage}% đóng góp
+                              {Number(member.percentage).toFixed(0)}% đóng góp
                             </Text>
                             {member.reason && (
                               <>
