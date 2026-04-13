@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NavItem from "./NavItem";
 import Button from "../yoodli/Button";
-import { motion } from "framer-motion";
+import AppLogo from "../AppLogo/AppLogo";
+import { motion, Variants } from "framer-motion";
 
 const Nav: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,7 +23,7 @@ const Nav: React.FC = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const navVariants = {
+    const navVariants: Variants = {
         hidden: { y: -100 },
         visible: {
             y: 0,
@@ -33,20 +34,15 @@ const Nav: React.FC = () => {
     return (
         <>
             <motion.nav
-                className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${
-                    scrolled ? "shadow-lg" : "shadow-sm"
-                }`}
+                className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-sm"
+                    }`}
                 initial="hidden"
                 animate="visible"
-                variants={navVariants as any}
+                variants={navVariants}
             >
-                <div className="flex items-center p-4 max-w-[1984px] mx-auto">
+                <div className="flex items-center p-1 max-w-[1984px] mx-auto">
                     <div className="flex gap-2 items-center">
-                        <img
-                            className="hidden xl:block h-12 object-contain"
-                            src="/text_fptoratorAI.svg"
-                            alt="OratorAI"
-                        />
+                        <AppLogo to="/" size="lg" />
                     </div>
 
                     <button

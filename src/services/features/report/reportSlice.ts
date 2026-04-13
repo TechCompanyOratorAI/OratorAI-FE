@@ -104,7 +104,7 @@ interface CriterionFeedbackResponse {
   message?: string;
 }
 
-interface ReportState {
+export interface ReportState {
   currentReport: PresentationReport | null;
   criterionFeedbacks: CriterionFeedback[];
   loading: boolean;

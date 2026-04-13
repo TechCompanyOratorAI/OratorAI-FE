@@ -118,8 +118,7 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
           <div className={`flex items-center gap-3 mb-1 ${expanded ? "" : "lg:justify-center"}`}>
             {expanded && (
               <div className="lg:block hidden">
-                <AppLogo to="/" size="sm" />
-                <p className="text-xs text-gray-500">Instructor Portal</p>
+                <AppLogo to="/" size="lg" />
               </div>
             )}
           </div>

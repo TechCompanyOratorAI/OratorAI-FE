@@ -11,9 +11,9 @@ interface AppLogoProps {
 }
 
 const sizeClasses = {
-  sm: "text-base font-semibold",
-  md: "text-lg font-semibold",
-  lg: "text-xl font-semibold",
+  sm: "h-8",
+  md: "h-12",
+  lg: "h-16",
 };
 
 const AppLogo: React.FC<AppLogoProps> = ({
@@ -21,8 +21,13 @@ const AppLogo: React.FC<AppLogoProps> = ({
   size = "md",
   className = "",
 }) => {
-  const textClass = `text-slate-900 ${sizeClasses[size]} ${className}`.trim();
-  const content = <span className={textClass}>FPTOratorAI</span>;
+  const content = (
+    <img
+      src="/text_fptoratorAI.svg"
+      alt="FPTOratorAI"
+      className={`object-contain ${sizeClasses[size]} ${className}`.trim()}
+    />
+  );
 
   if (to) {
     return (

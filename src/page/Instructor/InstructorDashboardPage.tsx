@@ -7,7 +7,6 @@ import {
   BookOpen,
   Clock,
   ArrowRight,
-  Plus,
   CheckCircle2,
   FileText,
   BarChart3,
@@ -31,7 +30,9 @@ const isClassExpired = (endDate: string): boolean => {
   const now = new Date();
   const beijingOffset = 8 * 60;
   const localOffset = now.getTimezoneOffset();
-  const beijingNow = new Date(now.getTime() + (localOffset + beijingOffset) * 60 * 1000);
+  const beijingNow = new Date(
+    now.getTime() + (localOffset + beijingOffset) * 60 * 1000,
+  );
   return new Date(endDate) < beijingNow;
 };
 
@@ -65,16 +66,29 @@ const colorMap: Record<StatColor, string> = {
   green: "bg-green-50 text-green-600",
 };
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, suffix, icon, color }) => (
+const StatCard: React.FC<StatCardProps> = ({
+  label,
+  value,
+  suffix,
+  icon,
+  color,
+}) => (
   <div className="bg-white rounded-xl border border-gray-200 p-5">
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm text-gray-500">{label}</p>
         <p className="text-2xl font-bold text-gray-900 mt-1">
-          {value}{suffix && <span className="text-base font-normal text-gray-400">{suffix}</span>}
+          {value}
+          {suffix && (
+            <span className="text-base font-normal text-gray-400">
+              {suffix}
+            </span>
+          )}
         </p>
       </div>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
+      <div
+        className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}
+      >
         {icon}
       </div>
     </div>
@@ -99,7 +113,9 @@ const InstructorDashboardPage: React.FC = () => {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [activeTab, setActiveTab] = React.useState<"all" | "pending" | "reviewed">("all");
+  const [activeTab, setActiveTab] = React.useState<
+    "all" | "pending" | "reviewed"
+  >("all");
 
   // Fetch teaching classes on mount
   useEffect(() => {
@@ -126,14 +142,25 @@ const InstructorDashboardPage: React.FC = () => {
   // Compute aggregated stats
   const stats = useMemo(() => {
     const classIds = activeClasses.map((c) => c.classId);
-    const allStats = classIds.map((id) => classStats[id]).filter(Boolean) as TeachingClassStats[];
+    const allStats = classIds
+      .map((id) => classStats[id])
+      .filter(Boolean) as TeachingClassStats[];
     const totalStudents = allStats.reduce((acc, s) => acc + s.totalStudents, 0);
-    const pendingReports = allStats.reduce((acc, s) => acc + s.pendingReports, 0);
-    const reviewedReports = allStats.reduce((acc, s) => acc + s.reviewedReports, 0);
-    const scores = allStats.map((s) => s.averageScore).filter((s): s is number => s !== null && s !== undefined);
-    const avgScore = scores.length > 0
-      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-      : null;
+    const pendingReports = allStats.reduce(
+      (acc, s) => acc + s.pendingReports,
+      0,
+    );
+    const reviewedReports = allStats.reduce(
+      (acc, s) => acc + s.reviewedReports,
+      0,
+    );
+    const scores = allStats
+      .map((s) => s.averageScore)
+      .filter((s): s is number => s !== null && s !== undefined);
+    const avgScore =
+      scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
     return {
       totalStudents,
       totalClasses: activeClasses.length,
@@ -157,7 +184,12 @@ const InstructorDashboardPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
               <span className="text-indigo-700 font-semibold text-xs">
-                {name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                {name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2)}
               </span>
             </div>
             <span className="text-sm font-medium text-gray-900">{name}</span>
@@ -171,7 +203,9 @@ const InstructorDashboardPage: React.FC = () => {
       key: "title",
       render: (text: string, record) => (
         <button
-          onClick={() => navigate(`/instructor/presentation/${record.submissionId}`)}
+          onClick={() =>
+            navigate(`/instructor/presentation/${record.submissionId}`)
+          }
           className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline text-left"
         >
           {text}
@@ -182,7 +216,9 @@ const InstructorDashboardPage: React.FC = () => {
       title: "Submitted",
       dataIndex: "generatedAt",
       key: "date",
-      render: (text: string) => <span className="text-sm text-gray-500">{timeAgo(text)}</span>,
+      render: (text: string) => (
+        <span className="text-sm text-gray-500">{timeAgo(text)}</span>
+      ),
     },
     {
       title: "Status",
@@ -208,7 +244,13 @@ const InstructorDashboardPage: React.FC = () => {
             ) : (
               <Clock className="w-3.5 h-3.5" />
             )}
-            <span className="capitalize">{isConfirmed ? "Reviewed" : isProcessing ? "Processing" : "Pending"}</span>
+            <span className="capitalize">
+              {isConfirmed
+                ? "Reviewed"
+                : isProcessing
+                  ? "Processing"
+                  : "Pending"}
+            </span>
           </div>
         );
       },
@@ -218,9 +260,13 @@ const InstructorDashboardPage: React.FC = () => {
       dataIndex: "overallScore",
       key: "score",
       render: (score: string | null, record) => {
-        const displayScore = record.gradeForInstructor ?? (score ? Math.round(Number(score)) : null);
+        const displayScore =
+          record.gradeForInstructor ??
+          (score ? Math.round(Number(score)) : null);
         return (
-          <span className={`text-sm font-semibold ${displayScore ? "text-green-600" : "text-gray-400"}`}>
+          <span
+            className={`text-sm font-semibold ${displayScore ? "text-green-600" : "text-gray-400"}`}
+          >
             {displayScore ? `${displayScore}/100` : "—"}
           </span>
         );
@@ -233,31 +279,41 @@ const InstructorDashboardPage: React.FC = () => {
       render: (_, record) => (
         <Button
           text={record.reportStatus === "confirmed" ? "View" : "Review"}
-          variant={record.reportStatus === "confirmed" ? "secondary" : "primary"}
+          variant={
+            record.reportStatus === "confirmed" ? "secondary" : "primary"
+          }
           fontSize="13px"
           borderRadius="6px"
           paddingWidth="12px"
           paddingHeight="6px"
-          onClick={() => navigate(`/instructor/presentation/${record.submissionId}`)}
+          onClick={() =>
+            navigate(`/instructor/presentation/${record.submissionId}`)
+          }
         />
       ),
     },
   ];
 
   const filteredReports = useMemo(() => {
-    if (activeTab === "pending") return recentReports.filter((r) => r.reportStatus === "pending" || r.reportStatus === "processing");
-    if (activeTab === "reviewed") return recentReports.filter((r) => r.reportStatus === "confirmed");
+    if (activeTab === "pending")
+      return recentReports.filter(
+        (r) => r.reportStatus === "pending" || r.reportStatus === "processing",
+      );
+    if (activeTab === "reviewed")
+      return recentReports.filter((r) => r.reportStatus === "confirmed");
     return recentReports;
   }, [recentReports, activeTab]);
 
   // Recent activity from reports
   const recentActivityItems = useMemo(() => {
     return recentReports.slice(0, 8).map((r) => {
-      const name = r.student ? `${r.student.firstName} ${r.student.lastName}` : "A student";
+      const name = r.student
+        ? `${r.student.firstName} ${r.student.lastName}`
+        : "A student";
       const isConfirmed = r.reportStatus === "confirmed";
       return {
         id: r.reportId,
-        type: isConfirmed ? "review" as const : "submission" as const,
+        type: isConfirmed ? ("review" as const) : ("submission" as const),
         message: isConfirmed
           ? `You reviewed "${r.submission.title}"`
           : `${name} submitted "${r.submission.title}"`,
@@ -296,17 +352,6 @@ const InstructorDashboardPage: React.FC = () => {
                 Welcome, {user?.firstName || "Instructor"}
               </h1>
             </div>
-            <Button
-              text="Create Course"
-              variant="primary"
-              fontSize="14px"
-              borderRadius="8px"
-              paddingWidth="16px"
-              paddingHeight="10px"
-              icon={<Plus className="w-4 h-4" />}
-              iconPosition="left"
-              onClick={() => navigate("/instructor/create-course")}
-            />
           </div>
 
           {/* Quick Stats Cards */}
@@ -343,7 +388,9 @@ const InstructorDashboardPage: React.FC = () => {
             {/* Pending Reviews Table */}
             <div className="xl:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900">Pending Reviews</h2>
+                <h2 className="text-base font-semibold text-gray-900">
+                  Pending Reviews
+                </h2>
                 <div className="flex items-center gap-1">
                   {(["all", "pending", "reviewed"] as const).map((tab) => (
                     <button
@@ -372,7 +419,9 @@ const InstructorDashboardPage: React.FC = () => {
                 ) : filteredReports.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Clock className="w-10 h-10 text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-500">No presentations to review</p>
+                    <p className="text-sm text-gray-500">
+                      No presentations to review
+                    </p>
                   </div>
                 ) : (
                   <Table
@@ -389,7 +438,9 @@ const InstructorDashboardPage: React.FC = () => {
             {/* Recent Activity Sidebar */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="p-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900">Recent Activity</h2>
+                <h2 className="text-base font-semibold text-gray-900">
+                  Recent Activity
+                </h2>
               </div>
               {recentActivityItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -401,9 +452,13 @@ const InstructorDashboardPage: React.FC = () => {
                   {recentActivityItems.map((activity) => (
                     <div key={activity.id} className="p-3">
                       <div className="flex items-start gap-3">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          activity.type === "submission" ? "bg-amber-50" : "bg-green-50"
-                        }`}>
+                        <div
+                          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            activity.type === "submission"
+                              ? "bg-amber-50"
+                              : "bg-green-50"
+                          }`}
+                        >
                           {activity.type === "submission" ? (
                             <Upload className="w-3.5 h-3.5 text-amber-600" />
                           ) : (
@@ -411,8 +466,12 @@ const InstructorDashboardPage: React.FC = () => {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-700 line-clamp-2">{activity.message}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{activity.time}</p>
+                          <p className="text-sm text-gray-700 line-clamp-2">
+                            {activity.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {activity.time}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -425,7 +484,9 @@ const InstructorDashboardPage: React.FC = () => {
           {/* Course Overview Section */}
           <div className="mt-6 lg:mt-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Your Courses</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Your Courses
+              </h2>
               <button
                 onClick={() => navigate("/instructor/manage-courses")}
                 className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700"
@@ -444,23 +505,40 @@ const InstructorDashboardPage: React.FC = () => {
                   <div
                     key={course.courseId}
                     className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => navigate(`/instructor/course/${course.courseId}`)}
+                    onClick={() =>
+                      navigate(`/instructor/course/${course.courseId}`)
+                    }
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center">
                         <BookOpen className="w-4 h-4 text-indigo-600" />
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        course.isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          course.isActive
+                            ? "bg-green-50 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
                         {course.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900">{course.courseName}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{course.courseCode}</p>
+                    <h3 className="font-semibold text-gray-900">
+                      {course.courseName}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {course.courseCode}
+                    </p>
                     <div className="flex items-center justify-between text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
                       <span>{course.semester}</span>
-                      <span>{activeClasses.filter((c) => c.course.courseId === course.courseId).length} classes</span>
+                      <span>
+                        {
+                          activeClasses.filter(
+                            (c) => c.course.courseId === course.courseId,
+                          ).length
+                        }{" "}
+                        classes
+                      </span>
                     </div>
                   </div>
                 ))}
