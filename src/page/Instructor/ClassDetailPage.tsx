@@ -1456,6 +1456,7 @@ const ClassDetailPage: React.FC = () => {
           }}
           groupId={selectedGroupId}
           hideFooterActions
+          isInstructor
         />
       )}
 

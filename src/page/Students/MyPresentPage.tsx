@@ -299,12 +299,16 @@ const MyPresentationsPage: React.FC = () => {
             <div className="space-y-2.5">
               {filtered.map((p) => {
                 const sc = STATUS_CONFIG[p.status] || STATUS_CONFIG["draft"];
+                const isGroupPresentation = p.studentId !== user?.userId;
+                const ownerName = p.student
+                  ? `${p.student.firstName} ${p.student.lastName}`.trim()
+                  : "Trưởng nhóm";
                 return (
                   <div
                     key={p.presentationId}
                     onClick={() => navigate(`/student/presentation/${p.presentationId}`)}
                     className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer transition-all hover:shadow-sm hover:bg-slate-50/80"
-                    style={{ border: "1px solid #e8efff", background: "#f8faff" }}
+                    style={{ border: isGroupPresentation ? "1px solid #dbeafe" : "1px solid #e8efff", background: isGroupPresentation ? "#f0f7ff" : "#f8faff" }}
                   >
                     <div
                       className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${sc.bg}`}>
@@ -322,13 +326,28 @@ const MyPresentationsPage: React.FC = () => {
                         <Text strong className="!text-slate-900 !text-sm sm:!text-base !min-w-0 !flex-1 !truncate">
                           {p.title}
                         </Text>
-                        <Tag
-                          className={`!m-0 !shrink-0 !rounded-full !text-xs !font-medium !border-0 !px-2.5 !py-0.5 !leading-5 !whitespace-nowrap ${sc.bg} ${sc.color}`}
-                          icon={p.status === "processing" ? <SyncOutlined className="!text-[10px]" spin /> : null}>
-                          {sc.label}
-                        </Tag>
+                        <Flex gap={6} align="center" className="shrink-0">
+                          {isGroupPresentation && (
+                            <Tag color="blue" className="!m-0 !rounded-full !text-xs !border-0 !px-2 !py-0.5 !leading-5">
+                              Nhóm
+                            </Tag>
+                          )}
+                          <Tag
+                            className={`!m-0 !rounded-full !text-xs !font-medium !border-0 !px-2.5 !py-0.5 !leading-5 !whitespace-nowrap ${sc.bg} ${sc.color}`}
+                            icon={p.status === "processing" ? <SyncOutlined className="!text-[10px]" spin /> : null}>
+                            {sc.label}
+                          </Tag>
+                        </Flex>
                       </Flex>
                       <Flex gap={12} wrap align="center">
+                        {isGroupPresentation && (
+                          <>
+                            <Text className="!text-xs !text-blue-500 !font-medium">
+                              👑 {ownerName}
+                            </Text>
+                            <span className="text-slate-300 text-xs">·</span>
+                          </>
+                        )}
                         <Text type="secondary" className="!text-xs sm:!text-sm">
                           {p.topic?.topicName || "Không có chủ đề"}
                         </Text>

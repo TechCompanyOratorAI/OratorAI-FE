@@ -230,3 +230,10 @@ export const GROUP_MEMBER_GRADES_ENDPOINT = (
   groupId: string,
   studentId: string,
 ) => `${BASE_URL}/api/v1/groups/${groupId}/members/${studentId}/grades`;
+export const GRADE_DISTRIBUTION_FEEDBACK_ENDPOINT = (groupId: string, distributionId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions/${distributionId}/feedback`;
+export const GRADE_DISTRIBUTION_REOPEN_ENDPOINT = (groupId: string, distributionId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions/${distributionId}/reopen`;
+export const GRADE_DISTRIBUTION_FINALIZE_ENDPOINT = (groupId: string, distributionId: string) =>
+  `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions/${distributionId}/finalize`;
+
