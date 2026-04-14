@@ -10,6 +10,7 @@ import {
   Space,
   Typography,
   App,
+  Tooltip,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined } from "@ant-design/icons";
@@ -84,6 +85,12 @@ const ManageClassesPage: React.FC = () => {
     });
   }, [apiClasses, searchQuery, selectedFilter]);
 
+  // Zebra stripe: đổi màu xen kẽ theo hàng + hover effect
+  const getRowClassName = (_: any, index: number) => {
+    const base = index % 2 === 0 ? "bg-white" : "bg-gray-50";
+    return `${base} table-row-clickable hover:bg-blue-50/50 transition-colors duration-150`;
+  };
+
   const totalStudents = filteredCourses.reduce(
     (acc, c) => acc + (c.enrollmentCount ?? 0),
     0,
@@ -143,6 +150,14 @@ const ManageClassesPage: React.FC = () => {
         <Tag color={status === "active" ? "green" : "default"}>
           {status === "active" ? "Active" : "Archived"}
         </Tag>
+      ),
+    },
+    {
+      title: "",
+      key: "chevron",
+      width: 32,
+      render: () => (
+        <span className="row-chevron text-gray-400 text-lg select-none transition-colors duration-150">›</span>
       ),
     },
     {
@@ -295,11 +310,26 @@ const ManageClassesPage: React.FC = () => {
               </Space>
             </div>
 
+            <Tooltip title="Click to view class details" placement="top">
             <Table
               columns={columns}
               dataSource={filteredCourses}
               rowKey="classId"
               loading={loading}
+              onRow={(record, index) => ({
+                className: getRowClassName(record, index ?? 0),
+                onClick: () => navigate(`/instructor/class/${record.classId}`),
+                style: { cursor: "pointer" },
+                onMouseEnter: (e) => {
+                  // Highlight chevron on hover
+                  const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                  if (chevron) chevron.classList.add("text-blue-500");
+                },
+                onMouseLeave: (e) => {
+                  const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                  if (chevron) chevron.classList.remove("text-blue-500");
+                },
+              })}
               pagination={
                 pagination && pagination.total > 0
                   ? {
@@ -323,6 +353,7 @@ const ManageClassesPage: React.FC = () => {
                   : "No classes available",
               }}
             />
+            </Tooltip>
           </Card>
         </div>
       </main>
