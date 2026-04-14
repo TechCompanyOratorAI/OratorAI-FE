@@ -1187,7 +1187,13 @@ const PresentationDetailPage: React.FC = () => {
       {/* Modal phân chia điểm cho nhóm (Leader) */}
       <GradeDistributionModal
         isOpen={gradeDistributionModalOpen}
-        onClose={() => setGradeDistributionModalOpen(false)}
+        onClose={() => {
+          setGradeDistributionModalOpen(false);
+          // Refresh distribution data khi modal đóng để trang chính hiển thị đúng trạng thái mới nhất
+          if (currentReport?.reportId) {
+            void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
+          }
+        }}
         reportId={currentReport?.reportId ?? 0}
         instructorGrade={currentReport?.gradeForInstructor ?? 0}
         groupMembers={groupDetail?.students ?? group?.students ?? []}
