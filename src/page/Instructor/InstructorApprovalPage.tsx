@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
-import Toast from "@/components/Toast/Toast";
-import {
+import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";import {
   FileText,
   Clock,
   CheckCircle,
@@ -10,8 +8,6 @@ import {
   Eye,
   BookOpen,
   User,
-  Users,
-  GraduationCap,
 } from "lucide-react";
 import {
   Table,
@@ -36,7 +32,7 @@ import {
   unapprovePresentation,
 } from "@/services/features/instructor/instructorApprovalSlice";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const timeAgo = (dateStr: string): string => {
   const now = new Date();
@@ -309,7 +305,7 @@ const InstructorApprovalPage: React.FC = () => {
     {
       title: "Trạng thái",
       key: "status",
-      render: (_, record) => (
+      render: (_) => (
         <Tag
           icon={<CheckCircle className="w-3 h-3" />}
           color="success"
@@ -370,8 +366,6 @@ const InstructorApprovalPage: React.FC = () => {
     <div className="flex min-h-screen bg-slate-50">
       <SidebarInstructor />
       <main className="flex-1 ml-64 p-8">
-        <Toast />
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">

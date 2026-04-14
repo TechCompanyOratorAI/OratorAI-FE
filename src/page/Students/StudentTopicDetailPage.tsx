@@ -63,7 +63,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector((state) => state.topic);
   const { presentations } = useAppSelector((state) => state.presentation);
   const { user } = useAppSelector((state) => state.auth);
-  const { selectedClass } = useAppSelector((state) => state.class);
+  void user; // suppress unused warning
   const {
     myGroupForClass,
     groupTopic,
