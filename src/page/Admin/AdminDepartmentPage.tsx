@@ -13,13 +13,15 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
-  Plus,
-  Edit2,
-  Trash2,
-  RefreshCw,
-  Search,
-  Building2,
-} from "lucide-react";
+  BookOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import DepartmentModal, {
   DepartmentFormData,
@@ -35,7 +37,9 @@ import { AppDispatch, RootState } from "@/services/store/store";
 
 const AdminDepartmentPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { departments, loading } = useSelector((state: RootState) => state.admin);
+  const { departments, loading } = useSelector(
+    (state: RootState) => state.admin,
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<
@@ -49,7 +53,23 @@ const AdminDepartmentPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { message: antdMessage } = App.useApp();
+  const { notification } = App.useApp();
+
+  const notifySuccess = (title: string, description: string) => {
+    notification.success({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
+
+  const notifyError = (title: string, description: string) => {
+    notification.error({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
 
   useEffect(() => {
     dispatch(fetchDepartments());
@@ -70,9 +90,9 @@ const AdminDepartmentPage: React.FC = () => {
     try {
       await dispatch(deleteDepartment(departmentId.toString())).unwrap();
       await dispatch(fetchDepartments());
-      antdMessage.success("Department deleted successfully");
+      notifySuccess("Delete Success", "Department deleted successfully.");
     } catch {
-      antdMessage.error("Failed to delete department");
+      notifyError("Delete Failed", "Failed to delete department.");
     }
     setActionLoading(false);
   };
@@ -90,7 +110,7 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        antdMessage.success("Department updated successfully");
+        notifySuccess("Update Success", "Department updated successfully.");
       } else {
         await dispatch(
           createDepartment({
@@ -100,40 +120,51 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        antdMessage.success("Department created successfully");
+        notifySuccess("Create Success", "Department created successfully.");
       }
       setIsModalOpen(false);
       setSelectedDepartment(undefined);
     } catch {
-      antdMessage.error(
+      notifyError(
+        selectedDepartment ? "Update Failed" : "Create Failed",
         selectedDepartment
-          ? "Failed to update department"
-          : "Failed to create department",
+          ? "Failed to update department."
+          : "Failed to create department.",
       );
     }
     setActionLoading(false);
   };
 
   const filteredDepartments = useMemo(() => {
-    return departments.filter((department) => {
-      const matchesSearch =
-        department.departmentCode
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        department.departmentName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (department.description || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+    return [...departments]
+      .sort((left, right) => {
+        const leftTime = left.createdAt
+          ? new Date(left.createdAt).getTime()
+          : 0;
+        const rightTime = right.createdAt
+          ? new Date(right.createdAt).getTime()
+          : 0;
+        return rightTime - leftTime;
+      })
+      .filter((department) => {
+        const matchesSearch =
+          department.departmentCode
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          department.departmentName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (department.description || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
 
-      const matchesStatus =
-        filterStatus === "all" ||
-        (filterStatus === "active" && department.isActive) ||
-        (filterStatus === "inactive" && !department.isActive);
+        const matchesStatus =
+          filterStatus === "all" ||
+          (filterStatus === "active" && department.isActive) ||
+          (filterStatus === "inactive" && !department.isActive);
 
-      return matchesSearch && matchesStatus;
-    });
+        return matchesSearch && matchesStatus;
+      });
   }, [departments, searchTerm, filterStatus]);
 
   const stats = useMemo(() => {
@@ -193,7 +224,7 @@ const AdminDepartmentPage: React.FC = () => {
         <Space size="small">
           <Button
             type="text"
-            icon={<Edit2 size={14} />}
+            icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleEditDepartment(record)}
             className="text-blue-500 hover:text-blue-600"
           />
@@ -207,7 +238,7 @@ const AdminDepartmentPage: React.FC = () => {
           >
             <Button
               type="text"
-              icon={<Trash2 size={14} />}
+              icon={<DeleteOutlined style={{ fontSize: 14 }} />}
               danger
             />
           </Popconfirm>
@@ -235,7 +266,7 @@ const AdminDepartmentPage: React.FC = () => {
             </div>
             <Space>
               <Button
-                icon={<RefreshCw size={14} />}
+                icon={<ReloadOutlined style={{ fontSize: 14 }} />}
                 onClick={() => dispatch(fetchDepartments())}
                 loading={loading}
               >
@@ -243,7 +274,7 @@ const AdminDepartmentPage: React.FC = () => {
               </Button>
               <Button
                 type="primary"
-                icon={<Plus size={14} />}
+                icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateDepartment}
               >
                 New Department
@@ -255,7 +286,7 @@ const AdminDepartmentPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <Building2 size={20} />
+                  <BookOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -268,7 +299,7 @@ const AdminDepartmentPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <Building2 size={20} />
+                  <CheckCircleOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -281,7 +312,7 @@ const AdminDepartmentPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-red-100 text-red-600 p-2">
-                  <Building2 size={20} />
+                  <ExclamationCircleOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -304,7 +335,7 @@ const AdminDepartmentPage: React.FC = () => {
               <Space wrap>
                 <Input
                   placeholder="Search by code, name, or description..."
-                  prefix={<Search size={14} className="text-gray-400" />}
+                  prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -349,9 +380,10 @@ const AdminDepartmentPage: React.FC = () => {
                 },
               }}
               locale={{
-                emptyText: searchTerm || filterStatus !== "all"
-                  ? "No departments found matching your filters"
-                  : "No departments available. Create your first department to get started.",
+                emptyText:
+                  searchTerm || filterStatus !== "all"
+                    ? "No departments found matching your filters"
+                    : "No departments available. Create your first department to get started.",
               }}
             />
           </Card>

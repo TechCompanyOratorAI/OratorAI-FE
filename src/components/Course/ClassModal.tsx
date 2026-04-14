@@ -114,8 +114,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
       footer={null}
       centered
       width={560}
-      destroyOnClose
-      loading={submitting || isLoading}
+      destroyOnHidden
       maskClosable={!(submitting || isLoading)}
     >
       <Form
@@ -177,7 +176,31 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
           <Form.Item
             name="maxGroupMembers"
-            label={<Text strong>Số thành viên nhóm tối đa</Text>}
+            label={<Text strong>Số nhóm tối đa</Text>}
+            dependencies={["maxStudents"]}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const maxStudents = getFieldValue("maxStudents") as
+                    | number
+                    | undefined;
+
+                  if (value === undefined || value === null || value === "") {
+                    return Promise.resolve();
+                  }
+
+                  if (maxStudents && Number(value) >= Number(maxStudents)) {
+                    return Promise.reject(
+                      new Error(
+                        "Số nhóm tối đa phải nhỏ hơn Số sinh viên tối đa",
+                      ),
+                    );
+                  }
+
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <InputNumber
               className="w-full"
@@ -236,7 +259,29 @@ const ClassModal: React.FC<ClassModalProps> = ({
           <Form.Item
             name="keyExpiresAt"
             label={<Text strong>Thời hạn mã</Text>}
-            rules={[{ required: true, message: "Bắt buộc" }]}
+            dependencies={["startDate"]}
+            rules={[
+              { required: true, message: "Bắt buộc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const startDate = getFieldValue("startDate") as
+                    | Dayjs
+                    | undefined;
+
+                  if (!value || !startDate) return Promise.resolve();
+
+                  if (value.isBefore(startDate, "day")) {
+                    return Promise.reject(
+                      new Error(
+                        "Thời hạn mã phải bằng hoặc sau ngày bắt đầu lớp",
+                      ),
+                    );
+                  }
+
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <DatePicker
               className="w-full"
@@ -249,9 +294,31 @@ const ClassModal: React.FC<ClassModalProps> = ({
         <Form.Item
           name="keyMaxUses"
           label={<Text strong>Số lượt sử dụng mã</Text>}
+          dependencies={["maxStudents"]}
           rules={[
             { required: true, message: "Bắt buộc" },
             { type: "number", min: 1, message: "Tối thiểu 1" },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                const maxStudents = getFieldValue("maxStudents") as
+                  | number
+                  | undefined;
+
+                if (value === undefined || value === null || value === "") {
+                  return Promise.resolve();
+                }
+
+                if (maxStudents && Number(value) > Number(maxStudents)) {
+                  return Promise.reject(
+                    new Error(
+                      "Số lượt sử dụng mã không được lớn hơn Số sinh viên tối đa",
+                    ),
+                  );
+                }
+
+                return Promise.resolve();
+              },
+            }),
           ]}
         >
           <InputNumber className="w-full" min={1} max={10000} />
@@ -272,7 +339,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               loading={submitting || isLoading}
               className="!rounded-full"
             >
-              {(submitting || isLoading) ? "Đang lưu..." : "Lưu lớp học"}
+              {submitting || isLoading ? "Đang lưu..." : "Lưu lớp học"}
             </Button>
           </Space>
         </Form.Item>

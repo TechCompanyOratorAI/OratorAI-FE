@@ -17,14 +17,16 @@ import CourseModal from "@/components/Course/CourseModal";
 import InstructorModal from "@/components/Course/InstructorModal";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import {
-  Plus,
-  Edit2,
-  Users,
-  RefreshCw,
-  Book,
-  Search,
-} from "lucide-react";
-import { DeleteOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReadOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  UsergroupAddOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
 import {
   Table,
   Button,
@@ -61,7 +63,23 @@ const AdminCoursePage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { message: antdMessage } = App.useApp();
+  const { notification } = App.useApp();
+
+  const notifySuccess = (title: string, description: string) => {
+    notification.success({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
+
+  const notifyError = (title: string, description: string) => {
+    notification.error({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
 
   useEffect(() => {
     dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
@@ -85,9 +103,9 @@ const AdminCoursePage: React.FC = () => {
     setActionLoading(true);
     try {
       await dispatch(deleteCourse(courseId)).unwrap();
-      antdMessage.success("Course deleted successfully");
+      notifySuccess("Delete Success", "Course deleted successfully.");
     } catch {
-      antdMessage.error("Failed to delete course");
+      notifyError("Delete Failed", "Failed to delete course.");
     }
     setActionLoading(false);
   };
@@ -102,18 +120,19 @@ const AdminCoursePage: React.FC = () => {
             data: courseData,
           }),
         ).unwrap();
-        antdMessage.success("Course updated successfully");
+        notifySuccess("Update Success", "Course updated successfully.");
       } else {
         await dispatch(createCourse(courseData)).unwrap();
-        antdMessage.success("Course created successfully");
+        notifySuccess("Create Success", "Course created successfully.");
       }
       setIsCourseModalOpen(false);
       setSelectedCourse(undefined);
     } catch {
-      antdMessage.error(
+      notifyError(
+        selectedCourse ? "Update Failed" : "Create Failed",
         selectedCourse
-          ? "Failed to update course"
-          : "Failed to create course",
+          ? "Failed to update course."
+          : "Failed to create course.",
       );
     }
     setActionLoading(false);
@@ -125,33 +144,56 @@ const AdminCoursePage: React.FC = () => {
     await dispatch(fetchInstructorByCourse(course.courseId.toString()));
   };
 
+  const refreshSelectedCourse = async (courseId: number) => {
+    const refreshResult = await dispatch(
+      fetchCourses({ page: currentPage, limit: pageSize }),
+    );
+
+    if (fetchCourses.fulfilled.match(refreshResult)) {
+      const updatedCourse = refreshResult.payload.data.find(
+        (course) => course.courseId === courseId,
+      );
+
+      if (updatedCourse) {
+        setSelectedCourse(updatedCourse);
+      }
+    }
+  };
+
   const handleAddInstructor = async (userId: number) => {
     if (!selectedCourse) return;
+    const courseId = selectedCourse.courseId;
+
     try {
       await axiosInstance.post(
-        ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(selectedCourse.courseId.toString()),
+        ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(courseId.toString()),
         { instructorIds: [userId] },
       );
-      antdMessage.success("Instructor added successfully");
-      await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
+      notifySuccess("Add Instructor Success", "Instructor added successfully.");
+      await refreshSelectedCourse(courseId);
     } catch {
-      antdMessage.error("Failed to add instructor");
+      notifyError("Add Instructor Failed", "Failed to add instructor.");
     }
   };
 
   const handleRemoveInstructor = async (userId: number) => {
     if (!selectedCourse) return;
+    const courseId = selectedCourse.courseId;
+
     try {
       await axiosInstance.delete(
         REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT(
-          selectedCourse.courseId.toString(),
+          courseId.toString(),
           userId.toString(),
         ),
       );
-      antdMessage.success("Instructor removed successfully");
-      await dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
+      notifySuccess(
+        "Remove Instructor Success",
+        "Instructor removed successfully.",
+      );
+      await refreshSelectedCourse(courseId);
     } catch {
-      antdMessage.error("Failed to remove instructor");
+      notifyError("Remove Instructor Failed", "Failed to remove instructor.");
     }
   };
 
@@ -247,11 +289,18 @@ const AdminCoursePage: React.FC = () => {
       title: "Instructor",
       key: "instructor",
       render: (_, record) => {
-        const instructors = record.instructors && record.instructors.length > 0
-          ? record.instructors
-          : record.instructor ? [record.instructor] : [];
+        const instructors =
+          record.instructors && record.instructors.length > 0
+            ? record.instructors
+            : record.instructor
+              ? [record.instructor]
+              : [];
         if (instructors.length === 0) {
-          return <span className="text-gray-400 italic text-xs">No instructor assigned</span>;
+          return (
+            <span className="text-gray-400 italic text-xs">
+              No instructor assigned
+            </span>
+          );
         }
         return (
           <div className="space-y-1">
@@ -302,14 +351,14 @@ const AdminCoursePage: React.FC = () => {
         <Space size="small">
           <Button
             type="text"
-            icon={<UsergroupAddOutlined size={14} />}
+            icon={<UsergroupAddOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleManageInstructors(record)}
-            className="text-purple-500 hover:text-purple-600"
+            className="text-green-500 hover:text-green-600"
             title="Manage Instructors"
           />
           <Button
             type="text"
-            icon={<Edit2 size={14} />}
+            icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleEditCourse(record)}
             className="text-blue-500 hover:text-blue-600"
             title="Edit"
@@ -353,7 +402,7 @@ const AdminCoursePage: React.FC = () => {
             </div>
             <Space>
               <Button
-                icon={<RefreshCw size={14} />}
+                icon={<ReloadOutlined style={{ fontSize: 14 }} />}
                 onClick={() =>
                   dispatch(fetchCourses({ page: currentPage, limit: pageSize }))
                 }
@@ -363,7 +412,7 @@ const AdminCoursePage: React.FC = () => {
               </Button>
               <Button
                 type="primary"
-                icon={<Plus size={14} />}
+                icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateCourse}
               >
                 New Course
@@ -375,7 +424,7 @@ const AdminCoursePage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <Book size={20} />
+                  <ReadOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -388,7 +437,7 @@ const AdminCoursePage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <Book size={20} />
+                  <CheckCircleOutlined style={{ fontSize: 24 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -401,7 +450,7 @@ const AdminCoursePage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <Users size={20} />
+                  <TeamOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -424,7 +473,7 @@ const AdminCoursePage: React.FC = () => {
               <Space wrap>
                 <Input
                   placeholder="Search by name or code..."
-                  prefix={<Search size={14} className="text-gray-400" />}
+                  prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -471,9 +520,10 @@ const AdminCoursePage: React.FC = () => {
                   : false
               }
               locale={{
-                emptyText: searchTerm || filterSemester
-                  ? "No courses found matching your filters"
-                  : "No courses available. Create your first course to get started.",
+                emptyText:
+                  searchTerm || filterSemester
+                    ? "No courses found matching your filters"
+                    : "No courses available. Create your first course to get started.",
               }}
             />
           </Card>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Select, Button, Space, List, Typography } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
-import { Plus } from "lucide-react";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { InstructorInfo } from "@/services/features/admin/classSlice";
 
 const { Text } = Typography;
@@ -25,7 +24,9 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
   onRemoveInstructor,
   isLoading = false,
 }) => {
-  const [selectedInstructorId, setSelectedInstructorId] = useState<number | null>(null);
+  const [selectedInstructorId, setSelectedInstructorId] = useState<
+    number | null
+  >(null);
   const [instructorList, setInstructorList] = useState<InstructorInfo[]>([]);
 
   useEffect(() => {
@@ -33,8 +34,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
   }, [currentInstructors, isOpen]);
 
   const availableForSelection = availableInstructors.filter(
-    (instructor) =>
-      !instructorList.find((i) => i.userId === instructor.userId),
+    (instructor) => !instructorList.find((i) => i.userId === instructor.userId),
   );
 
   const handleAddInstructor = () => {
@@ -70,14 +70,15 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
       footer={null}
       centered
       width={640}
-      destroyOnClose
-      loading={isLoading}
+      destroyOnHidden
       maskClosable={!isLoading}
     >
       <div className="space-y-6 mt-4">
         {/* Add Instructor */}
         <div>
-          <Text strong className="block mb-3">Thêm giảng viên</Text>
+          <Text strong className="block mb-3">
+            Thêm giảng viên
+          </Text>
           <Space.Compact style={{ width: "100%" }}>
             <Select
               placeholder="Chọn giảng viên..."
@@ -88,7 +89,9 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
               allowClear
               showSearch
               filterOption={(input, option) =>
-                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
               }
               options={availableForSelection.map((i) => ({
                 value: i.userId,
@@ -102,7 +105,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
             />
             <Button
               type="primary"
-              icon={<Plus />}
+              icon={<PlusOutlined />}
               onClick={handleAddInstructor}
               disabled={
                 isLoading ||
@@ -139,7 +142,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
                       danger
                       onClick={() => handleRemoveInstructor(instructor.userId)}
                       disabled={isLoading}
-                    />
+                    />,
                   ]}
                 >
                   <List.Item.Meta
@@ -148,7 +151,9 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
                         {instructor.firstName} {instructor.lastName}
                       </Text>
                     }
-                    description={<Text type="secondary">{instructor.email}</Text>}
+                    description={
+                      <Text type="secondary">{instructor.email}</Text>
+                    }
                   />
                 </List.Item>
               )}

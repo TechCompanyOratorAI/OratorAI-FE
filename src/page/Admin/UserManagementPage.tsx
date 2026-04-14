@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Users, RefreshCw, Search } from "lucide-react";
+import {
+  ReloadOutlined,
+  SearchOutlined,
+  UserOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
 import { Table, Button, Input, Select, Tag, Space, Card } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
@@ -154,7 +160,7 @@ const UserManagementPage: React.FC = () => {
               </p>
             </div>
             <Button
-              icon={<RefreshCw size={14} />}
+              icon={<ReloadOutlined style={{ fontSize: 14 }} />}
               onClick={() => dispatch(fetchAllUsers())}
               loading={loading}
             >
@@ -166,7 +172,7 @@ const UserManagementPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <Users size={20} />
+                  <TeamOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -179,7 +185,7 @@ const UserManagementPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <Users size={20} />
+                  <UserOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -192,7 +198,7 @@ const UserManagementPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <Users size={20} />
+                  <CheckCircleOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -217,7 +223,7 @@ const UserManagementPage: React.FC = () => {
               <Space wrap>
                 <Input
                   placeholder="Search..."
-                  prefix={<Search size={14} className="text-gray-400" />}
+                  prefix={<SearchOutlined className="text-gray-400" />}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);

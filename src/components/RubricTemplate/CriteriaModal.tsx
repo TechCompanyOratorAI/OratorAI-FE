@@ -1,19 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Button,
-  Space,
-  Typography,
-  Popconfirm,
-  Card,
-  Tag,
-  App,
-} from "antd";
-import { GripVertical } from "lucide-react";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+  AlertCircle,
+  Edit,
+  GripVertical,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -36,8 +29,6 @@ import {
   RubricTemplateCriterionPayload,
 } from "@/services/features/admin/rubricTempleSlice";
 
-const { Text } = Typography;
-
 interface CriteriaModalProps {
   isOpen: boolean;
   template: RubricTemplate | null;
@@ -55,28 +46,37 @@ interface CriteriaModalProps {
   onDelete: (criteriaId: number, rubricTemplateId: number) => Promise<void>;
 }
 
-interface CriteriaFormValues {
+interface CriteriaFormState {
   criteriaName: string;
   criteriaDescription: string;
-  weight: number;
-  maxScore: number;
-  displayOrder: number;
+  weight: string;
+  maxScore: string;
+  displayOrder: string;
   evaluationGuide: string;
   isActive: boolean;
 }
+
+const defaultFormState: CriteriaFormState = {
+  criteriaName: "",
+  criteriaDescription: "",
+  weight: "1",
+  maxScore: "100",
+  displayOrder: "1",
+  evaluationGuide: "",
+  isActive: true,
+};
 
 type SortableCriteriaItemProps = {
   criterion: RubricTemplateCriterion;
   isEditing: boolean;
   onSelect: (criterion: RubricTemplateCriterion) => void;
   onDelete: (criterion: RubricTemplateCriterion) => void;
-  onEditClick: (criterion: RubricTemplateCriterion) => void;
 };
 
 const SortableCriteriaItem = ({
   criterion,
   isEditing,
-  onEditClick,
+  onSelect,
   onDelete,
 }: SortableCriteriaItemProps) => {
   const {
@@ -93,76 +93,83 @@ const SortableCriteriaItem = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`w-full rounded-2xl border p-3 text-left transition-all ${
+      {...attributes}
+      {...listeners}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(criterion)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(criterion);
+        }
+      }}
+      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${
         isDragging
-          ? "border-blue-300 bg-blue-50/80 shadow-md"
+          ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
           : isEditing
-            ? "border-blue-300 bg-blue-50/70 shadow-sm"
-            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+            ? "border-sky-300 bg-sky-50/70 shadow-sm"
+            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
-          <Button
-            type="text"
-            icon={<GripVertical />}
-            {...attributes}
-            {...listeners}
-            className="mt-0.5 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-            title="Drag to reorder"
-          />
+          <span className="mt-0.5 rounded-lg p-1.5 text-slate-400">
+            <GripVertical className="h-4 w-4" />
+          </span>
 
           <div>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-slate-900">
               {criterion.displayOrder}. {criterion.criteriaName}
             </p>
-            <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+            <p className="mt-1 text-xs text-slate-600 line-clamp-2">
               {criterion.criteriaDescription}
             </p>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
-              <Tag color="blue">
-                Weight {Number(criterion.weight) % 1 === 0
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Persen{" "}
+                {Number(criterion.weight) % 1 === 0
                   ? Math.floor(Number(criterion.weight))
-                  : Number(criterion.weight).toFixed(1)}%
-              </Tag>
-              <Tag>Max: {criterion.maxScore}</Tag>
-              <Tag color={criterion.isActive ? "green" : "red"}>
+                  : Number(criterion.weight).toFixed(1)}
+                %
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                Max: {criterion.maxScore}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 ${
+                  criterion.isActive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
                 {criterion.isActive ? "Active" : "Inactive"}
-              </Tag>
+              </span>
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 gap-1">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => onEditClick(criterion)}
-            className="text-blue-500 hover:text-blue-600"
-            title="Edit criterion"
-          />
-          <Popconfirm
-            title="Xác nhận xóa criteria"
-            description={`Bạn có chắc muốn xóa criteria "${criterion.criteriaName}"?`}
-            onConfirm={() => onDelete(criterion)}
-            okText="Xóa"
-            okButtonProps={{ danger: true }}
-            cancelText="Hủy"
+          <span className="rounded-xl p-2 text-sky-600" title="Edit criterion">
+            <Edit className="h-4 w-4" />
+          </span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(criterion);
+            }}
+            className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
+            title="Delete criterion"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              danger
-              title="Delete criterion"
-            />
-          </Popconfirm>
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
@@ -179,8 +186,14 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   onReorder,
   onDelete,
 }) => {
-  const [form] = Form.useForm<CriteriaFormValues>();
+  const [formState, setFormState] =
+    useState<CriteriaFormState>(defaultFormState);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CriteriaFormState, string>>
+  >({});
   const [editingCriterion, setEditingCriterion] =
+    useState<RubricTemplateCriterion | null>(null);
+  const [deletingCriterion, setDeletingCriterion] =
     useState<RubricTemplateCriterion | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [localCriteria, setLocalCriteria] = useState<RubricTemplateCriterion[]>(
@@ -189,9 +202,6 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   const [originalCriteria, setOriginalCriteria] = useState<
     RubricTemplateCriterion[]
   >([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { message: antdMessage } = App.useApp();
 
   const sortedCriteria = useMemo(() => {
     return [...(template?.criteria || [])].sort(
@@ -204,6 +214,13 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     setOriginalCriteria(sortedCriteria);
   }, [sortedCriteria]);
 
+  const totalActivePercentage = useMemo(() => {
+    return localCriteria.reduce(
+      (sum, criterion) => sum + Number(criterion.weight),
+      0,
+    );
+  }, [localCriteria]);
+
   const nextDisplayOrder = useMemo(() => {
     if (sortedCriteria.length === 0) return 1;
     return (
@@ -211,12 +228,41 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     );
   }, [sortedCriteria]);
 
+  const potentialTotalPercentage = useMemo(() => {
+    if (editingCriterion) {
+      const oldCriterion = localCriteria.find(
+        (item) => item.criteriaId === editingCriterion.criteriaId,
+      );
+      if (!oldCriterion) return totalActivePercentage;
+
+      const oldWeight = Number(oldCriterion.weight);
+      const newWeight = Number(formState.weight);
+      return totalActivePercentage - oldWeight + newWeight;
+    }
+
+    const newWeight = Number(formState.weight);
+    return totalActivePercentage + newWeight;
+  }, [
+    editingCriterion,
+    formState.weight,
+    localCriteria,
+    totalActivePercentage,
+  ]);
+
+  const isPercentageComplete = useMemo(() => {
+    return totalActivePercentage >= 100;
+  }, [totalActivePercentage]);
+
+  const isPercentageExceeded = useMemo(() => {
+    return potentialTotalPercentage > 100;
+  }, [potentialTotalPercentage]);
   useEffect(() => {
     if (!isOpen) return;
     setEditingCriterion(null);
+    setDeletingCriterion(null);
     setSearchTerm("");
-    form.resetFields();
-  }, [isOpen, template?.rubricTemplateId, form]);
+    setCreateMode();
+  }, [isOpen, template?.rubricTemplateId]);
 
   const filteredCriteria = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -262,178 +308,235 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     });
   }, []);
 
-  const handleSaveReorder = async () => {
+  const handleCancelReorder = useCallback(() => {
+    setLocalCriteria(originalCriteria);
+  }, [originalCriteria]);
+
+  const handleSaveReorder = useCallback(async () => {
     if (!template || !isOrderChanged) return;
+
     const reorderedCriteria = localCriteria.map((criterion, index) => ({
       ...criterion,
       displayOrder: index + 1,
     }));
-    try {
-      await onReorder(reorderedCriteria);
-      setLocalCriteria(reorderedCriteria);
-      setOriginalCriteria(reorderedCriteria);
-      antdMessage.success("Cập nhật thứ tự criteria thành công");
-    } catch {
-      antdMessage.error("Không thể cập nhật thứ tự criteria");
-    }
-  };
 
-  const handleCancelReorder = () => {
-    setLocalCriteria(originalCriteria);
-  };
+    await onReorder(reorderedCriteria);
+    setLocalCriteria(reorderedCriteria);
+    setOriginalCriteria(reorderedCriteria);
+  }, [isOrderChanged, localCriteria, onReorder, template]);
 
-  const handleEditClick = (criterion: RubricTemplateCriterion) => {
+  if (!isOpen || !template) return null;
+
+  const setEditMode = (criterion: RubricTemplateCriterion) => {
     setEditingCriterion(criterion);
+    setErrors({});
     const weightNum = Number(criterion.weight);
-    form.setFieldsValue({
-      criteriaName: criterion.criteriaName,
-      criteriaDescription: criterion.criteriaDescription,
-      weight: weightNum % 1 === 0 ? Math.floor(weightNum) : weightNum,
-      maxScore: criterion.maxScore,
-      displayOrder: criterion.displayOrder,
-      evaluationGuide: criterion.evaluationGuide,
+    setFormState({
+      criteriaName: criterion.criteriaName || "",
+      criteriaDescription: criterion.criteriaDescription || "",
+      weight: String(weightNum % 1 === 0 ? Math.floor(weightNum) : weightNum),
+      maxScore: String(criterion.maxScore ?? ""),
+      displayOrder: String(criterion.displayOrder ?? ""),
+      evaluationGuide: criterion.evaluationGuide || "",
       isActive: criterion.isActive,
     });
   };
 
-  const handleCreateNew = () => {
+  const setCreateMode = (displayOrder = nextDisplayOrder) => {
     setEditingCriterion(null);
-    form.resetFields();
-    form.setFieldsValue({
-      weight: 1,
-      maxScore: 100,
-      displayOrder: nextDisplayOrder,
+    setErrors({});
+    setFormState({
+      criteriaName: "",
+      criteriaDescription: "",
+      weight: "1",
+      maxScore: "100",
+      displayOrder: String(displayOrder),
+      evaluationGuide: "",
       isActive: true,
     });
   };
 
-  const handleSubmit = async (values: CriteriaFormValues) => {
-    if (!template) return;
-    setIsSubmitting(true);
-    try {
-      const payload: RubricTemplateCriterionPayload = {
-        criteriaName: values.criteriaName,
-        criteriaDescription: values.criteriaDescription,
-        weight: Number(values.weight),
-        maxScore: Number(values.maxScore),
-        displayOrder: Number(values.displayOrder),
-        evaluationGuide: values.evaluationGuide,
-        isActive: values.isActive,
-      };
+  const validateForm = () => {
+    const nextErrors: Partial<Record<keyof CriteriaFormState, string>> = {};
 
-      if (editingCriterion) {
-        await onUpdate(editingCriterion.criteriaId, payload);
-        antdMessage.success("Cập nhật criteria thành công");
-        handleCreateNew();
-      } else {
-        await onCreate(template.rubricTemplateId, payload);
-        antdMessage.success("Tạo criteria thành công");
-        form.setFieldsValue({
-          criteriaName: "",
-          criteriaDescription: "",
-          weight: 1,
-          maxScore: 100,
-          displayOrder: Number(values.displayOrder) + 1,
-          evaluationGuide: "",
-          isActive: true,
-        });
-      }
-    } catch {
-      // error handled in parent
-    } finally {
-      setIsSubmitting(false);
+    if (!formState.criteriaName.trim()) {
+      nextErrors.criteriaName = "Criteria name is required";
+    }
+
+    if (!formState.criteriaDescription.trim()) {
+      nextErrors.criteriaDescription = "Criteria description is required";
+    }
+
+    const weightValue = Number(formState.weight);
+    if (Number.isNaN(weightValue) || weightValue <= 0) {
+      nextErrors.weight = "Persen must be a number greater than 0";
+    }
+
+    const maxScoreValue = Number(formState.maxScore);
+    if (Number.isNaN(maxScoreValue) || maxScoreValue <= 0) {
+      nextErrors.maxScore = "Max score must be a number greater than 0";
+    }
+
+    const displayOrderValue = Number(formState.displayOrder);
+    if (
+      Number.isNaN(displayOrderValue) ||
+      !Number.isInteger(displayOrderValue) ||
+      displayOrderValue <= 0
+    ) {
+      nextErrors.displayOrder = "Display order must be a positive integer";
+    }
+
+    if (!formState.evaluationGuide.trim()) {
+      nextErrors.evaluationGuide = "Evaluation guide is required";
+    }
+
+    if (formState.isActive && potentialTotalPercentage > 100) {
+      nextErrors.weight = `Total percentage will exceed 100% (will be ${potentialTotalPercentage.toFixed(1)}%)`;
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const buildPayload = (): RubricTemplateCriterionPayload => ({
+    criteriaName: formState.criteriaName.trim(),
+    criteriaDescription: formState.criteriaDescription.trim(),
+    weight: Number(formState.weight),
+    maxScore: Number(formState.maxScore),
+    displayOrder: Number(formState.displayOrder),
+    evaluationGuide: formState.evaluationGuide.trim(),
+    isActive: formState.isActive,
+  });
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!validateForm()) return;
+
+    const payload = buildPayload();
+
+    if (editingCriterion) {
+      await onUpdate(editingCriterion.criteriaId, payload);
+      setCreateMode();
+    } else {
+      await onCreate(template.rubricTemplateId, payload);
+      setCreateMode(Number(payload.displayOrder) + 1);
     }
   };
 
-  const handleDeleteCriterion = async (criterion: RubricTemplateCriterion) => {
-    if (!template) return;
-    try {
-      await onDelete(criterion.criteriaId, template.rubricTemplateId);
-      if (editingCriterion?.criteriaId === criterion.criteriaId) {
-        handleCreateNew();
-      }
-    } catch {
-      // error handled in parent
+  const handleDeleteCriterion = async () => {
+    if (!deletingCriterion) return;
+
+    await onDelete(deletingCriterion.criteriaId, template.rubricTemplateId);
+    setDeletingCriterion(null);
+
+    if (editingCriterion?.criteriaId === deletingCriterion.criteriaId) {
+      setCreateMode();
     }
   };
-
-  const statsActive = sortedCriteria.filter((c) => c.isActive).length;
-  const statsInactive = sortedCriteria.filter((c) => !c.isActive).length;
 
   return (
-    <Modal
-      title={
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Rubric Template
-          </p>
-          <p className="text-lg font-semibold">Criteria Management</p>
-          <p className="text-sm font-normal text-gray-500">
-            {template?.templateName}
-          </p>
-        </div>
-      }
-      open={isOpen}
-      onCancel={onClose}
-      footer={null}
-      centered
-      width={1000}
-      destroyOnClose
-      loading={isLoading}
-      maskClosable={!isLoading}
-    >
-      <div className="mt-4">
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          <Card size="small" className="text-center">
-            <Text type="secondary" className="text-xs">Total</Text>
-            <p className="text-lg font-bold">{sortedCriteria.length}</p>
-          </Card>
-          <Card size="small" className="text-center">
-            <Text type="secondary" className="text-xs">Active</Text>
-            <p className="text-lg font-bold text-green-600">{statsActive}</p>
-          </Card>
-          <Card size="small" className="text-center">
-            <Text type="secondary" className="text-xs">Inactive</Text>
-            <p className="text-lg font-bold text-red-600">{statsInactive}</p>
-          </Card>
-          <Card size="small" className="text-center">
-            <Text type="secondary" className="text-xs">Next Order</Text>
-            <p className="text-lg font-bold">{nextDisplayOrder}</p>
-          </Card>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+      <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="bg-gradient-to-r from-sky-50 via-white to-emerald-50 border-b border-slate-100 px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Rubric Template
+              </p>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">
+                Criteria Management
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {template.templateName}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:text-slate-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Total
+              </p>
+              <p className="text-lg font-bold text-slate-900">
+                {sortedCriteria.length}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Active
+              </p>
+              <p className="text-lg font-bold text-emerald-700">
+                {
+                  sortedCriteria.filter((criterion) => criterion.isActive)
+                    .length
+                }
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Next Order
+              </p>
+              <p className="text-lg font-bold text-slate-900">
+                {nextDisplayOrder}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                Percentage
+              </p>
+              <p
+                className={`text-lg font-bold ${
+                  isPercentageComplete ? "text-emerald-700" : "text-rose-700"
+                }`}
+              >
+                {totalActivePercentage % 1 === 0
+                  ? Math.floor(totalActivePercentage)
+                  : totalActivePercentage.toFixed(1)}
+                %
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.1fr_1fr]">
-          {/* Left - Criteria List */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <div className="flex items-center justify-between mb-3">
-              <Text strong className="text-sm uppercase tracking-wide text-gray-500">
+        <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[1.1fr_1fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Criteria List
-              </Text>
-              <Button
-                size="small"
-                onClick={handleCreateNew}
-                icon={<EditOutlined />}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setCreateMode()}
+                className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
               >
-                New Criteria
-              </Button>
+                + Add New
+              </button>
             </div>
 
-            <Input
-              placeholder="Search by name, description, guide..."
-              prefix={<span className="text-gray-400">🔍</span>}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-3"
-              allowClear
-            />
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, description, guide..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
+              />
+            </div>
 
-            <div className="max-h-[400px] space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
               {filteredCriteria.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center text-sm text-gray-500">
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">
                   {searchTerm
-                    ? "Không tìm thấy criteria phù hợp"
-                    : "Template này chưa có criteria nào"}
+                    ? "Khong tim thay criteria phu hop"
+                    : "Template nay chua co criteria nao"}
                 </div>
               ) : (
                 <DndContext
@@ -455,9 +558,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         isEditing={
                           editingCriterion?.criteriaId === criterion.criteriaId
                         }
-                        onSelect={() => handleEditClick(criterion)}
-                        onDelete={handleDeleteCriterion}
-                        onEditClick={handleEditClick}
+                        onSelect={setEditMode}
+                        onDelete={setDeletingCriterion}
                       />
                     ))}
                   </SortableContext>
@@ -467,171 +569,267 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
             {isOrderChanged && (
               <div className="mt-4 flex items-center justify-end gap-2">
-                <Button onClick={handleCancelReorder} disabled={isLoading}>
-                  Cancel
-                </Button>
-                <Button
-                  type="primary"
+                <button
+                  type="button"
                   onClick={handleSaveReorder}
-                  loading={isLoading}
+                  disabled={isLoading}
+                  className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Save Order
-                </Button>
+                  {isLoading ? "Saving..." : "Save Order"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelReorder}
+                  disabled={isLoading}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Right - Form */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+          <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
-                <Text strong className="text-base text-gray-800">
-                  {editingCriterion ? "Edit Criteria" : "Create Criteria"}
-                </Text>
-                <p className="text-xs text-gray-500">
+                <h4 className="text-base font-semibold text-slate-800">
+                  {editingCriterion ? "Edit Criteria" : "New Criteria"}
+                </h4>
+                <p className="text-xs text-slate-500">
                   {editingCriterion
-                    ? "Cập nhật thông tin và hướng dẫn đánh giá"
-                    : "Tạo criteria mới cho rubric template"}
+                    ? "Cap nhat thong tin va huong dan danh gia"
+                    : "Create criteria moi cho rubric template"}
                 </p>
               </div>
-              {editingCriterion && (
-                <Button size="small" onClick={handleCreateNew}>
-                  New Criteria
-                </Button>
-              )}
             </div>
 
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              requiredMark="optional"
-              disabled={isSubmitting || isLoading}
-              initialValues={{
-                weight: 1,
-                maxScore: 100,
-                displayOrder: nextDisplayOrder,
-                isActive: true,
-              }}
-            >
-              <Form.Item
-                name="criteriaName"
-                label={<Text strong>Criteria Name</Text>}
-                rules={[
-                  { required: true, message: "Criteria name is required" },
-                ]}
-              >
-                <Input placeholder="VD: Content Quality" />
-              </Form.Item>
-
-              <Form.Item
-                name="criteriaDescription"
-                label={<Text strong>Description</Text>}
-                rules={[
-                  { required: true, message: "Description is required" },
-                ]}
-              >
-                <Input.TextArea
-                  placeholder="Evaluates content clarity and depth"
-                  rows={2}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Criteria Name
+                </label>
+                <input
+                  type="text"
+                  value={formState.criteriaName}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      criteriaName: e.target.value,
+                    }))
+                  }
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                    errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                  }`}
+                  placeholder="Content Quality"
                 />
-              </Form.Item>
-
-              <div className="grid grid-cols-3 gap-3">
-                <Form.Item
-                  name="weight"
-                  label={<Text strong>Weight %</Text>}
-                  rules={[
-                    { required: true, message: "Required" },
-                    { type: "number", min: 0.01, message: "Must be > 0" },
-                  ]}
-                >
-                  <InputNumber className="w-full" min={0.01} step={0.01} />
-                </Form.Item>
-
-                <Form.Item
-                  name="maxScore"
-                  label={<Text strong>Max Score</Text>}
-                  rules={[
-                    { required: true, message: "Required" },
-                    { type: "number", min: 1, message: "Must be >= 1" },
-                  ]}
-                >
-                  <InputNumber className="w-full" min={1} />
-                </Form.Item>
-
-                <Form.Item
-                  name="displayOrder"
-                  label={<Text strong>Display Order</Text>}
-                  rules={[
-                    { required: true, message: "Required" },
-                    { type: "number", min: 1, message: "Must be >= 1" },
-                  ]}
-                >
-                  <InputNumber className="w-full" min={1} />
-                </Form.Item>
+                {errors.criteriaName && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors.criteriaName}
+                  </p>
+                )}
               </div>
 
-              <Form.Item
-                name="evaluationGuide"
-                label={<Text strong>Evaluation Guide</Text>}
-                rules={[
-                  { required: true, message: "Evaluation guide is required" },
-                ]}
-              >
-                <Input.TextArea
-                  placeholder="Guide for evaluation..."
-                  rows={3}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={formState.criteriaDescription}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      criteriaDescription: e.target.value,
+                    }))
+                  }
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                    errors.criteriaDescription
+                      ? "border-rose-300"
+                      : "border-slate-300"
+                  }`}
+                  placeholder="Evaluates content clarity and depth"
                 />
-              </Form.Item>
+                {errors.criteriaDescription && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors.criteriaDescription}
+                  </p>
+                )}
+              </div>
 
-              <Form.Item
-                name="isActive"
-                label={<Text strong>Active</Text>}
-                valuePropName="checked"
-              >
-                <Space>
-                  <Button
-                    type={form.getFieldValue("isActive") ? "primary" : "default"}
-                    size="small"
-                    onClick={() => form.setFieldValue("isActive", true)}
-                  >
-                    Active
-                  </Button>
-                  <Button
-                    type={!form.getFieldValue("isActive") ? "primary" : "default"}
-                    size="small"
-                    danger={!form.getFieldValue("isActive")}
-                    onClick={() => form.setFieldValue("isActive", false)}
-                  >
-                    Inactive
-                  </Button>
-                </Space>
-              </Form.Item>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Persen %
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formState.weight}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        weight: e.target.value,
+                      }))
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.weight ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  />
+                  {errors.weight && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.weight}
+                    </p>
+                  )}
+                  {isPercentageExceeded && !errors.weight && (
+                    <p className="mt-1 text-xs font-semibold text-amber-600">
+                      Total sẽ vượt 100%
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Max Score
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formState.maxScore}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        maxScore: e.target.value,
+                      }))
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.maxScore ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  />
+                  {errors.maxScore && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.maxScore}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formState.displayOrder}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        displayOrder: e.target.value,
+                      }))
+                    }
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                      errors.displayOrder
+                        ? "border-rose-300"
+                        : "border-slate-300"
+                    }`}
+                  />
+                  {errors.displayOrder && (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.displayOrder}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-              <Form.Item className="!mb-0">
-                <Space className="w-full justify-end">
-                  <Button onClick={onClose} disabled={isSubmitting || isLoading}>
-                    Close
-                  </Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={isSubmitting || isLoading}
-                  >
-                    {isSubmitting || isLoading
-                      ? "Saving..."
-                      : editingCriterion
-                        ? "Update Criteria"
-                        : "Create Criteria"}
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Evaluation Guide
+                </label>
+                <textarea
+                  rows={3}
+                  value={formState.evaluationGuide}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      evaluationGuide: e.target.value,
+                    }))
+                  }
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                    errors.evaluationGuide
+                      ? "border-rose-300"
+                      : "border-slate-300"
+                  }`}
+                  placeholder="Guide for evaluation..."
+                />
+                {errors.evaluationGuide && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors.evaluationGuide}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading
+                    ? "Saving..."
+                    : editingCriterion
+                      ? "Update Criteria"
+                      : "Create Criteria"}
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
       </div>
-    </Modal>
+
+      {deletingCriterion && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-xl bg-rose-100 p-2 text-rose-600">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Xac nhan xoa criteria
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Ban co chac muon xoa criteria "
+                  {deletingCriterion.criteriaName}"?
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCriterion(null)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Huy
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCriterion}
+                disabled={isLoading}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? "Deleting..." : "Xoa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

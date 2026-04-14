@@ -39,14 +39,15 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
 
   return (
     <Modal
-      title={mode === "create" ? "Create Rubric Template" : "Edit Rubric Template"}
+      title={
+        mode === "create" ? "Create Rubric Template" : "Edit Rubric Template"
+      }
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
       centered
       width={520}
       destroyOnClose
-      loading={isLoading}
       maskClosable={!isLoading}
     >
       <Form
@@ -91,9 +92,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
         <Form.Item
           name="assignmentType"
           label={<Text strong>Assignment Type</Text>}
-          rules={[
-            { required: true, message: "Assignment type is required" },
-          ]}
+          rules={[{ required: true, message: "Assignment type is required" }]}
         >
           <Input placeholder="VD: presentation" />
         </Form.Item>
@@ -111,12 +110,12 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
             <Button onClick={handleCancel} disabled={isLoading}>
               Cancel
             </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isLoading}
-            >
-              {isLoading ? "Saving..." : mode === "create" ? "Create" : "Update"}
+            <Button type="primary" htmlType="submit" loading={isLoading}>
+              {isLoading
+                ? "Saving..."
+                : mode === "create"
+                  ? "Create"
+                  : "Update"}
             </Button>
           </Space>
         </Form.Item>

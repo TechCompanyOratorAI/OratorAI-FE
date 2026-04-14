@@ -1,5 +1,16 @@
 import React from "react";
-import { Modal, Form, Input, Select, InputNumber, DatePicker, Button, Space, Typography } from "antd";
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  DatePicker,
+  Button,
+  Space,
+  Typography,
+  
+} from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { CourseData } from "@/services/features/course/courseSlice";
 
@@ -63,12 +74,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
   }));
 
   const semesterOptions = [
-    { value: "Fall 2026", label: "Fall 2026" },
-    { value: "Spring 2026", label: "Spring 2026" },
-    { value: "Summer 2026", label: "Summer 2026" },
-    { value: "Fall 2027", label: "Fall 2027" },
-    { value: "Spring 2027", label: "Spring 2027" },
-    { value: "Summer 2027", label: "Summer 2027" },
+    { value: "Fall ", label: "Fall " },
+    { value: "Spring ", label: "Spring " },
+    { value: "Summer ", label: "Summer " },
   ];
 
   return (
@@ -80,7 +88,6 @@ const CourseModal: React.FC<CourseModalProps> = ({
       centered
       width={640}
       destroyOnClose
-      loading={isLoading}
       maskClosable={!isLoading}
     >
       <Form
@@ -93,12 +100,17 @@ const CourseModal: React.FC<CourseModalProps> = ({
         initialValues={{
           courseCode: initialData?.courseCode || "",
           courseName: initialData?.courseName || "",
-          departmentId: initialData?.departmentId || departments[0]?.departmentId,
+          departmentId:
+            initialData?.departmentId || departments[0]?.departmentId,
           description: initialData?.description || "",
           semester: initialData?.semester || "",
           academicYear: initialData?.academicYear || dayjs().year(),
-          startDate: initialData?.startDate ? dayjs(initialData.startDate) : undefined,
-          endDate: initialData?.endDate ? dayjs(initialData.endDate) : undefined,
+          startDate: initialData?.startDate
+            ? dayjs(initialData.startDate)
+            : undefined,
+          endDate: initialData?.endDate
+            ? dayjs(initialData.endDate)
+            : undefined,
         }}
       >
         <Form.Item
@@ -138,14 +150,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
         <Form.Item
           name="description"
           label={<Text strong>Mô tả</Text>}
-          rules={[
-            { required: true, message: "Mô tả không được để trống" },
-          ]}
+          rules={[{ required: true, message: "Mô tả không được để trống" }]}
         >
-          <Input.TextArea
-            placeholder="Nhập mô tả khóa học..."
-            rows={3}
-          />
+          <Input.TextArea placeholder="Nhập mô tả khóa học..." rows={3} />
         </Form.Item>
 
         <div className="grid grid-cols-2 gap-x-4">
@@ -160,9 +167,31 @@ const CourseModal: React.FC<CourseModalProps> = ({
           <Form.Item
             name="academicYear"
             label={<Text strong>Năm học</Text>}
+            dependencies={["startDate"]}
             rules={[
               { required: true, message: "Năm học không được để trống" },
-              { type: "number", min: 2000, max: 2100, message: "Năm học từ 2000 – 2100" },
+              {
+                type: "number",
+                min: 2000,
+                max: 2100,
+                message: "Năm học từ 2000 – 2100",
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const startDate = getFieldValue("startDate") as
+                    | Dayjs
+                    | undefined;
+                  if (!value || !startDate) return Promise.resolve();
+
+                  if (Number(value) !== startDate.year()) {
+                    return Promise.reject(
+                      new Error("Năm học phải trùng với năm của ngày bắt đầu"),
+                    );
+                  }
+
+                  return Promise.resolve();
+                },
+              }),
             ]}
           >
             <InputNumber className="w-full" min={2000} max={2100} />
@@ -189,7 +218,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   const start = getFieldValue("startDate");
                   if (!value) return Promise.resolve();
                   if (start && value.isBefore(start)) {
-                    return Promise.reject(new Error("Ngày kết thúc phải sau ngày bắt đầu"));
+                    return Promise.reject(
+                      new Error("Ngày kết thúc phải sau ngày bắt đầu"),
+                    );
                   }
                   return Promise.resolve();
                 },
@@ -205,12 +236,12 @@ const CourseModal: React.FC<CourseModalProps> = ({
             <Button onClick={handleCancel} disabled={isLoading}>
               Hủy
             </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isLoading}
-            >
-              {isLoading ? "Đang lưu..." : initialData ? "Lưu thay đổi" : "Tạo khóa học"}
+            <Button type="primary" htmlType="submit" loading={isLoading}>
+              {isLoading
+                ? "Đang lưu..."
+                : initialData
+                  ? "Lưu thay đổi"
+                  : "Tạo khóa học"}
             </Button>
           </Space>
         </Form.Item>
