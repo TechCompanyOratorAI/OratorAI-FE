@@ -17,6 +17,8 @@ import shareReducer from "../features/share/shareSlice";
 import classScoreReducer from "../features/classScore/classScoreSlice";
 import instructorDashboardReducer from "../features/instructor/instructorDashboardSlice";
 import groupGradeReducer from "../features/groupGrade/groupGradeSlice";
+import instructorApprovalReducer from "../features/instructor/instructorApprovalSlice";
+import uploadPermissionReducer from "../features/uploadPermission/uploadPermissionSlice";
 
 const presistConfig = {
   key: "root",
@@ -41,6 +43,8 @@ const rootReducer = combineReducers({
   classScore: classScoreReducer,
   instructorDashboard: instructorDashboardReducer,
   groupGrade: groupGradeReducer,
+  instructorApproval: instructorApprovalReducer,
+  uploadPermission: uploadPermissionReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);

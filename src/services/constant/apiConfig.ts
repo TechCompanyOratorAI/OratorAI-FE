@@ -1,6 +1,6 @@
-export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
+// export const BASE_URL = "https://node-api-service-uc69r.ondigitalocean.app";
 
-// export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = "http://localhost:8080";
 
 // Auth endpoints
 export const LOGIN_ENDPOINT = `${BASE_URL}/api/v1/auth/login`;
@@ -245,3 +245,17 @@ export const GRADE_DISTRIBUTION_FINALIZE_ENDPOINT = (
   distributionId: string,
 ) =>
   `${BASE_URL}/api/v1/groups/${groupId}/grade-distributions/${distributionId}/finalize`;
+
+// Class Upload Permission endpoints
+export const CLASS_UPLOAD_PERMISSION_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/upload-permission`;
+
+// Instructor Approval endpoints
+export const INSTRUCTOR_PENDING_APPROVALS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/pending`;
+export const INSTRUCTOR_APPROVED_PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/approved`;
+export const INSTRUCTOR_APPROVAL_STATUS_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/approval-status`;
+export const INSTRUCTOR_APPROVE_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/approve`;
+export const INSTRUCTOR_UNAPPROVE_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/unapprove`;

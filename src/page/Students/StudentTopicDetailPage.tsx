@@ -34,6 +34,9 @@ import {
 } from "@/services/features/group/groupSlice";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
+import {
+  fetchUploadPermissionByClass,
+} from "@/services/features/uploadPermission/uploadPermissionSlice";
 
 interface TopicStudentDetailPageProps {
   isModalMode?: boolean;
@@ -60,6 +63,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector((state) => state.topic);
   const { presentations } = useAppSelector((state) => state.presentation);
   const { user } = useAppSelector((state) => state.auth);
+  const { selectedClass } = useAppSelector((state) => state.class);
   const {
     myGroupForClass,
     groupTopic,
@@ -92,8 +96,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       dispatch(fetchTopicDetail(topicIdNumber));
       dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
     }
-    if (classIdNumber) dispatch(fetchMyGroupByClass(classIdNumber));
+    if (classIdNumber) {
+      dispatch(fetchMyGroupByClass(classIdNumber));
+      dispatch(fetchUploadPermissionByClass(classIdNumber));
+    }
   }, [topicIdNumber, classIdNumber, dispatch]);
+
+  // Kiểm tra upload permission từ slice riêng
+  const uploadPermission = useAppSelector((state) => state.uploadPermission.permissions[classIdNumber ?? -1]);
+  const isUploadEnabled = uploadPermission?.isUploadEnabled ?? false;
+  const canUpload = isUploadEnabled;
 
   useEffect(() => {
     if (myGroupId != null && Number.isFinite(myGroupId)) {
@@ -452,16 +464,30 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           </p>
                         )}
                         <div className="space-y-3">
-                        {/* Chỉ hiện nút upload khi còn ở trạng thái draft */}
+                        {/* Chỉ hiện nút upload khi còn ở trạng thái draft và instructor đã mở upload */}
                         {myPresentation.status === "draft" && (
-                          <Button
-                            type="primary"
-                            block
-                            icon={<Upload className="w-4 h-4" />}
-                            onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
-                          >
-                            Tải lên file
-                          </Button>
+                          <>
+                            {!canUpload ? (
+                              <Button
+                                type="primary"
+                                block
+                                icon={<Upload className="w-4 h-4" />}
+                                disabled
+                                className="!bg-slate-300 !border-slate-300"
+                              >
+                                Giảng viên chưa mở upload
+                              </Button>
+                            ) : (
+                              <Button
+                                type="primary"
+                                block
+                                icon={<Upload className="w-4 h-4" />}
+                                onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
+                              >
+                                Tải lên file
+                              </Button>
+                            )}
+                          </>
                         )}
                         {myPresentation.status === "failed" && (
                           <Button

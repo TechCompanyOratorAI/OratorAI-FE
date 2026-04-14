@@ -14,6 +14,7 @@ import {
   Select,
   Checkbox,
   Tooltip,
+  Switch,
 } from "antd";
 import {
   TeamOutlined,
@@ -25,6 +26,12 @@ import {
   ArrowLeftOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
+  LockOutlined,
+  CloudUploadOutlined,
+  CloudOutlined,
+  ExclamationCircleOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import {
   Calendar,
@@ -55,6 +62,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassDetail } from "@/services/features/admin/classSlice";
+import {
+  setUploadPermissionByClass as setUploadPermissionByClassAction,
+} from "@/services/features/uploadPermission/uploadPermissionSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import TopicModal from "@/components/Topic/TopicModal";
 import TopicUpdateModal from "@/components/Topic/TopicUpdateModal";
@@ -182,6 +192,8 @@ const ClassDetailPage: React.FC = () => {
     pickLoading: rubricPickLoading,
     actionLoading: rubricActionLoading,
   } = useAppSelector((state) => state.rubric);
+  const uploadPermission = useAppSelector((state) => state.uploadPermission.permissions[classIdNumber ?? -1]);
+  const isUploadEnabled = uploadPermission?.isUploadEnabled ?? selectedClass?.isUploadEnabled ?? false;
 
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
@@ -914,6 +926,58 @@ const ClassDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
+          </section>
+
+          {/* Upload Permission Card */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isUploadEnabled ? "bg-white/20" : "bg-white/10"
+                }`}>
+                  {isUploadEnabled ? (
+                    <CloudUploadOutlined className="text-xl text-white" />
+                  ) : (
+                    <CloudOutlined className="text-xl text-white/60" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Quyền Upload Presentation</h3>
+                  <p className="text-xs text-white/70">
+                    {isUploadEnabled 
+                      ? "Sinh viên đang được phép upload bài thuyết trình"
+                      : "Sinh viên chưa được phép upload bài thuyết trình"
+                    }
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={isUploadEnabled}
+                onChange={(checked) => {
+                  if (selectedClass.classId) {
+                    dispatch(setUploadPermissionByClassAction({
+                      classId: selectedClass.classId,
+                      isUploadEnabled: checked,
+                    }));
+                  }
+                }}
+                checkedChildren={<CheckOutlined />}
+                unCheckedChildren={<CloseOutlined />}
+                className={`${isUploadEnabled ? "bg-emerald-400" : "bg-slate-300"}`}
+              />
+            </div>
+            {isUploadEnabled && (
+              <div className="px-6 py-3 bg-emerald-50 border-t border-emerald-100 flex items-center gap-2">
+                <CheckCircleOutlined className="text-emerald-500 text-sm" />
+                <span className="text-sm text-emerald-700">Tính năng upload đang hoạt động</span>
+              </div>
+            )}
+            {!isUploadEnabled && (
+              <div className="px-6 py-3 bg-amber-50 border-t border-amber-100 flex items-center gap-2">
+                <ExclamationCircleOutlined className="text-amber-500 text-sm" />
+                <span className="text-sm text-amber-700">Tính năng upload đang bị tắt</span>
+              </div>
+            )}
           </section>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_360px] gap-6 items-start">

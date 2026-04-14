@@ -19,12 +19,16 @@ import {
   RefreshCw,
   Trophy,
 } from "lucide-react";
-import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined } from "@ant-design/icons";
-import { Button, Tag, Tooltip, Input, message as antdMessage } from "antd";
+import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { Button, Tag, Tooltip, Input, message as antdMessage, Popconfirm } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchPresentationDetail,
 } from "@/services/features/presentation/presentationSlice";
+import {
+  approvePresentation,
+  unapprovePresentation,
+} from "@/services/features/instructor/instructorApprovalSlice";
 import {
   clearCurrentReport,
   fetchPresentationReport,
@@ -46,6 +50,9 @@ import {
   fetchGroupDetail,
   GroupStudent,
 } from "@/services/features/group/groupSlice";
+import {
+  fetchUploadPermission,
+} from "@/services/features/admin/classSlice";
 
 const statusConfig: Record<
   string,
@@ -161,6 +168,10 @@ const PresentationDetailPage: React.FC = () => {
   const { currentDistribution } = useAppSelector(
     (state) => state.groupGrade,
   );
+  const { approvingIds } = useAppSelector(
+    (state) => state.instructorApproval,
+  );
+  const { selectedClass } = useAppSelector((state) => state.class);
 
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -218,8 +229,12 @@ const PresentationDetailPage: React.FC = () => {
   useEffect(() => {
     if (presentation?.classId) {
       void dispatch(fetchMyGroupByClass(presentation.classId));
+      void dispatch(fetchUploadPermission(presentation.classId));
     }
   }, [presentation?.classId, dispatch]);
+
+  // Kiểm tra upload permission
+  const isUploadEnabled = selectedClass?.isUploadEnabled ?? false;
 
   // Handler mở modal chia điểm
   const handleOpenGradeDistribution = async () => {
@@ -260,6 +275,41 @@ const PresentationDetailPage: React.FC = () => {
   const isCurrentUserLeader = group?.myRole === "leader";
   const isGroupMember = !!group?.groupId;
   const hasDistribution = !!currentDistribution;
+
+  // Instructor approval check
+  const isInstructor = user?.roles?.some(r => r.roleName === "Instructor" || r.roleName === "Admin");
+  const isInstructorOfPresentation = isInstructor && presentation?.classId;
+  const canApprove = isInstructorOfPresentation && !presentation?.instructorApproved;
+  const isApproved = presentation?.instructorApproved;
+
+  // Student không thể nộp bài nếu chưa được duyệt
+  const canStudentSubmit = !isInstructor && !isApproved;
+
+  // Handler approve từ instructor
+  const handleApproveSubmission = async () => {
+    if (!presentationIdNumber) return;
+    try {
+      await dispatch(approvePresentation({ presentationId: presentationIdNumber })).unwrap();
+      void antdMessage.success("Đã duyệt cho nộp bài!");
+      // Refresh presentation detail
+      dispatch(fetchPresentationDetail(presentationIdNumber));
+    } catch {
+      // Error đã được handle trong slice
+    }
+  };
+
+  // Handler unapprove từ instructor
+  const handleUnapproveSubmission = async () => {
+    if (!presentationIdNumber) return;
+    try {
+      await dispatch(unapprovePresentation(presentationIdNumber)).unwrap();
+      void antdMessage.success("Đã huỷ duyệt!");
+      // Refresh presentation detail
+      dispatch(fetchPresentationDetail(presentationIdNumber));
+    } catch {
+      // Error đã được handle trong slice
+    }
+  };
 
   // Tìm điểm cá nhân của user hiện tại trong distribution
   const myDistributionGrade = useMemo(() => {
@@ -421,6 +471,72 @@ const PresentationDetailPage: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
           <div className="flex items-center gap-2">
+            {/* Instructor: Hiển thị nút duyệt/huỷ duyệt */}
+            {isInstructorOfPresentation && (
+              <>
+                {canApprove && (
+                  <Popconfirm
+                    title="Duyệt cho nộp bài?"
+                    description="Sinh viên sẽ có thể nộp bài thuyết trình sau khi duyệt."
+                    okText="Duyệt"
+                    cancelText="Hủy"
+                    onConfirm={handleApproveSubmission}
+                    okButtonProps={{ loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                  >
+                    <Button
+                      type="primary"
+                      icon={<CheckCircleOutlined />}
+                      style={{
+                        background: "linear-gradient(135deg, #10b981, #059669)",
+                        borderColor: "#10b981",
+                      }}
+                    >
+                      Duyệt nộp bài
+                    </Button>
+                  </Popconfirm>
+                )}
+                {isApproved && (
+                  <Popconfirm
+                    title="Huỷ duyệt?"
+                    description="Sinh viên sẽ không thể nộp bài cho đến khi được duyệt lại."
+                    okText="Huỷ duyệt"
+                    cancelText="Hủy"
+                    onConfirm={handleUnapproveSubmission}
+                    okButtonProps={{ danger: true, loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                  >
+                    <Button
+                      danger
+                      icon={<ExclamationCircleOutlined />}
+                    >
+                      Huỷ duyệt
+                    </Button>
+                  </Popconfirm>
+                )}
+              </>
+            )}
+
+            {/* Student: Hiển thị trạng thái chờ duyệt */}
+            {canStudentSubmit && (
+              <Tag
+                icon={<ClockCircleOutlined />}
+                color="warning"
+                className="!py-1.5 !px-3 !text-sm !font-medium"
+              >
+                Chờ giảng viên duyệt
+              </Tag>
+            )}
+
+            {/* Trạng thái đã duyệt cho student */}
+            {!isInstructor && isApproved && (
+              <Tag
+                icon={<CheckCircleOutlined />}
+                color="success"
+                className="!py-1.5 !px-3 !text-sm !font-medium"
+              >
+                Đã được duyệt
+              </Tag>
+            )}
+
             <Button
               icon={<Link2 className="w-4 h-4" />}
               onClick={() => setShareModalOpen(true)}
