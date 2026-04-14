@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { instructorApi, PendingApprovalsResponse } from "@/services/api/instructorApi";
 import { message } from "antd";
 
-interface InstructorApprovalState {
+export interface InstructorApprovalState {
   pendingPresentations: any[];
   approvedPresentations: any[];
   totalPending: number;
@@ -26,7 +26,7 @@ const initialState: InstructorApprovalState = {
 export const fetchPendingApprovals = createAsyncThunk(
   "instructor/fetchPendingApprovals",
   async (
-    params?: { classId?: string; courseId?: string; limit?: number; offset?: number },
+    params: { classId?: string; courseId?: string; limit?: number; offset?: number } | undefined,
     { rejectWithValue }
   ) => {
     try {
@@ -42,7 +42,7 @@ export const fetchPendingApprovals = createAsyncThunk(
 export const fetchApprovedPresentations = createAsyncThunk(
   "instructor/fetchApprovedPresentations",
   async (
-    params?: { classId?: string; courseId?: string; limit?: number; offset?: number },
+    params: { classId?: string; courseId?: string; limit?: number; offset?: number } | undefined,
     { rejectWithValue }
   ) => {
     try {

@@ -19,7 +19,7 @@ import {
   RefreshCw,
   Trophy,
 } from "lucide-react";
-import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { Button, Tag, Tooltip, Input, message as antdMessage, Popconfirm } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
@@ -234,7 +234,8 @@ const PresentationDetailPage: React.FC = () => {
   }, [presentation?.classId, dispatch]);
 
   // Kiểm tra upload permission
-  const isUploadEnabled = selectedClass?.isUploadEnabled ?? false;
+  const _isUploadEnabled = selectedClass?.isUploadEnabled ?? false;
+  void _isUploadEnabled;
 
   // Handler mở modal chia điểm
   const handleOpenGradeDistribution = async () => {
@@ -281,9 +282,6 @@ const PresentationDetailPage: React.FC = () => {
   const isInstructorOfPresentation = isInstructor && presentation?.classId;
   const canApprove = isInstructorOfPresentation && !presentation?.instructorApproved;
   const isApproved = presentation?.instructorApproved;
-
-  // Student không thể nộp bài nếu chưa được duyệt
-  const canStudentSubmit = !isInstructor && !isApproved;
 
   // Handler approve từ instructor
   const handleApproveSubmission = async () => {
@@ -513,17 +511,6 @@ const PresentationDetailPage: React.FC = () => {
                   </Popconfirm>
                 )}
               </>
-            )}
-
-            {/* Student: Hiển thị trạng thái chờ duyệt */}
-            {canStudentSubmit && (
-              <Tag
-                icon={<ClockCircleOutlined />}
-                color="warning"
-                className="!py-1.5 !px-3 !text-sm !font-medium"
-              >
-                Chờ giảng viên duyệt
-              </Tag>
             )}
 
             {/* Trạng thái đã duyệt cho student */}

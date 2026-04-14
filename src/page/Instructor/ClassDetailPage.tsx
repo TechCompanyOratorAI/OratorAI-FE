@@ -26,7 +26,6 @@ import {
   ArrowLeftOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
-  LockOutlined,
   CloudUploadOutlined,
   CloudOutlined,
   ExclamationCircleOutlined,

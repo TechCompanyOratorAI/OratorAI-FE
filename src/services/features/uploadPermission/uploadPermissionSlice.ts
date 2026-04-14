@@ -9,7 +9,7 @@ interface UploadPermission {
   uploadEndDate: string | null;
 }
 
-interface UploadPermissionState {
+export interface UploadPermissionState {
   permissions: Record<number, UploadPermission>;
   loading: boolean;
   error: string | null;
