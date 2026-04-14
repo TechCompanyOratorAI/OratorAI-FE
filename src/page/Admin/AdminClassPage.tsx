@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  Plus,
-  Edit2,
-  Users,
-  RefreshCw,
-  Search,
-  BookOpen,
-} from "lucide-react";
-import { DeleteOutlined } from "@ant-design/icons";
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReadOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+  UsergroupAddOutlined,
+} from "@ant-design/icons";
 import {
   Table,
   Button,
@@ -57,7 +59,23 @@ const AdminClassPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { message: antdMessage } = App.useApp();
+  const { notification } = App.useApp();
+
+  const notifySuccess = (title: string, description: string) => {
+    notification.success({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
+
+  const notifyError = (title: string, description: string) => {
+    notification.error({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
 
   useEffect(() => {
     dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
@@ -82,9 +100,9 @@ const AdminClassPage: React.FC = () => {
     try {
       await dispatch(deleteClass(classId)).unwrap();
       await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-      antdMessage.success("Class deleted successfully");
+      notifySuccess("Delete Success", "Class deleted successfully.");
     } catch {
-      antdMessage.error("Failed to delete class");
+      notifyError("Delete Failed", "Failed to delete class.");
     }
     setActionLoading(false);
   };
@@ -100,19 +118,18 @@ const AdminClassPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        antdMessage.success("Class updated successfully");
+        notifySuccess("Update Success", "Class updated successfully.");
       } else {
         await dispatch(createClass(formData)).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        antdMessage.success("Class created successfully");
+        notifySuccess("Create Success", "Class created successfully.");
       }
       setIsModalOpen(false);
       setSelectedClass(undefined);
     } catch {
-      antdMessage.error(
-        selectedClass
-          ? "Failed to update class"
-          : "Failed to create class",
+      notifyError(
+        selectedClass ? "Update Failed" : "Create Failed",
+        selectedClass ? "Failed to update class." : "Failed to create class.",
       );
     }
     setActionLoading(false);
@@ -145,9 +162,9 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      antdMessage.success("Instructor added successfully");
+      notifySuccess("Add Instructor Success", "Instructor added successfully.");
     } catch {
-      antdMessage.error("Failed to add instructor");
+      notifyError("Add Instructor Failed", "Failed to add instructor.");
     }
   };
 
@@ -172,26 +189,27 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      antdMessage.success("Instructor removed successfully");
+      notifySuccess(
+        "Remove Instructor Success",
+        "Instructor removed successfully.",
+      );
     } catch {
-      antdMessage.error("Failed to remove instructor");
+      notifyError("Remove Instructor Failed", "Failed to remove instructor.");
     }
   };
 
   const filteredClasses = useMemo(
     () =>
       classes.filter((classItem: ClassData) => {
+        const classCode = (classItem.classCode || "").toLowerCase();
+        const className = (classItem.className || "").toLowerCase();
+        const courseCode = (classItem.course?.courseCode || "").toLowerCase();
+        const keyword = searchTerm.toLowerCase();
+
         const matchesSearch =
-          classItem.classCode
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          classItem.className
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (classItem.course?.courseCode
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ??
-            false);
+          classCode.includes(keyword) ||
+          className.includes(keyword) ||
+          courseCode.includes(keyword);
 
         const matchesStatus =
           filterStatus === "all" || classItem.status === filterStatus;
@@ -229,6 +247,14 @@ const AdminClassPage: React.FC = () => {
     return "red";
   };
 
+  const tableTotal =
+    searchTerm || filterStatus !== "all"
+      ? filteredClasses.length
+      : filteredClasses.length > pageSize &&
+          filteredClasses.length < pagination.total
+        ? filteredClasses.length
+        : pagination.total;
+
   const columns: ColumnsType<ClassData> = [
     {
       title: "Class",
@@ -243,7 +269,9 @@ const AdminClassPage: React.FC = () => {
       render: (_, record) => (
         <div>
           <div className="font-medium">{record.course?.courseCode}</div>
-          <div className="text-xs text-gray-400">{record.course?.courseName}</div>
+          <div className="text-xs text-gray-400">
+            {record.course?.courseName}
+          </div>
         </div>
       ),
     },
@@ -252,8 +280,8 @@ const AdminClassPage: React.FC = () => {
       dataIndex: "status",
       key: "status",
       render: (val: string) => (
-        <Tag color={statusColor(val)}>
-          {val.charAt(0).toUpperCase() + val.slice(1)}
+        <Tag color={statusColor(val || "unknown")}>
+          {val ? val.charAt(0).toUpperCase() + val.slice(1) : "Unknown"}
         </Tag>
       ),
     },
@@ -305,14 +333,14 @@ const AdminClassPage: React.FC = () => {
         <Space size="small">
           <Button
             type="text"
-            icon={<Users size={14} />}
+            icon={<UsergroupAddOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleManageInstructors(record)}
-            className="text-blue-500 hover:text-blue-600"
+            className="text-green-500 hover:text-green-600"
             title="Manage Instructors"
           />
           <Button
             type="text"
-            icon={<Edit2 size={14} />}
+            icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleEditClass(record)}
             className="text-blue-500 hover:text-blue-600"
             title="Edit"
@@ -356,7 +384,7 @@ const AdminClassPage: React.FC = () => {
             </div>
             <Space>
               <Button
-                icon={<RefreshCw size={14} />}
+                icon={<ReloadOutlined style={{ fontSize: 14 }} />}
                 onClick={() =>
                   dispatch(fetchClasses({ page: currentPage, limit: pageSize }))
                 }
@@ -366,7 +394,7 @@ const AdminClassPage: React.FC = () => {
               </Button>
               <Button
                 type="primary"
-                icon={<Plus size={14} />}
+                icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateClass}
               >
                 New Class
@@ -378,7 +406,7 @@ const AdminClassPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <BookOpen size={20} />
+                  <ReadOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -391,7 +419,7 @@ const AdminClassPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <BookOpen size={20} />
+                  <CheckCircleOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -404,7 +432,7 @@ const AdminClassPage: React.FC = () => {
             <Card size="small">
               <Space>
                 <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <Users size={20} />
+                  <TeamOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -427,7 +455,7 @@ const AdminClassPage: React.FC = () => {
               <Space wrap>
                 <Input
                   placeholder="Search by code, name, or course..."
-                  prefix={<Search size={14} className="text-gray-400" />}
+                  prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -456,14 +484,19 @@ const AdminClassPage: React.FC = () => {
             <Table
               columns={columns}
               dataSource={filteredClasses}
-              rowKey="classId"
+              rowKey={(record) =>
+                String(
+                  record.classId ??
+                    `${record.courseId}-${record.classCode}-${record.startDate}`,
+                )
+              }
               loading={loading}
               pagination={
-                pagination.total > 0
+                tableTotal > 0
                   ? {
                       current: currentPage,
                       pageSize,
-                      total: pagination.total,
+                      total: tableTotal,
                       showSizeChanger: true,
                       showQuickJumper: false,
                       pageSizeOptions: ["10", "20", "50"],
@@ -477,9 +510,10 @@ const AdminClassPage: React.FC = () => {
                   : false
               }
               locale={{
-                emptyText: searchTerm || filterStatus !== "all"
-                  ? "No classes found matching your filters"
-                  : "No classes available. Create your first class to get started.",
+                emptyText:
+                  searchTerm || filterStatus !== "all"
+                    ? "No classes found matching your filters"
+                    : "No classes available. Create your first class to get started.",
               }}
             />
           </Card>

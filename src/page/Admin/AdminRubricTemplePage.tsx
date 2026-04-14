@@ -15,13 +15,13 @@ import {
   updateRubricTemplate,
 } from "@/services/features/admin/rubricTempleSlice";
 import {
-  ClipboardList,
-  Edit2,
-  ListChecks,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
-import { DeleteOutlined } from "@ant-design/icons";
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  ProfileOutlined,
+  CheckSquareOutlined,
+} from "@ant-design/icons";
 import {
   Table,
   Button,
@@ -68,7 +68,23 @@ const AdminRubricTemplePage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { message: antdMessage } = App.useApp();
+  const { notification } = App.useApp();
+
+  const notifySuccess = (title: string, description: string) => {
+    notification.success({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
+
+  const notifyError = (title: string, description: string) => {
+    notification.error({
+      message: title,
+      description,
+      placement: "topRight",
+    });
+  };
 
   useEffect(() => {
     dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
@@ -76,31 +92,41 @@ const AdminRubricTemplePage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      antdMessage.error(error);
+      notifyError("Rubric Template Error", error);
       dispatch(clearRubricTemplateError());
     }
-  }, [error, dispatch, antdMessage]);
+  }, [error, dispatch]);
 
   const filteredTemplates = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
-    return templates.filter((template) => {
-      const matchesKeyword =
-        !keyword ||
-        template.templateName.toLowerCase().includes(keyword) ||
-        template.description.toLowerCase().includes(keyword) ||
-        template.assignmentType.toLowerCase().includes(keyword);
+    return [...templates]
+      .sort((left, right) => {
+        const leftTime = left.createdAt
+          ? new Date(left.createdAt).getTime()
+          : 0;
+        const rightTime = right.createdAt
+          ? new Date(right.createdAt).getTime()
+          : 0;
+        return rightTime - leftTime;
+      })
+      .filter((template) => {
+        const matchesKeyword =
+          !keyword ||
+          template.templateName.toLowerCase().includes(keyword) ||
+          template.description.toLowerCase().includes(keyword) ||
+          template.assignmentType.toLowerCase().includes(keyword);
 
-      const matchesStatus =
-        filterStatus === "all" ||
-        (filterStatus === "active" && template.isActive) ||
-        (filterStatus === "inactive" && !template.isActive);
+        const matchesStatus =
+          filterStatus === "all" ||
+          (filterStatus === "active" && template.isActive) ||
+          (filterStatus === "inactive" && !template.isActive);
 
-      const matchesAssignmentType =
-        filterAssignmentType === "all" ||
-        template.assignmentType === filterAssignmentType;
+        const matchesAssignmentType =
+          filterAssignmentType === "all" ||
+          template.assignmentType === filterAssignmentType;
 
-      return matchesKeyword && matchesStatus && matchesAssignmentType;
-    });
+        return matchesKeyword && matchesStatus && matchesAssignmentType;
+      });
   }, [templates, searchTerm, filterStatus, filterAssignmentType]);
 
   const stats = useMemo(() => {
@@ -127,14 +153,21 @@ const AdminRubricTemplePage: React.FC = () => {
     });
   };
 
+  const previewText = (value?: string | null, maxLength = 42) => {
+    const text = (value || "-").trim();
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength).trimEnd()}...`;
+  };
+
   const handleCreateTemplate = async (payload: RubricTemplatePayload) => {
     try {
       await dispatch(createRubricTemplate(payload)).unwrap();
-      antdMessage.success("Tạo template thành công");
+      notifySuccess("Create Success", "Tạo template thành công.");
       setIsCreateModalOpen(false);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
-      antdMessage.error(
+      notifyError(
+        "Create Failed",
         typeof createError === "string"
           ? createError
           : createError?.message || "Không thể tạo rubric template",
@@ -151,12 +184,13 @@ const AdminRubricTemplePage: React.FC = () => {
           data: payload,
         }),
       ).unwrap();
-      antdMessage.success("Cập nhật template thành công");
+      notifySuccess("Update Success", "Cập nhật template thành công.");
       setIsEditModalOpen(false);
       setEditingTemplate(null);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (updateError: any) {
-      antdMessage.error(
+      notifyError(
+        "Update Failed",
         typeof updateError === "string"
           ? updateError
           : updateError?.message || "Không thể cập nhật rubric template",
@@ -167,10 +201,11 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleDeleteTemplate = async (rubricTemplateId: number) => {
     try {
       await dispatch(deleteRubricTemplate(rubricTemplateId)).unwrap();
-      antdMessage.success("Xóa template thành công");
+      notifySuccess("Delete Success", "Xóa template thành công.");
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
-      antdMessage.error(
+      notifyError(
+        "Delete Failed",
         typeof deleteError === "string"
           ? deleteError
           : deleteError?.message || "Không thể xóa rubric template",
@@ -186,12 +221,13 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         createRubricTemplateCriterion({ rubricTemplateId, data: payload }),
       ).unwrap();
-      antdMessage.success("Tạo criteria thành công");
+      notifySuccess("Create Success", "Tạo criteria thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (createCriteriaError: any) {
-      antdMessage.error(
+      notifyError(
+        "Create Failed",
         typeof createCriteriaError === "string"
           ? createCriteriaError
           : createCriteriaError?.message || "Không thể tạo criteria",
@@ -208,12 +244,13 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         updateRubricTemplateCriterion({ criteriaId, data: payload }),
       ).unwrap();
-      antdMessage.success("Cập nhật criteria thành công");
+      notifySuccess("Update Success", "Cập nhật criteria thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (updateCriteriaError: any) {
-      antdMessage.error(
+      notifyError(
+        "Update Failed",
         typeof updateCriteriaError === "string"
           ? updateCriteriaError
           : updateCriteriaError?.message || "Không thể cập nhật criteria",
@@ -230,12 +267,13 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         deleteRubricTemplateCriterion({ criteriaId, rubricTemplateId }),
       ).unwrap();
-      antdMessage.success("Xóa criteria thành công");
+      notifySuccess("Delete Success", "Xóa criteria thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (deleteCriteriaError: any) {
-      antdMessage.error(
+      notifyError(
+        "Delete Failed",
         typeof deleteCriteriaError === "string"
           ? deleteCriteriaError
           : deleteCriteriaError?.message || "Không thể xóa criteria",
@@ -266,16 +304,17 @@ const AdminRubricTemplePage: React.FC = () => {
           ).unwrap(),
         ),
       );
-      antdMessage.success("Cập nhật thứ tự criteria thành công");
+      notifySuccess("Update Success", "Cập nhật thứ tự criteria thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (reorderCriteriaError: any) {
-      antdMessage.error(
+      notifyError(
+        "Update Failed",
         typeof reorderCriteriaError === "string"
           ? reorderCriteriaError
           : reorderCriteriaError?.message ||
-            "Không thể cập nhật thứ tự criteria",
+              "Không thể cập nhật thứ tự criteria",
       );
       throw reorderCriteriaError;
     }
@@ -288,11 +327,16 @@ const AdminRubricTemplePage: React.FC = () => {
       render: (_, record) => (
         <div>
           <div className="font-semibold">{record.templateName}</div>
-          <div className="text-xs text-gray-400 line-clamp-1">
-            {record.description || "-"}
+          <div
+            className="text-xs text-gray-400"
+            title={record.description || "-"}
+          >
+            {previewText(record.description)}
           </div>
           {record.isDefault && (
-            <Tag color="blue" className="mt-1">Default</Tag>
+            <Tag color="blue" className="mt-1">
+              Default
+            </Tag>
           )}
         </div>
       ),
@@ -317,7 +361,18 @@ const AdminRubricTemplePage: React.FC = () => {
             {sortedCriteria.slice(0, 3).map((criterion) => (
               <div
                 key={criterion.criteriaId}
-                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs cursor-pointer hover:border-blue-300 hover:bg-blue-50"
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  setSelectedTemplateForCriteriaId(record.rubricTemplateId)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    setSelectedTemplateForCriteriaId(record.rubricTemplateId);
+                  }
+                }}
+                title="Mở quản lý criteria"
               >
                 <span className="font-medium text-gray-800 truncate">
                   {criterion.displayOrder}. {criterion.criteriaName}
@@ -354,8 +409,7 @@ const AdminRubricTemplePage: React.FC = () => {
     {
       title: "Updated",
       key: "updated",
-      render: (_, record) =>
-        formatDate(record.updatedAt || record.createdAt),
+      render: (_, record) => formatDate(record.updatedAt || record.createdAt),
     },
     {
       title: "Actions",
@@ -365,7 +419,7 @@ const AdminRubricTemplePage: React.FC = () => {
         <Space size="small">
           <Button
             type="text"
-            icon={<ListChecks size={14} />}
+            icon={<CheckSquareOutlined style={{ fontSize: 14 }} />}
             onClick={() =>
               setSelectedTemplateForCriteriaId(record.rubricTemplateId)
             }
@@ -374,7 +428,7 @@ const AdminRubricTemplePage: React.FC = () => {
           />
           <Button
             type="text"
-            icon={<Edit2 size={14} />}
+            icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => {
               setEditingTemplate(record);
               setIsEditModalOpen(true);
@@ -421,7 +475,7 @@ const AdminRubricTemplePage: React.FC = () => {
             </div>
             <Space>
               <Button
-                icon={<RefreshCw size={14} />}
+                icon={<ReloadOutlined style={{ fontSize: 14 }} />}
                 onClick={() =>
                   dispatch(
                     fetchRubricTemplates({
@@ -436,7 +490,7 @@ const AdminRubricTemplePage: React.FC = () => {
               </Button>
               <Button
                 type="primary"
-                icon={<Plus size={14} />}
+                icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={() => setIsCreateModalOpen(true)}
               >
                 New Template
@@ -445,10 +499,10 @@ const AdminRubricTemplePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
+            <Card size="small" className="rounded-2xl overflow-hidden">
               <Space>
                 <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <ClipboardList size={20} />
+                  <ProfileOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -458,10 +512,10 @@ const AdminRubricTemplePage: React.FC = () => {
                 </div>
               </Space>
             </Card>
-            <Card size="small">
+            <Card size="small" className="rounded-2xl overflow-hidden">
               <Space>
                 <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <ClipboardList size={20} />
+                  <ProfileOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -471,10 +525,10 @@ const AdminRubricTemplePage: React.FC = () => {
                 </div>
               </Space>
             </Card>
-            <Card size="small">
+            <Card size="small" className="rounded-2xl overflow-hidden">
               <Space>
                 <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <ListChecks size={20} />
+                  <CheckSquareOutlined style={{ fontSize: 20 }} />
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
@@ -486,7 +540,7 @@ const AdminRubricTemplePage: React.FC = () => {
             </Card>
           </div>
 
-          <Card>
+          <Card className="rounded-2xl overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
@@ -562,8 +616,8 @@ const AdminRubricTemplePage: React.FC = () => {
                 emptyText: error
                   ? error
                   : searchTerm ||
-                    filterStatus !== "all" ||
-                    filterAssignmentType !== "all"
+                      filterStatus !== "all" ||
+                      filterAssignmentType !== "all"
                     ? "No rubric templates found matching your filters"
                     : "No rubric templates available. Create your first template to get started.",
               }}
