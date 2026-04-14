@@ -68,6 +68,14 @@ interface Presentation {
   versionNumber: number;
   createdAt: string;
   updatedAt: string;
+  // Instructor approval fields
+  instructorApproved: boolean;
+  approvedBy: {
+    userId: number;
+    firstName: string;
+    lastName: string;
+  } | null;
+  approvedAt: string | null;
   topic?: Topic;
   audioRecord?: AudioRecord;
   slides?: Slide[];

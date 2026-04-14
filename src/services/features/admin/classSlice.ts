@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { message } from "antd";
 import { api } from "@/services/constant/axiosInstance";
 import {
   CLASSES_ENDPOINT,
@@ -10,6 +11,7 @@ import {
   GET_CLASSES_BY_INSTRUCTOR_ENDPOINT,
   CLASS_DETAIL_ENDPOINT,
   GET_CLASSES_BY_COURSE_ENDPOINT,
+  CLASS_UPLOAD_PERMISSION_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
@@ -66,6 +68,10 @@ export interface ClassData {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  // Upload permission fields
+  isUploadEnabled?: boolean;
+  uploadStartDate?: string | null;
+  uploadEndDate?: string | null;
   course?: CourseInfo;
   instructors?: InstructorInfo[];
   enrollments?: Enrollment[];
@@ -547,9 +553,81 @@ const classSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to fetch class detail";
+      })
+      // Upload permission reducers
+      .addCase(fetchUploadPermission.fulfilled, (state, action) => {
+        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } = action.payload;
+        // Update selectedClass if it matches
+        if (state.selectedClass && state.selectedClass.classId === classId) {
+          state.selectedClass.isUploadEnabled = isUploadEnabled;
+          state.selectedClass.uploadStartDate = uploadStartDate;
+          state.selectedClass.uploadEndDate = uploadEndDate;
+        }
+        // Always update in classes array if exists
+        const classIndex = state.classes.findIndex(c => c.classId === classId);
+        if (classIndex !== -1) {
+          state.classes[classIndex].isUploadEnabled = isUploadEnabled;
+          state.classes[classIndex].uploadStartDate = uploadStartDate;
+          state.classes[classIndex].uploadEndDate = uploadEndDate;
+        }
+      })
+      .addCase(setUploadPermission.fulfilled, (state, action) => {
+        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } = action.payload;
+        // Update selectedClass if it matches
+        if (state.selectedClass && state.selectedClass.classId === classId) {
+          state.selectedClass.isUploadEnabled = isUploadEnabled;
+          state.selectedClass.uploadStartDate = uploadStartDate;
+          state.selectedClass.uploadEndDate = uploadEndDate;
+        }
+        // Also update in classes array
+        const classIndex = state.classes.findIndex(c => c.classId === classId);
+        if (classIndex !== -1) {
+          state.classes[classIndex].isUploadEnabled = isUploadEnabled;
+          state.classes[classIndex].uploadStartDate = uploadStartDate;
+          state.classes[classIndex].uploadEndDate = uploadEndDate;
+        }
       });
   },
 });
 
 export const { setSelectedClass, clearError } = classSlice.actions;
+
+// Upload permission async thunks
+export const fetchUploadPermission = createAsyncThunk(
+  "class/fetchUploadPermission",
+  async (classId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()));
+      return { classId, ...response.data.data };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch upload permission",
+      );
+    }
+  }
+);
+
+export const setUploadPermission = createAsyncThunk(
+  "class/setUploadPermission",
+  async (
+    { classId, isUploadEnabled }: { classId: number; isUploadEnabled: boolean },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post(CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()), {
+        isUploadEnabled,
+      });
+      void message.success(
+        isUploadEnabled
+          ? "Đã mở cho phép upload bài thuyết trình"
+          : "Đã đóng không cho phép upload bài thuyết trình"
+      );
+      return { classId, ...response.data.data };
+    } catch (error: any) {
+      void message.error(error.response?.data?.message || "Failed to update upload permission");
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
 export default classSlice.reducer;
