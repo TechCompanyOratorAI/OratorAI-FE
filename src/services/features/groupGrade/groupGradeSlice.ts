@@ -238,6 +238,11 @@ const groupGradeSlice = createSlice({
     clearCurrentDistribution: (state) => { state.currentDistribution = null; },
     clearDistributions: (state) => { state.distributions = []; },
     clearMemberGrades: (state) => { state.memberGrades = []; },
+    /** Cập nhật distribution từ socket event (grade:distributed / grade:finalized) */
+    setCurrentDistribution: (state, action: { payload: GradeDistribution }) => {
+      state.currentDistribution = action.payload;
+      upsertDistribution(state.distributions, action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -334,6 +339,7 @@ export const {
   clearCurrentDistribution,
   clearDistributions,
   clearMemberGrades,
+  setCurrentDistribution,
 } = groupGradeSlice.actions;
 
 export default groupGradeSlice.reducer;

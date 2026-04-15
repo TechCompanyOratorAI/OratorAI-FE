@@ -62,6 +62,16 @@ export const useSocket = () => {
     socketService.leavePresentation(presentationId);
   }, []);
 
+  /** Join a group room for grade distribution events. */
+  const joinGroup = useCallback((groupId: number) => {
+    socketService.emit("join:group", groupId);
+  }, []);
+
+  /** Leave a group room. */
+  const leaveGroup = useCallback((groupId: number) => {
+    socketService.emit("leave:group", groupId);
+  }, []);
+
   /** Generic listen to a socket event, auto-cleaned up on unmount. */
   const on = useCallback(
     <T = unknown>(event: string, handler: (data: T) => void) => {
@@ -82,6 +92,8 @@ export const useSocket = () => {
     leaveClass,
     joinPresentation,
     leavePresentation,
+    joinGroup,
+    leaveGroup,
     on,
     socket: socketService,
   };
