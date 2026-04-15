@@ -2,6 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { BASE_URL } from "../constant/apiConfig";
 
 const SOCKET_URL = BASE_URL.replace("/api/v1", "");
+console.log("[SocketService] Init - SOCKET_URL:", SOCKET_URL, "BASE_URL:", BASE_URL);
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 32000];
 
 export class SocketService {
@@ -55,12 +56,12 @@ export class SocketService {
       transports: ["websocket", "polling"],
       reconnection: false,
       timeout: 20000,
+      withCredentials: true,
     });
 
     this.socket.on("connect", () => {
       console.log("[SocketService] Connected:", this.socket?.id);
       this.reconnectAttempt = 0;
-      // Rejoin all rooms after (re)connect
       this.reJoinRooms();
     });
 
@@ -72,10 +73,16 @@ export class SocketService {
     });
 
     this.socket.on("connect_error", (err) => {
-      console.error("[SocketService] Connection error:", err.message);
+      console.error("[SocketService] ❌ Connection error:", err.message);
+      console.error("[SocketService] ❌ Socket URL:", SOCKET_URL);
+      console.error("[SocketService] ❌ Trying to connect to:", SOCKET_URL, "from origin:", window.location.origin);
       if (!this.manualDisconnect) {
         this.scheduleReconnect();
       }
+    });
+
+    this.socket.on("error", (err) => {
+      console.error("[SocketService] ❌ Socket error:", err);
     });
 
     return this.socket;
