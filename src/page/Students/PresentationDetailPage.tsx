@@ -53,6 +53,8 @@ import {
 import {
   fetchUploadPermission,
 } from "@/services/features/admin/classSlice";
+import { useSocket } from "@/hooks/useSocket";
+import { setCurrentDistribution, GradeDistribution } from "@/services/features/groupGrade/groupGradeSlice";
 
 const statusConfig: Record<
   string,
@@ -187,6 +189,43 @@ const PresentationDetailPage: React.FC = () => {
   } | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
+
+  // ── Socket: listen for grade distribution events ──────────────────────────────
+  const { joinGroup, leaveGroup, on } = useSocket();
+
+  useEffect(() => {
+    const currentGroupId = group?.groupId;
+    if (!currentGroupId) return;
+
+    const numGroupId = Number(currentGroupId);
+    joinGroup(numGroupId);
+
+    const unwatchDistributed = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:distributed",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReport?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+          void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
+        }
+      }
+    );
+
+    const unwatchFinalized = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:finalized",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReport?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+          void toast.success("Điểm đã được chốt bởi giảng viên!");
+        }
+      }
+    );
+
+    return () => {
+      leaveGroup(numGroupId);
+      unwatchDistributed?.();
+      unwatchFinalized?.();
+    };
+  }, [group?.groupId, currentReport?.reportId, joinGroup, leaveGroup, on, dispatch]);
 
   useEffect(() => {
     if (presentationIdNumber)
