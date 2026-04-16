@@ -20,6 +20,7 @@ import groupGradeReducer from "../features/groupGrade/groupGradeSlice";
 import instructorApprovalReducer from "../features/instructor/instructorApprovalSlice";
 import uploadPermissionReducer from "../features/uploadPermission/uploadPermissionSlice";
 import socketReducer from "../features/socket/socketSlice";
+import notificationReducer from "../features/notification/notificationSlice";
 
 const presistConfig = {
   key: "root",
@@ -47,6 +48,7 @@ const rootReducer = combineReducers({
   instructorApproval: instructorApprovalReducer,
   uploadPermission: uploadPermissionReducer,
   socket: socketReducer,
+  notification: notificationReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);

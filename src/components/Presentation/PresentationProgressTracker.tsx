@@ -139,15 +139,23 @@ const PresentationProgressTracker: React.FC<PresentationProgressTrackerProps> = 
       }
     };
 
+    const handleJobCompleted = (_data: unknown) => {
+      const data = _data as JobEventPayload;
+      console.log(`[ProgressTracker] ★ RECEIVED "presentation:job:completed"`, data);
+      if (data.presentationId === presentationId) fetch();
+    };
+
     console.log(`[ProgressTracker] Registering socket listeners for "presentation:job:*" events`);
     socket.on("presentation:job:started", handleJobStarted);
     socket.on("presentation:job:progress", handleJobProgress);
+    socket.on("presentation:job:completed", handleJobCompleted);
     socket.on("presentation:job:failed", handleJobFailed);
 
     return () => {
       socket.leavePresentation(presentationId);
       socket.off("presentation:job:started", handleJobStarted);
       socket.off("presentation:job:progress", handleJobProgress);
+      socket.off("presentation:job:completed", handleJobCompleted);
       socket.off("presentation:job:failed", handleJobFailed);
     };
   }, [useWebSocket, socket, presentationId, fetch, onFailed]);

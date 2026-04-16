@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Layout,
@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
+import { addNotification } from "@/services/features/notification/notificationSlice";
+import { useSocket } from "@/hooks/useSocket";
 import AppLogo from "@/components/AppLogo/AppLogo";
 
 const { Header, Content } = Layout;
@@ -43,8 +45,81 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
+  const { unreadCount } = useAppSelector((state) => state.notification);
+  const { on } = useSocket();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // ── Global socket listeners for notifications ──────────────────────────────────
+  useEffect(() => {
+    const unwatchReportGenerated = on<{ presentationId: number; message?: string }>(
+      "report:generated",
+      () => {
+        dispatch(addNotification({
+          type: "report:generated",
+          presentationId: 0,
+          title: "Báo cáo AI sẵn sàng",
+          message: "Báo cáo đánh giá mới đã được tạo xong!",
+        }));
+      }
+    );
+
+    const unwatchReportConfirmed = on<{ presentationId: number }>(
+      "report:confirmed",
+      () => {
+        dispatch(addNotification({
+          type: "report:confirmed",
+          presentationId: 0,
+          title: "Báo cáo được xác nhận",
+          message: "Giảng viên đã xác nhận báo cáo AI của bạn!",
+        }));
+      }
+    );
+
+    const unwatchReportRejected = on<{ presentationId: number; message?: string }>(
+      "report:rejected",
+      () => {
+        dispatch(addNotification({
+          type: "report:rejected",
+          presentationId: 0,
+          title: "Báo cáo bị từ chối",
+          message: "Giảng viên đã từ chối báo cáo AI của bạn.",
+        }));
+      }
+    );
+
+    const unwatchGradeDistributed = on<{ groupId: number; reportId: number }>(
+      "grade:distributed",
+      () => {
+        dispatch(addNotification({
+          type: "grade:distributed",
+          presentationId: 0,
+          title: "Điểm đã được phân chia",
+          message: "Trưởng nhóm đã phân chia điểm cho các thành viên.",
+        }));
+      }
+    );
+
+    const unwatchGradeFinalized = on<{ groupId: number; reportId: number }>(
+      "grade:finalized",
+      () => {
+        dispatch(addNotification({
+          type: "grade:finalized",
+          presentationId: 0,
+          title: "Điểm đã được chốt",
+          message: "Điểm đã được chốt bởi giảng viên.",
+        }));
+      }
+    );
+
+    return () => {
+      unwatchReportGenerated?.();
+      unwatchReportConfirmed?.();
+      unwatchReportRejected?.();
+      unwatchGradeDistributed?.();
+      unwatchGradeFinalized?.();
+    };
+  }, [on, dispatch]);
 
   const fullName = user
     ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
@@ -139,12 +214,13 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
             {/* Right */}
             <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
-              <Badge count={0} size="small" offset={[-2, 2]}>
+              <Badge count={unreadCount} size="small" offset={[-2, 2]} overflowCount={99}>
                 <Button
                   type="text"
                   icon={<Bell className="h-5 w-5" />}
                   className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                   aria-label="Thông báo"
+                  onClick={() => dispatch({ type: "notification/markAllRead" })}
                 />
               </Badge>
 
