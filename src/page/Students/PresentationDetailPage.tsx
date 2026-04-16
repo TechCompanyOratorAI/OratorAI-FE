@@ -19,12 +19,26 @@ import {
   RefreshCw,
   Trophy,
 } from "lucide-react";
-import { TrophyOutlined, EditOutlined, EyeOutlined, LockOutlined, MessageOutlined, SendOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import { Button, Tag, Tooltip, Input, message as antdMessage, Popconfirm } from "antd";
-import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
-  fetchPresentationDetail,
-} from "@/services/features/presentation/presentationSlice";
+  TrophyOutlined,
+  EditOutlined,
+  EyeOutlined,
+  LockOutlined,
+  MessageOutlined,
+  SendOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
+import {
+  Button,
+  Tag,
+  Tooltip,
+  Input,
+  message as antdMessage,
+  Popconfirm,
+} from "antd";
+import { useAppDispatch, useAppSelector } from "@/services/store/store";
+import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
 import {
   approvePresentation,
   unapprovePresentation,
@@ -50,11 +64,12 @@ import {
   fetchGroupDetail,
   GroupStudent,
 } from "@/services/features/group/groupSlice";
-import {
-  fetchUploadPermission,
-} from "@/services/features/admin/classSlice";
+import { fetchUploadPermission } from "@/services/features/admin/classSlice";
 import { useSocket } from "@/hooks/useSocket";
-import { setCurrentDistribution, GradeDistribution } from "@/services/features/groupGrade/groupGradeSlice";
+import {
+  setCurrentDistribution,
+  GradeDistribution,
+} from "@/services/features/groupGrade/groupGradeSlice";
 
 const statusConfig: Record<
   string,
@@ -107,9 +122,14 @@ const MemberFeedbackInline: React.FC<{
   const [sent, setSent] = useState(!!existingFeedback);
 
   const handleSend = async () => {
-    if (!text.trim()) { void antdMessage.warning("Vui lòng nhập nội dung phản hồi."); return; }
+    if (!text.trim()) {
+      void antdMessage.warning("Vui lòng nhập nội dung phản hồi.");
+      return;
+    }
     try {
-      await dispatch(submitMemberFeedback({ groupId, distributionId, feedback: text })).unwrap();
+      await dispatch(
+        submitMemberFeedback({ groupId, distributionId, feedback: text }),
+      ).unwrap();
       void antdMessage.success("Gửi phản hồi thành công!");
       setSent(true);
     } catch (e: any) {
@@ -139,7 +159,14 @@ const MemberFeedbackInline: React.FC<{
         icon={<SendOutlined />}
         loading={actionLoading}
         onClick={handleSend}
-        style={sent ? {} : { background: "linear-gradient(135deg,#0284c7,#06b6d4)", borderColor: "#0284c7" }}
+        style={
+          sent
+            ? {}
+            : {
+                background: "linear-gradient(135deg,#0284c7,#06b6d4)",
+                borderColor: "#0284c7",
+              }
+        }
       >
         {sent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
       </Button>
@@ -167,12 +194,8 @@ const PresentationDetailPage: React.FC = () => {
   } = useAppSelector((state) => state.report);
   const { myGroupForClass: group } = useAppSelector((state) => state.group);
   const { user } = useAppSelector((state) => state.auth);
-  const { currentDistribution } = useAppSelector(
-    (state) => state.groupGrade,
-  );
-  const { approvingIds } = useAppSelector(
-    (state) => state.instructorApproval,
-  );
+  const { currentDistribution } = useAppSelector((state) => state.groupGrade);
+  const { approvingIds } = useAppSelector((state) => state.instructorApproval);
   const { selectedClass } = useAppSelector((state) => state.class);
 
   const [showReport, setShowReport] = useState(false);
@@ -181,7 +204,11 @@ const PresentationDetailPage: React.FC = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadResubmit, setUploadResubmit] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
-  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] = useState(false);
+  // Ref để tránh stale closure trong socket listeners
+  const currentReportRef = useRef(currentReport);
+  currentReportRef.current = currentReport;
+  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] =
+    useState(false);
   const [groupDetail, setGroupDetail] = useState<{
     groupId?: number | string;
     students?: GroupStudent[];
@@ -191,7 +218,57 @@ const PresentationDetailPage: React.FC = () => {
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
 
   // ── Socket: listen for grade distribution events ──────────────────────────────
-  const { joinGroup, leaveGroup, on } = useSocket();
+  const { joinGroup, leaveGroup, on, socket } = useSocket();
+
+  useEffect(() => {
+    if (!presentationIdNumber) return;
+    socket.joinPresentation(presentationIdNumber);
+  }, [presentationIdNumber, socket]);
+
+  // ── Socket: listen for report:generated → auto-open report tab ─────────────
+  useEffect(() => {
+    if (!presentationIdNumber) return;
+
+    const unwatchGenerated = on<{ presentationId: number; reportId: number; overallScore: number | null; message?: string }>(
+      "report:generated",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          void toast.info(payload.message || "Báo cáo AI đã sẵn sàng!");
+          dispatch(fetchPresentationReport(presentationIdNumber));
+          if (!showReport) {
+            setShowReport(true);
+            setReportTab("ai");
+          }
+        }
+      }
+    );
+
+    const unwatchConfirmed = on<{ presentationId: number; reportId: number }>(
+      "report:confirmed",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          void toast.success("Giảng viên đã xác nhận báo cáo!");
+          dispatch(fetchPresentationReport(presentationIdNumber));
+        }
+      }
+    );
+
+    const unwatchRejected = on<{ presentationId: number; reportId: number; message?: string }>(
+      "report:rejected",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          void toast.warning(payload.message || "Giảng viên đã từ chối báo cáo!");
+          dispatch(fetchPresentationReport(presentationIdNumber));
+        }
+      }
+    );
+
+    return () => {
+      unwatchGenerated?.();
+      unwatchConfirmed?.();
+      unwatchRejected?.();
+    };
+  }, [presentationIdNumber, showReport, on, socket, dispatch]);
 
   useEffect(() => {
     const currentGroupId = group?.groupId;
@@ -200,32 +277,46 @@ const PresentationDetailPage: React.FC = () => {
     const numGroupId = Number(currentGroupId);
     joinGroup(numGroupId);
 
-    const unwatchDistributed = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:distributed",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReport?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-          void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
-        }
+    const unwatchDistributed = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:distributed", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
+        void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
       }
-    );
+    });
 
-    const unwatchFinalized = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:finalized",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReport?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-          void toast.success("Điểm đã được chốt bởi giảng viên!");
-        }
+    const unwatchFinalized = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:finalized", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
+        void toast.success("Điểm đã được chốt bởi giảng viên!");
       }
-    );
+    });
 
     return () => {
       leaveGroup(numGroupId);
       unwatchDistributed?.();
       unwatchFinalized?.();
     };
-  }, [group?.groupId, currentReport?.reportId, joinGroup, leaveGroup, on, dispatch]);
+  }, [
+    group?.groupId,
+    joinGroup,
+    leaveGroup,
+    on,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (presentationIdNumber)
@@ -262,7 +353,12 @@ const PresentationDetailPage: React.FC = () => {
     ) {
       void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
     }
-  }, [currentReport?.reportId, currentReport?.reportStatus, showReport, dispatch]);
+  }, [
+    currentReport?.reportId,
+    currentReport?.reportStatus,
+    showReport,
+    dispatch,
+  ]);
 
   // Fetch group info khi có classId để biết leader/students
   useEffect(() => {
@@ -317,16 +413,21 @@ const PresentationDetailPage: React.FC = () => {
   const hasDistribution = !!currentDistribution;
 
   // Instructor approval check
-  const isInstructor = user?.roles?.some(r => r.roleName === "Instructor" || r.roleName === "Admin");
+  const isInstructor = user?.roles?.some(
+    (r) => r.roleName === "Instructor" || r.roleName === "Admin",
+  );
   const isInstructorOfPresentation = isInstructor && presentation?.classId;
-  const canApprove = isInstructorOfPresentation && !presentation?.instructorApproved;
+  const canApprove =
+    isInstructorOfPresentation && !presentation?.instructorApproved;
   const isApproved = presentation?.instructorApproved;
 
   // Handler approve từ instructor
   const handleApproveSubmission = async () => {
     if (!presentationIdNumber) return;
     try {
-      await dispatch(approvePresentation({ presentationId: presentationIdNumber })).unwrap();
+      await dispatch(
+        approvePresentation({ presentationId: presentationIdNumber }),
+      ).unwrap();
       void antdMessage.success("Đã duyệt cho nộp bài!");
       // Refresh presentation detail
       dispatch(fetchPresentationDetail(presentationIdNumber));
@@ -351,13 +452,17 @@ const PresentationDetailPage: React.FC = () => {
   // Tìm điểm cá nhân của user hiện tại trong distribution
   const myDistributionGrade = useMemo(() => {
     if (!currentDistribution?.members || !user?.userId) return null;
-    return currentDistribution.members.find(
-      (m) => m.studentId === user.userId,
-    ) ?? null;
+    return (
+      currentDistribution.members.find((m) => m.studentId === user.userId) ??
+      null
+    );
   }, [currentDistribution, user?.userId]);
 
   const syncedFeedbacks = useMemo(() => {
-    if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
+    if (
+      currentReport?.criterionFeedbacks &&
+      currentReport.criterionFeedbacks.length > 0
+    ) {
       return currentReport.criterionFeedbacks;
     }
     return criterionFeedbacks;
@@ -381,7 +486,9 @@ const PresentationDetailPage: React.FC = () => {
     window.requestAnimationFrame(() => {
       if (!reportSectionRef.current) return;
 
-      const stickyHeader = document.querySelector("header.sticky") as HTMLElement | null;
+      const stickyHeader = document.querySelector(
+        "header.sticky",
+      ) as HTMLElement | null;
       const stickyHeaderHeight = stickyHeader?.offsetHeight || 0;
 
       const targetTop =
@@ -444,7 +551,7 @@ const PresentationDetailPage: React.FC = () => {
 
   const studentName = presentation.student
     ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
-    "Student"
+      "Student"
     : "Unknown";
 
   const sc =
@@ -518,7 +625,9 @@ const PresentationDetailPage: React.FC = () => {
                     okText="Duyệt"
                     cancelText="Hủy"
                     onConfirm={handleApproveSubmission}
-                    okButtonProps={{ loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                    okButtonProps={{
+                      loading: approvingIds.includes(presentationIdNumber ?? 0),
+                    }}
                   >
                     <Button
                       type="primary"
@@ -539,12 +648,12 @@ const PresentationDetailPage: React.FC = () => {
                     okText="Huỷ duyệt"
                     cancelText="Hủy"
                     onConfirm={handleUnapproveSubmission}
-                    okButtonProps={{ danger: true, loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                    okButtonProps={{
+                      danger: true,
+                      loading: approvingIds.includes(presentationIdNumber ?? 0),
+                    }}
                   >
-                    <Button
-                      danger
-                      icon={<ExclamationCircleOutlined />}
-                    >
+                    <Button danger icon={<ExclamationCircleOutlined />}>
                       Huỷ duyệt
                     </Button>
                   </Popconfirm>
@@ -637,20 +746,22 @@ const PresentationDetailPage: React.FC = () => {
         </motion.div>
 
         {/* Progress Tracker — hiển thị khi đang xử lý */}
-        {(presentation.status === "submitted" || presentation.status === "processing") && presentationIdNumber && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
-            <PresentationProgressTracker
-              presentationId={presentationIdNumber}
-              onCompleted={() => {
-                dispatch(fetchPresentationDetail(presentationIdNumber));
-              }}
-            />
-          </motion.div>
-        )}
+        {(presentation.status === "submitted" ||
+          presentation.status === "processing") &&
+          presentationIdNumber && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <PresentationProgressTracker
+                presentationId={presentationIdNumber}
+                onCompleted={() => {
+                  dispatch(fetchPresentationDetail(presentationIdNumber));
+                }}
+              />
+            </motion.div>
+          )}
 
         {/* Retry button when presentation failed — hiển thị ngoài report section */}
         {presentation.status === "failed" && (
@@ -664,9 +775,12 @@ const PresentationDetailPage: React.FC = () => {
                 <FileText className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-red-700">Xử lý AI thất bại</p>
+                <p className="text-sm font-semibold text-red-700">
+                  Xử lý AI thất bại
+                </p>
                 <p className="text-xs text-red-600">
-                  Bài thuyết trình không thể được phân tích. Bạn có thể gửi lại để thử lại.
+                  Bài thuyết trình không thể được phân tích. Bạn có thể gửi lại
+                  để thử lại.
                 </p>
               </div>
             </div>
@@ -710,7 +824,9 @@ const PresentationDetailPage: React.FC = () => {
                     <FileText className="w-4 h-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-red-700">Báo cáo AI bị từ chối</p>
+                    <p className="text-sm font-semibold text-red-700">
+                      Báo cáo AI bị từ chối
+                    </p>
                     <p className="text-xs text-red-600">
                       Bạn có thể gửi lại bài thuyết trình để được đánh giá lại.
                     </p>
@@ -735,10 +851,11 @@ const PresentationDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setReportTab("ai")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${reportTab === "ai"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  reportTab === "ai"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
-                  }`}
+                }`}
               >
                 <Cpu className="w-4 h-4" />
                 AI Đánh giá
@@ -746,10 +863,11 @@ const PresentationDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setReportTab("instructor")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${reportTab === "instructor"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  reportTab === "instructor"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
-                  }`}
+                }`}
               >
                 <MessageSquare className="w-4 h-4" />
                 Phản hồi GV
@@ -774,7 +892,9 @@ const PresentationDetailPage: React.FC = () => {
                     <div className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-blue-50 p-5">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-slate-600">Điểm tổng (AI)</p>
+                          <p className="text-sm text-slate-600">
+                            Điểm tổng (AI)
+                          </p>
                           <p className="text-3xl font-bold text-sky-700">
                             {aiOverallOutOf10 !== null ? (
                               <>
@@ -805,23 +925,29 @@ const PresentationDetailPage: React.FC = () => {
                           className="space-y-3"
                         >
                           {/* ── Instructor Grade Card ── */}
-                          <div className={`rounded-2xl border-2 p-5 transition-all ${
-                            hasDistribution
-                              ? "border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-teal-50"
-                              : "border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50"
-                          }`}>
+                          <div
+                            className={`rounded-2xl border-2 p-5 transition-all ${
+                              hasDistribution
+                                ? "border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-teal-50"
+                                : "border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50"
+                            }`}
+                          >
                             {/* Top row: grade info + action */}
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex items-center gap-4">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
-                                  hasDistribution
-                                    ? currentDistribution?.status === "finalized"
-                                      ? "bg-gradient-to-br from-emerald-500 to-teal-600"
-                                      : currentDistribution?.status === "reopened"
-                                        ? "bg-gradient-to-br from-blue-500 to-indigo-600"
-                                        : "bg-gradient-to-br from-orange-400 to-amber-500"
-                                    : "bg-gradient-to-br from-amber-500 to-orange-600"
-                                }`}>
+                                <div
+                                  className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
+                                    hasDistribution
+                                      ? currentDistribution?.status ===
+                                        "finalized"
+                                        ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+                                        : currentDistribution?.status ===
+                                            "reopened"
+                                          ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+                                          : "bg-gradient-to-br from-orange-400 to-amber-500"
+                                      : "bg-gradient-to-br from-amber-500 to-orange-600"
+                                  }`}
+                                >
                                   <Trophy className="w-7 h-7 text-white" />
                                 </div>
                                 <div>
@@ -830,7 +956,10 @@ const PresentationDetailPage: React.FC = () => {
                                   </p>
                                   <p className="text-2xl font-bold text-slate-900">
                                     {currentReport.gradeForInstructor}
-                                    <span className="text-base font-semibold text-slate-400"> / 10</span>
+                                    <span className="text-base font-semibold text-slate-400">
+                                      {" "}
+                                      / 10
+                                    </span>
                                   </p>
                                 </div>
                               </div>
@@ -844,7 +973,14 @@ const PresentationDetailPage: React.FC = () => {
                                       type="primary"
                                       size="large"
                                       icon={<TrophyOutlined />}
-                                      style={{ background: "linear-gradient(135deg,#d97706,#ea580c)", borderColor: "#d97706", borderRadius: 12, height: 44, fontWeight: 600 }}
+                                      style={{
+                                        background:
+                                          "linear-gradient(135deg,#d97706,#ea580c)",
+                                        borderColor: "#d97706",
+                                        borderRadius: 12,
+                                        height: 44,
+                                        fontWeight: 600,
+                                      }}
                                       onClick={handleOpenGradeDistribution}
                                       className="shadow-md"
                                     >
@@ -852,34 +988,55 @@ const PresentationDetailPage: React.FC = () => {
                                     </Button>
                                   )}
                                   {/* Submitted — locked, waiting */}
-                                  {hasDistribution && currentDistribution?.status === "submitted" && (
-                                    <Tooltip title="Đã nộp. Chờ instructor xem xét hoặc mở lại.">
-                                      <Tag icon={<LockOutlined />} color="orange" className="!py-1.5 !px-3 !text-sm cursor-not-allowed">
-                                        Đã nộp — chờ instructor xem xét
-                                      </Tag>
-                                    </Tooltip>
-                                  )}
+                                  {hasDistribution &&
+                                    currentDistribution?.status ===
+                                      "submitted" && (
+                                      <Tooltip title="Đã nộp. Chờ instructor xem xét hoặc mở lại.">
+                                        <Tag
+                                          icon={<LockOutlined />}
+                                          color="orange"
+                                          className="!py-1.5 !px-3 !text-sm cursor-not-allowed"
+                                        >
+                                          Đã nộp — chờ instructor xem xét
+                                        </Tag>
+                                      </Tooltip>
+                                    )}
                                   {/* Reopened — can edit again */}
-                                  {hasDistribution && currentDistribution?.status === "reopened" && (
-                                    <Button
-                                      type="primary"
-                                      size="large"
-                                      icon={<EditOutlined />}
-                                      style={{ background: "linear-gradient(135deg,#0284c7,#0ea5e9)", borderColor: "#0284c7", borderRadius: 12, height: 44, fontWeight: 600 }}
-                                      onClick={handleOpenGradeDistribution}
-                                      className="shadow-md"
-                                    >
-                                      Cập nhật điểm (lần cuối)
-                                    </Button>
-                                  )}
+                                  {hasDistribution &&
+                                    currentDistribution?.status ===
+                                      "reopened" && (
+                                      <Button
+                                        type="primary"
+                                        size="large"
+                                        icon={<EditOutlined />}
+                                        style={{
+                                          background:
+                                            "linear-gradient(135deg,#0284c7,#0ea5e9)",
+                                          borderColor: "#0284c7",
+                                          borderRadius: 12,
+                                          height: 44,
+                                          fontWeight: 600,
+                                        }}
+                                        onClick={handleOpenGradeDistribution}
+                                        className="shadow-md"
+                                      >
+                                        Cập nhật điểm (lần cuối)
+                                      </Button>
+                                    )}
                                   {/* Finalized — permanently locked */}
-                                  {hasDistribution && currentDistribution?.status === "finalized" && (
-                                    <Tooltip title="Điểm đã được chốt bởi instructor. Không thể thay đổi.">
-                                      <Tag icon={<LockOutlined />} color="green" className="!py-1.5 !px-3 !text-sm cursor-not-allowed">
-                                        Đã chốt điểm
-                                      </Tag>
-                                    </Tooltip>
-                                  )}
+                                  {hasDistribution &&
+                                    currentDistribution?.status ===
+                                      "finalized" && (
+                                      <Tooltip title="Điểm đã được chốt bởi instructor. Không thể thay đổi.">
+                                        <Tag
+                                          icon={<LockOutlined />}
+                                          color="green"
+                                          className="!py-1.5 !px-3 !text-sm cursor-not-allowed"
+                                        >
+                                          Đã chốt điểm
+                                        </Tag>
+                                      </Tooltip>
+                                    )}
                                 </div>
                               )}
 
@@ -888,7 +1045,11 @@ const PresentationDetailPage: React.FC = () => {
                                 <Button
                                   icon={<EyeOutlined />}
                                   size="large"
-                                  style={{ borderRadius: 12, height: 44, fontWeight: 600 }}
+                                  style={{
+                                    borderRadius: 12,
+                                    height: 44,
+                                    fontWeight: 600,
+                                  }}
                                   onClick={handleOpenGradeDistribution}
                                 >
                                   Xem chi tiết
@@ -904,13 +1065,23 @@ const PresentationDetailPage: React.FC = () => {
                                   <p className="text-sm text-emerald-700 font-medium">
                                     Phân chia bởi{" "}
                                     <span className="font-bold">
-                                      {currentDistribution.leader?.firstName ?? ""}{" "}
-                                      {currentDistribution.leader?.lastName ?? ""}
+                                      {currentDistribution.leader?.firstName ??
+                                        ""}{" "}
+                                      {currentDistribution.leader?.lastName ??
+                                        ""}
                                     </span>
                                     {currentDistribution.distributedAt && (
                                       <span className="text-emerald-500 font-normal">
-                                        {" "}— {new Date(currentDistribution.distributedAt).toLocaleDateString("vi-VN", {
-                                          day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+                                        {" "}
+                                        —{" "}
+                                        {new Date(
+                                          currentDistribution.distributedAt,
+                                        ).toLocaleDateString("vi-VN", {
+                                          day: "2-digit",
+                                          month: "short",
+                                          year: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
                                         })}
                                       </span>
                                     )}
@@ -922,8 +1093,7 @@ const PresentationDetailPage: React.FC = () => {
                                   <p className="text-sm text-amber-700">
                                     {isCurrentUserLeader
                                       ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
-                                      : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."
-                                    }
+                                      : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."}
                                   </p>
                                 </div>
                               )}
@@ -944,109 +1114,166 @@ const PresentationDetailPage: React.FC = () => {
                                     <User className="w-6 h-6 text-white" />
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">Điểm cá nhân của bạn</p>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
+                                      Điểm cá nhân của bạn
+                                    </p>
                                     <div className="flex items-baseline gap-2">
                                       <p className="text-2xl font-bold text-sky-700">
-                                        {Number(myDistributionGrade.receivedGrade).toFixed(2)}
+                                        {Number(
+                                          myDistributionGrade.receivedGrade,
+                                        ).toFixed(2)}
                                       </p>
                                       <span className="text-sm text-slate-400 font-medium">
-                                        / {currentReport.gradeForInstructor} điểm
+                                        / {currentReport.gradeForInstructor}{" "}
+                                        điểm
                                       </span>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <Tooltip title="Phần trăm đóng góp được phân chia">
-                                    <Tag color="blue" className="!text-base !font-bold !px-3 !py-1 !rounded-lg">
-                                      {Number(myDistributionGrade.percentage).toFixed(0)}%
+                                    <Tag
+                                      color="blue"
+                                      className="!text-base !font-bold !px-3 !py-1 !rounded-lg"
+                                    >
+                                      {Number(
+                                        myDistributionGrade.percentage,
+                                      ).toFixed(0)}
+                                      %
                                     </Tag>
                                   </Tooltip>
-                                  <p className="text-xs text-slate-400 mt-1">tỷ lệ đóng góp</p>
+                                  <p className="text-xs text-slate-400 mt-1">
+                                    tỷ lệ đóng góp
+                                  </p>
                                 </div>
                               </div>
                               {myDistributionGrade.reason && (
                                 <div className="mt-3 pt-3 border-t border-sky-100">
                                   <p className="text-xs text-slate-500">
-                                    <span className="font-semibold">Lý do: </span>
+                                    <span className="font-semibold">
+                                      Lý do:{" "}
+                                    </span>
                                     {myDistributionGrade.reason}
                                   </p>
                                 </div>
                               )}
 
                               {/* ── Inline member feedback (non-leader only, not finalized) ── */}
-                              {!isCurrentUserLeader && currentDistribution?.status !== "finalized" && (
-                                <MemberFeedbackInline
-                                  groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
-                                  distributionId={currentDistribution?.id ?? 0}
-                                  existingFeedback={myDistributionGrade.memberFeedback ?? null}
-                                />
-                              )}
+                              {!isCurrentUserLeader &&
+                                currentDistribution?.status !== "finalized" && (
+                                  <MemberFeedbackInline
+                                    groupId={Number(
+                                      groupDetail?.groupId ??
+                                        group?.groupId ??
+                                        0,
+                                    )}
+                                    distributionId={
+                                      currentDistribution?.id ?? 0
+                                    }
+                                    existingFeedback={
+                                      myDistributionGrade.memberFeedback ?? null
+                                    }
+                                  />
+                                )}
                               {/* Finalized notice for member */}
-                              {!isCurrentUserLeader && currentDistribution?.status === "finalized" && (
-                                <div className="mt-3 pt-3 border-t border-sky-100 flex items-center gap-2">
-                                  <LockOutlined className="text-emerald-500" />
-                                  <p className="text-xs text-emerald-600 font-medium">Điểm đã được chốt. Không thể phản hồi.</p>
-                                </div>
-                              )}
+                              {!isCurrentUserLeader &&
+                                currentDistribution?.status === "finalized" && (
+                                  <div className="mt-3 pt-3 border-t border-sky-100 flex items-center gap-2">
+                                    <LockOutlined className="text-emerald-500" />
+                                    <p className="text-xs text-emerald-600 font-medium">
+                                      Điểm đã được chốt. Không thể phản hồi.
+                                    </p>
+                                  </div>
+                                )}
                             </motion.div>
                           )}
 
                           {/* ── Summary grid for leader ── */}
-                          {hasDistribution && isCurrentUserLeader && currentDistribution.members && currentDistribution.members.length > 0 && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.15 }}
-                              className="rounded-2xl border border-slate-200 bg-white p-4"
-                            >
-                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5" />
-                                Tổng quan phân chia ({currentDistribution.members.length} thành viên)
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {currentDistribution.members.map((member) => {
-                                  const isMe = member.studentId === user?.userId;
-                                  const hasFeedback = !!member.memberFeedback;
-                                  return (
-                                    <div
-                                      key={member.studentId}
-                                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${isMe ? "bg-sky-50 border border-sky-200 shadow-sm" : hasFeedback ? "bg-blue-50 border border-blue-200" : "bg-slate-50 border border-transparent"}`}
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${isMe ? "bg-gradient-to-br from-sky-500 to-indigo-500" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}>
-                                          {member.student?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
+                          {hasDistribution &&
+                            isCurrentUserLeader &&
+                            currentDistribution.members &&
+                            currentDistribution.members.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="rounded-2xl border border-slate-200 bg-white p-4"
+                              >
+                                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5" />
+                                  Tổng quan phân chia (
+                                  {currentDistribution.members.length} thành
+                                  viên)
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {currentDistribution.members.map((member) => {
+                                    const isMe =
+                                      member.studentId === user?.userId;
+                                    const hasFeedback = !!member.memberFeedback;
+                                    return (
+                                      <div
+                                        key={member.studentId}
+                                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${isMe ? "bg-sky-50 border border-sky-200 shadow-sm" : hasFeedback ? "bg-blue-50 border border-blue-200" : "bg-slate-50 border border-transparent"}`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${isMe ? "bg-gradient-to-br from-sky-500 to-indigo-500" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}
+                                          >
+                                            {member.student?.firstName
+                                              ?.charAt(0)
+                                              ?.toUpperCase() ?? "?"}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p
+                                              className={`text-sm truncate ${isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"}`}
+                                            >
+                                              {member.student?.firstName}{" "}
+                                              {member.student?.lastName}
+                                              {isMe && (
+                                                <span className="text-sky-500 text-xs ml-1">
+                                                  (Bạn)
+                                                </span>
+                                              )}
+                                              {hasFeedback && !isMe && (
+                                                <Tooltip
+                                                  title={member.memberFeedback}
+                                                >
+                                                  <MessageOutlined className="text-blue-400 ml-1 text-xs" />
+                                                </Tooltip>
+                                              )}
+                                            </p>
+                                          </div>
                                         </div>
-                                        <div className="min-w-0">
-                                          <p className={`text-sm truncate ${isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"}`}>
-                                            {member.student?.firstName} {member.student?.lastName}
-                                            {isMe && <span className="text-sky-500 text-xs ml-1">(Bạn)</span>}
-                                            {hasFeedback && !isMe && (
-                                              <Tooltip title={member.memberFeedback}>
-                                                <MessageOutlined className="text-blue-400 ml-1 text-xs" />
-                                              </Tooltip>
+                                        <div className="text-right flex-shrink-0 ml-2">
+                                          <span
+                                            className={`text-sm font-bold tabular-nums ${isMe ? "text-sky-700" : "text-slate-700"}`}
+                                          >
+                                            {Number(
+                                              member.receivedGrade,
+                                            ).toFixed(2)}
+                                          </span>
+                                          <span className="text-xs text-slate-400 ml-1">
+                                            (
+                                            {Number(member.percentage).toFixed(
+                                              0,
                                             )}
-                                          </p>
+                                            %)
+                                          </span>
                                         </div>
                                       </div>
-                                      <div className="text-right flex-shrink-0 ml-2">
-                                        <span className={`text-sm font-bold tabular-nums ${isMe ? "text-sky-700" : "text-slate-700"}`}>
-                                          {Number(member.receivedGrade).toFixed(2)}
-                                        </span>
-                                        <span className="text-xs text-slate-400 ml-1">({Number(member.percentage).toFixed(0)}%)</span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
                         </motion.div>
                       )}
 
                     <div className="space-y-3">
                       {criteriaScores.map((criterion) => {
                         const hasInstructorFeedback = syncedFeedbacks.some(
-                          (fb) => fb.classRubricCriteriaId === criterion.criteriaId,
+                          (fb) =>
+                            fb.classRubricCriteriaId === criterion.criteriaId,
                         );
                         return (
                           <div
@@ -1067,7 +1294,15 @@ const PresentationDetailPage: React.FC = () => {
                               </div>
                               <span className="text-sm font-bold text-sky-700">
                                 {criterion.score}/{criterion.maxScore}
-                                <span className="text-slate-400 font-normal"> ({(criterion.score / criterion.maxScore * 100).toFixed(0)}%)</span>
+                                <span className="text-slate-400 font-normal">
+                                  {" "}
+                                  (
+                                  {(
+                                    (criterion.score / criterion.maxScore) *
+                                    100
+                                  ).toFixed(0)}
+                                  %)
+                                </span>
                               </span>
                             </div>
                             <p className="text-sm text-slate-600 mb-3">
@@ -1075,14 +1310,23 @@ const PresentationDetailPage: React.FC = () => {
                             </p>
                             {criterion.suggestions?.length > 0 && (
                               <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Đề xuất cải thiện</p>
+                                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">
+                                  Đề xuất cải thiện
+                                </p>
                                 <ul className="space-y-1">
-                                  {criterion.suggestions.map((suggestion, index) => (
-                                    <li key={`${criterion.criteriaId}-${index}`} className="flex items-start gap-2 text-sm text-slate-700">
-                                      <span className="text-amber-500 mt-0.5">•</span>
-                                      {suggestion}
-                                    </li>
-                                  ))}
+                                  {criterion.suggestions.map(
+                                    (suggestion, index) => (
+                                      <li
+                                        key={`${criterion.criteriaId}-${index}`}
+                                        className="flex items-start gap-2 text-sm text-slate-700"
+                                      >
+                                        <span className="text-amber-500 mt-0.5">
+                                          •
+                                        </span>
+                                        {suggestion}
+                                      </li>
+                                    ),
+                                  )}
                                 </ul>
                               </div>
                             )}
@@ -1105,7 +1349,8 @@ const PresentationDetailPage: React.FC = () => {
                           Chưa có phản hồi từ giảng viên
                         </h4>
                         <p className="text-sm text-slate-500 max-w-md mx-auto">
-                          Giảng viên sẽ gửi phản hồi chi tiết cho từng tiêu chí đánh giá sau khi xem xét bài thuyết trình của bạn.
+                          Giảng viên sẽ gửi phản hồi chi tiết cho từng tiêu chí
+                          đánh giá sau khi xem xét bài thuyết trình của bạn.
                         </p>
                       </div>
                     ) : (
@@ -1115,20 +1360,36 @@ const PresentationDetailPage: React.FC = () => {
                           <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
                             <div className="flex items-center gap-2 mb-1">
                               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Đã feedback</span>
+                              <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
+                                Đã feedback
+                              </span>
                             </div>
-                            <p className="text-2xl font-bold text-emerald-700">{syncedFeedbacks.length}</p>
-                            <p className="text-xs text-emerald-500">/ {criteriaScores.length} tiêu chí</p>
+                            <p className="text-2xl font-bold text-emerald-700">
+                              {syncedFeedbacks.length}
+                            </p>
+                            <p className="text-xs text-emerald-500">
+                              / {criteriaScores.length} tiêu chí
+                            </p>
                           </div>
                           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
                             <div className="flex items-center gap-2 mb-1">
                               <Star className="w-4 h-4 text-indigo-600" />
-                              <span className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Điểm TB</span>
+                              <span className="text-xs font-medium text-indigo-600 uppercase tracking-wide">
+                                Điểm TB
+                              </span>
                             </div>
                             <p className="text-2xl font-bold text-indigo-700">
                               {(
-                                syncedFeedbacks.reduce((sum, f) => sum + (Number(f.score) || 0), 0) /
-                                Math.max(syncedFeedbacks.filter((f) => f.score !== null && f.score !== "").length, 1)
+                                syncedFeedbacks.reduce(
+                                  (sum, f) => sum + (Number(f.score) || 0),
+                                  0,
+                                ) /
+                                Math.max(
+                                  syncedFeedbacks.filter(
+                                    (f) => f.score !== null && f.score !== "",
+                                  ).length,
+                                  1,
+                                )
                               ).toFixed(1)}
                             </p>
                             <p className="text-xs text-indigo-500">trên 100</p>
@@ -1136,7 +1397,9 @@ const PresentationDetailPage: React.FC = () => {
                           <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
                             <div className="flex items-center gap-2 mb-1">
                               <Award className="w-4 h-4 text-amber-600" />
-                              <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Chưa feedback</span>
+                              <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                                Chưa feedback
+                              </span>
                             </div>
                             <p className="text-2xl font-bold text-amber-700">
                               {criteriaScores.length - syncedFeedbacks.length}
@@ -1156,33 +1419,47 @@ const PresentationDetailPage: React.FC = () => {
                             />
                           </div>
                           <span className="text-xs font-semibold text-slate-500">
-                            {syncedFeedbacks.length}/{criteriaScores.length} tiêu chí
+                            {syncedFeedbacks.length}/{criteriaScores.length}{" "}
+                            tiêu chí
                           </span>
                         </div>
 
                         {/* Feedback Cards */}
                         <div className="space-y-3">
                           {[...syncedFeedbacks]
-                            .sort((a, b) => a.criterionFeedbackId - b.criterionFeedbackId)
+                            .sort(
+                              (a, b) =>
+                                a.criterionFeedbackId - b.criterionFeedbackId,
+                            )
                             .map((fb) => {
                               const criteriaLabel =
                                 fb.classRubricCriteria?.criteriaName ||
                                 criteriaScores.find(
-                                  (c) => c.criteriaId === fb.classRubricCriteriaId,
+                                  (c) =>
+                                    c.criteriaId === fb.classRubricCriteriaId,
                                 )?.criteriaName ||
                                 `Tiêu chí #${fb.classRubricCriteriaId}`;
                               const instructorLabel = fb.instructor
                                 ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
-                                fb.instructor.email ||
-                                "Giảng viên"
+                                  fb.instructor.email ||
+                                  "Giảng viên"
                                 : "Giảng viên";
                               const aiCriterion = criteriaScores.find(
-                                (c) => c.criteriaId === fb.classRubricCriteriaId,
+                                (c) =>
+                                  c.criteriaId === fb.classRubricCriteriaId,
                               );
                               const hasAiData = !!aiCriterion;
-                              const scoreDiff = aiCriterion && fb.score !== null && fb.score !== ""
-                                ? (Number(fb.score) - (aiCriterion.score / aiCriterion.maxScore) * 100).toFixed(1)
-                                : null;
+                              const scoreDiff =
+                                aiCriterion &&
+                                fb.score !== null &&
+                                fb.score !== ""
+                                  ? (
+                                      Number(fb.score) -
+                                      (aiCriterion.score /
+                                        aiCriterion.maxScore) *
+                                        100
+                                    ).toFixed(1)
+                                  : null;
 
                               return (
                                 <motion.div
@@ -1198,7 +1475,9 @@ const PresentationDetailPage: React.FC = () => {
                                         {criteriaLabel.charAt(0).toUpperCase()}
                                       </div>
                                       <div>
-                                        <h4 className="font-bold text-slate-900 text-lg">{criteriaLabel}</h4>
+                                        <h4 className="font-bold text-slate-900 text-lg">
+                                          {criteriaLabel}
+                                        </h4>
                                         <div className="flex items-center gap-2 mt-0.5">
                                           <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
                                             <User className="w-3 h-3 text-emerald-600" />
@@ -1206,7 +1485,19 @@ const PresentationDetailPage: React.FC = () => {
                                           <p className="text-sm text-slate-500">
                                             {instructorLabel}
                                             {fb.updatedAt && (
-                                              <> · {new Date(fb.updatedAt).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</>
+                                              <>
+                                                {" "}
+                                                ·{" "}
+                                                {new Date(
+                                                  fb.updatedAt,
+                                                ).toLocaleString("vi-VN", {
+                                                  day: "2-digit",
+                                                  month: "2-digit",
+                                                  year: "numeric",
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })}
+                                              </>
                                             )}
                                           </p>
                                         </div>
@@ -1220,7 +1511,9 @@ const PresentationDetailPage: React.FC = () => {
                                             {Number(fb.score).toFixed(1)}
                                           </span>
                                         </div>
-                                        <p className="text-xs text-slate-400">/ 100 điểm</p>
+                                        <p className="text-xs text-slate-400">
+                                          / 100 điểm
+                                        </p>
                                       </div>
                                     )}
                                   </div>
@@ -1234,7 +1527,9 @@ const PresentationDetailPage: React.FC = () => {
                                     </div>
                                   ) : (
                                     <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 mb-3 text-center">
-                                      <p className="text-sm text-slate-400 italic">Chưa có nhận xét</p>
+                                      <p className="text-sm text-slate-400 italic">
+                                        Chưa có nhận xét
+                                      </p>
                                     </div>
                                   )}
 
@@ -1243,32 +1538,54 @@ const PresentationDetailPage: React.FC = () => {
                                     <div className="bg-gradient-to-r from-slate-50 to-sky-50 rounded-xl p-4 border border-slate-200">
                                       <div className="flex items-center gap-2 mb-3">
                                         <Cpu className="w-4 h-4 text-sky-600" />
-                                        <span className="text-xs font-bold text-sky-600 uppercase tracking-wide">So sánh với đánh giá AI</span>
+                                        <span className="text-xs font-bold text-sky-600 uppercase tracking-wide">
+                                          So sánh với đánh giá AI
+                                        </span>
                                       </div>
                                       <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-white rounded-lg p-3 border border-sky-100">
-                                          <p className="text-xs text-slate-500 mb-1">Điểm AI</p>
+                                          <p className="text-xs text-slate-500 mb-1">
+                                            Điểm AI
+                                          </p>
                                           <div className="flex items-center gap-1">
                                             <Cpu className="w-3 h-3 text-sky-500" />
                                             <span className="font-bold text-sky-700">
-                                              {aiCriterion.score}/{aiCriterion.maxScore}
+                                              {aiCriterion.score}/
+                                              {aiCriterion.maxScore}
                                             </span>
                                             <span className="text-xs text-slate-400">
-                                              ({(aiCriterion.score / aiCriterion.maxScore * 100).toFixed(0)}%)
+                                              (
+                                              {(
+                                                (aiCriterion.score /
+                                                  aiCriterion.maxScore) *
+                                                100
+                                              ).toFixed(0)}
+                                              %)
                                             </span>
                                           </div>
                                         </div>
                                         {scoreDiff !== null && (
                                           <div className="bg-white rounded-lg p-3 border border-sky-100">
-                                            <p className="text-xs text-slate-500 mb-1">Chênh lệch</p>
+                                            <p className="text-xs text-slate-500 mb-1">
+                                              Chênh lệch
+                                            </p>
                                             <div className="flex items-center gap-1">
                                               {Number(scoreDiff) >= 0 ? (
-                                                <span className="text-emerald-500">▲</span>
+                                                <span className="text-emerald-500">
+                                                  ▲
+                                                </span>
                                               ) : (
-                                                <span className="text-red-500">▼</span>
+                                                <span className="text-red-500">
+                                                  ▼
+                                                </span>
                                               )}
-                                              <span className={`font-bold ${Number(scoreDiff) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                                                {Number(scoreDiff) >= 0 ? "+" : ""}{scoreDiff}%
+                                              <span
+                                                className={`font-bold ${Number(scoreDiff) >= 0 ? "text-emerald-600" : "text-red-600"}`}
+                                              >
+                                                {Number(scoreDiff) >= 0
+                                                  ? "+"
+                                                  : ""}
+                                                {scoreDiff}%
                                               </span>
                                             </div>
                                           </div>
@@ -1277,7 +1594,10 @@ const PresentationDetailPage: React.FC = () => {
                                       {aiCriterion.comment && (
                                         <div className="mt-2 pt-2 border-t border-slate-200">
                                           <p className="text-xs text-slate-500 line-clamp-2">
-                                            <span className="font-semibold">Nhận xét AI: </span>{aiCriterion.comment}
+                                            <span className="font-semibold">
+                                              Nhận xét AI:{" "}
+                                            </span>
+                                            {aiCriterion.comment}
                                           </p>
                                         </div>
                                       )}
@@ -1333,7 +1653,9 @@ const PresentationDetailPage: React.FC = () => {
           setGradeDistributionModalOpen(false);
           // Refresh distribution data khi modal đóng để trang chính hiển thị đúng trạng thái mới nhất
           if (currentReport?.reportId) {
-            void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
+            void dispatch(
+              fetchGradeDistributionByReport(currentReport.reportId),
+            );
           }
         }}
         reportId={currentReport?.reportId ?? 0}
@@ -1341,13 +1663,17 @@ const PresentationDetailPage: React.FC = () => {
         groupMembers={groupDetail?.students ?? group?.students ?? []}
         leaderId={(() => {
           const students = groupDetail?.students ?? group?.students ?? [];
-          const leader = students.find((s) => s.GroupStudent?.role === "leader");
+          const leader = students.find(
+            (s) => s.GroupStudent?.role === "leader",
+          );
           return Number(leader?.userId ?? leader?.id ?? 0);
         })()}
         currentUserId={user?.userId}
         groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
         onSuccess={() => {
-          void dispatch(fetchGradeDistributionByReport(currentReport?.reportId ?? 0));
+          void dispatch(
+            fetchGradeDistributionByReport(currentReport?.reportId ?? 0),
+          );
         }}
       />
     </StudentLayout>
