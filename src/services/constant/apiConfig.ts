@@ -249,6 +249,9 @@ export const GRADE_DISTRIBUTION_FINALIZE_ENDPOINT = (
 export const CLASS_UPLOAD_PERMISSION_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}/upload-permission`;
 
+// Enroll Keys endpoints
+export const ENROLL_KEYS_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys`;
+
 // Instructor Approval endpoints
 export const INSTRUCTOR_PENDING_APPROVALS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/pending`;
 export const INSTRUCTOR_APPROVED_PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/approved`;

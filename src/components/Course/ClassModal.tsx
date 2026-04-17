@@ -111,6 +111,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
       const payload: Record<string, unknown> = isEditMode
         ? isInstructorEditMode
           ? {
+              classCode: values.classCode,
+              courseId: values.courseId,
+              startDate: values.startDate?.format("YYYY-MM-DD"),
+              endDate: values.endDate?.format("YYYY-MM-DD"),
+              maxStudents: values.maxStudents,
               maxGroupMembers: values.maxGroupMembers ?? null,
             }
           : {
