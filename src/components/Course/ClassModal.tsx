@@ -30,10 +30,11 @@ interface ClassFormData {
   startDate: Dayjs;
   endDate: Dayjs;
   maxStudents: number;
-  maxGroupMembers: number | null;
-  enrollKey: string;
-  keyExpiresAt: Dayjs;
-  keyMaxUses: number;
+  status?: "active" | "inactive" | "archived";
+  maxGroupMembers?: number | null;
+  enrollKey?: string;
+  keyExpiresAt?: Dayjs;
+  keyMaxUses?: number;
 }
 
 const ClassModal: React.FC<ClassModalProps> = ({
@@ -46,8 +47,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
 }) => {
   const [form] = Form.useForm<ClassFormData>();
   const [submitting, setSubmitting] = useState(false);
+  const isEditMode = !!initialData;
 
-  // 填充初始数据
   useEffect(() => {
     if (!isOpen) return;
     if (initialData) {
@@ -62,19 +63,18 @@ const ClassModal: React.FC<ClassModalProps> = ({
         endDate: initialData.endDate ? dayjs(initialData.endDate) : undefined,
         maxStudents: initialData.maxStudents,
         maxGroupMembers: initialData.maxGroupMembers ?? undefined,
-        enrollKey: keySource?.keyValue || "",
+        enrollKey: keySource?.keyValue,
         keyExpiresAt: keySource?.expiresAt
           ? dayjs(keySource.expiresAt)
           : undefined,
-        keyMaxUses: keySource?.maxUses || 1,
+        keyMaxUses: keySource?.maxUses,
+        status: initialData.status || "active",
       });
     } else {
       form.resetFields();
       form.setFieldsValue({
         courseId: courses.length > 0 ? courses[0].courseId : undefined,
         maxStudents: 35,
-        maxGroupMembers: undefined,
-        keyMaxUses: 1,
       });
     }
   }, [initialData, isOpen, courses, form]);
@@ -82,17 +82,43 @@ const ClassModal: React.FC<ClassModalProps> = ({
   const handleFinish = async (values: ClassFormData) => {
     setSubmitting(true);
     try {
-      const payload = {
-        courseId: values.courseId,
-        classCode: values.classCode,
-        startDate: values.startDate.format("YYYY-MM-DD"),
-        endDate: values.endDate.format("YYYY-MM-DD"),
-        maxStudents: values.maxStudents,
-        maxGroupMembers: values.maxGroupMembers ?? null,
-        enrollKey: values.enrollKey,
-        keyExpiresAt: values.keyExpiresAt.toISOString(),
-        keyMaxUses: values.keyMaxUses ?? 1,
-      };
+      const payload: Record<string, unknown> = isEditMode
+        ? {
+            courseId: values.courseId,
+            classCode: values.classCode,
+            startDate: values.startDate.format("YYYY-MM-DD"),
+            endDate: values.endDate.format("YYYY-MM-DD"),
+            maxStudents: values.maxStudents,
+            maxGroupMembers: values.maxGroupMembers ?? null,
+          }
+        : {
+            courseId: values.courseId,
+            classCode: values.classCode,
+            startDate: values.startDate.format("YYYY-MM-DD"),
+            endDate: values.endDate.format("YYYY-MM-DD"),
+            maxStudents: values.maxStudents,
+            status: "active",
+          };
+
+      if (isEditMode) {
+        const enrollKey = values.enrollKey?.trim();
+        if (enrollKey) {
+          payload.enrollKey = enrollKey;
+        }
+
+        if (values.keyExpiresAt) {
+          payload.keyExpiresAt = values.keyExpiresAt.toISOString();
+        }
+
+        if (
+          typeof values.keyMaxUses === "number" &&
+          Number.isInteger(values.keyMaxUses) &&
+          values.keyMaxUses > 0
+        ) {
+          payload.keyMaxUses = values.keyMaxUses;
+        }
+      }
+
       onSubmit(payload);
     } finally {
       setSubmitting(false);
@@ -121,18 +147,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark={(label, { required }) =>
-          required ? (
-            label
-          ) : (
-            <>
-              {label}{" "}
-              <span style={{ color: "#999", fontSize: "12px" }}>
-                (không bắt buộc)
-              </span>
-            </>
-          )
-        }
+        requiredMark={false}
         disabled={submitting || isLoading}
         className="mt-4"
       >
@@ -172,56 +187,73 @@ const ClassModal: React.FC<ClassModalProps> = ({
           <Input placeholder="VD: SE101-L01" />
         </Form.Item>
 
-        <div className="grid grid-cols-2 gap-x-4">
+        <div
+          className={`grid gap-x-4 ${isEditMode ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}
+        >
           <Form.Item
             name="maxStudents"
             label={<Text strong>Số sinh viên tối đa</Text>}
             rules={[
               { required: true, message: "Bắt buộc" },
               { type: "number", min: 1, message: "Tối thiểu 1" },
-              { type: "number", max: 1000, message: "Tối đa 1000" },
-            ]}
-          >
-            <InputNumber className="w-full" min={1} max={1000} />
-          </Form.Item>
-
-          <Form.Item
-            name="maxGroupMembers"
-            label={<Text strong>Số nhóm tối đa</Text>}
-            dependencies={["maxStudents"]}
-            rules={[
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const maxStudents = getFieldValue("maxStudents") as
-                    | number
-                    | undefined;
-
-                  if (value === undefined || value === null || value === "") {
-                    return Promise.resolve();
-                  }
-
-                  if (maxStudents && Number(value) >= Number(maxStudents)) {
-                    return Promise.reject(
-                      new Error(
-                        "Số nhóm tối đa phải nhỏ hơn Số sinh viên tối đa",
-                      ),
-                    );
-                  }
-
-                  return Promise.resolve();
-                },
-              }),
+              { type: "number", max: 35, message: "Không được quá 35" },
             ]}
           >
             <InputNumber
               className="w-full"
               min={1}
-              placeholder="Không giới hạn"
+              max={35}
+              step={1}
+              changeOnWheel
             />
           </Form.Item>
+
+          {isEditMode ? (
+            <Form.Item
+              name="maxGroupMembers"
+              label={
+                <>
+                  <Text strong>Số nhóm tối đa</Text>{" "}
+                  <span style={{ color: "#999", fontSize: "12px" }}>
+                    (không bắt buộc)
+                  </span>
+                </>
+              }
+              dependencies={["maxStudents"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const maxStudents = getFieldValue("maxStudents") as
+                      | number
+                      | undefined;
+
+                    if (value === undefined || value === null || value === "") {
+                      return Promise.resolve();
+                    }
+
+                    if (maxStudents && Number(value) >= Number(maxStudents)) {
+                      return Promise.reject(
+                        new Error(
+                          "Số nhóm tối đa phải nhỏ hơn Số sinh viên tối đa",
+                        ),
+                      );
+                    }
+
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+            >
+              <InputNumber
+                className="w-full"
+                min={1}
+                placeholder="Không giới hạn"
+              />
+            </Form.Item>
+          ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
           <Form.Item
             name="startDate"
             label={<Text strong>Ngày bắt đầu</Text>}
@@ -254,86 +286,102 @@ const ClassModal: React.FC<ClassModalProps> = ({
           </Form.Item>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4">
-          <Form.Item
-            name="enrollKey"
-            label={<Text strong>Mã đăng ký</Text>}
-            rules={[
-              { required: true, message: "Bắt buộc" },
-              { min: 6, message: "Tối thiểu 6 ký tự" },
-              { max: 50, message: "Tối đa 50 ký tự" },
-            ]}
-          >
-            <Input placeholder="VD: SE1025" />
-          </Form.Item>
+        {isEditMode && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+              <Form.Item
+                name="enrollKey"
+                label={<Text strong>Mã đăng ký</Text>}
+                rules={[
+                  {
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      const trimmed = String(value).trim();
+                      if (trimmed.length < 6 || trimmed.length > 50) {
+                        return Promise.reject(
+                          new Error("Mã đăng ký phải từ 6-50 ký tự"),
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
+                <Input placeholder="VD: SE1025" />
+              </Form.Item>
 
-          <Form.Item
-            name="keyExpiresAt"
-            label={<Text strong>Thời hạn mã</Text>}
-            dependencies={["startDate"]}
-            rules={[
-              { required: true, message: "Bắt buộc" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const startDate = getFieldValue("startDate") as
-                    | Dayjs
-                    | undefined;
+              <Form.Item
+                name="keyExpiresAt"
+                label={<Text strong>Thời hạn mã</Text>}
+                dependencies={["startDate"]}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue("startDate") as
+                        | Dayjs
+                        | undefined;
 
-                  if (!value || !startDate) return Promise.resolve();
+                      if (!value || !startDate) return Promise.resolve();
 
-                  if (value.isBefore(startDate, "day")) {
-                    return Promise.reject(
-                      new Error(
-                        "Thời hạn mã phải bằng hoặc sau ngày bắt đầu lớp",
-                      ),
-                    );
-                  }
+                      if (value.isBefore(startDate, "day")) {
+                        return Promise.reject(
+                          new Error(
+                            "Thời hạn mã phải bằng hoặc sau ngày bắt đầu lớp",
+                          ),
+                        );
+                      }
 
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <DatePicker
-              className="w-full"
-              format="YYYY-MM-DD HH:mm"
-              showTime={{ format: "HH:mm" }}
-            />
-          </Form.Item>
-        </div>
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
+              >
+                <DatePicker
+                  className="w-full"
+                  format="YYYY-MM-DD HH:mm"
+                  showTime={{ format: "HH:mm" }}
+                />
+              </Form.Item>
+            </div>
 
-        <Form.Item
-          name="keyMaxUses"
-          label={<Text strong>Số lượt sử dụng mã</Text>}
-          dependencies={["maxStudents"]}
-          rules={[
-            { required: true, message: "Bắt buộc" },
-            { type: "number", min: 1, message: "Tối thiểu 1" },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                const maxStudents = getFieldValue("maxStudents") as
-                  | number
-                  | undefined;
+            <Form.Item
+              name="keyMaxUses"
+              label={<Text strong>Số lượt sử dụng mã</Text>}
+              dependencies={["maxStudents"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const maxStudents = getFieldValue("maxStudents") as
+                      | number
+                      | undefined;
 
-                if (value === undefined || value === null || value === "") {
-                  return Promise.resolve();
-                }
+                    if (value === undefined || value === null || value === "") {
+                      return Promise.resolve();
+                    }
 
-                if (maxStudents && Number(value) > Number(maxStudents)) {
-                  return Promise.reject(
-                    new Error(
-                      "Số lượt sử dụng mã không được lớn hơn Số sinh viên tối đa",
-                    ),
-                  );
-                }
+                    if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
+                      return Promise.reject(
+                        new Error("Số lần sử dụng tối đa phải là số nguyên dương"),
+                      );
+                    }
 
-                return Promise.resolve();
-              },
-            }),
-          ]}
-        >
-          <InputNumber className="w-full" min={1} max={10000} />
-        </Form.Item>
+                    if (maxStudents && Number(value) > Number(maxStudents)) {
+                      return Promise.reject(
+                        new Error(
+                          "Số lượt sử dụng mã không được lớn hơn Số sinh viên tối đa",
+                        ),
+                      );
+                    }
+
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+            >
+              <InputNumber className="w-full" min={0} max={35} />
+            </Form.Item>
+          </>
+        )}
 
         <Form.Item className="!mb-0">
           <Space className="w-full justify-end pt-2">
