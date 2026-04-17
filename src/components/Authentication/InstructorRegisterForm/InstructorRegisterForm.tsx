@@ -217,7 +217,7 @@ const InstructorRegisterForm: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white"
-                placeholder="instructor@university.edu"
+                placeholder="vd: giangvien@truong.edu.vn"
                 whileFocus={{ scale: 1.01 }}
               />
             </div>
@@ -239,11 +239,10 @@ const InstructorRegisterForm: React.FC = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full border rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 bg-white ${
-                    passwordError
+                  className={`w-full border rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 bg-white ${passwordError
                       ? "border-red-300 focus:border-red-400"
                       : "border-slate-200 focus:border-sky-400"
-                  }`}
+                    }`}
                   placeholder="Nhập mật khẩu của bạn"
                   whileFocus={{ scale: 1.01 }}
                 />
@@ -294,11 +293,10 @@ const InstructorRegisterForm: React.FC = () => {
                       setPasswordError(error);
                     }
                   }}
-                  className={`w-full border rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 bg-white ${
-                    passwordError && confirmPassword
+                  className={`w-full border rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 bg-white ${passwordError && confirmPassword
                       ? "border-red-300 focus:border-red-400"
                       : "border-slate-200 focus:border-sky-400"
-                  }`}
+                    }`}
                   placeholder="Nhập lại mật khẩu"
                   whileFocus={{ scale: 1.01 }}
                 />
@@ -320,7 +318,7 @@ const InstructorRegisterForm: React.FC = () => {
           <ScrollAnimation type="fade" delay={1.0}>
             <div className="pt-2">
               <Button
-                text={loading ? "Đang đăng ký..." : "Đăng ký Instructor"}
+                text={loading ? "Đang đăng ký..." : "Đăng ký giảng viên"}
                 variant="primary"
                 paddingHeight="10px"
                 paddingWidth="16px"

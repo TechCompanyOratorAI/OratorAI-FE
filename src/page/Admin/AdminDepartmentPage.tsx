@@ -90,9 +90,9 @@ const AdminDepartmentPage: React.FC = () => {
     try {
       await dispatch(deleteDepartment(departmentId.toString())).unwrap();
       await dispatch(fetchDepartments());
-      notifySuccess("Delete Success", "Department deleted successfully.");
+      notifySuccess("Xóa thành công", "Đã xóa bộ môn thành công.");
     } catch {
-      notifyError("Delete Failed", "Failed to delete department.");
+      notifyError("Xóa thất bại", "Không thể xóa bộ môn.");
     }
     setActionLoading(false);
   };
@@ -110,7 +110,7 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        notifySuccess("Update Success", "Department updated successfully.");
+        notifySuccess("Cập nhật thành công", "Đã cập nhật bộ môn thành công.");
       } else {
         await dispatch(
           createDepartment({
@@ -120,16 +120,16 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        notifySuccess("Create Success", "Department created successfully.");
+        notifySuccess("Tạo thành công", "Đã tạo bộ môn thành công.");
       }
       setIsModalOpen(false);
       setSelectedDepartment(undefined);
     } catch {
       notifyError(
-        selectedDepartment ? "Update Failed" : "Create Failed",
+        selectedDepartment ? "Cập nhật thất bại" : "Tạo thất bại",
         selectedDepartment
-          ? "Failed to update department."
-          : "Failed to create department.",
+          ? "Không thể cập nhật bộ môn."
+          : "Không thể tạo bộ môn.",
       );
     }
     setActionLoading(false);
@@ -176,7 +176,7 @@ const AdminDepartmentPage: React.FC = () => {
 
   const columns: ColumnsType<Department> = [
     {
-      title: "Department",
+      title: "Bộ môn",
       key: "department",
       render: (_, record) => (
         <div>
@@ -186,23 +186,23 @@ const AdminDepartmentPage: React.FC = () => {
       ),
     },
     {
-      title: "Description",
+      title: "Mô tả",
       dataIndex: "description",
       key: "description",
       render: (val) => val || "-",
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "isActive",
       key: "isActive",
       render: (isActive: boolean) => (
         <Tag color={isActive ? "green" : "red"}>
-          {isActive ? "Active" : "Inactive"}
+          {isActive ? "Đang hoạt động" : "Không hoạt động"}
         </Tag>
       ),
     },
     {
-      title: "Created",
+      title: "Ngày tạo",
       dataIndex: "createdAt",
       key: "createdAt",
       render: (val?: string) => {
@@ -217,7 +217,7 @@ const AdminDepartmentPage: React.FC = () => {
       },
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: 120,
       render: (_, record) => (
@@ -229,12 +229,12 @@ const AdminDepartmentPage: React.FC = () => {
             className="text-blue-500 hover:text-blue-600"
           />
           <Popconfirm
-            title="Delete Department"
-            description="Are you sure you want to delete this department? This action cannot be undone."
+            title="Xác nhận xóa bộ môn"
+            description="Bạn có chắc muốn xóa bộ môn này? Hành động này không thể hoàn tác."
             onConfirm={() => handleDeleteDepartment(record.departmentId)}
-            okText="Delete"
+            okText="Xóa"
             okButtonProps={{ danger: true, loading: actionLoading }}
-            cancelText="Cancel"
+            cancelText="Hủy"
           >
             <Button
               type="text"
@@ -255,13 +255,13 @@ const AdminDepartmentPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Administration
+                Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Department Management
+                Quản lý bộ môn
               </h1>
               <p className="text-sm text-gray-600">
-                Manage departments, status, and details.
+                Quản lý bộ môn, trạng thái và thông tin chi tiết.
               </p>
             </div>
             <Space>
@@ -270,14 +270,14 @@ const AdminDepartmentPage: React.FC = () => {
                 onClick={() => dispatch(fetchDepartments())}
                 loading={loading}
               >
-                Refresh
+                Làm mới
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateDepartment}
               >
-                New Department
+                Bộ môn mới
               </Button>
             </Space>
           </div>
@@ -290,7 +290,7 @@ const AdminDepartmentPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Departments
+                    Tổng bộ môn
                   </p>
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
@@ -303,7 +303,7 @@ const AdminDepartmentPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active
+                    Đang hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.active}</p>
                 </div>
@@ -316,7 +316,7 @@ const AdminDepartmentPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Inactive
+                    Không hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.inactive}</p>
                 </div>
@@ -328,13 +328,13 @@ const AdminDepartmentPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </p>
-                <h2 className="text-lg font-bold text-gray-900">Departments</h2>
+                <h2 className="text-lg font-bold text-gray-900">Bộ môn</h2>
               </div>
               <Space wrap>
                 <Input
-                  placeholder="Search by code, name, or description..."
+                  placeholder="Tìm theo mã, tên hoặc mô tả..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
@@ -352,9 +352,9 @@ const AdminDepartmentPage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "All status" },
-                    { value: "active", label: "Active" },
-                    { value: "inactive", label: "Inactive" },
+                    { value: "all", label: "Tất cả trạng thái" },
+                    { value: "active", label: "Đang hoạt động" },
+                    { value: "inactive", label: "Không hoạt động" },
                   ]}
                 />
               </Space>
@@ -373,7 +373,7 @@ const AdminDepartmentPage: React.FC = () => {
                 showQuickJumper: false,
                 pageSizeOptions: ["10", "20", "50"],
                 showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} departments`,
+                  `${range[0]}-${range[1]} trên tổng ${total} bộ môn`,
                 onChange: (p, ps) => {
                   setPage(p);
                   setPageSize(ps);
@@ -382,8 +382,8 @@ const AdminDepartmentPage: React.FC = () => {
               locale={{
                 emptyText:
                   searchTerm || filterStatus !== "all"
-                    ? "No departments found matching your filters"
-                    : "No departments available. Create your first department to get started.",
+                    ? "Không tìm thấy bộ môn phù hợp bộ lọc"
+                    : "Chưa có bộ môn nào. Hãy tạo bộ môn đầu tiên để bắt đầu.",
               }}
             />
           </Card>

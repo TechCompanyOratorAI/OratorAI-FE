@@ -120,7 +120,7 @@ const ForgotPasswordForm: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white relative z-0"
-                  placeholder="you@company.com"
+                  placeholder="ban@congty.com"
                   whileFocus={{ scale: 1.01 }}
                 />
               </div>

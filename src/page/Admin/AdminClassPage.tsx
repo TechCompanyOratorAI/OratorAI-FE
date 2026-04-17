@@ -100,9 +100,9 @@ const AdminClassPage: React.FC = () => {
     try {
       await dispatch(deleteClass(classId)).unwrap();
       await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-      notifySuccess("Delete Success", "Class deleted successfully.");
+      notifySuccess("Xóa thành công", "Đã xóa lớp học thành công.");
     } catch {
-      notifyError("Delete Failed", "Failed to delete class.");
+      notifyError("Xóa thất bại", "Không thể xóa lớp học.");
     }
     setActionLoading(false);
   };
@@ -118,18 +118,20 @@ const AdminClassPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        notifySuccess("Update Success", "Class updated successfully.");
+        notifySuccess("Cập nhật thành công", "Đã cập nhật lớp học thành công.");
       } else {
         await dispatch(createClass(formData)).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        notifySuccess("Create Success", "Class created successfully.");
+        notifySuccess("Tạo thành công", "Đã tạo lớp học thành công.");
       }
       setIsModalOpen(false);
       setSelectedClass(undefined);
     } catch {
       notifyError(
-        selectedClass ? "Update Failed" : "Create Failed",
-        selectedClass ? "Failed to update class." : "Failed to create class.",
+        selectedClass ? "Cập nhật thất bại" : "Tạo thất bại",
+        selectedClass
+          ? "Không thể cập nhật lớp học."
+          : "Không thể tạo lớp học.",
       );
     }
     setActionLoading(false);
@@ -162,9 +164,9 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      notifySuccess("Add Instructor Success", "Instructor added successfully.");
+      notifySuccess("Thêm giảng viên thành công", "Đã thêm giảng viên thành công.");
     } catch {
-      notifyError("Add Instructor Failed", "Failed to add instructor.");
+      notifyError("Thêm giảng viên thất bại", "Không thể thêm giảng viên.");
     }
   };
 
@@ -190,11 +192,11 @@ const AdminClassPage: React.FC = () => {
         if (updated) setSelectedClass(updated);
       }
       notifySuccess(
-        "Remove Instructor Success",
-        "Instructor removed successfully.",
+        "Gỡ giảng viên thành công",
+        "Đã gỡ giảng viên thành công.",
       );
     } catch {
-      notifyError("Remove Instructor Failed", "Failed to remove instructor.");
+      notifyError("Gỡ giảng viên thất bại", "Không thể gỡ giảng viên.");
     }
   };
 
@@ -251,20 +253,20 @@ const AdminClassPage: React.FC = () => {
     searchTerm || filterStatus !== "all"
       ? filteredClasses.length
       : filteredClasses.length > pageSize &&
-          filteredClasses.length < pagination.total
+        filteredClasses.length < pagination.total
         ? filteredClasses.length
         : pagination.total;
 
   const columns: ColumnsType<ClassData> = [
     {
-      title: "Class",
+      title: "Lớp",
       key: "class",
       render: (_, record) => (
         <div className="font-semibold">{record.classCode}</div>
       ),
     },
     {
-      title: "Course",
+      title: "Khóa học",
       key: "course",
       render: (_, record) => (
         <div>
@@ -276,17 +278,25 @@ const AdminClassPage: React.FC = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (val: string) => (
         <Tag color={statusColor(val || "unknown")}>
-          {val ? val.charAt(0).toUpperCase() + val.slice(1) : "Unknown"}
+          {val
+            ? val === "active"
+              ? "Đang hoạt động"
+              : val === "inactive"
+                ? "Không hoạt động"
+                : val === "archived"
+                  ? "Đã lưu trữ"
+                  : val
+            : "Không xác định"}
         </Tag>
       ),
     },
     {
-      title: "Enrollment",
+      title: "Sĩ số",
       key: "enrollment",
       render: (_, record) => (
         <span>
@@ -295,13 +305,13 @@ const AdminClassPage: React.FC = () => {
       ),
     },
     {
-      title: "Instructors",
+      title: "Giảng viên",
       key: "instructors",
       render: (_, record) => {
         if (!record.instructors || record.instructors.length === 0) {
           return (
             <span className="text-gray-400 italic text-xs">
-              No instructor assigned
+              Chưa có giảng viên phụ trách
             </span>
           );
         }
@@ -320,13 +330,13 @@ const AdminClassPage: React.FC = () => {
       },
     },
     {
-      title: "Start Date",
+      title: "Ngày bắt đầu",
       dataIndex: "startDate",
       key: "startDate",
       render: (val) => new Date(val).toLocaleDateString(),
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: 140,
       render: (_, record) => (
@@ -336,28 +346,28 @@ const AdminClassPage: React.FC = () => {
             icon={<UsergroupAddOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleManageInstructors(record)}
             className="text-green-500 hover:text-green-600"
-            title="Manage Instructors"
+            title="Quản lý giảng viên"
           />
           <Button
             type="text"
             icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleEditClass(record)}
             className="text-blue-500 hover:text-blue-600"
-            title="Edit"
+            title="Chỉnh sửa"
           />
           <Popconfirm
-            title="Delete Class"
-            description="Are you sure you want to delete this class? This action cannot be undone."
+            title="Xóa lớp học"
+            description="Bạn có chắc muốn xóa lớp học này? Hành động này không thể hoàn tác."
             onConfirm={() => handleDeleteClass(record.classId)}
-            okText="Delete"
+            okText="Xóa"
             okButtonProps={{ danger: true, loading: actionLoading }}
-            cancelText="Cancel"
+            cancelText="Hủy"
           >
             <Button
               type="text"
               icon={<DeleteOutlined />}
               danger
-              title="Delete"
+              title="Xóa"
             />
           </Popconfirm>
         </Space>
@@ -373,13 +383,13 @@ const AdminClassPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Administration
+                Quản trị hệ thống
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Class Management
+                Quản lý lớp học
               </h1>
               <p className="text-sm text-gray-600">
-                Manage classes, instructors, and student enrollments.
+                Quản lý lớp học, giảng viên và danh sách sinh viên.
               </p>
             </div>
             <Space>
@@ -390,14 +400,14 @@ const AdminClassPage: React.FC = () => {
                 }
                 loading={loading}
               >
-                Refresh
+                Làm mới
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateClass}
               >
-                New Class
+                Tạo lớp mới
               </Button>
             </Space>
           </div>
@@ -410,7 +420,7 @@ const AdminClassPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Classes
+                    Tổng lớp học
                   </p>
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
@@ -423,7 +433,7 @@ const AdminClassPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active
+                    Đang hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.active}</p>
                 </div>
@@ -436,7 +446,7 @@ const AdminClassPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Students
+                    Tổng sinh viên
                   </p>
                   <p className="text-xl font-bold">{stats.totalStudents}</p>
                 </div>
@@ -448,13 +458,13 @@ const AdminClassPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </p>
-                <h2 className="text-lg font-bold text-gray-900">Classes</h2>
+                <h2 className="text-lg font-bold text-gray-900">Lớp học</h2>
               </div>
               <Space wrap>
                 <Input
-                  placeholder="Search by code, name, or course..."
+                  placeholder="Tìm theo mã lớp, tên lớp hoặc khóa học..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
@@ -472,10 +482,10 @@ const AdminClassPage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "All status" },
-                    { value: "active", label: "Active" },
-                    { value: "inactive", label: "Inactive" },
-                    { value: "archived", label: "Archived" },
+                    { value: "all", label: "Tất cả" },
+                    { value: "active", label: "Đang hoạt động" },
+                    { value: "inactive", label: "Không hoạt động" },
+                    { value: "archived", label: "Đã lưu trữ" },
                   ]}
                 />
               </Space>
@@ -487,33 +497,33 @@ const AdminClassPage: React.FC = () => {
               rowKey={(record) =>
                 String(
                   record.classId ??
-                    `${record.courseId}-${record.classCode}-${record.startDate}`,
+                  `${record.courseId}-${record.classCode}-${record.startDate}`,
                 )
               }
               loading={loading}
               pagination={
                 tableTotal > 0
                   ? {
-                      current: currentPage,
-                      pageSize,
-                      total: tableTotal,
-                      showSizeChanger: true,
-                      showQuickJumper: false,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} classes`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
+                    current: currentPage,
+                    pageSize,
+                    total: tableTotal,
+                    showSizeChanger: true,
+                    showQuickJumper: false,
+                    pageSizeOptions: ["10", "20", "50"],
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} trên ${total} lớp`,
+                    onChange: (p, ps) => {
+                      setCurrentPage(p);
+                      setPageSize(ps);
+                    },
+                  }
                   : false
               }
               locale={{
                 emptyText:
                   searchTerm || filterStatus !== "all"
-                    ? "No classes found matching your filters"
-                    : "No classes available. Create your first class to get started.",
+                    ? "Không tìm thấy lớp học phù hợp bộ lọc"
+                    : "Chưa có lớp học nào. Hãy tạo lớp đầu tiên để bắt đầu.",
               }}
             />
           </Card>

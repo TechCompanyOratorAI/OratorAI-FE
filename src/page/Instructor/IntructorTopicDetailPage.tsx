@@ -28,12 +28,12 @@ import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarIns
 const { Text, Title } = Typography;
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  draft:      { color: "default",  label: "Draft" },
-  submitted:  { color: "blue",     label: "Submitted" },
-  processing: { color: "orange",   label: "Processing" },
-  analyzed:   { color: "cyan",     label: "Analyzed" },
-  done:       { color: "green",    label: "Done" },
-  failed:     { color: "red",      label: "Failed" },
+  draft: { color: "default", label: "Bản nháp" },
+  submitted: { color: "blue", label: "Đã nộp" },
+  processing: { color: "orange", label: "Đang xử lý" },
+  analyzed: { color: "cyan", label: "Đã phân tích" },
+  done: { color: "green", label: "Hoàn tất" },
+  failed: { color: "red", label: "Thất bại" },
 };
 
 const formatDate = (dateStr?: string | null) => {
@@ -120,13 +120,13 @@ const IntructorTopicDetailPage: React.FC = () => {
       ),
     },
     {
-      title: "Student",
+      title: "Sinh viên",
       render: (_: unknown, record: AnyPresentation) => (
         <div>
           <Text strong className="text-slate-800 block text-sm">
             {record.student
               ? `${record.student.firstName} ${record.student.lastName}`
-              : `Student #${record.studentId}`}
+              : `Sinh viên #${record.studentId}`}
           </Text>
           {record.student?.email && (
             <Text type="secondary" style={{ fontSize: 11 }}>
@@ -137,7 +137,7 @@ const IntructorTopicDetailPage: React.FC = () => {
       ),
     },
     {
-      title: "Group",
+      title: "Nhóm",
       dataIndex: "groupCode",
       width: 120,
       render: (groupCode: string | null) =>
@@ -156,14 +156,14 @@ const IntructorTopicDetailPage: React.FC = () => {
         ),
     },
     {
-      title: "Title",
+      title: "Tiêu đề",
       dataIndex: "title",
       render: (title: string) => (
         <Text className="text-slate-700 text-sm">{title || "—"}</Text>
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       width: 120,
       render: (status: string) => {
@@ -179,7 +179,7 @@ const IntructorTopicDetailPage: React.FC = () => {
       },
     },
     {
-      title: "Submitted",
+      title: "Ngày nộp",
       dataIndex: "submissionDate",
       width: 155,
       render: (date: string | null) => (
@@ -189,7 +189,7 @@ const IntructorTopicDetailPage: React.FC = () => {
       ),
     },
     {
-      title: "Duration",
+      title: "Thời lượng",
       dataIndex: "durationSeconds",
       width: 90,
       align: "center" as const,
@@ -239,10 +239,10 @@ const IntructorTopicDetailPage: React.FC = () => {
             onClick={() => navigate(-1)}
             style={{ paddingLeft: 0, marginBottom: 24, fontWeight: 600 }}
           >
-            Back
+            Quay lại
           </Button>
           <Card>
-            <Text type="danger">{topicError || "Topic not found"}</Text>
+            <Text type="danger">{topicError || "Không tìm thấy chủ đề"}</Text>
           </Card>
         </main>
       </div>
@@ -262,7 +262,7 @@ const IntructorTopicDetailPage: React.FC = () => {
             onClick={() => navigate(-1)}
             style={{ paddingLeft: 0, fontWeight: 600, color: "#0369a1" }}
           >
-            Back to class
+            Quay lại lớp học
           </Button>
 
           {/* ── Hero banner ─────────────────────────────── */}
@@ -287,7 +287,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                     style={{ fontSize: 11, letterSpacing: "0.1em" }}
                     className="font-semibold uppercase text-white/50 block"
                   >
-                    Presentation Topic
+                    Chủ đề thuyết trình
                   </Text>
                   <Title
                     level={3}
@@ -308,20 +308,20 @@ const IntructorTopicDetailPage: React.FC = () => {
                 {[
                   {
                     icon: <CalendarOutlined />,
-                    label: "Due date",
-                    value: topic.dueDate ? formatDate(topic.dueDate) : "No deadline",
+                    label: "Hạn nộp",
+                    value: topic.dueDate ? formatDate(topic.dueDate) : "Không có hạn",
                   },
                   {
                     icon: <ClockCircleOutlined />,
-                    label: "Duration",
+                    label: "Thời lượng",
                     value: topic.maxDurationMinutes
-                      ? `${topic.maxDurationMinutes} min`
+                      ? `${topic.maxDurationMinutes} phút`
                       : "—",
                   },
                   {
                     icon: <FileTextOutlined />,
-                    label: "Submissions",
-                    value: `${mergedPresentations.length} total`,
+                    label: "Bài nộp",
+                    value: `${mergedPresentations.length} tổng`,
                   },
                 ].map(({ icon, label, value }) => (
                   <div
@@ -359,31 +359,31 @@ const IntructorTopicDetailPage: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {[
                   {
-                    label: "Total",
+                    label: "Tổng",
                     count: mergedPresentations.length,
                     color: "#6366f1",
                     bg: "#eef2ff",
                   },
                   {
-                    label: "Submitted",
+                    label: "Đã nộp",
                     count: statusCounts.submitted,
                     color: "#3b82f6",
                     bg: "#eff6ff",
                   },
                   {
-                    label: "Processing",
+                    label: "Đang xử lý",
                     count: statusCounts.processing,
                     color: "#f59e0b",
                     bg: "#fffbeb",
                   },
                   {
-                    label: "Done",
+                    label: "Hoàn tất",
                     count: statusCounts.done,
                     color: "#10b981",
                     bg: "#ecfdf5",
                   },
                   {
-                    label: "Failed",
+                    label: "Thất bại",
                     count: statusCounts.failed,
                     color: "#ef4444",
                     bg: "#fef2f2",
@@ -427,7 +427,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                       <FileTextOutlined style={{ color: "#6366f1" }} />
                     </div>
                     <Text strong style={{ fontSize: 15 }}>
-                      Presentations
+                      Bài trình bày
                     </Text>
                     <Tag
                       color="purple"
@@ -466,10 +466,10 @@ const IntructorTopicDetailPage: React.FC = () => {
                             type="secondary"
                             className="block text-base"
                           >
-                            No presentations yet
+                            Chưa có bài trình bày
                           </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            Students will submit when the deadline approaches
+                            Sinh viên sẽ nộp bài khi gần đến hạn
                           </Text>
                         </div>
                       }
@@ -499,14 +499,14 @@ const IntructorTopicDetailPage: React.FC = () => {
                 title={
                   <div className="flex items-center gap-2">
                     <ClockCircleOutlined style={{ color: "#8b5cf6" }} />
-                    <Text strong>Topic Details</Text>
+                    <Text strong>Chi tiết chủ đề</Text>
                   </div>
                 }
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Text type="secondary" className="text-sm">
-                      Sequence
+                      Thứ tự
                     </Text>
                     <Tag color="purple" style={{ borderRadius: 20 }}>
                       #{topic.sequenceNumber}
@@ -514,7 +514,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <Text type="secondary" className="text-sm">
-                      Due Date
+                      Hạn nộp
                     </Text>
                     <Text strong className="text-sm text-right max-w-[160px]">
                       {topic.dueDate ? formatDate(topic.dueDate) : "—"}
@@ -522,11 +522,11 @@ const IntructorTopicDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <Text type="secondary" className="text-sm">
-                      Max Duration
+                      Thời lượng tối đa
                     </Text>
                     <Text strong className="text-sm">
                       {topic.maxDurationMinutes
-                        ? `${topic.maxDurationMinutes} min`
+                        ? `${topic.maxDurationMinutes} phút`
                         : "—"}
                     </Text>
                   </div>
@@ -551,7 +551,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                   title={
                     <div className="flex items-center gap-2">
                       <FileTextOutlined style={{ color: "#f59e0b" }} />
-                      <Text strong>Requirements</Text>
+                      <Text strong>Yêu cầu</Text>
                     </div>
                   }
                 >
@@ -586,7 +586,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                   title={
                     <div className="flex items-center gap-2">
                       <BookOutlined style={{ color: "#0284c7" }} />
-                      <Text strong>Course</Text>
+                      <Text strong>Khóa học</Text>
                     </div>
                   }
                 >
@@ -597,7 +597,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                         style={{ fontSize: 11 }}
                         className="uppercase tracking-wider block mb-0.5"
                       >
-                        Course Name
+                        Tên khóa học
                       </Text>
                       <Text strong className="text-slate-800">
                         {topic.course.courseName || "—"}
@@ -610,7 +610,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                           style={{ fontSize: 11 }}
                           className="uppercase tracking-wider block mb-1"
                         >
-                          Code
+                          Mã
                         </Text>
                         <Tag
                           color="blue"
@@ -633,7 +633,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                             style={{ fontSize: 11 }}
                             className="block"
                           >
-                            Instructor
+                            Giảng viên
                           </Text>
                           <Text strong className="text-sm text-slate-800">
                             {topic.course.instructor.firstName}{" "}

@@ -24,8 +24,8 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
   onClose,
   onSubmit,
   isLoading = false,
-  title = "Edit Topic",
-  submitText = "Save Changes",
+  title = "Sửa chủ đề",
+  submitText = "Lưu thay đổi",
   initialData,
 }) => {
   const [formData, setFormData] = useState<UpdateTopicFormData>({
@@ -48,19 +48,19 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
     if (isOpen && initialData) {
       const dueDateValue = initialData.dueDate
         ? (() => {
-            try {
-              const d = new Date(initialData.dueDate);
-              const pad = (n: number) => String(n).padStart(2, "0");
-              const yyyy = d.getFullYear();
-              const mm = pad(d.getMonth() + 1);
-              const dd = pad(d.getDate());
-              const hh = pad(d.getHours());
-              const min = pad(d.getMinutes());
-              return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-            } catch {
-              return "";
-            }
-          })()
+          try {
+            const d = new Date(initialData.dueDate);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const yyyy = d.getFullYear();
+            const mm = pad(d.getMonth() + 1);
+            const dd = pad(d.getDate());
+            const hh = pad(d.getHours());
+            const min = pad(d.getMinutes());
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+          } catch {
+            return "";
+          }
+        })()
         : "";
 
       setFormData({
@@ -76,10 +76,10 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
     const newErrors: Partial<Record<keyof UpdateTopicFormData, string>> = {};
 
     if (!formData.topicName.trim())
-      newErrors.topicName = "Topic name is required";
+      newErrors.topicName = "Tên chủ đề không được để trống";
     if (formData.maxDurationMinutes <= 0)
-      newErrors.maxDurationMinutes = "Duration must be greater than 0";
-    if (!formData.dueDate) newErrors.dueDate = "Due date is required";
+      newErrors.maxDurationMinutes = "Thời lượng phải lớn hơn 0";
+    if (!formData.dueDate) newErrors.dueDate = "Hạn nộp không được để trống";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -140,17 +140,16 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Topic Name *
+              Tên chủ đề *
             </label>
             <input
               type="text"
               name="topicName"
               value={formData.topicName}
               onChange={handleChange}
-              placeholder="e.g., Advanced Agile & Scrum"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.topicName ? "border-red-500" : "border-gray-300"
-              }`}
+              placeholder="VD: Agile va Scrum nang cao"
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.topicName && (
               <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
@@ -159,7 +158,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Duration (minutes) *
+              Thời lượng tối đa (phút) *
             </label>
             <input
               type="number"
@@ -167,9 +166,8 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
               value={formData.maxDurationMinutes || ""}
               onChange={handleChange}
               min="1"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.maxDurationMinutes && (
               <p className="text-red-600 text-sm mt-1">
@@ -180,16 +178,15 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date *
+              Hạn nộp *
             </label>
             <input
               type="datetime-local"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.dueDate ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.dueDate && (
               <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
@@ -198,7 +195,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
 
           <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
             <Button
-              text="Cancel"
+              text="Hủy"
               variant="secondary"
               fontSize="14px"
               borderRadius="999px"
@@ -212,7 +209,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
               disabled={isLoading}
               className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
-              {isLoading ? "Processing..." : submitText}
+              {isLoading ? "Đang xử lý..." : submitText}
             </button>
           </div>
         </form>

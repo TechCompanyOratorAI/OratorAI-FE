@@ -34,9 +34,8 @@ const Nav: React.FC = () => {
   return (
     <>
       <motion.nav
-        className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${
-          scrolled ? "shadow-lg" : "shadow-sm"
-        }`}
+        className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-sm"
+          }`}
         initial="hidden"
         animate="visible"
         variants={navVariants}
@@ -52,9 +51,8 @@ const Nav: React.FC = () => {
           >
             <span className="w-[30px] h-[3px] rounded-sm bg-gradient-to-r from-sky-500 to-indigo-500" />
             <span
-              className={`h-[3px] rounded-sm bg-gradient-to-r from-sky-500 to-indigo-500 ml-auto duration-500 ease-out ${
-                isMenuOpen ? "w-[30px]" : "w-[15px]"
-              }`}
+              className={`h-[3px] rounded-sm bg-gradient-to-r from-sky-500 to-indigo-500 ml-auto duration-500 ease-out ${isMenuOpen ? "w-[30px]" : "w-[15px]"
+                }`}
             />
           </button>
 
@@ -98,7 +96,7 @@ const Nav: React.FC = () => {
                         </div> */}
             <div className="flex space-x-2 lg:space-x-4 ml-auto">
               <Button
-                text="Sign In"
+                text="Đăng nhập"
                 variant="tertiary"
                 fontSize="16px"
                 borderRadius="8px"
@@ -107,7 +105,7 @@ const Nav: React.FC = () => {
                 onClick={() => navigate("/login")}
               />
               <Button
-                text="Get OratorAI"
+                text="Dùng thử OratorAI"
                 variant="primary"
                 fontSize="16px"
                 borderRadius="8px"
@@ -121,50 +119,49 @@ const Nav: React.FC = () => {
       </motion.nav>
 
       <div
-        className={`${
-          isMenuOpen ? "translate-x-[0]" : "translate-x-[100%]"
-        } fixed pt-24 top-0 right-0 shadow-2xl z-40 transform p-[32px] duration-700 ease-in-out w-[320px] max-w-screen bg-white h-screen flex flex-col items-center lg:hidden`}
+        className={`${isMenuOpen ? "translate-x-[0]" : "translate-x-[100%]"
+          } fixed pt-24 top-0 right-0 shadow-2xl z-40 transform p-[32px] duration-700 ease-in-out w-[320px] max-w-screen bg-white h-screen flex flex-col items-center lg:hidden`}
       >
         <div className="w-full flex flex-col space-y-8 ml-4">
           <NavItem
-            text="FOR BUSINESS"
+            text="CHO TỔ CHỨC"
             more={[
-              "GTM Enablement",
-              "Learning & Development",
-              "Partner Enablement",
-              "Corporate Communications",
+              "Hỗ trợ triển khai",
+              "Đào tạo & phát triển",
+              "Hỗ trợ đối tác",
+              "Truyền thông nội bộ",
             ]}
           />
-          <NavItem text="PRICING" />
+          <NavItem text="BẢNG GIÁ" />
           <NavItem
-            text="ABOUT"
-            more={["Our Team", "Careers", "AI Roleplays", "FAQ"]}
+            text="GIỚI THIỆU"
+            more={["Đội ngũ", "Tuyển dụng", "Mô phỏng AI", "Câu hỏi thường gặp"]}
           />
           <NavItem
-            text="USE CASES"
+            text="KỊCH BẢN ỨNG DỤNG"
             more={[
-              "Conversation Roleplays",
-              "Interview Preparation",
-              "Presentation Practice",
-              "Online Meetings",
+              "Mô phỏng hội thoại",
+              "Luyện phỏng vấn",
+              "Luyện thuyết trình",
+              "Họp trực tuyến",
             ]}
           />
           <NavItem
-            text="RESOURCES"
+            text="TÀI NGUYÊN"
             more={[
               "Blog",
-              "Our Partnerships",
-              "Press",
-              "Help Center",
-              "Sample Speeches",
-              "Community",
-              "Trust Center",
+              "Đối tác",
+              "Báo chí",
+              "Trung tâm trợ giúp",
+              "Bài nói mẫu",
+              "Cộng đồng",
+              "Trung tâm tin cậy",
             ]}
           />
         </div>
         <div className="mt-10 flex flex-col w-full space-y-4">
           <Button
-            text="Sign In"
+            text="Đăng nhập"
             variant="tertiary"
             fontSize="16px"
             borderRadius="8px"
@@ -176,7 +173,7 @@ const Nav: React.FC = () => {
             }}
           />
           <Button
-            text="Get OratorAI"
+            text="Dùng thử OratorAI"
             variant="primary"
             fontSize="16px"
             borderRadius="8px"
@@ -184,7 +181,7 @@ const Nav: React.FC = () => {
             paddingHeight="8px"
           />
           <Button
-            text="Talk to Sales"
+            text="Liên hệ tư vấn"
             variant="secondary"
             fontSize="16px"
             borderRadius="8px"

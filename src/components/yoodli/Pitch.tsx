@@ -29,7 +29,7 @@ const Pitch: React.FC = () => {
                 🔄
               </span>
             </div>
-            <h3 className="text-2xl font-bold mb-4">Cập nhật theo nội dung học phần</h3>
+            <h3 className="text-2xl font-bold mb-4">Cập nhật theo nội dung khóa học</h3>
             <p className="text-lg">
               Khi slide hoặc yêu cầu bài thuyết trình thay đổi, hệ thống tự động cập
               nhật cho các lần nộp sau.

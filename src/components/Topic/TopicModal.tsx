@@ -70,19 +70,19 @@ const TopicModal: React.FC<TopicModalProps> = ({
     const newErrors: Partial<Record<keyof CreateTopicData, string>> = {};
 
     if (!formData.topicName.trim()) {
-      newErrors.topicName = "Topic name is required";
+      newErrors.topicName = "Tên chủ đề không được để trống";
     }
     if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
+      newErrors.description = "Mô tả không được để trống";
     }
     if (!formData.dueDate) {
-      newErrors.dueDate = "Due date is required";
+      newErrors.dueDate = "Hạn nộp không được để trống";
     }
     if (formData.maxDurationMinutes <= 0) {
-      newErrors.maxDurationMinutes = "Duration must be greater than 0";
+      newErrors.maxDurationMinutes = "Thời lượng phải lớn hơn 0";
     }
     if (formData.sequenceNumber <= 0) {
-      newErrors.sequenceNumber = "Sequence number must be greater than 0";
+      newErrors.sequenceNumber = "Thứ tự phải lớn hơn 0";
     }
 
     if (classOptions?.length && selectedClassId == null) {
@@ -154,7 +154,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Create New Topic</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Tạo chủ đề mới</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition"
@@ -177,9 +177,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
                   setSelectedClassId(v ? parseInt(v, 10) : null);
                   if (classError) setClassError(null);
                 }}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  classError ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${classError ? "border-red-500" : "border-gray-300"
+                  }`}
               >
                 {classOptions.map((c) => (
                   <option key={c.classId} value={c.classId}>
@@ -197,17 +196,16 @@ const TopicModal: React.FC<TopicModalProps> = ({
           {/* Topic Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Topic Name *
+              Tên chủ đề *
             </label>
             <input
               type="text"
               name="topicName"
               value={formData.topicName}
               onChange={handleChange}
-              placeholder="e.g., Agile Development Methodology"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.topicName ? "border-red-500" : "border-gray-300"
-              }`}
+              placeholder="VD: Phương pháp phát triển Agile"
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.topicName && (
               <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
@@ -217,17 +215,16 @@ const TopicModal: React.FC<TopicModalProps> = ({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
+              Mô tả *
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Enter topic description..."
+              placeholder="Nhập mô tả chủ đề..."
               rows={4}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${
-                errors.description ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${errors.description ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.description && (
               <p className="text-red-600 text-sm mt-1">{errors.description}</p>
@@ -239,7 +236,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
             {/* Sequence Number */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sequence Number *
+                Thứ tự *
               </label>
               <input
                 type="number"
@@ -247,9 +244,8 @@ const TopicModal: React.FC<TopicModalProps> = ({
                 value={formData.sequenceNumber || ""}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.sequenceNumber ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.sequenceNumber ? "border-red-500" : "border-gray-300"
+                  }`}
               />
               {errors.sequenceNumber && (
                 <p className="text-red-600 text-sm mt-1">
@@ -261,7 +257,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
             {/* Max Duration */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Duration (minutes) *
+                Thời lượng tối đa (phút) *
               </label>
               <input
                 type="number"
@@ -269,11 +265,10 @@ const TopicModal: React.FC<TopicModalProps> = ({
                 value={formData.maxDurationMinutes}
                 onChange={handleChange}
                 min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  errors.maxDurationMinutes
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes
                     ? "border-red-500"
                     : "border-gray-300"
-                }`}
+                  }`}
               />
               {errors.maxDurationMinutes && (
                 <p className="text-red-600 text-sm mt-1">
@@ -286,16 +281,15 @@ const TopicModal: React.FC<TopicModalProps> = ({
           {/* Due Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date *
+              Hạn nộp *
             </label>
             <input
               type="datetime-local"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                errors.dueDate ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.dueDate && (
               <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
@@ -305,25 +299,25 @@ const TopicModal: React.FC<TopicModalProps> = ({
           {/* Requirements */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Requirements (Optional)
+              Yêu cầu (tuỳ chọn)
             </label>
             <textarea
               name="requirements"
               value={formData.requirements}
               onChange={handleChange}
-              placeholder="Enter requirements (one per line)..."
+              placeholder="Nhập yêu cầu (mỗi dòng một ý)..."
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Enter requirements, one per line (e.g., "- Explain Scrum roles")
+              Nhập yêu cầu, mỗi dòng một ý (VD: "- Trình bày vai trò trong Scrum")
             </p>
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
             <Button
-              text="Cancel"
+              text="Huỷ"
               variant="secondary"
               fontSize="14px"
               borderRadius="999px"
@@ -337,7 +331,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
               disabled={isLoading}
               className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
-              {isLoading ? "Creating..." : "Create Topic"}
+              {isLoading ? "Đang tạo..." : "Tạo chủ đề"}
             </button>
           </div>
         </form>

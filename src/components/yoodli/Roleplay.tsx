@@ -66,7 +66,7 @@ const Roleplay: React.FC = () => {
                     duration={0.5}
                 >
                     <h2 className="text-center text-[28px] font-bold mb-10">
-                        How OratorAI Roleplays work
+                        OratorAI vận hành như thế nào?
                     </h2>
                 </ScrollAnimation>
 
@@ -91,7 +91,7 @@ const Roleplay: React.FC = () => {
                                             index === activeCard + 1
                                                 ? "opacity-100"
                                                 : "opacity-0"
-                                        }`}
+                                            }`}
                                     >
                                         <img
                                             src={src}

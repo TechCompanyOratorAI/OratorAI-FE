@@ -40,7 +40,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
   return (
     <Modal
       title={
-        mode === "create" ? "Create Rubric Template" : "Edit Rubric Template"
+        mode === "create" ? "Tạo mẫu rubric" : "Sửa mẫu rubric"
       }
       open={isOpen}
       onCancel={handleCancel}
@@ -66,40 +66,40 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
       >
         <Form.Item
           name="templateName"
-          label={<Text strong>Template Name</Text>}
+          label={<Text strong>Tên mẫu</Text>}
           rules={[
-            { required: true, message: "Template name is required" },
-            { min: 2, max: 200, message: "Template name từ 2 – 200 ký tự" },
+            { required: true, message: "Tên mẫu không được để trống" },
+            { min: 2, max: 200, message: "Tên mẫu từ 2 - 200 ký tự" },
           ]}
         >
-          <Input placeholder="VD: Presentation Rubric v1" />
+          <Input placeholder="VD: Rubric thuyết trình v1" />
         </Form.Item>
 
         <Form.Item
           name="description"
-          label={<Text strong>Description</Text>}
+          label={<Text strong>Mô tả</Text>}
           rules={[
-            { required: true, message: "Description is required" },
-            { min: 2, max: 1000, message: "Description từ 2 – 1000 ký tự" },
+            { required: true, message: "Mô tả không được để trống" },
+            { min: 2, max: 1000, message: "Mô tả từ 2 - 1000 ký tự" },
           ]}
         >
           <Input.TextArea
-            placeholder="Rubric for group presentations"
+            placeholder="Rubric cho bài thuyết trình nhóm"
             rows={3}
           />
         </Form.Item>
 
         <Form.Item
           name="assignmentType"
-          label={<Text strong>Assignment Type</Text>}
-          rules={[{ required: true, message: "Assignment type is required" }]}
+          label={<Text strong>Loại bài nộp</Text>}
+          rules={[{ required: true, message: "Loại bài nộp không được để trống" }]}
         >
-          <Input placeholder="VD: presentation" />
+          <Input placeholder="VD: thuyet-trinh" />
         </Form.Item>
 
         <Form.Item
           name="isDefault"
-          label={<Text strong>Set as default template</Text>}
+          label={<Text strong>Đặt làm mẫu mặc định</Text>}
           valuePropName="checked"
         >
           <Switch />
@@ -108,14 +108,14 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
         <Form.Item className="!mb-0">
           <Space className="w-full justify-end pt-2">
             <Button onClick={handleCancel} disabled={isLoading}>
-              Cancel
+              Hủy
             </Button>
             <Button type="primary" htmlType="submit" loading={isLoading}>
               {isLoading
-                ? "Saving..."
+                ? "Đang lưu..."
                 : mode === "create"
-                  ? "Create"
-                  : "Update"}
+                  ? "Tạo"
+                  : "Cập nhật"}
             </Button>
           </Space>
         </Form.Item>

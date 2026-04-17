@@ -48,11 +48,11 @@ const timeAgo = (dateStr: string): string => {
   const now = new Date();
   const date = new Date(dateStr);
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return "Just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 172800) return "Yesterday";
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return "Vừa xong";
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 172800) return "Hôm qua";
+  return `${Math.floor(diff / 86400)} ngày trước`;
 };
 
 type StatColor = "blue" | "indigo" | "amber" | "green";
@@ -160,12 +160,12 @@ const InstructorDashboardPage: React.FC = () => {
 
   const presentationRows: ColumnsType<AIRReportSummary> = [
     {
-      title: "Student",
+      title: "Sinh viên",
       key: "student",
       render: (_, record) => {
         const name = record.student
           ? `${record.student.firstName} ${record.student.lastName}`
-          : "Unknown";
+          : "Không rõ";
         return (
           <Space>
             <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -179,7 +179,7 @@ const InstructorDashboardPage: React.FC = () => {
       },
     },
     {
-      title: "Presentation",
+      title: "Bài thuyết trình",
       key: "title",
       render: (_, record) => (
         <Button
@@ -191,27 +191,31 @@ const InstructorDashboardPage: React.FC = () => {
       ),
     },
     {
-      title: "Submitted",
+      title: "Thời gian nộp",
       key: "date",
       render: (_, record) => (
         <Text type="secondary" className="text-sm">{timeAgo(record.generatedAt)}</Text>
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       key: "status",
       render: (_, record) => {
         const isConfirmed = record.reportStatus === "confirmed";
         const isProcessing = record.reportStatus === "processing";
         return (
           <Tag color={isConfirmed ? "green" : isProcessing ? "blue" : "orange"}>
-            {isConfirmed ? "Reviewed" : isProcessing ? "Processing" : "Pending"}
+            {isConfirmed
+              ? "Đã duyệt"
+              : isProcessing
+                ? "Đang xử lý"
+                : "Chờ duyệt"}
           </Tag>
         );
       },
     },
     {
-      title: "Score",
+      title: "Điểm",
       key: "score",
       render: (_, record) => {
         const displayScore = record.gradeForInstructor ?? (record.overallScore ? Math.round(Number(record.overallScore)) : null);
@@ -232,7 +236,7 @@ const InstructorDashboardPage: React.FC = () => {
           size="small"
           onClick={() => navigate(`/instructor/presentation/${record.submissionId}`)}
         >
-          {record.reportStatus === "confirmed" ? "View" : "Review"}
+          {record.reportStatus === "confirmed" ? "Xem" : "Duyệt"}
         </Button>
       ),
     },
@@ -252,14 +256,14 @@ const InstructorDashboardPage: React.FC = () => {
     return recentReports.slice(0, 8).map((r) => {
       const name = r.student
         ? `${r.student.firstName} ${r.student.lastName}`
-        : "A student";
+        : "Một sinh viên";
       const isConfirmed = r.reportStatus === "confirmed";
       return {
         id: r.reportId,
         type: isConfirmed ? ("review" as const) : ("submission" as const),
         message: isConfirmed
-          ? `You reviewed "${r.submission.title}"`
-          : `${name} submitted "${r.submission.title}"`,
+          ? `Bạn đã duyệt "${r.submission.title}"`
+          : `${name} đã nộp "${r.submission.title}"`,
         time: timeAgo(r.generatedAt),
       };
     });
@@ -290,35 +294,35 @@ const InstructorDashboardPage: React.FC = () => {
           {/* Page Header */}
           <div>
             <Text className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-              Instructor
+              Giảng viên
             </Text>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome, {user?.firstName || "Instructor"}
+              Chào mừng, {user?.firstName || "Giảng viên"}
             </h1>
           </div>
 
           {/* Quick Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="Total Students"
+              label="Tổng sinh viên"
               value={loading ? "—" : stats.totalStudents}
               icon={<Users className="w-5 h-5" />}
               color="blue"
             />
             <StatCard
-              label="Classes"
+              label="Lớp học"
               value={loading ? "—" : stats.totalClasses}
               icon={<BookOpen className="w-5 h-5" />}
               color="indigo"
             />
             <StatCard
-              label="Pending Reviews"
+              label="Bài chờ duyệt"
               value={reportsLoading ? "—" : stats.pendingReports}
               icon={<Clock className="w-5 h-5" />}
               color="amber"
             />
             <StatCard
-              label="Avg Score"
+              label="Điểm trung bình"
               value={stats.avgScore ?? "—"}
               suffix={stats.avgScore !== null ? "/100" : undefined}
               icon={<BarChart3 className="w-5 h-5" />}
@@ -330,15 +334,15 @@ const InstructorDashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Pending Reviews Table */}
             <Card
-              title="Pending Reviews"
+              title="Danh sách chờ duyệt"
               className="xl:col-span-2"
               extra={
                 <Segmented
                   size="small"
                   options={[
-                    { label: "All", value: "all" },
-                    { label: "Pending", value: "pending" },
-                    { label: "Reviewed", value: "reviewed" },
+                    { label: "Tất cả", value: "all" },
+                    { label: "Chờ duyệt", value: "pending" },
+                    { label: "Đã duyệt", value: "reviewed" },
                   ]}
                   value={activeTab}
                   onChange={(val) => setActiveTab(val as any)}
@@ -350,7 +354,7 @@ const InstructorDashboardPage: React.FC = () => {
                   <Spin />
                 </div>
               ) : filteredReports.length === 0 ? (
-                <Empty description="No presentations to review" />
+                <Empty description="Không có bài thuyết trình cần duyệt" />
               ) : (
                 <Table
                   columns={presentationRows}
@@ -363,16 +367,15 @@ const InstructorDashboardPage: React.FC = () => {
             </Card>
 
             {/* Recent Activity Sidebar */}
-            <Card title="Recent Activity">
+            <Card title="Hoạt động gần đây">
               {recentActivityItems.length === 0 ? (
-                <Empty description="No recent activity" />
+                <Empty description="Không có hoạt động gần đây" />
               ) : (
                 <Space direction="vertical" className="w-full">
                   {recentActivityItems.map((activity) => (
                     <div key={activity.id} className="flex items-start gap-3">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        activity.type === "submission" ? "bg-amber-50" : "bg-green-50"
-                      }`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${activity.type === "submission" ? "bg-amber-50" : "bg-green-50"
+                        }`}>
                         {activity.type === "submission" ? (
                           <Upload className="w-3.5 h-3.5 text-amber-600" />
                         ) : (
@@ -392,15 +395,15 @@ const InstructorDashboardPage: React.FC = () => {
 
           {/* Course Overview Section */}
           <Card
-            title="Your Courses"
+            title="Khóa học của bạn"
             extra={
               <Button type="link" icon={<ArrowRight size={14} />} onClick={() => navigate("/instructor/manage-courses")}>
-                View all
+                Xem tất cả
               </Button>
             }
           >
             {courseCards.length === 0 ? (
-              <Empty description="No courses assigned yet" />
+              <Empty description="Chưa có khóa học được phân công" />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courseCards.slice(0, 3).map((course) => (
@@ -416,7 +419,7 @@ const InstructorDashboardPage: React.FC = () => {
                           <BookOpen className="w-4 h-4 text-indigo-600" />
                         </div>
                         <Tag color={course.isActive ? "green" : "default"}>
-                          {course.isActive ? "Active" : "Inactive"}
+                          {course.isActive ? "Đang mở" : "Không hoạt động"}
                         </Tag>
                       </div>
                       <Text strong>{course.courseName}</Text>
@@ -424,7 +427,7 @@ const InstructorDashboardPage: React.FC = () => {
                       <div className="flex items-center justify-between text-xs text-gray-400 pt-2">
                         <span>{course.semester}</span>
                         <span>
-                          {activeClasses.filter((c) => c.course.courseId === course.courseId).length} classes
+                          {activeClasses.filter((c) => c.course.courseId === course.courseId).length} lớp
                         </span>
                       </div>
                     </Space>

@@ -17,7 +17,7 @@ const HowToUse: React.FC = () => {
       case "Khoa / Bộ môn":
         return [
           "Chuẩn hoá tiêu chí đánh giá thuyết trình giữa các lớp và giảng viên",
-          "Tổng hợp kết quả toàn khoá, xuất báo cáo cho từng học phần",
+          "Tổng hợp kết quả toàn khoá, xuất báo cáo cho từng khóa học",
           "Theo dõi xu hướng kỹ năng thuyết trình của sinh viên qua từng năm",
         ];
       case "Trung tâm kỹ năng mềm":
@@ -94,11 +94,10 @@ const HowToUse: React.FC = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`py-4 flex-1 transition-colors duration-200 font-[16px] text-stone-900 font-bold border-b-5 cursor-pointer ${
-                  activeTab === tab
+                className={`py-4 flex-1 transition-colors duration-200 font-[16px] text-stone-900 font-bold border-b-5 cursor-pointer ${activeTab === tab
                     ? "border-stone-900"
                     : "border-transparent"
-                }`}
+                  }`}
               >
                 {tab}
               </button>

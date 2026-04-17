@@ -102,29 +102,29 @@ const UserManagementPage: React.FC = () => {
             ur.role?.roleName &&
             roleWhitelist.includes(ur.role.roleName.toLowerCase()),
         )?.role?.roleName;
-        return <Tag>{role || "Unknown"}</Tag>;
+        return <Tag>{role || "Không xác định"}</Tag>;
       },
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       key: "status",
       render: (_, record) => (
         <Tag color={record.isActive ? "green" : "red"}>
-          {record.isActive ? "Active" : "Inactive"}
+          {record.isActive ? "Đang hoạt động" : "Không hoạt động"}
         </Tag>
       ),
     },
     {
-      title: "Verify",
+      title: "Xác minh",
       key: "verify",
       render: (_, record) => (
         <Tag color={record.isEmailVerified ? "blue" : "default"}>
-          {record.isEmailVerified ? "Verified" : "Unverified"}
+          {record.isEmailVerified ? "Đã xác minh" : "Chưa xác minh"}
         </Tag>
       ),
     },
     {
-      title: "Last Login",
+      title: "Đăng nhập gần nhất",
       key: "lastLogin",
       render: (_, record) =>
         record.lastLoginAt
@@ -132,7 +132,7 @@ const UserManagementPage: React.FC = () => {
           : "—",
     },
     {
-      title: "Joined",
+      title: "Ngày tham gia",
       key: "createdAt",
       render: (_, record) =>
         record.createdAt
@@ -149,14 +149,13 @@ const UserManagementPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Administration
+                Quản trị hệ thống
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                User Management
+                Quản lý người dùng
               </h1>
               <p className="text-sm text-gray-600">
-                Students & Instructors directory with quick search and role
-                filter.
+                Danh bạ sinh viên & giảng viên với tìm kiếm nhanh và lọc theo vai trò.
               </p>
             </div>
             <Button
@@ -164,7 +163,7 @@ const UserManagementPage: React.FC = () => {
               onClick={() => dispatch(fetchAllUsers())}
               loading={loading}
             >
-              Refresh
+              Làm mới
             </Button>
           </div>
 
@@ -176,7 +175,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Users
+                    Tổng người dùng
                   </p>
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
@@ -189,7 +188,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active
+                    Đang hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.active}</p>
                 </div>
@@ -202,7 +201,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Verified Email
+                    Email đã xác minh
                   </p>
                   <p className="text-xl font-bold">{stats.verified}</p>
                 </div>
@@ -214,15 +213,15 @@ const UserManagementPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </p>
                 <h2 className="text-lg font-bold text-gray-900">
-                  Students & Instructors
+                  Sinh viên & giảng viên
                 </h2>
               </div>
               <Space wrap>
                 <Input
-                  placeholder="Search..."
+                  placeholder="Tìm kiếm..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   value={search}
                   onChange={(e) => {
@@ -240,9 +239,9 @@ const UserManagementPage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "All roles" },
-                    { value: "student", label: "Student" },
-                    { value: "instructor", label: "Instructor" },
+                    { value: "all", label: "Tất cả vai trò" },
+                    { value: "student", label: "Sinh viên" },
+                    { value: "instructor", label: "Giảng viên" },
                   ]}
                 />
               </Space>
@@ -261,7 +260,7 @@ const UserManagementPage: React.FC = () => {
                 showQuickJumper: false,
                 pageSizeOptions: ["10", "20", "50"],
                 showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} users`,
+                  `${range[0]}-${range[1]} trên ${total} người dùng`,
                 onChange: (p, ps) => {
                   setCurrentPage(p);
                   setPageSize(ps);
@@ -271,8 +270,8 @@ const UserManagementPage: React.FC = () => {
                 emptyText: error
                   ? error
                   : search || roleFilter !== "all"
-                    ? "No users found matching your filters"
-                    : "No Student or Instructor accounts found.",
+                    ? "Không tìm thấy người dùng phù hợp bộ lọc"
+                    : "Không có tài khoản sinh viên hoặc giảng viên.",
               }}
             />
           </Card>

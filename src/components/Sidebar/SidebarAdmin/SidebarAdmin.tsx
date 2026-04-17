@@ -36,55 +36,55 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
   const menuItems = [
     {
       id: "dashboard",
-      label: "Dashboard",
+      label: "Bảng điều khiển",
       icon: LayoutDashboard,
       path: "/admin/dashboard",
     },
     {
       id: "user-management",
-      label: "User Management",
+      label: "Quản lý người dùng",
       icon: Users,
       path: "/admin/user-management",
     },
     {
       id: "ai-configuration",
-      label: "AI Configuration",
+      label: "Cấu hình AI",
       icon: Cog,
       path: "/admin/ai-configuration",
     },
     {
       id: "analysis-logs",
-      label: "Analysis Logs",
+      label: "Nhật ký phân tích",
       icon: FileText,
       path: "/admin/analysis-logs",
     },
     {
       id: "manage-classes",
-      label: "Manage Classes",
+      label: "Quản lý lớp học",
       icon: Shapes,
       path: "/admin/manage-classes",
     },
     {
       id: "manage-courses",
-      label: "Manage Courses",
+      label: "Quản lý khóa học",
       icon: Book,
       path: "/admin/manage-courses",
     },
     {
       id: "manage-departments",
-      label: "Manage Departments",
+      label: "Quản lý bộ môn",
       icon: FolderCog,
       path: "/admin/manage-departments",
     },
     {
       id: "rubric-templates",
-      label: "Rubric Templates",
+      label: "Mẫu rubric",
       icon: ClipboardList,
       path: "/admin/rubric-templates",
     },
     {
       id: "settings",
-      label: "Settings",
+      label: "Cài đặt",
       icon: Settings,
       path: "/admin/settings",
     },
@@ -175,8 +175,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
                 to={item.path}
                 title={!expanded ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${active
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-700 hover:bg-gray-100"
                   } ${!expanded ? "lg:justify-center" : ""}`}
               >
                 <Icon className="w-6 h-6 flex-shrink-0" />
