@@ -249,6 +249,10 @@ export const GRADE_DISTRIBUTION_FINALIZE_ENDPOINT = (
 export const CLASS_UPLOAD_PERMISSION_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}/upload-permission`;
 
+// Group Grade Distributions by class (instructor view all groups)
+export const CLASS_GROUP_GRADE_DISTRIBUTIONS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/group-grade-distributions`;
+
 // Enroll Keys endpoints
 export const ENROLL_KEYS_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys`;
 

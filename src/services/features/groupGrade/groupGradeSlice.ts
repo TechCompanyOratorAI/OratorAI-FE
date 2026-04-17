@@ -8,6 +8,7 @@ import {
   GRADE_DISTRIBUTION_FEEDBACK_ENDPOINT,
   GRADE_DISTRIBUTION_REOPEN_ENDPOINT,
   GRADE_DISTRIBUTION_FINALIZE_ENDPOINT,
+  CLASS_GROUP_GRADE_DISTRIBUTIONS_ENDPOINT,
 } from "../../constant/apiConfig";
 
 // ─── Interfaces ────────────────────────────────────────────────────────────────
@@ -74,6 +75,8 @@ export interface DistributeGradePayload {
 export interface GroupGradeState {
   /** Danh sách tất cả phân chia điểm của 1 nhóm */
   distributions: GradeDistribution[];
+  /** Danh sách tất cả phân chia điểm của tất cả nhóm trong 1 lớp (instructor) */
+  classDistributions: GradeDistribution[];
   currentDistribution: GradeDistribution | null;
   memberGrades: GradeDistribution[];
   loading: boolean;
@@ -83,6 +86,7 @@ export interface GroupGradeState {
 
 const initialState: GroupGradeState = {
   distributions: [],
+  classDistributions: [],
   currentDistribution: null,
   memberGrades: [],
   loading: false,
@@ -147,6 +151,24 @@ export const fetchGradeDistributionsByGroup = createAsyncThunk<
   },
 );
 
+export const fetchGradeDistributionsByClass = createAsyncThunk<
+  GradeDistribution[],
+  number,
+  { rejectValue: string }
+>(
+  "groupGrade/fetchByClass",
+  async (classId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get<{ success: boolean; data: GradeDistribution[] }>(
+        CLASS_GROUP_GRADE_DISTRIBUTIONS_ENDPOINT(classId.toString()),
+      );
+      return response.data.data ?? [];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Không thể tải danh sách điểm nhóm theo lớp");
+    }
+  },
+);
+
 export const fetchMemberGradesInGroup = createAsyncThunk<
   GradeDistribution[],
   { groupId: number; studentId: number },
@@ -204,14 +226,15 @@ export const reopenDistribution = createAsyncThunk<
 
 export const finalizeDistribution = createAsyncThunk<
   GradeDistribution,
-  { groupId: number; distributionId: number },
+  { groupId: number; distributionId: number; reportId: number },
   { rejectValue: string }
 >(
   "groupGrade/finalize",
-  async ({ groupId, distributionId }, { rejectWithValue }) => {
+  async ({ groupId, distributionId, reportId }, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.put<{ success: boolean; data: GradeDistribution }>(
         GRADE_DISTRIBUTION_FINALIZE_ENDPOINT(groupId.toString(), distributionId.toString()),
+        { reportId },
       );
       return response.data.data;
     } catch (error: any) {
@@ -276,6 +299,17 @@ const groupGradeSlice = createSlice({
         state.distributions = action.payload;
       })
       .addCase(fetchGradeDistributionsByGroup.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // fetchGradeDistributionsByClass
+      .addCase(fetchGradeDistributionsByClass.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchGradeDistributionsByClass.fulfilled, (state, action) => {
+        state.loading = false;
+        state.classDistributions = action.payload;
+      })
+      .addCase(fetchGradeDistributionsByClass.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
