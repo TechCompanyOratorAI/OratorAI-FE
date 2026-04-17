@@ -22,6 +22,7 @@ interface ClassModalProps {
   initialData?: ClassData;
   isLoading?: boolean;
   courses?: Array<{ courseId: number; courseCode: string; courseName: string }>;
+  mode?: "default" | "instructor-edit";
 }
 
 interface ClassFormData {
@@ -44,10 +45,35 @@ const ClassModal: React.FC<ClassModalProps> = ({
   initialData,
   isLoading = false,
   courses = [],
+  mode = "default",
 }) => {
   const [form] = Form.useForm<ClassFormData>();
   const [submitting, setSubmitting] = useState(false);
   const isEditMode = !!initialData;
+  const isInstructorEditMode = isEditMode && mode === "instructor-edit";
+  const initialCourse = initialData?.course;
+  const resolvedCourseId =
+    initialData?.courseId ?? initialCourse?.courseId ?? undefined;
+
+  const courseOptions = React.useMemo(() => {
+    const mappedCourses = courses.map((c) => ({
+      value: c.courseId,
+      label: `${c.courseCode} – ${c.courseName}`,
+    }));
+
+    if (
+      resolvedCourseId &&
+      initialCourse?.courseName &&
+      !mappedCourses.some((c) => c.value === resolvedCourseId)
+    ) {
+      mappedCourses.unshift({
+        value: resolvedCourseId,
+        label: `${initialCourse.courseCode || ""}${initialCourse.courseCode ? " – " : ""}${initialCourse.courseName}`,
+      });
+    }
+
+    return mappedCourses;
+  }, [courses, initialCourse, resolvedCourseId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -55,7 +81,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
       const keySource =
         initialData.activeKeys?.[0] || initialData.enrollKeys?.[0];
       form.setFieldsValue({
-        courseId: initialData.courseId,
+        courseId: resolvedCourseId,
         classCode: initialData.classCode,
         startDate: initialData.startDate
           ? dayjs(initialData.startDate)
@@ -77,20 +103,24 @@ const ClassModal: React.FC<ClassModalProps> = ({
         maxStudents: 35,
       });
     }
-  }, [initialData, isOpen, courses, form]);
+  }, [initialData, isOpen, courses, form, resolvedCourseId]);
 
   const handleFinish = async (values: ClassFormData) => {
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = isEditMode
-        ? {
-            courseId: values.courseId,
-            classCode: values.classCode,
-            startDate: values.startDate.format("YYYY-MM-DD"),
-            endDate: values.endDate.format("YYYY-MM-DD"),
-            maxStudents: values.maxStudents,
-            maxGroupMembers: values.maxGroupMembers ?? null,
-          }
+        ? isInstructorEditMode
+          ? {
+              maxGroupMembers: values.maxGroupMembers ?? null,
+            }
+          : {
+              courseId: values.courseId,
+              classCode: values.classCode,
+              startDate: values.startDate.format("YYYY-MM-DD"),
+              endDate: values.endDate.format("YYYY-MM-DD"),
+              maxStudents: values.maxStudents,
+              maxGroupMembers: values.maxGroupMembers ?? null,
+            }
         : {
             courseId: values.courseId,
             classCode: values.classCode,
@@ -130,7 +160,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     onClose();
   };
 
-  const courseDisabled = !!initialData || courses.length === 0;
+  const courseDisabled = !!initialData || courseOptions.length === 0;
 
   return (
     <Modal
@@ -151,6 +181,12 @@ const ClassModal: React.FC<ClassModalProps> = ({
         disabled={submitting || isLoading}
         className="mt-4"
       >
+        {isInstructorEditMode && (
+          <Text type="secondary" className="text-xs block mb-3">
+            Giảng viên chỉ được chỉnh số nhóm tối đa, mã đăng ký, thời hạn mã và số lượt sử dụng.
+          </Text>
+        )}
+
         <Form.Item
           name="courseId"
           label={<Text strong>Khóa học</Text>}
@@ -159,10 +195,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           <Select
             placeholder="Chọn khóa học..."
             disabled={courseDisabled}
-            options={courses.map((c) => ({
-              value: c.courseId,
-              label: `${c.courseCode} – ${c.courseName}`,
-            }))}
+            options={courseOptions}
           />
         </Form.Item>
 
@@ -184,7 +217,10 @@ const ClassModal: React.FC<ClassModalProps> = ({
             },
           ]}
         >
-          <Input placeholder="VD: SE101-L01" />
+          <Input
+            placeholder="VD: SE101-L01"
+            disabled={isInstructorEditMode}
+          />
         </Form.Item>
 
         <div
@@ -205,6 +241,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               max={35}
               step={1}
               changeOnWheel
+              disabled={isInstructorEditMode}
             />
           </Form.Item>
 
@@ -259,7 +296,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
             label={<Text strong>Ngày bắt đầu</Text>}
             rules={[{ required: true, message: "Bắt buộc" }]}
           >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
+            <DatePicker
+              className="w-full"
+              format="YYYY-MM-DD"
+              disabled={isInstructorEditMode}
+            />
           </Form.Item>
 
           <Form.Item
@@ -282,7 +323,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
               }),
             ]}
           >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
+            <DatePicker
+              className="w-full"
+              format="YYYY-MM-DD"
+              disabled={isInstructorEditMode}
+            />
           </Form.Item>
         </div>
 

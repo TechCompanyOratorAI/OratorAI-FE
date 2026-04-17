@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import { Button, DatePicker, Input, InputNumber, Modal } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { CreateTopicData } from "@/services/features/topic/topicSlice";
 
 interface UpdateTopicFormData {
   topicName: string;
   maxDurationMinutes: number;
-  dueDate: string; // datetime-local string
+  dueDate: string;
 }
 
 interface TopicUpdateModalProps {
@@ -33,7 +34,6 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
     maxDurationMinutes: 20,
     dueDate: "",
   });
-
   const [errors, setErrors] = useState<
     Partial<Record<keyof UpdateTopicFormData, string>>
   >({});
@@ -45,22 +45,15 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
       return;
     }
 
-    if (isOpen && initialData) {
+    if (initialData) {
       const dueDateValue = initialData.dueDate
         ? (() => {
-          try {
-            const d = new Date(initialData.dueDate);
-            const pad = (n: number) => String(n).padStart(2, "0");
-            const yyyy = d.getFullYear();
-            const mm = pad(d.getMonth() + 1);
-            const dd = pad(d.getDate());
-            const hh = pad(d.getHours());
-            const min = pad(d.getMinutes());
-            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-          } catch {
-            return "";
-          }
-        })()
+            try {
+              return new Date(initialData.dueDate).toISOString();
+            } catch {
+              return "";
+            }
+          })()
         : "";
 
       setFormData({
@@ -72,37 +65,34 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
     }
   }, [isOpen, initialData]);
 
-  const validateForm = (): boolean => {
+  const updateField = <K extends keyof UpdateTopicFormData>(
+    key: K,
+    value: UpdateTopicFormData[K],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  const validateForm = () => {
     const newErrors: Partial<Record<keyof UpdateTopicFormData, string>> = {};
 
-    if (!formData.topicName.trim())
+    if (!formData.topicName.trim()) {
       newErrors.topicName = "Tên chủ đề không được để trống";
-    if (formData.maxDurationMinutes <= 0)
+    }
+    if (formData.maxDurationMinutes <= 0) {
       newErrors.maxDurationMinutes = "Thời lượng phải lớn hơn 0";
-    if (!formData.dueDate) newErrors.dueDate = "Hạn nộp không được để trống";
+    }
+    if (!formData.dueDate) {
+      newErrors.dueDate = "Hạn nộp không được để trống";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "maxDurationMinutes"
-          ? value === ""
-            ? 0
-            : parseInt(value, 10)
-          : value,
-    }));
-    if (errors[name as keyof UpdateTopicFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!validateForm()) return;
 
     let dueDateISO = formData.dueDate;
@@ -114,107 +104,93 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
       dueDateISO = new Date(formData.dueDate).toISOString();
     }
 
-    const submitData: Partial<CreateTopicData> = {
+    onSubmit({
       topicName: formData.topicName,
       maxDurationMinutes: formData.maxDurationMinutes,
       dueDate: dueDateISO,
-    };
-    onSubmit(submitData);
+    });
   };
 
-  if (!isOpen) return null;
+  const dueDateValue = formData.dueDate ? dayjs(formData.dueDate) : null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
-          >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+    <Modal
+      open={isOpen}
+      title={title}
+      onCancel={onClose}
+      width={620}
+      destroyOnHidden
+      maskClosable={!isLoading}
+      footer={[
+        <Button key="cancel" onClick={onClose} disabled={isLoading}>
+          Hủy
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          loading={isLoading}
+          onClick={handleSubmit}
+        >
+          {submitText}
+        </Button>,
+      ]}
+    >
+      <div className="space-y-4 pt-2">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Tên chủ đề *
+          </label>
+          <Input
+            value={formData.topicName}
+            onChange={(e) => updateField("topicName", e.target.value)}
+            placeholder="VD: Agile va Scrum nang cao"
+            status={errors.topicName ? "error" : undefined}
+          />
+          {errors.topicName && (
+            <p className="mt-1 text-sm text-red-600">{errors.topicName}</p>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tên chủ đề *
-            </label>
-            <input
-              type="text"
-              name="topicName"
-              value={formData.topicName}
-              onChange={handleChange}
-              placeholder="VD: Agile va Scrum nang cao"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
-                }`}
-            />
-            {errors.topicName && (
-              <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
-            )}
-          </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Thời lượng tối đa (phút) *
+          </label>
+          <InputNumber
+            className="w-full"
+            min={1}
+            value={formData.maxDurationMinutes}
+            onChange={(value) =>
+              updateField("maxDurationMinutes", Number(value || 0))
+            }
+            status={errors.maxDurationMinutes ? "error" : undefined}
+          />
+          {errors.maxDurationMinutes && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.maxDurationMinutes}
+            </p>
+          )}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thời lượng tối đa (phút) *
-            </label>
-            <input
-              type="number"
-              name="maxDurationMinutes"
-              value={formData.maxDurationMinutes || ""}
-              onChange={handleChange}
-              min="1"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes ? "border-red-500" : "border-gray-300"
-                }`}
-            />
-            {errors.maxDurationMinutes && (
-              <p className="text-red-600 text-sm mt-1">
-                {errors.maxDurationMinutes}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hạn nộp *
-            </label>
-            <input
-              type="datetime-local"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
-                }`}
-            />
-            {errors.dueDate && (
-              <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
-            <Button
-              text="Hủy"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="999px"
-              paddingWidth="18px"
-              paddingHeight="10px"
-              onClick={() => onClose()}
-            />
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-            >
-              {isLoading ? "Đang xử lý..." : submitText}
-            </button>
-          </div>
-        </form>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Hạn nộp *
+          </label>
+          <DatePicker
+            showTime={{ format: "HH:mm" }}
+            format="YYYY-MM-DD HH:mm"
+            className="w-full"
+            value={dueDateValue && dueDateValue.isValid() ? dueDateValue : null}
+            onChange={(value: Dayjs | null) =>
+              updateField("dueDate", value ? value.toISOString() : "")
+            }
+            status={errors.dueDate ? "error" : undefined}
+          />
+          {errors.dueDate && (
+            <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
+          )}
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 
