@@ -24,7 +24,6 @@ import {
   CheckCircleOutlined,
   MessageOutlined,
   ClockCircleOutlined,
-  RightOutlined,
   DownOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
@@ -70,7 +69,6 @@ const GradeSummaryDropdown: React.FC<GradeSummaryDropdownProps> = ({
   }, {});
 
   const groupList = Object.entries(groupedByGroup).map(([groupId, distributions]) => {
-    const first = distributions[0];
     const latestDist = distributions.find((d) => d.status === "finalized") ?? distributions[0];
     const memberCount = latestDist.members?.length ?? 0;
     return {
@@ -107,8 +105,6 @@ const GradeSummaryDropdown: React.FC<GradeSummaryDropdownProps> = ({
   };
 
   const collapseItems = groupList.map((group) => {
-    const badgeColor = group.hasFinalized ? "green" : group.hasSubmitted ? "orange" : "default";
-
     return {
       key: String(group.groupId),
       label: (
@@ -412,7 +408,7 @@ const GradeSummaryDropdown: React.FC<GradeSummaryDropdownProps> = ({
         onChange={(keys) => setActiveKeys(keys as string[])}
         bordered={false}
         className="bg-transparent"
-        expandIcon={({ isActive }) => null}
+        expandIcon={() => null}
       />
     </div>
   );
