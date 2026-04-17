@@ -37,7 +37,7 @@ const AdminDashboardPage: React.FC = () => {
 
   const columns: ColumnsType<Presentation> = [
     {
-      title: "Student",
+      title: "Sinh viên",
       dataIndex: "student",
       key: "student",
       width: 213,
@@ -56,7 +56,7 @@ const AdminDashboardPage: React.FC = () => {
       ),
     },
     {
-      title: "Topic",
+      title: "Chủ đề",
       dataIndex: "topic",
       key: "topic",
       width: 274,
@@ -65,7 +65,7 @@ const AdminDashboardPage: React.FC = () => {
       ),
     },
     {
-      title: "Duration",
+      title: "Thời lượng",
       dataIndex: "duration",
       key: "duration",
       width: 141,
@@ -74,7 +74,7 @@ const AdminDashboardPage: React.FC = () => {
       ),
     },
     {
-      title: "AI Score",
+      title: "Điểm AI",
       dataIndex: "aiScore",
       key: "aiScore",
       width: 133,
@@ -83,20 +83,23 @@ const AdminDashboardPage: React.FC = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       width: 162,
-      render: (status: string) => (
-        <div
-          className={`inline-flex items-center px-3 py-1 rounded ${status === "completed"
+      render: (status: string) => {
+        const label = status === "completed" ? "Hoàn thành" : "Đang xử lý";
+        return (
+          <div
+            className={`inline-flex items-center px-3 py-1 rounded ${status === "completed"
               ? "bg-green-50 text-green-700"
               : "bg-orange-50 text-orange-700"
-            }`}
-        >
-          <span className="text-xs font-medium capitalize">{status}</span>
-        </div>
-      ),
+              }`}
+          >
+            <span className="text-xs font-medium">{label}</span>
+          </div>
+        );
+      },
     },
   ];
 
@@ -163,18 +166,18 @@ const AdminDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-2">
                 <Link to="/" className="hover:text-gray-900">
-                  Home
+                  Trang chủ
                 </Link>
                 <span>/</span>
-                <span className="text-gray-900">Admin Dashboard</span>
+                <span className="text-gray-900">Bảng điều khiển quản trị</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                System Overview
+                Tổng quan hệ thống
               </h1>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Button
-                text="Export Report"
+                text="Xuất báo cáo"
                 variant="secondary"
                 icon={<Download className="w-4 h-4" />}
                 iconPosition="left"
@@ -184,7 +187,7 @@ const AdminDashboardPage: React.FC = () => {
                 borderRadius="8px"
               />
               <Button
-                text="New User"
+                text="Người dùng mới"
                 variant="primary"
                 icon={<UserPlus className="w-4 h-4" />}
                 iconPosition="left"
@@ -206,7 +209,7 @@ const AdminDashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-700">
-                    System Health
+                    Sức khỏe hệ thống
                   </h3>
                   <Activity className="w-6 h-6 text-gray-400" />
                 </div>
@@ -217,7 +220,7 @@ const AdminDashboardPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-sm text-gray-500">
-                  Uptime over last 30 days
+                  Thời gian hoạt động trong 30 ngày qua
                 </p>
               </div>
 
@@ -225,7 +228,7 @@ const AdminDashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-700">
-                    Active Users
+                    Người dùng hoạt động
                   </h3>
                   <Users className="w-6 h-6 text-gray-400" />
                 </div>
@@ -236,7 +239,7 @@ const AdminDashboardPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-sm text-gray-500">
-                  Active students & faculty this week
+                  Sinh viên và giảng viên hoạt động trong tuần này
                 </p>
               </div>
 
@@ -244,14 +247,14 @@ const AdminDashboardPage: React.FC = () => {
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-700">
-                    AI Processing Load
+                    Tải xử lý AI
                   </h3>
                   <Cpu className="w-6 h-6 text-gray-400" />
                 </div>
                 <div className="flex items-baseline gap-3 mb-4">
                   <span className="text-3xl font-bold text-gray-900">78%</span>
                   <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded">
-                    High Load
+                    Tải cao
                   </span>
                 </div>
                 <div className="mt-2">
@@ -274,14 +277,14 @@ const AdminDashboardPage: React.FC = () => {
                   <div className="px-6 py-6 border-b border-gray-200 flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        Recent Presentations Analyzed
+                        Bài thuyết trình được phân tích gần đây
                       </h3>
                       <p className="text-sm text-gray-500">
-                        Live feed of student submissions processed by the AI.
+                        Luồng trực tiếp các bài nộp của sinh viên do AI xử lý.
                       </p>
                     </div>
                     <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                      View All Logs
+                      Xem toàn bộ nhật ký
                     </button>
                   </div>
                   <Table
@@ -296,16 +299,16 @@ const AdminDashboardPage: React.FC = () => {
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      System Throughput
+                      Thông lượng hệ thống
                     </h3>
                     <Select
                       defaultValue="24h"
                       suffixIcon={<ChevronDown className="w-4 h-4" />}
                       className="w-[111px]"
                       options={[
-                        { value: "24h", label: "Last 24 Hours" },
-                        { value: "7d", label: "Last 7 Days" },
-                        { value: "30d", label: "Last 30 Days" },
+                        { value: "24h", label: "24 giờ qua" },
+                        { value: "7d", label: "7 ngày qua" },
+                        { value: "30d", label: "30 ngày qua" },
                       ]}
                     />
                   </div>
@@ -332,10 +335,10 @@ const AdminDashboardPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        AI Configuration
+                        Cấu hình AI
                       </h3>
                       <p className="text-xs text-gray-500">
-                        Active Model Settings
+                        Thiết lập mô hình đang hoạt động
                       </p>
                     </div>
                   </div>
@@ -344,7 +347,7 @@ const AdminDashboardPage: React.FC = () => {
                     {/* LLM Model Provider */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        LLM Model Provider
+                        Nhà cung cấp mô hình LLM
                       </label>
                       <Select
                         defaultValue="gpt-4-turbo"
@@ -362,7 +365,7 @@ const AdminDashboardPage: React.FC = () => {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-gray-700">
-                          Temperature
+                          Độ ngẫu nhiên
                         </label>
                         <span className="text-sm text-gray-600">{temperature}</span>
                       </div>
@@ -375,14 +378,14 @@ const AdminDashboardPage: React.FC = () => {
                         className="mb-2"
                       />
                       <p className="text-xs text-gray-500">
-                        Controls randomness in analysis feedback.
+                        Điều chỉnh mức độ ngẫu nhiên trong phản hồi phân tích.
                       </p>
                     </div>
 
                     {/* System Prompt Tuning */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        System Prompt Tuning
+                        Tùy chỉnh prompt hệ thống
                       </label>
                       <Input.TextArea
                         value={systemPrompt}
@@ -395,7 +398,7 @@ const AdminDashboardPage: React.FC = () => {
                     {/* Apply Changes Button */}
                     <div className="w-full">
                       <Button
-                        text="Apply Changes"
+                        text="Áp dụng thay đổi"
                         variant="primary"
                         fontSize="16px"
                         paddingWidth="16px"
@@ -409,7 +412,7 @@ const AdminDashboardPage: React.FC = () => {
                 {/* Pending Approvals */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                    Pending Approvals
+                    Chờ phê duyệt
                   </h3>
 
                   <div className="space-y-4 mb-6">
@@ -423,7 +426,7 @@ const AdminDashboardPage: React.FC = () => {
                           <p className="text-sm font-medium text-gray-900">
                             Dr. Sarah Jenkins
                           </p>
-                          <p className="text-xs text-gray-500">Faculty Access</p>
+                          <p className="text-xs text-gray-500">Quyền giảng viên</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -446,7 +449,7 @@ const AdminDashboardPage: React.FC = () => {
                           <p className="text-sm font-medium text-gray-900">
                             Prof. Alan Turing
                           </p>
-                          <p className="text-xs text-gray-500">Admin Access</p>
+                          <p className="text-xs text-gray-500">Quyền quản trị</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -462,7 +465,7 @@ const AdminDashboardPage: React.FC = () => {
 
                   <div className="w-full">
                     <Button
-                      text="Manage All Users"
+                      text="Quản lý tất cả người dùng"
                       variant="secondary"
                       fontSize="16px"
                       paddingWidth="16px"

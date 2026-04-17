@@ -37,37 +37,37 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
 
   const fullName = user
     ? `${user.firstName} ${user.lastName}`.trim()
-    : "Instructor";
-  const userRole = user?.roles?.[0]?.roleName || "Instructor";
+    : "Giảng viên";
+  const userRole = user?.roles?.[0]?.roleName || "Giảng viên";
 
   const menuItems = [
     {
       id: "dashboard",
-      label: "Dashboard",
+      label: "Bảng điều khiển",
       icon: LayoutDashboard,
       path: "/instructor/dashboard",
     },
     {
       id: "manage-classes",
-      label: "My Classes",
+      label: "Lớp học của tôi",
       icon: BookOpen,
       path: "/instructor/manage-classes",
     },
     {
       id: "students",
-      label: "Students",
+      label: "Sinh viên",
       icon: Users,
       path: "/instructor/students",
     },
     {
       id: "presentations",
-      label: "Presentations",
+      label: "Bài thuyết trình",
       icon: FileText,
       path: "/instructor/presentations",
     },
     {
       id: "analytics",
-      label: "Analytics",
+      label: "Phân tích",
       icon: BarChart3,
       path: "/instructor/analytics",
     },
@@ -109,9 +109,8 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
           setIsHovered(false);
           setCollapsed(true);
         }}
-        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out lg:sticky lg:top-0 ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${expanded ? "lg:w-64" : "lg:w-20"}`}
+        className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col h-screen transform transition-all duration-300 ease-in-out lg:sticky lg:top-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          } ${expanded ? "lg:w-64" : "lg:w-20"}`}
       >
         {/* Logo */}
         <div className={`p-6 ${expanded ? "" : "lg:p-4"}`}>
@@ -134,9 +133,8 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
                 key={item.id}
                 to={item.path}
                 title={!expanded ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
-                  active ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-100"
-                } ${!expanded ? "lg:justify-center" : ""}`}
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${active ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-100"
+                  } ${!expanded ? "lg:justify-center" : ""}`}
               >
                 <Icon className="w-6 h-6 flex-shrink-0" />
                 {expanded && <span className="lg:block hidden">{item.label}</span>}
@@ -149,13 +147,12 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
         <div className={`p-4 border-t border-gray-200 space-y-2 ${expanded ? "" : "lg:px-2"}`}>
           <Link
             to="/instructor/settings"
-            title={!expanded ? "Settings" : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
-              isActive("settings") ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-100"
-            } ${!expanded ? "lg:justify-center" : ""}`}
+            title={!expanded ? "Cài đặt" : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${isActive("settings") ? "text-blue-600 bg-blue-50" : "text-gray-700 hover:bg-gray-100"
+              } ${!expanded ? "lg:justify-center" : ""}`}
           >
             <Settings className="w-6 h-6 flex-shrink-0" />
-            {expanded && <span className="lg:block hidden">Settings</span>}
+            {expanded && <span className="lg:block hidden">Cài đặt</span>}
           </Link>
           {expanded && (
             <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
@@ -173,9 +170,8 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
           <button
             onClick={handleLogout}
             title={!expanded ? "Đăng xuất" : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-gray-700 hover:bg-red-50 hover:text-red-600 ${
-              !expanded ? "lg:justify-center" : ""
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-gray-700 hover:bg-red-50 hover:text-red-600 ${!expanded ? "lg:justify-center" : ""
+              }`}
           >
             <LogOut className="w-6 h-6 flex-shrink-0" />
             {expanded && <span className="lg:block hidden">Đăng xuất</span>}

@@ -96,7 +96,7 @@ const LoginForm: React.FC = () => {
                 size={24}
                 className={selectedRole === "Student" ? "text-sky-600" : "text-slate-400"}
               />
-              <span className="text-xs font-medium">Student</span>
+              <span className="text-xs font-medium">Sinh viên</span>
             </motion.button>
 
             <motion.button
@@ -113,7 +113,7 @@ const LoginForm: React.FC = () => {
                 size={24}
                 className={selectedRole === "Instructor" ? "text-sky-600" : "text-slate-400"}
               />
-              <span className="text-xs font-medium">Instructor</span>
+              <span className="text-xs font-medium">Giảng viên</span>
             </motion.button>
 
             <motion.button
@@ -130,7 +130,7 @@ const LoginForm: React.FC = () => {
                 size={24}
                 className={selectedRole === "Admin" ? "text-sky-600" : "text-slate-400"}
               />
-              <span className="text-xs font-medium">Admin</span>
+              <span className="text-xs font-medium">Quản trị</span>
             </motion.button>
 
           </div>
@@ -143,7 +143,7 @@ const LoginForm: React.FC = () => {
                 htmlFor="usernameOrEmail"
                 className="text-sm font-medium text-slate-700"
               >
-                Username hoặc Email
+                Tên đăng nhập hoặc Email
               </label>
               <motion.input
                 id="usernameOrEmail"
@@ -152,7 +152,7 @@ const LoginForm: React.FC = () => {
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white"
-                placeholder="username hoặc you@company.com"
+                placeholder="Nhập tên đăng nhập hoặc email"
                 whileFocus={{ scale: 1.01 }}
               />
             </div>

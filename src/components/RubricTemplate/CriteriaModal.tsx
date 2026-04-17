@@ -110,13 +110,12 @@ const SortableCriteriaItem = ({
           onSelect(criterion);
         }
       }}
-      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${
-        isDragging
+      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${isDragging
           ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
           : isEditing
             ? "border-sky-300 bg-sky-50/70 shadow-sm"
             : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
@@ -143,20 +142,19 @@ const SortableCriteriaItem = ({
                 Max: {criterion.maxScore}
               </span>
               <span
-                className={`rounded-full px-2 py-0.5 ${
-                  criterion.isActive
+                className={`rounded-full px-2 py-0.5 ${criterion.isActive
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-rose-100 text-rose-700"
-                }`}
+                  }`}
               >
-                {criterion.isActive ? "Active" : "Inactive"}
+                {criterion.isActive ? "Đang hoạt động" : "Không hoạt động"}
               </span>
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 gap-1">
-          <span className="rounded-xl p-2 text-sky-600" title="Edit criterion">
+          <span className="rounded-xl p-2 text-sky-600" title="Sửa tiêu chí">
             <Edit className="h-4 w-4" />
           </span>
           <button
@@ -166,7 +164,7 @@ const SortableCriteriaItem = ({
               onDelete(criterion);
             }}
             className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
-            title="Delete criterion"
+            title="Xóa tiêu chí"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -360,21 +358,21 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     const nextErrors: Partial<Record<keyof CriteriaFormState, string>> = {};
 
     if (!formState.criteriaName.trim()) {
-      nextErrors.criteriaName = "Criteria name is required";
+      nextErrors.criteriaName = "Tên tiêu chí không được để trống";
     }
 
     if (!formState.criteriaDescription.trim()) {
-      nextErrors.criteriaDescription = "Criteria description is required";
+      nextErrors.criteriaDescription = "Mô tả tiêu chí không được để trống";
     }
 
     const weightValue = Number(formState.weight);
     if (Number.isNaN(weightValue) || weightValue <= 0) {
-      nextErrors.weight = "Persen must be a number greater than 0";
+      nextErrors.weight = "Phần trăm phải là số lớn hơn 0";
     }
 
     const maxScoreValue = Number(formState.maxScore);
     if (Number.isNaN(maxScoreValue) || maxScoreValue <= 0) {
-      nextErrors.maxScore = "Max score must be a number greater than 0";
+      nextErrors.maxScore = "Điểm tối đa phải là số lớn hơn 0";
     }
 
     const displayOrderValue = Number(formState.displayOrder);
@@ -383,15 +381,15 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
       !Number.isInteger(displayOrderValue) ||
       displayOrderValue <= 0
     ) {
-      nextErrors.displayOrder = "Display order must be a positive integer";
+      nextErrors.displayOrder = "Thứ tự hiển thị phải là số nguyên dương";
     }
 
     if (!formState.evaluationGuide.trim()) {
-      nextErrors.evaluationGuide = "Evaluation guide is required";
+      nextErrors.evaluationGuide = "Hướng dẫn đánh giá không được để trống";
     }
 
     if (formState.isActive && potentialTotalPercentage > 100) {
-      nextErrors.weight = `Total percentage will exceed 100% (will be ${potentialTotalPercentage.toFixed(1)}%)`;
+      nextErrors.weight = `Tổng phần trăm sẽ vượt quá 100% (sẽ là ${potentialTotalPercentage.toFixed(1)}%)`;
     }
 
     setErrors(nextErrors);
@@ -442,10 +440,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Rubric Template
+                Mẫu rubric
               </p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">
-                Criteria Management
+                Quản lý tiêu chí
               </h3>
               <p className="mt-1 text-sm text-slate-600">
                 {template.templateName}
@@ -462,7 +460,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Total
+                Tổng
               </p>
               <p className="text-lg font-bold text-slate-900">
                 {sortedCriteria.length}
@@ -470,7 +468,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Active
+                Hoạt động
               </p>
               <p className="text-lg font-bold text-emerald-700">
                 {
@@ -481,7 +479,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Next Order
+                Thứ tự tiếp theo
               </p>
               <p className="text-lg font-bold text-slate-900">
                 {nextDisplayOrder}
@@ -489,12 +487,11 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Percentage
+                Tỷ lệ
               </p>
               <p
-                className={`text-lg font-bold ${
-                  isPercentageComplete ? "text-emerald-700" : "text-rose-700"
-                }`}
+                className={`text-lg font-bold ${isPercentageComplete ? "text-emerald-700" : "text-rose-700"
+                  }`}
               >
                 {totalActivePercentage % 1 === 0
                   ? Math.floor(totalActivePercentage)
@@ -509,14 +506,14 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
           <section className="rounded-3xl border border-slate-200 bg-white p-4">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Criteria List
+                Danh sách tiêu chí
               </h4>
               <button
                 type="button"
                 onClick={() => setCreateMode()}
                 className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
               >
-                + Add New
+                + Thêm mới
               </button>
             </div>
 
@@ -526,7 +523,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, description, guide..."
+                placeholder="Tìm theo tên, mô tả, hướng dẫn..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
               />
             </div>
@@ -535,8 +532,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
               {filteredCriteria.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">
                   {searchTerm
-                    ? "Khong tim thay criteria phu hop"
-                    : "Template nay chua co criteria nao"}
+                    ? "Không tìm thấy tiêu chí phù hợp"
+                    : "Mẫu này chưa có tiêu chí nào"}
                 </div>
               ) : (
                 <DndContext
@@ -575,7 +572,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   disabled={isLoading}
                   className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading ? "Saving..." : "Save Order"}
+                  {isLoading ? "Đang lưu..." : "Lưu thứ tự"}
                 </button>
                 <button
                   type="button"
@@ -583,7 +580,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   disabled={isLoading}
                   className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             )}
@@ -593,12 +590,12 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
                 <h4 className="text-base font-semibold text-slate-800">
-                  {editingCriterion ? "Edit Criteria" : "New Criteria"}
+                  {editingCriterion ? "Sửa tiêu chí" : "Tiêu chí mới"}
                 </h4>
                 <p className="text-xs text-slate-500">
                   {editingCriterion
-                    ? "Cap nhat thong tin va huong dan danh gia"
-                    : "Create criteria moi cho rubric template"}
+                    ? "Cập nhật thông tin và hướng dẫn đánh giá"
+                    : "Tạo tiêu chí mới cho mẫu rubric"}
                 </p>
               </div>
             </div>
@@ -606,7 +603,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Criteria Name
+                  Tên tiêu chí
                 </label>
                 <input
                   type="text"
@@ -617,10 +614,9 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                       criteriaName: e.target.value,
                     }))
                   }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.criteriaName ? "border-rose-300" : "border-slate-300"
-                  }`}
-                  placeholder="Content Quality"
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  placeholder="Chất lượng nội dung"
                 />
                 {errors.criteriaName && (
                   <p className="mt-1 text-xs text-rose-600">
@@ -631,7 +627,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Description
+                  Mô tả
                 </label>
                 <textarea
                   rows={2}
@@ -642,12 +638,11 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                       criteriaDescription: e.target.value,
                     }))
                   }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.criteriaDescription
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaDescription
                       ? "border-rose-300"
                       : "border-slate-300"
-                  }`}
-                  placeholder="Evaluates content clarity and depth"
+                    }`}
+                  placeholder="Đánh giá độ rõ ràng và chiều sâu nội dung"
                 />
                 {errors.criteriaDescription && (
                   <p className="mt-1 text-xs text-rose-600">
@@ -672,9 +667,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         weight: e.target.value,
                       }))
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.weight ? "border-rose-300" : "border-slate-300"
-                    }`}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+                      }`}
                   />
                   {errors.weight && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -689,7 +683,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Max Score
+                    Điểm tối đa
                   </label>
                   <input
                     type="number"
@@ -701,9 +695,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         maxScore: e.target.value,
                       }))
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.maxScore ? "border-rose-300" : "border-slate-300"
-                    }`}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.maxScore ? "border-rose-300" : "border-slate-300"
+                      }`}
                   />
                   {errors.maxScore && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -713,7 +706,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Display Order
+                    Thứ tự hiển thị
                   </label>
                   <input
                     type="number"
@@ -725,11 +718,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         displayOrder: e.target.value,
                       }))
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.displayOrder
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.displayOrder
                         ? "border-rose-300"
                         : "border-slate-300"
-                    }`}
+                      }`}
                   />
                   {errors.displayOrder && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -741,7 +733,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Evaluation Guide
+                  Hướng dẫn đánh giá
                 </label>
                 <textarea
                   rows={3}
@@ -752,12 +744,11 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                       evaluationGuide: e.target.value,
                     }))
                   }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.evaluationGuide
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.evaluationGuide
                       ? "border-rose-300"
                       : "border-slate-300"
-                  }`}
-                  placeholder="Guide for evaluation..."
+                    }`}
+                  placeholder="Hướng dẫn đánh giá..."
                 />
                 {errors.evaluationGuide && (
                   <p className="mt-1 text-xs text-rose-600">
@@ -772,7 +763,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   onClick={onClose}
                   className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  Close
+                  Đóng
                 </button>
                 <button
                   type="submit"
@@ -780,10 +771,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   className="rounded-2xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading
-                    ? "Saving..."
+                    ? "Đang lưu..."
                     : editingCriterion
-                      ? "Update Criteria"
-                      : "Create Criteria"}
+                      ? "Cập nhật tiêu chí"
+                      : "Tạo tiêu chí"}
                 </button>
               </div>
             </form>
@@ -800,10 +791,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
               </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  Xac nhan xoa criteria
+                  Xác nhận xóa tiêu chí
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Ban co chac muon xoa criteria "
+                  Bạn có chắc muốn xóa tiêu chí "
                   {deletingCriterion.criteriaName}"?
                 </p>
               </div>
@@ -815,7 +806,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 onClick={() => setDeletingCriterion(null)}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
-                Huy
+                Hủy
               </button>
               <button
                 type="button"
@@ -823,7 +814,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 disabled={isLoading}
                 className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoading ? "Deleting..." : "Xoa"}
+                {isLoading ? "Đang xóa..." : "Xóa"}
               </button>
             </div>
           </div>

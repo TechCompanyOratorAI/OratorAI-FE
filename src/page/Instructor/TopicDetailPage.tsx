@@ -27,9 +27,9 @@ const statusConfig: Record<
   string,
   { color: string; text: string }
 > = {
-  draft: { color: "default", text: "Draft" },
-  submitted: { color: "blue", text: "Submitted" },
-  graded: { color: "green", text: "Graded" },
+  draft: { color: "default", text: "Bản nháp" },
+  submitted: { color: "blue", text: "Đã nộp" },
+  graded: { color: "green", text: "Đã chấm" },
 };
 
 const TopicDetailPage: React.FC = () => {
@@ -66,10 +66,10 @@ const TopicDetailPage: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1280px] mx-auto px-4 py-8">
             <Button icon={<ArrowLeft size={14} />} onClick={() => navigate(-1)} className="mb-4">
-              Back
+              Quay lại
             </Button>
             <Card>
-              <Text type="danger">{error || "Topic not found"}</Text>
+              <Text type="danger">{error || "Không tìm thấy chủ đề"}</Text>
             </Card>
           </div>
         </main>
@@ -97,7 +97,7 @@ const TopicDetailPage: React.FC = () => {
             icon={<ArrowLeft size={14} />}
             onClick={() => navigate(`/instructor/course/${topic.courseId}`)}
           >
-            Back to course
+            Quay lại khóa học
           </Button>
 
           {/* Hero Card */}
@@ -111,7 +111,7 @@ const TopicDetailPage: React.FC = () => {
                   {topic.sequenceNumber}
                 </div>
                 <Tag style={{ background: "rgba(255,255,255,0.2)", borderColor: "rgba(255,255,255,0.3)", color: "white" }}>
-                  Topic #{topic.sequenceNumber}
+                  Chủ đề #{topic.sequenceNumber}
                 </Tag>
               </Space>
               <Title level={3} style={{ color: "white", margin: 0 }}>
@@ -125,47 +125,47 @@ const TopicDetailPage: React.FC = () => {
               <Space>
                 {topic.dueDate && (
                   <Tag style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)", color: "white" }}>
-                    <Calendar size={12} /> Due: {formatDate(topic.dueDate)}
+                    <Calendar size={12} /> Hạn nộp: {formatDate(topic.dueDate)}
                   </Tag>
                 )}
                 {topic.maxDurationMinutes && (
                   <Tag style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)", color: "white" }}>
-                    <Clock size={12} /> {topic.maxDurationMinutes} minutes
+                    <Clock size={12} /> {topic.maxDurationMinutes} phút
                   </Tag>
                 )}
               </Space>
             </Space>
             <Row gutter={16} className="mt-4">
               <Col span={6}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Due date</Text>
-                <div><Text strong style={{ color: "white" }}>{topic.dueDate ? formatDate(topic.dueDate) : "No deadline"}</Text></div>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Hạn nộp</Text>
+                <div><Text strong style={{ color: "white" }}>{topic.dueDate ? formatDate(topic.dueDate) : "Không có hạn"}</Text></div>
               </Col>
               <Col span={6}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Duration</Text>
-                <div><Text strong style={{ color: "white" }}>{topic.maxDurationMinutes || 0} minutes</Text></div>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Thời lượng</Text>
+                <div><Text strong style={{ color: "white" }}>{topic.maxDurationMinutes || 0} phút</Text></div>
               </Col>
               <Col span={6}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Presentations</Text>
-                <div><Text strong style={{ color: "white" }}>{topic.presentations.length} submitted</Text></div>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Bài trình bày</Text>
+                <div><Text strong style={{ color: "white" }}>{topic.presentations.length} đã nộp</Text></div>
               </Col>
               <Col span={6}>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Course</Text>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Khóa học</Text>
                 <div><Text strong style={{ color: "white" }}>{topic.course.courseName}</Text></div>
               </Col>
             </Row>
           </Card>
 
           {/* Course Info */}
-          <Card title="Course Info">
+          <Card title="Thông tin khóa học">
             <Space direction="vertical" className="w-full" size={4}>
               <div>
                 <Text strong className="text-lg">{topic.course.courseName}</Text>
                 <div className="text-sm text-gray-500">
-                  Instructor: {topic.course.instructor.firstName} {topic.course.instructor.lastName}
+                  Giảng viên: {topic.course.instructor.firstName} {topic.course.instructor.lastName}
                 </div>
               </div>
               <Button type="link" onClick={() => navigate(`/instructor/course/${topic.courseId}`)}>
-                View Course Details →
+                Xem chi tiết khóa học →
               </Button>
             </Space>
           </Card>
@@ -176,7 +176,7 @@ const TopicDetailPage: React.FC = () => {
               title={
                 <Space>
                   <FileText size={16} />
-                  <span>Topic Requirements</span>
+                  <span>Yêu cầu chủ đề</span>
                 </Space>
               }
             >
@@ -191,7 +191,7 @@ const TopicDetailPage: React.FC = () => {
             title={
               <Space>
                 <FileText size={16} />
-                <span>Presentations ({topic.presentations.length})</span>
+                <span>Bài trình bày ({topic.presentations.length})</span>
               </Space>
             }
           >
@@ -208,8 +208,8 @@ const TopicDetailPage: React.FC = () => {
                             <Tag color={status.color}>{status.text}</Tag>
                           </Space>
                           <Text type="secondary" className="text-sm">
-                            Student ID: {presentation.studentId}
-                            {presentation.submissionDate && ` · Submitted: ${new Date(presentation.submissionDate).toLocaleDateString()}`}
+                            Mã sinh viên: {presentation.studentId}
+                            {presentation.submissionDate && ` · Đã nộp: ${new Date(presentation.submissionDate).toLocaleDateString()}`}
                           </Text>
                         </Space>
                       </div>
@@ -218,7 +218,7 @@ const TopicDetailPage: React.FC = () => {
                 })}
               </Space>
             ) : (
-              <Empty description="No presentations submitted yet." />
+              <Empty description="Chưa có bài trình bày nào được nộp." />
             )}
           </Card>
         </div>

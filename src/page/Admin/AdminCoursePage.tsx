@@ -103,9 +103,9 @@ const AdminCoursePage: React.FC = () => {
     setActionLoading(true);
     try {
       await dispatch(deleteCourse(courseId)).unwrap();
-      notifySuccess("Delete Success", "Course deleted successfully.");
+      notifySuccess("Xóa thành công", "Đã xóa khóa học thành công.");
     } catch {
-      notifyError("Delete Failed", "Failed to delete course.");
+      notifyError("Xóa thất bại", "Không thể xóa khóa học.");
     }
     setActionLoading(false);
   };
@@ -120,19 +120,19 @@ const AdminCoursePage: React.FC = () => {
             data: courseData,
           }),
         ).unwrap();
-        notifySuccess("Update Success", "Course updated successfully.");
+        notifySuccess("Cập nhật thành công", "Đã cập nhật khóa học thành công.");
       } else {
         await dispatch(createCourse(courseData)).unwrap();
-        notifySuccess("Create Success", "Course created successfully.");
+        notifySuccess("Tạo thành công", "Đã tạo khóa học thành công.");
       }
       setIsCourseModalOpen(false);
       setSelectedCourse(undefined);
     } catch {
       notifyError(
-        selectedCourse ? "Update Failed" : "Create Failed",
+        selectedCourse ? "Cập nhật thất bại" : "Tạo thất bại",
         selectedCourse
-          ? "Failed to update course."
-          : "Failed to create course.",
+          ? "Không thể cập nhật khóa học."
+          : "Không thể tạo khóa học.",
       );
     }
     setActionLoading(false);
@@ -169,10 +169,10 @@ const AdminCoursePage: React.FC = () => {
         ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(courseId.toString()),
         { instructorIds: [userId] },
       );
-      notifySuccess("Add Instructor Success", "Instructor added successfully.");
+      notifySuccess("Thêm giảng viên thành công", "Đã thêm giảng viên thành công.");
       await refreshSelectedCourse(courseId);
     } catch {
-      notifyError("Add Instructor Failed", "Failed to add instructor.");
+      notifyError("Thêm giảng viên thất bại", "Không thể thêm giảng viên.");
     }
   };
 
@@ -188,33 +188,33 @@ const AdminCoursePage: React.FC = () => {
         ),
       );
       notifySuccess(
-        "Remove Instructor Success",
-        "Instructor removed successfully.",
+        "Gỡ giảng viên thành công",
+        "Đã gỡ giảng viên thành công.",
       );
       await refreshSelectedCourse(courseId);
     } catch {
-      notifyError("Remove Instructor Failed", "Failed to remove instructor.");
+      notifyError("Gỡ giảng viên thất bại", "Không thể gỡ giảng viên.");
     }
   };
 
   const currentInstructors = selectedCourse?.instructors?.length
     ? selectedCourse.instructors.map((instructor) => ({
-        userId: instructor.userId,
-        username: instructor.username,
-        email: instructor.email,
-        firstName: instructor.firstName,
-        lastName: instructor.lastName,
-      }))
+      userId: instructor.userId,
+      username: instructor.username,
+      email: instructor.email,
+      firstName: instructor.firstName,
+      lastName: instructor.lastName,
+    }))
     : selectedCourse?.instructor
       ? [
-          {
-            userId: selectedCourse.instructor.userId,
-            username: selectedCourse.instructor.username,
-            email: selectedCourse.instructor.email,
-            firstName: selectedCourse.instructor.firstName,
-            lastName: selectedCourse.instructor.lastName,
-          },
-        ]
+        {
+          userId: selectedCourse.instructor.userId,
+          username: selectedCourse.instructor.username,
+          email: selectedCourse.instructor.email,
+          firstName: selectedCourse.instructor.firstName,
+          lastName: selectedCourse.instructor.lastName,
+        },
+      ]
       : [];
 
   const availableInstructors = users.map((user) => ({
@@ -267,13 +267,13 @@ const AdminCoursePage: React.FC = () => {
 
   const columns: ColumnsType<CourseData> = [
     {
-      title: "Course Info",
+      title: "Thông tin khóa học",
       key: "courseInfo",
       render: (_, record) => (
         <div>
           <div className="font-semibold">{record.courseCode}</div>
           <div className="text-xs text-gray-400">
-            Department:{" "}
+            Bộ môn:{" "}
             {departmentLookup[record.departmentId]
               ? `${departmentLookup[record.departmentId].departmentCode} – ${departmentLookup[record.departmentId].departmentName}`
               : record.departmentId}
@@ -286,7 +286,7 @@ const AdminCoursePage: React.FC = () => {
       ),
     },
     {
-      title: "Instructor",
+      title: "Giảng viên",
       key: "instructor",
       render: (_, record) => {
         const instructors =
@@ -298,7 +298,7 @@ const AdminCoursePage: React.FC = () => {
         if (instructors.length === 0) {
           return (
             <span className="text-gray-400 italic text-xs">
-              No instructor assigned
+              Chưa phân công giảng viên
             </span>
           );
         }
@@ -317,34 +317,34 @@ const AdminCoursePage: React.FC = () => {
       },
     },
     {
-      title: "Semester",
+      title: "Học kỳ",
       dataIndex: "semester",
       key: "semester",
       render: (val) => <Tag>{val}</Tag>,
     },
     {
-      title: "Academic Year",
+      title: "Năm học",
       dataIndex: "academicYear",
       key: "academicYear",
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "isActive",
       key: "isActive",
       render: (isActive: boolean) => (
         <Tag color={isActive ? "green" : "red"}>
-          {isActive ? "Active" : "Inactive"}
+          {isActive ? "Đang hoạt động" : "Không hoạt động"}
         </Tag>
       ),
     },
     {
-      title: "Enrollments",
+      title: "Số đăng ký",
       dataIndex: "enrollmentCount",
       key: "enrollmentCount",
       render: (val) => val || 0,
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: 140,
       render: (_, record) => (
@@ -354,28 +354,28 @@ const AdminCoursePage: React.FC = () => {
             icon={<UsergroupAddOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleManageInstructors(record)}
             className="text-green-500 hover:text-green-600"
-            title="Manage Instructors"
+            title="Quản lý giảng viên"
           />
           <Button
             type="text"
             icon={<EditOutlined style={{ fontSize: 14 }} />}
             onClick={() => handleEditCourse(record)}
             className="text-blue-500 hover:text-blue-600"
-            title="Edit"
+            title="Sửa"
           />
           <Popconfirm
-            title="Delete Course"
-            description="Are you sure you want to delete this course? This action cannot be undone."
+            title="Xác nhận xóa khóa học"
+            description="Bạn có chắc muốn xóa khóa học này? Hành động này không thể hoàn tác."
             onConfirm={() => handleDeleteCourse(record.courseId)}
-            okText="Delete"
+            okText="Xóa"
             okButtonProps={{ danger: true, loading: actionLoading }}
-            cancelText="Cancel"
+            cancelText="Hủy"
           >
             <Button
               type="text"
               icon={<DeleteOutlined />}
               danger
-              title="Delete"
+              title="Xóa"
             />
           </Popconfirm>
         </Space>
@@ -391,13 +391,13 @@ const AdminCoursePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Administration
+                Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Course Management
+                Quản lý khóa học
               </h1>
               <p className="text-sm text-gray-600">
-                Manage all courses, instructors, and course details
+                Quản lý toàn bộ khóa học, giảng viên và thông tin khóa học
               </p>
             </div>
             <Space>
@@ -408,14 +408,14 @@ const AdminCoursePage: React.FC = () => {
                 }
                 loading={loading}
               >
-                Refresh
+                Làm mới
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateCourse}
               >
-                New Course
+                Khóa học mới
               </Button>
             </Space>
           </div>
@@ -428,7 +428,7 @@ const AdminCoursePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Courses
+                    Tổng khóa học
                   </p>
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
@@ -441,7 +441,7 @@ const AdminCoursePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active Courses
+                    Khóa học hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.active}</p>
                 </div>
@@ -454,7 +454,7 @@ const AdminCoursePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Enrollments
+                    Tổng lượt đăng ký
                   </p>
                   <p className="text-xl font-bold">{stats.totalEnrollments}</p>
                 </div>
@@ -466,13 +466,13 @@ const AdminCoursePage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </p>
-                <h2 className="text-lg font-bold text-gray-900">All Courses</h2>
+                <h2 className="text-lg font-bold text-gray-900">Tất cả khóa học</h2>
               </div>
               <Space wrap>
                 <Input
-                  placeholder="Search by name or code..."
+                  placeholder="Tìm theo tên hoặc mã..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
@@ -490,7 +490,7 @@ const AdminCoursePage: React.FC = () => {
                   }}
                   style={{ width: 160 }}
                   allowClear
-                  placeholder="All Semesters"
+                  placeholder="Tất cả học kỳ"
                   options={semesters.map((s) => ({ value: s, label: s }))}
                 />
               </Space>
@@ -504,26 +504,26 @@ const AdminCoursePage: React.FC = () => {
               pagination={
                 pagination.total > 0
                   ? {
-                      current: currentPage,
-                      pageSize,
-                      total: pagination.total,
-                      showSizeChanger: true,
-                      showQuickJumper: false,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} courses`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
+                    current: currentPage,
+                    pageSize,
+                    total: pagination.total,
+                    showSizeChanger: true,
+                    showQuickJumper: false,
+                    pageSizeOptions: ["10", "20", "50"],
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} trên tổng ${total} khóa học`,
+                    onChange: (p, ps) => {
+                      setCurrentPage(p);
+                      setPageSize(ps);
+                    },
+                  }
                   : false
               }
               locale={{
                 emptyText:
                   searchTerm || filterSemester
-                    ? "No courses found matching your filters"
-                    : "No courses available. Create your first course to get started.",
+                    ? "Không tìm thấy khóa học phù hợp bộ lọc"
+                    : "Chưa có khóa học nào. Hãy tạo khóa học đầu tiên để bắt đầu.",
               }}
             />
           </Card>

@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 const phrases = [
-  "course presentations",
-  "capstone projects",
-  "thesis defense",
-  "team seminars",
-  "research pitches",
+  "thuyết trình khóa học",
+  "đồ án tốt nghiệp",
+  "bảo vệ khóa luận",
+  "seminar nhóm",
+  "thuyết trình nghiên cứu",
 ];
 
 const phraseHeight = 50;
@@ -63,7 +63,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0 * 0.2, duration: 0.5, ease: "easeOut" }}
         >
           <h1 className="text-[26px] mt-[1px] sm:text-[32px] lg:text-[40px] font-bold w-fit lg:w-full">
-            AI presentation feedback for
+            Phản hồi thuyết trình bằng AI cho
           </h1>
           <h2 className="text-[26px] sm:text-[32px] lg:text-[40px] font-bold w-fit lg:w-full">
             <div
@@ -76,9 +76,8 @@ const Hero: React.FC = () => {
             >
               <div
                 style={{
-                  transform: `translateY(-${
-                    currentPhraseIndex * phraseHeight
-                  }px)`,
+                  transform: `translateY(-${currentPhraseIndex * phraseHeight
+                    }px)`,
                   transition: "transform 250ms ease-in-out",
                 }}
               >
@@ -122,34 +121,34 @@ const Hero: React.FC = () => {
             onClick={() => navigate("/login")}
             {...(windowWidth < 700
               ? {
-                  fontSize: "16px",
-                  borderRadius: "20px",
-                  paddingWidth: "10px",
-                  paddingHeight: "10px",
-                }
+                fontSize: "16px",
+                borderRadius: "20px",
+                paddingWidth: "10px",
+                paddingHeight: "10px",
+              }
               : {
-                  fontSize: "20px",
-                  borderRadius: "25px",
-                  paddingWidth: "25px",
-                  paddingHeight: "10px",
-                })}
+                fontSize: "20px",
+                borderRadius: "25px",
+                paddingWidth: "25px",
+                paddingHeight: "10px",
+              })}
           />
           <Button
             text="Xem hệ thống chấm điểm AI"
             variant="secondary"
             {...(windowWidth < 700
               ? {
-                  fontSize: "16px",
-                  borderRadius: "20px",
-                  paddingWidth: "10px",
-                  paddingHeight: "10px",
-                }
+                fontSize: "16px",
+                borderRadius: "20px",
+                paddingWidth: "10px",
+                paddingHeight: "10px",
+              }
               : {
-                  fontSize: "20px",
-                  borderRadius: "25px",
-                  paddingWidth: "25px",
-                  paddingHeight: "10px",
-                })}
+                fontSize: "20px",
+                borderRadius: "25px",
+                paddingWidth: "25px",
+                paddingHeight: "10px",
+              })}
           />
         </motion.div>
         <motion.div

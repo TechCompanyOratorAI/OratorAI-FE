@@ -206,7 +206,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       return (
         <div className="flex flex-col items-center justify-center h-[500px] text-slate-500">
           <File className="w-16 h-16 mb-4" />
-          <p>No slide available</p>
+          <p>Không có slide</p>
         </div>
       );
     }
@@ -290,7 +290,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
         <File className="w-16 h-16 mb-4" />
         <p className="text-lg font-medium">{currentSlide.fileName}</p>
         <p className="text-sm">
-          {getFileExtension(currentSlide.filePath)} File
+          Tệp {getFileExtension(currentSlide.filePath)}
         </p>
         <div className="flex gap-2 mt-4">
           <a
@@ -300,7 +300,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-500 transition"
           >
             <ExternalLink className="w-4 h-4" />
-            Open
+            Mở
           </a>
           <a
             href={currentSlide.filePath}
@@ -308,7 +308,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition"
           >
             <Download className="w-4 h-4" />
-            Download
+            Tải xuống
           </a>
         </div>
       </div>
@@ -321,7 +321,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       return (
         <div className="flex flex-col items-center justify-center h-[500px] text-slate-500 bg-slate-100 rounded-lg">
           <Video className="w-16 h-16 mb-4" />
-          <p>No video recording available</p>
+          <p>Không có bản ghi video</p>
         </div>
       );
     }
@@ -452,11 +452,10 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
             <div className="flex gap-4">
               <button
                 onClick={() => setActiveTab("slides")}
-                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "slides"
+                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "slides"
                     ? "border-sky-500 text-sky-600"
                     : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -465,11 +464,10 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               </button>
               <button
                 onClick={() => setActiveTab("media")}
-                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "media"
+                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "media"
                     ? "border-sky-500 text-sky-600"
                     : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Video className="w-4 h-4" />
@@ -538,19 +536,17 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
                           setIsPlaying(false);
                         }
                       }}
-                      className={`flex-shrink-0 w-40 p-2 rounded-lg border-2 transition ${
-                        isSelected
+                      className={`flex-shrink-0 w-40 p-2 rounded-lg border-2 transition ${isSelected
                           ? "border-sky-500 bg-sky-500/10"
                           : "border-slate-600 hover:border-slate-500 bg-slate-700/50"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-8 h-8 rounded flex items-center justify-center text-sm font-medium flex-shrink-0 ${
-                            isSelected
+                          className={`w-8 h-8 rounded flex items-center justify-center text-sm font-medium flex-shrink-0 ${isSelected
                               ? "bg-sky-500 text-white"
                               : "bg-slate-600 text-slate-300"
-                          }`}
+                            }`}
                         >
                           {index + 1}
                         </span>

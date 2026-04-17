@@ -104,10 +104,10 @@ const CourseDetailPage: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1280px] mx-auto px-4 py-8">
             <Button icon={<ArrowLeft size={14} />} onClick={() => navigate(-1)}>
-              Back
+              Quay lại
             </Button>
             <Card className="mt-4">
-              <Text type="danger">{error || "Course not found"}</Text>
+              <Text type="danger">{error || "Không tìm thấy khóa học"}</Text>
             </Card>
           </div>
         </main>
@@ -118,7 +118,7 @@ const CourseDetailPage: React.FC = () => {
   const courseDuration = Math.ceil(
     (new Date(course.endDate).getTime() -
       new Date(course.startDate).getTime()) /
-      (1000 * 60 * 60 * 24)
+    (1000 * 60 * 60 * 24)
   );
 
   const handleTopicSubmit = async (
@@ -133,11 +133,11 @@ const CourseDetailPage: React.FC = () => {
       await dispatch(
         createTopic({ classId: meta.classId, topicData }),
       ).unwrap();
-      antdMessage.success("Topic created successfully!");
+      antdMessage.success("Tạo chủ đề thành công!");
       setTopicModalOpen(false);
       dispatch(fetchCourseDetail(parseInt(courseId)));
     } catch (err: any) {
-      antdMessage.error(err || "Failed to create topic.");
+      antdMessage.error(err || "Không thể tạo chủ đề.");
     }
   };
 
@@ -151,12 +151,12 @@ const CourseDetailPage: React.FC = () => {
   const handleDeleteTopic = async (topicId: number) => {
     try {
       await dispatch(deleteTopic(topicId)).unwrap();
-      antdMessage.success("Topic deleted successfully!");
+      antdMessage.success("Xóa chủ đề thành công!");
       if (courseId) {
         dispatch(fetchCourseDetail(parseInt(courseId)));
       }
     } catch (err: any) {
-      antdMessage.error(err || "Failed to delete topic.");
+      antdMessage.error(err || "Không thể xóa chủ đề.");
     }
   };
 
@@ -171,12 +171,12 @@ const CourseDetailPage: React.FC = () => {
       await dispatch(
         updateTopic({ topicId: editingTopic.topicId, topicData: payload }),
       ).unwrap();
-      antdMessage.success("Topic updated successfully!");
+      antdMessage.success("Cập nhật chủ đề thành công!");
       setEditModalOpen(false);
       setEditingTopic(null);
       if (courseId) dispatch(fetchCourseDetail(parseInt(courseId)));
     } catch (err: any) {
-      antdMessage.error(err || "Failed to update topic.");
+      antdMessage.error(err || "Không thể cập nhật chủ đề.");
     }
   };
 
@@ -187,7 +187,7 @@ const CourseDetailPage: React.FC = () => {
         <div className="max-w-[1280px] mx-auto space-y-6">
           {/* Back */}
           <Button icon={<ArrowLeft size={14} />} onClick={() => navigate("/instructor/manage-courses")}>
-            Back to courses
+            Quay lại danh sách khóa học
           </Button>
 
           {/* Hero Card */}
@@ -198,13 +198,13 @@ const CourseDetailPage: React.FC = () => {
             <Space direction="vertical" className="w-full" size={4}>
               <Space wrap>
                 <Tag color={course.isActive ? "green" : "default"} style={{ background: "rgba(255,255,255,0.2)", borderColor: "rgba(255,255,255,0.3)", color: "white" }}>
-                  {course.isActive ? "Active" : "Archived"}
+                  {course.isActive ? "Đang mở" : "Đã lưu trữ"}
                 </Tag>
                 <Tag style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)", color: "white" }}>
-                  Semester {course.semester}
+                  Học kỳ {course.semester}
                 </Tag>
                 <Tag style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)", color: "white" }}>
-                  Academic year {course.academicYear}
+                  Năm học {course.academicYear}
                 </Tag>
               </Space>
               <Title level={3} style={{ color: "white", margin: 0 }}>
@@ -216,32 +216,32 @@ const CourseDetailPage: React.FC = () => {
                 </Text>
               )}
               <Text strong style={{ color: "rgba(255,255,255,0.8)" }}>
-                Course Code: {course.courseCode}
+                Mã khóa học: {course.courseCode}
               </Text>
             </Space>
             <Divider style={{ borderColor: "rgba(255,255,255,0.2)", margin: "16px 0" }} />
             <Row gutter={16}>
               <Col span={6}>
                 <Space direction="vertical" size={0}>
-                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Duration</Text>
-                  <Text strong style={{ color: "white" }}>{courseDuration} days</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Thời lượng</Text>
+                  <Text strong style={{ color: "white" }}>{courseDuration} ngày</Text>
                 </Space>
               </Col>
               <Col span={6}>
                 <Space direction="vertical" size={0}>
-                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Modules</Text>
-                  <Text strong style={{ color: "white" }}>{course.topics?.length || 0} modules</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Chủ đề</Text>
+                  <Text strong style={{ color: "white" }}>{course.topics?.length || 0} chủ đề</Text>
                 </Space>
               </Col>
               <Col span={6}>
                 <Space direction="vertical" size={0}>
-                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Start date</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Ngày bắt đầu</Text>
                   <Text strong style={{ color: "white" }}>{formatDate(course.startDate)}</Text>
                 </Space>
               </Col>
               <Col span={6}>
                 <Space direction="vertical" size={0}>
-                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>End date</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Ngày kết thúc</Text>
                   <Text strong style={{ color: "white" }}>{formatDate(course.endDate)}</Text>
                 </Space>
               </Col>
@@ -251,26 +251,26 @@ const CourseDetailPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={16}>
               {/* Timeline */}
-              <Card title="Teaching Timeline" extra={<Tag color="green">Ready to deliver</Tag>}>
+              <Card title="Tiến độ giảng dạy" extra={<Tag color="green">Sẵn sàng triển khai</Tag>}>
                 <Space direction="vertical" className="w-full" size={4}>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50">
                     <div>
-                      <Text type="secondary">Start date</Text>
+                      <Text type="secondary">Ngày bắt đầu</Text>
                       <div><Text strong>{formatDate(course.startDate)}</Text></div>
                     </div>
                     <Space>
                       <Calendar className="text-emerald-600" size={16} />
-                      <Text type="secondary">{courseDuration} days</Text>
+                      <Text type="secondary">{courseDuration} ngày</Text>
                     </Space>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50">
                     <div>
-                      <Text type="secondary">End date</Text>
+                      <Text type="secondary">Ngày kết thúc</Text>
                       <div><Text strong>{formatDate(course.endDate)}</Text></div>
                     </div>
                     <Space>
                       <Clock className="text-amber-600" size={16} />
-                      <Text type="secondary">{courseDuration} days</Text>
+                      <Text type="secondary">{courseDuration} ngày</Text>
                     </Space>
                   </div>
                 </Space>
@@ -281,12 +281,12 @@ const CourseDetailPage: React.FC = () => {
                 title={
                   <Space>
                     <BookOpen size={16} />
-                    <span>Topic List ({course.topics?.length || 0})</span>
+                    <span>Danh sách chủ đề ({course.topics?.length || 0})</span>
                   </Space>
                 }
                 extra={
                   <ButtonYoodli
-                    text="Create Topic"
+                    text="Tạo chủ đề"
                     variant="primary"
                     fontSize="14px"
                     borderRadius="8px"
@@ -330,7 +330,7 @@ const CourseDetailPage: React.FC = () => {
                               <Tag icon={<Calendar size={12} />}>{formatDate(topic.dueDate)}</Tag>
                             )}
                             {topic.maxDurationMinutes && (
-                              <Tag>{topic.maxDurationMinutes} mins</Tag>
+                              <Tag>{topic.maxDurationMinutes} phút</Tag>
                             )}
                             <Space size={0}>
                               <Button
@@ -341,7 +341,7 @@ const CourseDetailPage: React.FC = () => {
                                   handleEditTopic(topic.topicId);
                                 }}
                               >
-                                Edit
+                                Sửa
                               </Button>
                               <Button
                                 type="text"
@@ -352,7 +352,7 @@ const CourseDetailPage: React.FC = () => {
                                   handleDeleteTopic(topic.topicId);
                                 }}
                               >
-                                Delete
+                                Xóa
                               </Button>
                             </Space>
                           </Space>
@@ -361,14 +361,14 @@ const CourseDetailPage: React.FC = () => {
                     ))}
                   </Space>
                 ) : (
-                  <Empty description="No topics yet. Add modules with objectives and deadlines." />
+                  <Empty description="Chưa có chủ đề. Hãy thêm nội dung với mục tiêu và hạn nộp." />
                 )}
               </Card>
             </Col>
 
             <Col span={8}>
               {/* Instructor */}
-              <Card title="Instructor of Record">
+              <Card title="Giảng viên phụ trách">
                 {course.instructor ? (
                   <Space direction="vertical" className="w-full" size={4}>
                     <div className="flex justify-center">
@@ -387,7 +387,7 @@ const CourseDetailPage: React.FC = () => {
                     </div>
                     <div className="pt-3 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <Text type="secondary">Instructor ID</Text>
+                        <Text type="secondary">Mã giảng viên</Text>
                         <Text strong>{course.instructor.userId}</Text>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -396,29 +396,29 @@ const CourseDetailPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-                      Respond to questions within 24 hours and refresh materials after each session.
+                      Phản hồi câu hỏi trong vòng 24 giờ và cập nhật tài liệu sau mỗi buổi học.
                     </div>
                   </Space>
                 ) : (
-                  <Empty description="Instructor information not available" />
+                  <Empty description="Chưa có thông tin giảng viên" />
                 )}
               </Card>
 
               {/* Info */}
-              <Card title="Academic Info">
+              <Card title="Thông tin học vụ">
                 <Space direction="vertical" className="w-full" size={4}>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    Course is {course.isActive ? "active and visible to students" : "currently archived"}.
+                    Khóa học hiện {course.isActive ? "đang mở và hiển thị cho sinh viên" : "đang được lưu trữ"}.
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" />
-                    Last updated: {formatDate(course.updatedAt)}.
+                    Cập nhật gần nhất: {formatDate(course.updatedAt)}.
                   </div>
                 </Space>
                 <Divider />
                 <Button block onClick={() => navigate("/instructor/manage-courses")}>
-                  Return to list
+                  Quay lại danh sách
                 </Button>
               </Card>
             </Col>
@@ -449,8 +449,8 @@ const CourseDetailPage: React.FC = () => {
         }}
         onSubmit={handleUpdateTopicSubmit}
         isLoading={topicLoading}
-        title="Edit Topic"
-        submitText="Save Changes"
+        title="Sửa chủ đề"
+        submitText="Lưu thay đổi"
         initialData={{
           topicName: editingTopic?.topicName,
           dueDate: editingTopic?.dueDate,

@@ -84,7 +84,7 @@ const SettingsPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto">
           <Title level={2} className="mb-6">
-            Settings
+            Cài đặt
           </Title>
 
           {/* Profile Section */}
@@ -109,9 +109,9 @@ const SettingsPage: React.FC = () => {
                 >
                   {initials || "U"}
                 </Avatar>
-                <Text className="mt-3 text-base font-semibold">{fullName || "User"}</Text>
+                <Text className="mt-3 text-base font-semibold">{fullName || "Người dùng"}</Text>
                 <Text type="secondary" className="text-sm">
-                  {displayUser?.username || "N/A"}
+                  {displayUser?.username || "Không có"}
                 </Text>
               </div>
               <div className="flex-1">
@@ -120,21 +120,21 @@ const SettingsPage: React.FC = () => {
                     label={
                       <Space>
                         <UserOutlined />
-                        <span>First Name</span>
+                        <span>Tên</span>
                       </Space>
                     }
                   >
-                    {displayUser?.firstName || "N/A"}
+                    {displayUser?.firstName || "Không có"}
                   </Descriptions.Item>
                   <Descriptions.Item
                     label={
                       <Space>
                         <UserOutlined />
-                        <span>Last Name</span>
+                        <span>Họ</span>
                       </Space>
                     }
                   >
-                    {displayUser?.lastName || "N/A"}
+                    {displayUser?.lastName || "Không có"}
                   </Descriptions.Item>
                   <Descriptions.Item
                     label={
@@ -145,14 +145,14 @@ const SettingsPage: React.FC = () => {
                     }
                   >
                     <Space>
-                      <span>{displayUser?.email || "N/A"}</span>
+                      <span>{displayUser?.email || "Không có"}</span>
                       {displayUser?.isEmailVerified ? (
                         <Tag icon={<CheckCircleOutlined />} color="success">
-                          Verified
+                          Đã xác minh
                         </Tag>
                       ) : (
                         <Tag icon={<CloseCircleOutlined />} color="error">
-                          Not Verified
+                          Chưa xác minh
                         </Tag>
                       )}
                     </Space>
@@ -161,11 +161,11 @@ const SettingsPage: React.FC = () => {
                     label={
                       <Space>
                         <UserOutlined />
-                        <span>Username</span>
+                        <span>Tên đăng nhập</span>
                       </Space>
                     }
                   >
-                    {displayUser?.username || "N/A"}
+                    {displayUser?.username || "Không có"}
                   </Descriptions.Item>
                 </Descriptions>
               </div>

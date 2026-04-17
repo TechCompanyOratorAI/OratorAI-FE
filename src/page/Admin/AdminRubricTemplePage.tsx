@@ -92,7 +92,7 @@ const AdminRubricTemplePage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      notifyError("Rubric Template Error", error);
+      notifyError("Lỗi mẫu rubric", error);
       dispatch(clearRubricTemplateError());
     }
   }, [error, dispatch]);
@@ -162,15 +162,15 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleCreateTemplate = async (payload: RubricTemplatePayload) => {
     try {
       await dispatch(createRubricTemplate(payload)).unwrap();
-      notifySuccess("Create Success", "Tạo template thành công.");
+      notifySuccess("Tạo thành công", "Tạo mẫu rubric thành công.");
       setIsCreateModalOpen(false);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
       notifyError(
-        "Create Failed",
+        "Tạo thất bại",
         typeof createError === "string"
           ? createError
-          : createError?.message || "Không thể tạo rubric template",
+          : createError?.message || "Không thể tạo mẫu rubric",
       );
     }
   };
@@ -184,16 +184,16 @@ const AdminRubricTemplePage: React.FC = () => {
           data: payload,
         }),
       ).unwrap();
-      notifySuccess("Update Success", "Cập nhật template thành công.");
+      notifySuccess("Cập nhật thành công", "Cập nhật mẫu rubric thành công.");
       setIsEditModalOpen(false);
       setEditingTemplate(null);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (updateError: any) {
       notifyError(
-        "Update Failed",
+        "Cập nhật thất bại",
         typeof updateError === "string"
           ? updateError
-          : updateError?.message || "Không thể cập nhật rubric template",
+          : updateError?.message || "Không thể cập nhật mẫu rubric",
       );
     }
   };
@@ -201,14 +201,14 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleDeleteTemplate = async (rubricTemplateId: number) => {
     try {
       await dispatch(deleteRubricTemplate(rubricTemplateId)).unwrap();
-      notifySuccess("Delete Success", "Xóa template thành công.");
+      notifySuccess("Xóa thành công", "Xóa mẫu rubric thành công.");
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
       notifyError(
-        "Delete Failed",
+        "Xóa thất bại",
         typeof deleteError === "string"
           ? deleteError
-          : deleteError?.message || "Không thể xóa rubric template",
+          : deleteError?.message || "Không thể xóa mẫu rubric",
       );
     }
   };
@@ -221,16 +221,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         createRubricTemplateCriterion({ rubricTemplateId, data: payload }),
       ).unwrap();
-      notifySuccess("Create Success", "Tạo criteria thành công.");
+      notifySuccess("Tạo thành công", "Tạo tiêu chí thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (createCriteriaError: any) {
       notifyError(
-        "Create Failed",
+        "Tạo thất bại",
         typeof createCriteriaError === "string"
           ? createCriteriaError
-          : createCriteriaError?.message || "Không thể tạo criteria",
+          : createCriteriaError?.message || "Không thể tạo tiêu chí",
       );
       throw createCriteriaError;
     }
@@ -244,16 +244,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         updateRubricTemplateCriterion({ criteriaId, data: payload }),
       ).unwrap();
-      notifySuccess("Update Success", "Cập nhật criteria thành công.");
+      notifySuccess("Cập nhật thành công", "Cập nhật tiêu chí thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (updateCriteriaError: any) {
       notifyError(
-        "Update Failed",
+        "Cập nhật thất bại",
         typeof updateCriteriaError === "string"
           ? updateCriteriaError
-          : updateCriteriaError?.message || "Không thể cập nhật criteria",
+          : updateCriteriaError?.message || "Không thể cập nhật tiêu chí",
       );
       throw updateCriteriaError;
     }
@@ -267,16 +267,16 @@ const AdminRubricTemplePage: React.FC = () => {
       await dispatch(
         deleteRubricTemplateCriterion({ criteriaId, rubricTemplateId }),
       ).unwrap();
-      notifySuccess("Delete Success", "Xóa criteria thành công.");
+      notifySuccess("Xóa thành công", "Xóa tiêu chí thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (deleteCriteriaError: any) {
       notifyError(
-        "Delete Failed",
+        "Xóa thất bại",
         typeof deleteCriteriaError === "string"
           ? deleteCriteriaError
-          : deleteCriteriaError?.message || "Không thể xóa criteria",
+          : deleteCriteriaError?.message || "Không thể xóa tiêu chí",
       );
       throw deleteCriteriaError;
     }
@@ -304,17 +304,17 @@ const AdminRubricTemplePage: React.FC = () => {
           ).unwrap(),
         ),
       );
-      notifySuccess("Update Success", "Cập nhật thứ tự criteria thành công.");
+      notifySuccess("Cập nhật thành công", "Cập nhật thứ tự tiêu chí thành công.");
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
     } catch (reorderCriteriaError: any) {
       notifyError(
-        "Update Failed",
+        "Cập nhật thất bại",
         typeof reorderCriteriaError === "string"
           ? reorderCriteriaError
           : reorderCriteriaError?.message ||
-              "Không thể cập nhật thứ tự criteria",
+          "Không thể cập nhật thứ tự tiêu chí",
       );
       throw reorderCriteriaError;
     }
@@ -322,7 +322,7 @@ const AdminRubricTemplePage: React.FC = () => {
 
   const columns: ColumnsType<RubricTemplate> = [
     {
-      title: "Template",
+      title: "Mẫu",
       key: "template",
       render: (_, record) => (
         <div>
@@ -335,26 +335,26 @@ const AdminRubricTemplePage: React.FC = () => {
           </div>
           {record.isDefault && (
             <Tag color="blue" className="mt-1">
-              Default
+              Mặc định
             </Tag>
           )}
         </div>
       ),
     },
     {
-      title: "Type",
+      title: "Loại",
       dataIndex: "assignmentType",
       key: "assignmentType",
     },
     {
-      title: "Criteria",
+      title: "Tiêu chí",
       key: "criteria",
       render: (_, record) => {
         const sortedCriteria = [...(record.criteria || [])].sort(
           (a, b) => a.displayOrder - b.displayOrder,
         );
         if (sortedCriteria.length === 0) {
-          return <span className="text-xs text-gray-400">No criteria</span>;
+          return <span className="text-xs text-gray-400">Không có tiêu chí</span>;
         }
         return (
           <div className="space-y-1 max-w-xs">
@@ -389,7 +389,7 @@ const AdminRubricTemplePage: React.FC = () => {
                   setSelectedTemplateForCriteriaId(record.rubricTemplateId)
                 }
               >
-                +{sortedCriteria.length - 3} more
+                +{sortedCriteria.length - 3} thêm
               </div>
             )}
           </div>
@@ -397,22 +397,22 @@ const AdminRubricTemplePage: React.FC = () => {
       },
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "isActive",
       key: "isActive",
       render: (isActive: boolean) => (
         <Tag color={isActive ? "green" : "red"}>
-          {isActive ? "Active" : "Inactive"}
+          {isActive ? "Đang hoạt động" : "Không hoạt động"}
         </Tag>
       ),
     },
     {
-      title: "Updated",
+      title: "Cập nhật",
       key: "updated",
       render: (_, record) => formatDate(record.updatedAt || record.createdAt),
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: 140,
       render: (_, record) => (
@@ -424,7 +424,7 @@ const AdminRubricTemplePage: React.FC = () => {
               setSelectedTemplateForCriteriaId(record.rubricTemplateId)
             }
             className="text-green-500 hover:text-green-600"
-            title="Manage Criteria"
+            title="Quản lý tiêu chí"
           />
           <Button
             type="text"
@@ -434,7 +434,7 @@ const AdminRubricTemplePage: React.FC = () => {
               setIsEditModalOpen(true);
             }}
             className="text-blue-500 hover:text-blue-600"
-            title="Edit"
+            title="Chỉnh sửa"
           />
           <Popconfirm
             title="Xác nhận xóa template"
@@ -448,7 +448,7 @@ const AdminRubricTemplePage: React.FC = () => {
               type="text"
               icon={<DeleteOutlined />}
               danger
-              title="Delete"
+              title="Xóa"
             />
           </Popconfirm>
         </Space>
@@ -464,10 +464,10 @@ const AdminRubricTemplePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Administration
+                Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Rubric Template Management
+                Quản lý mẫu rubric
               </h1>
               <p className="text-sm text-gray-600">
                 Quản lý bộ rubric mẫu cho các loại bài nộp
@@ -486,14 +486,14 @@ const AdminRubricTemplePage: React.FC = () => {
                 }
                 loading={loading}
               >
-                Refresh
+                Làm mới
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={() => setIsCreateModalOpen(true)}
               >
-                New Template
+                Mẫu mới
               </Button>
             </Space>
           </div>
@@ -506,7 +506,7 @@ const AdminRubricTemplePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Total Templates
+                    Tổng mẫu
                   </p>
                   <p className="text-xl font-bold">{stats.total}</p>
                 </div>
@@ -519,7 +519,7 @@ const AdminRubricTemplePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active
+                    Đang hoạt động
                   </p>
                   <p className="text-xl font-bold">{stats.active}</p>
                 </div>
@@ -532,7 +532,7 @@ const AdminRubricTemplePage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Default
+                    Mặc định
                   </p>
                   <p className="text-xl font-bold">{stats.defaults}</p>
                 </div>
@@ -544,15 +544,15 @@ const AdminRubricTemplePage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </p>
                 <h2 className="text-lg font-bold text-gray-900">
-                  Rubric Templates
+                  Mẫu rubric
                 </h2>
               </div>
               <Space wrap>
                 <Input.Search
-                  placeholder="Search by name, description, type..."
+                  placeholder="Tìm theo tên, mô tả, loại..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -569,9 +569,9 @@ const AdminRubricTemplePage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "All status" },
-                    { value: "active", label: "Active" },
-                    { value: "inactive", label: "Inactive" },
+                    { value: "all", label: "Tất cả trạng thái" },
+                    { value: "active", label: "Đang hoạt động" },
+                    { value: "inactive", label: "Không hoạt động" },
                   ]}
                 />
                 <Select
@@ -582,7 +582,7 @@ const AdminRubricTemplePage: React.FC = () => {
                   }}
                   style={{ width: 160 }}
                   options={[
-                    { value: "all", label: "All types" },
+                    { value: "all", label: "Tất cả loại" },
                     ...assignmentTypes.map((t) => ({ value: t, label: t })),
                   ]}
                 />
@@ -597,29 +597,29 @@ const AdminRubricTemplePage: React.FC = () => {
               pagination={
                 pagination && pagination.total > 0
                   ? {
-                      current: currentPage,
-                      pageSize,
-                      total: pagination.total,
-                      showSizeChanger: true,
-                      showQuickJumper: false,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} templates`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
+                    current: currentPage,
+                    pageSize,
+                    total: pagination.total,
+                    showSizeChanger: true,
+                    showQuickJumper: false,
+                    pageSizeOptions: ["10", "20", "50"],
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} trên tổng ${total} mẫu`,
+                    onChange: (p, ps) => {
+                      setCurrentPage(p);
+                      setPageSize(ps);
+                    },
+                  }
                   : false
               }
               locale={{
                 emptyText: error
                   ? error
                   : searchTerm ||
-                      filterStatus !== "all" ||
-                      filterAssignmentType !== "all"
-                    ? "No rubric templates found matching your filters"
-                    : "No rubric templates available. Create your first template to get started.",
+                    filterStatus !== "all" ||
+                    filterAssignmentType !== "all"
+                    ? "Không tìm thấy mẫu rubric phù hợp bộ lọc"
+                    : "Chưa có mẫu rubric nào. Hãy tạo mẫu đầu tiên để bắt đầu.",
               }}
             />
           </Card>
@@ -641,11 +641,11 @@ const AdminRubricTemplePage: React.FC = () => {
         initialData={
           editingTemplate
             ? {
-                templateName: editingTemplate.templateName,
-                description: editingTemplate.description,
-                assignmentType: editingTemplate.assignmentType,
-                isDefault: editingTemplate.isDefault,
-              }
+              templateName: editingTemplate.templateName,
+              description: editingTemplate.description,
+              assignmentType: editingTemplate.assignmentType,
+              isDefault: editingTemplate.isDefault,
+            }
             : undefined
         }
         onClose={() => {

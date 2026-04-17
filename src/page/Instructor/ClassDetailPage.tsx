@@ -124,11 +124,10 @@ const SortableCriterionItem = React.memo(
         style={style}
         {...attributes}
         {...listeners}
-        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${
-          isDragging
-            ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
-            : "cursor-grab"
-        }`}
+        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${isDragging
+          ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
+          : "cursor-grab"
+          }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex-1">
@@ -318,7 +317,7 @@ const ClassDetailPage: React.FC = () => {
         createTopic({ classId: selectedClass.classId, topicData }),
       ).unwrap();
       setToast({
-        message: "Topic created successfully.",
+        message: "Tạo chủ đề thành công.",
         type: "success",
       });
       setIsTopicModalOpen(false);
@@ -330,7 +329,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to create topic.",
+            : error?.message || "Không thể tạo chủ đề.",
         type: "error",
       });
     }
@@ -355,7 +354,7 @@ const ClassDetailPage: React.FC = () => {
         updateTopic({ topicId: editingTopic.topicId, topicData: payload }),
       ).unwrap();
       setToast({
-        message: "Topic updated successfully.",
+        message: "Cập nhật chủ đề thành công.",
         type: "success",
       });
       setIsEditTopicModalOpen(false);
@@ -371,7 +370,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to update topic.",
+            : error?.message || "Không thể cập nhật chủ đề.",
         type: "error",
       });
     }
@@ -475,14 +474,14 @@ const ClassDetailPage: React.FC = () => {
 
       setLocalCriteria(reorderedCriteria);
       setOriginalCriteria(reorderedCriteria);
-      setToast({ message: "Rubric order updated.", type: "success" });
+      setToast({ message: "Đã cập nhật thứ tự rubric.", type: "success" });
       dispatch(fetchRubricByClass(classIdNumber));
     } catch (error: any) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to update rubric order.",
+            : error?.message || "Không thể cập nhật thứ tự rubric.",
         type: "error",
       });
     }
@@ -509,7 +508,7 @@ const ClassDetailPage: React.FC = () => {
     });
     setIsTemplateConfigModalOpen(true);
     setToast({
-      message: "Template selected. Configure AI settings in modal and use it.",
+      message: "Đã chọn mẫu. Hãy cấu hình AI trong modal và áp dụng.",
       type: "info",
     });
   };
@@ -533,7 +532,7 @@ const ClassDetailPage: React.FC = () => {
 
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
       setToast({
-        message: "Template selected for this class.",
+        message: "Đã chọn mẫu cho lớp học này.",
         type: "success",
       });
     } catch (error: any) {
@@ -541,7 +540,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to pick rubric template.",
+            : error?.message || "Không thể chọn mẫu rubric.",
         type: "error",
       });
     }
@@ -586,18 +585,18 @@ const ClassDetailPage: React.FC = () => {
 
         if (totalPercentage > 100) {
           setToast({
-            message: `⚠️ ${targetCriterionId ? "Updated" : "Created"} criteria. Total % exceeded 100% (${totalPercentage.toFixed(1)}%)`,
+            message: `⚠️ Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí. Tổng % vượt quá 100% (${totalPercentage.toFixed(1)}%)`,
             type: "info",
           });
         } else {
           setToast({
-            message: `Rubric criteria ${targetCriterionId ? "updated" : "created"} successfully.`,
+            message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí rubric thành công.`,
             type: "success",
           });
         }
       } else {
         setToast({
-          message: `Rubric criteria ${targetCriterionId ? "updated" : "created"} successfully.`,
+          message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí rubric thành công.`,
           type: "success",
         });
       }
@@ -610,7 +609,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Rubric action failed.",
+            : error?.message || "Thao tác rubric thất bại.",
         type: "error",
       });
     }
@@ -626,7 +625,7 @@ const ClassDetailPage: React.FC = () => {
         }),
       ).unwrap();
 
-      setToast({ message: "Rubric criteria deleted.", type: "success" });
+      setToast({ message: "Đã xóa tiêu chí rubric.", type: "success" });
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
 
       if (editingRubric?.classRubricCriteriaId === criterionId) {
@@ -637,7 +636,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to delete rubric criteria.",
+            : error?.message || "Không thể xóa tiêu chí rubric.",
         type: "error",
       });
     }
@@ -685,14 +684,14 @@ const ClassDetailPage: React.FC = () => {
         ),
       );
 
-      setToast({ message: "Rubric order updated.", type: "success" });
+      setToast({ message: "Đã cập nhật thứ tự rubric.", type: "success" });
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
     } catch (error: any) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to update rubric order.",
+            : error?.message || "Không thể cập nhật thứ tự rubric.",
         type: "error",
       });
     }
@@ -707,7 +706,7 @@ const ClassDetailPage: React.FC = () => {
           classRubricCriteriaId: editingRubric.classRubricCriteriaId,
         }),
       ).unwrap();
-      setToast({ message: "Rubric criteria deleted.", type: "success" });
+      setToast({ message: "Đã xóa tiêu chí rubric.", type: "success" });
       dispatch(fetchRubricByClass(classIdNumber));
       setIsDeleteRubricModalOpen(false);
       setEditingRubric(null);
@@ -716,7 +715,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Failed to delete rubric criteria.",
+            : error?.message || "Không thể xóa tiêu chí rubric.",
         type: "error",
       });
     }
@@ -729,7 +728,7 @@ const ClassDetailPage: React.FC = () => {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading class details...</p>
+            <p className="text-gray-600">Đang tải chi tiết lớp học...</p>
           </div>
         </main>
       </div>
@@ -753,11 +752,11 @@ const ClassDetailPage: React.FC = () => {
                 marginBottom: 24,
               }}
             >
-              Back
+              Quay lại
             </AntButton>
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <p className="text-red-700 font-medium">
-                {error || "Class not found"}
+                {error || "Không tìm thấy lớp học"}
               </p>
             </div>
           </div>
@@ -767,7 +766,7 @@ const ClassDetailPage: React.FC = () => {
   }
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "Không có";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -780,17 +779,17 @@ const ClassDetailPage: React.FC = () => {
     { label: string; bg: string; icon: React.ReactNode }
   > = {
     active: {
-      label: "Active",
+      label: "Đang hoạt động",
       bg: "bg-emerald-100 text-emerald-700",
       icon: <CheckCircle2 className="w-3 h-3" />,
     },
     inactive: {
-      label: "Inactive",
+      label: "Không hoạt động",
       bg: "bg-slate-100 text-slate-700",
       icon: <Clock className="w-3 h-3" />,
     },
     archived: {
-      label: "Archived",
+      label: "Đã lưu trữ",
       bg: "bg-rose-100 text-rose-700",
       icon: <Clock className="w-3 h-3" />,
     },
@@ -800,7 +799,7 @@ const ClassDetailPage: React.FC = () => {
   const enrollKeyValue =
     selectedClass.activeKeys?.[0]?.keyValue ||
     selectedClass.enrollKeys?.[0]?.keyValue ||
-    "N/A";
+    "Không có";
   const totalStudents =
     selectedClass.totalStudents ??
     selectedClass.enrollmentCount ??
@@ -815,20 +814,20 @@ const ClassDetailPage: React.FC = () => {
   });
 
   const getGroupName = (group: Group) =>
-    group.groupName ?? group.name ?? "Group";
+    group.groupName ?? group.name ?? "Nhóm";
   const getGroupId = (group: Group) => group.groupId ?? group.id;
   const getMemberName = (member: any) => {
     const fullName = [member?.firstName, member?.lastName]
       .filter(Boolean)
       .join(" ")
       .trim();
-    return fullName || member?.username || member?.email || "Unknown";
+    return fullName || member?.username || member?.email || "Không rõ";
   };
   const getGroupLeaderName = (group: Group) => {
     const leader = (group.students || []).find(
       (student) => student.GroupStudent?.role === "leader",
     );
-    return leader ? getMemberName(leader) : "Unknown";
+    return leader ? getMemberName(leader) : "Không rõ";
   };
 
   return (
@@ -843,11 +842,11 @@ const ClassDetailPage: React.FC = () => {
               onClick={() => navigate("/instructor/manage-classes")}
               style={{ fontWeight: 600, paddingLeft: 0, color: "#0369a1" }}
             >
-              Back to classes
+              Quay lại danh sách lớp
             </AntButton>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <InfoCircleOutlined />
-              Instructor class overview
+              Tổng quan lớp học của giảng viên
             </div>
           </div>
 
@@ -861,7 +860,7 @@ const ClassDetailPage: React.FC = () => {
                 <div className="space-y-3 max-w-3xl">
                   <div className="flex items-center gap-3">
                     <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-white/20 text-white border border-white/30">
-                      Class
+                      Lớp học
                     </span>
                   </div>
                   <h1 className="text-3xl sm:text-4xl font-bold">
@@ -873,7 +872,7 @@ const ClassDetailPage: React.FC = () => {
                       selectedClass.course?.courseCode,
                     ]
                       .filter(Boolean)
-                      .join(" - ") || "Course"}
+                      .join(" - ") || "Khóa học"}
                   </p>
                   <div className="flex flex-wrap items-center gap-4">
                     <span
@@ -892,7 +891,7 @@ const ClassDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2 text-white/90">
                       <Users className="w-5 h-5" />
                       <span className="font-medium">
-                        {totalStudents} / {selectedClass.maxStudents} students
+                        {totalStudents} / {selectedClass.maxStudents} sinh viên
                       </span>
                     </div>
                   </div>
@@ -901,22 +900,22 @@ const ClassDetailPage: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 {[
                   {
-                    label: "Semester",
-                    value: selectedClass.course?.semester || "N/A",
+                    label: "Học kỳ",
+                    value: selectedClass.course?.semester || "Không có",
                     Icon: BookOpen,
                   },
                   {
-                    label: "Academic Year",
-                    value: selectedClass.course?.academicYear || "N/A",
+                    label: "Năm học",
+                    value: selectedClass.course?.academicYear || "Không có",
                     Icon: Calendar,
                   },
                   {
-                    label: "Enroll Key",
+                    label: "Mã tham gia",
                     value: enrollKeyValue,
                     Icon: KeyRound,
                   },
                   {
-                    label: "Created",
+                    label: "Ngày tạo",
                     value: formatDate(selectedClass.createdAt),
                     Icon: Clock,
                   },
@@ -946,9 +945,8 @@ const ClassDetailPage: React.FC = () => {
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isUploadEnabled ? "bg-white/20" : "bg-white/10"
-                }`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isUploadEnabled ? "bg-white/20" : "bg-white/10"
+                  }`}>
                   {isUploadEnabled ? (
                     <CloudUploadOutlined className="text-xl text-white" />
                   ) : (
@@ -958,7 +956,7 @@ const ClassDetailPage: React.FC = () => {
                 <div>
                   <h3 className="text-base font-bold text-white">Quyền Upload Presentation</h3>
                   <p className="text-xs text-white/70">
-                    {isUploadEnabled 
+                    {isUploadEnabled
                       ? "Sinh viên đang được phép upload bài thuyết trình"
                       : "Sinh viên chưa được phép upload bài thuyết trình"
                     }
@@ -1006,11 +1004,11 @@ const ClassDetailPage: React.FC = () => {
                   />
                   <div>
                     <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                      Student Groups
+                      Nhóm sinh viên
                     </p>
                     <div className="flex items-center gap-2">
                       <h3 className="text-xl font-bold text-slate-900">
-                        Groups
+                        Danh sách nhóm
                       </h3>
                       <Badge
                         count={groupsForClass.length}
@@ -1038,7 +1036,7 @@ const ClassDetailPage: React.FC = () => {
                       return (
                         <Tooltip
                           key={group.groupId ?? group.id ?? index}
-                          title="Click to view group details"
+                          title="Nhấn để xem chi tiết nhóm"
                           placement="top"
                         >
                           <div
@@ -1048,9 +1046,8 @@ const ClassDetailPage: React.FC = () => {
                               dispatch(fetchGroupDetail(groupId));
                               setShowGroupDetail(true);
                             }}
-                            className={`cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-md transition-all group relative ${
-                              isEven ? "bg-slate-50" : "bg-white"
-                            }`}
+                            className={`cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-md transition-all group relative ${isEven ? "bg-slate-50" : "bg-white"
+                              }`}
                           >
                             <div className="flex items-center gap-3 mb-3">
                               <Avatar
@@ -1090,7 +1087,7 @@ const ClassDetailPage: React.FC = () => {
                                   padding: "2px 10px",
                                 }}
                               >
-                                {memberCount} members
+                                {memberCount} thành viên
                               </Tag>
                               <span className="group-hover:text-violet-500 text-slate-300 text-lg transition-colors duration-150">
                                 ›
@@ -1107,7 +1104,7 @@ const ClassDetailPage: React.FC = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description={
                         <Typography.Text type="secondary">
-                          No groups found for this class.
+                          Không tìm thấy nhóm nào cho lớp học này.
                         </Typography.Text>
                       }
                     />
@@ -1135,13 +1132,13 @@ const ClassDetailPage: React.FC = () => {
                           style={{ fontSize: 11, letterSpacing: "0.08em" }}
                           className="text-xs uppercase text-slate-400 font-semibold block"
                         >
-                          Presentation
+                          Thuyết trình
                         </Typography.Text>
                         <Typography.Text
                           strong
                           style={{ fontSize: 15, color: "#1e293b" }}
                         >
-                          Topics
+                          Chủ đề
                           <Badge
                             count={topicsForClass.length}
                             showZero
@@ -1161,7 +1158,7 @@ const ClassDetailPage: React.FC = () => {
                       icon={<PlusOutlined />}
                       onClick={() => setIsTopicModalOpen(true)}
                     >
-                      Add
+                      Thêm
                     </AntButton>
                   </div>
                 }
@@ -1174,14 +1171,13 @@ const ClassDetailPage: React.FC = () => {
                       return (
                         <Tooltip
                           key={topic.topicId}
-                          title="Click to view topic details"
+                          title="Nhấn để xem chi tiết chủ đề"
                           placement="top"
                         >
                           <List.Item
                             style={{ padding: "10px 16px", cursor: "pointer" }}
-                            className={`transition-colors duration-150 hover:bg-sky-50 group ${
-                              isEven ? "bg-white" : "bg-slate-50/50"
-                            }`}
+                            className={`transition-colors duration-150 hover:bg-sky-50 group ${isEven ? "bg-white" : "bg-slate-50/50"
+                              }`}
                             onClick={() =>
                               navigate(
                                 `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
@@ -1199,7 +1195,7 @@ const ClassDetailPage: React.FC = () => {
                                 {topic.dueDate && (
                                   <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                                     <Calendar className="w-3 h-3" />
-                                    Due {formatDate(topic.dueDate)}
+                                    Hạn {formatDate(topic.dueDate)}
                                   </p>
                                 )}
                               </div>
@@ -1221,7 +1217,7 @@ const ClassDetailPage: React.FC = () => {
                                       className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
                                     >
                                       <Edit className="w-3.5 h-3.5 text-sky-600" />
-                                      Edit
+                                      Sửa
                                     </button>
                                     <button
                                       onClick={(e) => {
@@ -1234,7 +1230,7 @@ const ClassDetailPage: React.FC = () => {
                                       className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
-                                      Delete
+                                      Xóa
                                     </button>
                                   </div>
                                 </button>
@@ -1251,7 +1247,7 @@ const ClassDetailPage: React.FC = () => {
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description={
                         <Typography.Text type="secondary">
-                          No topics yet. Click + Add to create one.
+                          Chưa có chủ đề. Nhấn + Thêm để tạo mới.
                         </Typography.Text>
                       }
                     />
@@ -1276,13 +1272,13 @@ const ClassDetailPage: React.FC = () => {
                           style={{ fontSize: 11, letterSpacing: "0.08em" }}
                           className="text-xs uppercase text-slate-400 font-semibold block"
                         >
-                          Rubric Templates
+                          Mẫu rubric
                         </Typography.Text>
                         <Typography.Text
                           strong
                           style={{ fontSize: 15, color: "#1e293b" }}
                         >
-                          Evaluation Criteria
+                          Tiêu chí đánh giá
                           <Badge
                             count={localCriteria.length}
                             showZero
@@ -1298,19 +1294,19 @@ const ClassDetailPage: React.FC = () => {
                     <div className="flex items-center gap-1">
                       {!isRubricActive && (
                         <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 mr-1">
-                          Inactive
+                          Chưa đạt
                         </span>
                       )}
                       <Tooltip
                         title={
                           <div>
-                            <p className="font-semibold">Rubric Instructions</p>
+                            <p className="font-semibold">Hướng dẫn rubric</p>
                             <p className="mt-1">
-                              The rubric is active only when the total
-                              percentage is exactly 100%.
+                              Rubric chỉ hoạt động khi tổng phần trăm
+                              chính xác bằng 100%.
                             </p>
                             <p className="mt-1 text-red-300 font-medium">
-                              Adding criteria cannot exceed 100%.
+                              Tổng khi thêm tiêu chí không được vượt quá 100%.
                             </p>
                           </div>
                         }
@@ -1335,7 +1331,7 @@ const ClassDetailPage: React.FC = () => {
                             setIsRubricModalOpen(true);
                           }}
                         >
-                          Add
+                          Thêm
                         </AntButton>
                       )}
                     </div>
@@ -1346,22 +1342,22 @@ const ClassDetailPage: React.FC = () => {
                   <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-slate-700">
-                        Choose template for this class
+                        Chọn mẫu cho lớp học này
                       </p>
                       <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                        No template selected
+                        Chưa chọn mẫu
                       </span>
                     </div>
 
                     {rubricTemplatesLoading ? (
                       <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-600 text-center">
-                        Loading rubric templates...
+                        Đang tải mẫu rubric...
                       </div>
                     ) : rubricTemplates.length > 0 ? (
                       <div className="space-y-2">
                         <Select
                           className="w-full"
-                          placeholder="Select template"
+                          placeholder="Chọn mẫu"
                           loading={rubricTemplatesLoading}
                           disabled={rubricPickLoading || rubricTemplatesLoading}
                           value={selectedTemplateOptionId ?? undefined}
@@ -1396,7 +1392,7 @@ const ClassDetailPage: React.FC = () => {
                             handleChooseTemplate(selectedTemplateOptionId);
                           }}
                         >
-                          Add Template
+                          Thêm mẫu
                         </AntButton>
 
                         {expandedTemplateId && (
@@ -1435,14 +1431,14 @@ const ClassDetailPage: React.FC = () => {
                                                 {Number(
                                                   criterion.weight,
                                                 ).toFixed(0)}
-                                                % | Max {criterion.maxScore}
+                                                % | Tối đa {criterion.maxScore}
                                               </span>
                                             </div>
                                           </div>
                                         ))
                                     ) : (
                                       <p className="text-xs text-slate-500">
-                                        Template has no criteria.
+                                        Mẫu này chưa có tiêu chí.
                                       </p>
                                     )}
                                   </div>
@@ -1454,7 +1450,7 @@ const ClassDetailPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-600 text-center">
-                        No rubric templates available.
+                        Không có mẫu rubric khả dụng.
                       </div>
                     )}
                   </div>
@@ -1495,7 +1491,7 @@ const ClassDetailPage: React.FC = () => {
                 ) : selectedTemplateId ? (
                   <div className="p-4 text-center">
                     <p className="text-xs text-slate-500">
-                      No criteria yet. Click + Add to create one.
+                      Chưa có tiêu chí. Nhấn + Thêm để tạo mới.
                     </p>
                   </div>
                 ) : null}
@@ -1508,7 +1504,7 @@ const ClassDetailPage: React.FC = () => {
                       onClick={handleCancelRubricReorder}
                       disabled={rubricActionLoading}
                     >
-                      Cancel
+                      Hủy
                     </AntButton>
                     <AntButton
                       type="primary"
@@ -1518,7 +1514,7 @@ const ClassDetailPage: React.FC = () => {
                       loading={rubricActionLoading}
                       onClick={handleSaveRubricReorder}
                     >
-                      Save Order
+                      Lưu thứ tự
                     </AntButton>
                   </div>
                 )}
@@ -1564,13 +1560,13 @@ const ClassDetailPage: React.FC = () => {
         initialData={
           editingRubric
             ? {
-                criteriaName: editingRubric.criteriaName,
-                criteriaDescription: editingRubric.criteriaDescription,
-                weight: Number(editingRubric.weight),
-                maxScore: Number(editingRubric.maxScore),
-                displayOrder: editingRubric.displayOrder,
-                evaluationGuide: editingRubric.evaluationGuide,
-              }
+              criteriaName: editingRubric.criteriaName,
+              criteriaDescription: editingRubric.criteriaDescription,
+              weight: Number(editingRubric.weight),
+              maxScore: Number(editingRubric.maxScore),
+              displayOrder: editingRubric.displayOrder,
+              evaluationGuide: editingRubric.evaluationGuide,
+            }
             : undefined
         }
         defaultDisplayOrder={sortedRubricCriteria.length + 1}
@@ -1584,7 +1580,7 @@ const ClassDetailPage: React.FC = () => {
         title={
           <div className="flex items-center gap-2">
             <CheckCircleOutlined style={{ color: "#0284c7" }} />
-            <span>Configure Rubric Template</span>
+            <span>Cấu hình mẫu rubric</span>
           </div>
         }
         width={640}
@@ -1607,7 +1603,7 @@ const ClassDetailPage: React.FC = () => {
               setConfirmApplyPick(false);
             }}
           >
-            Cancel
+            Hủy
           </AntButton>,
           <AntButton
             key="apply"
@@ -1617,7 +1613,7 @@ const ClassDetailPage: React.FC = () => {
             disabled={!confirmApplyPick}
             onClick={handleApplyPickTemplate}
           >
-            Use Template
+            Sử dụng mẫu
           </AntButton>,
         ]}
       >
@@ -1625,25 +1621,25 @@ const ClassDetailPage: React.FC = () => {
           <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                Selected Template
+                Mẫu đã chọn
               </p>
               <p className="text-base font-bold text-slate-900 mt-1">
                 {pendingTemplate.templateName}
               </p>
               <p className="text-sm text-slate-500 mt-0.5">
-                Assignment: {pendingTemplate.assignmentType}
+                Loại bài nộp: {pendingTemplate.assignmentType}
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
               <Checkbox checked disabled>
-                Enable AI Report
+                Bật báo cáo AI
               </Checkbox>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-700">
-                    Feedback Language
+                    Ngôn ngữ phản hồi
                   </span>
                   <Select
                     value={pickSettings.feedbackLanguage || "en"}
@@ -1654,14 +1650,14 @@ const ClassDetailPage: React.FC = () => {
                       }))
                     }
                     options={[
-                      { value: "en", label: "English" },
-                      { value: "vi", label: "Vietnamese" },
+                      { value: "en", label: "Tiếng Anh" },
+                      { value: "vi", label: "Tiếng Việt" },
                     ]}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-700">
-                    Report Format
+                    Định dạng báo cáo
                   </span>
                   <Select
                     value={pickSettings.reportFormat || "detailed"}
@@ -1672,8 +1668,8 @@ const ClassDetailPage: React.FC = () => {
                       }))
                     }
                     options={[
-                      { value: "detailed", label: "Detailed" },
-                      { value: "summary", label: "Summary" },
+                      { value: "detailed", label: "Chi tiết" },
+                      { value: "summary", label: "Tóm tắt" },
                     ]}
                   />
                 </div>
@@ -1686,7 +1682,7 @@ const ClassDetailPage: React.FC = () => {
                     }))
                   }
                 >
-                  Require Instructor Confirmation
+                  Yêu cầu giảng viên xác nhận
                 </Checkbox>
                 <Checkbox
                   checked={!!pickSettings.allowInstructorEdit}
@@ -1697,7 +1693,7 @@ const ClassDetailPage: React.FC = () => {
                     }))
                   }
                 >
-                  Allow Instructor Edit
+                  Cho phép giảng viên chỉnh sửa
                 </Checkbox>
                 <Checkbox
                   checked={!!pickSettings.includeCriterionComments}
@@ -1708,7 +1704,7 @@ const ClassDetailPage: React.FC = () => {
                     }))
                   }
                 >
-                  Include Criterion Comments
+                  Bao gồm nhận xét theo tiêu chí
                 </Checkbox>
                 <Checkbox
                   checked={!!pickSettings.includeOverallSummary}
@@ -1719,7 +1715,7 @@ const ClassDetailPage: React.FC = () => {
                     }))
                   }
                 >
-                  Include Overall Summary
+                  Bao gồm tổng kết chung
                 </Checkbox>
                 <Checkbox
                   className="md:col-span-2"
@@ -1731,7 +1727,7 @@ const ClassDetailPage: React.FC = () => {
                     }))
                   }
                 >
-                  Include Suggestions
+                  Bao gồm gợi ý
                 </Checkbox>
               </div>
 
@@ -1740,8 +1736,8 @@ const ClassDetailPage: React.FC = () => {
                   checked={confirmApplyPick}
                   onChange={(e) => setConfirmApplyPick(e.target.checked)}
                 >
-                  I confirm that I want to apply this template and overwrite
-                  existing rubric criteria for this class.
+                  Tôi xác nhận muốn áp dụng mẫu này và ghi đè các tiêu chí
+                  rubric hiện có của lớp học này.
                 </Checkbox>
               </div>
             </div>
@@ -1754,7 +1750,7 @@ const ClassDetailPage: React.FC = () => {
         title={
           <div className="flex items-center gap-2 text-red-600">
             <DeleteOutlined />
-            <span>Delete Rubric Criteria</span>
+            <span>Xóa tiêu chí rubric</span>
           </div>
         }
         closable={!rubricActionLoading}
@@ -1773,7 +1769,7 @@ const ClassDetailPage: React.FC = () => {
               setEditingRubric(null);
             }}
           >
-            Cancel
+            Hủy
           </AntButton>,
           <AntButton
             key="delete"
@@ -1783,14 +1779,14 @@ const ClassDetailPage: React.FC = () => {
             loading={rubricActionLoading}
             onClick={handleDeleteRubric}
           >
-            Delete
+            Xóa
           </AntButton>,
         ]}
       >
         <p className="text-slate-600">
-          Are you sure you want to delete rubric criteria{" "}
-          <strong>{editingRubric?.criteriaName}</strong>? This action cannot be
-          undone.
+          Bạn có chắc muốn xóa tiêu chí rubric{" "}
+          <strong>{editingRubric?.criteriaName}</strong>? Hành động này không thể
+          hoàn tác.
         </p>
       </Modal>
 
@@ -1803,8 +1799,8 @@ const ClassDetailPage: React.FC = () => {
         }}
         onSubmit={handleUpdateTopicSubmit}
         isLoading={topicLoading}
-        title="Edit Topic"
-        submitText="Save Changes"
+        title="Sửa chủ đề"
+        submitText="Lưu thay đổi"
         initialData={{
           topicName: editingTopic?.topicName,
           dueDate: editingTopic?.dueDate,
@@ -1818,7 +1814,7 @@ const ClassDetailPage: React.FC = () => {
         title={
           <div className="flex items-center gap-2 text-red-600">
             <DeleteOutlined />
-            <span>Delete Topic</span>
+            <span>Xóa chủ đề</span>
           </div>
         }
         onCancel={() => {
@@ -1834,7 +1830,7 @@ const ClassDetailPage: React.FC = () => {
               setEditingTopic(null);
             }}
           >
-            Cancel
+            Hủy
           </AntButton>,
           <AntButton
             key="delete"
@@ -1846,7 +1842,7 @@ const ClassDetailPage: React.FC = () => {
               try {
                 await dispatch(deleteTopic(editingTopic.topicId)).unwrap();
                 setToast({
-                  message: "Topic deleted successfully.",
+                  message: "Xóa chủ đề thành công.",
                   type: "success",
                 });
                 if (selectedClass?.courseId)
@@ -1857,7 +1853,7 @@ const ClassDetailPage: React.FC = () => {
                     ? error.message
                     : typeof error === "string"
                       ? error
-                      : "Failed to delete topic.";
+                      : "Không thể xóa chủ đề.";
                 setToast({ message: msg, type: "error" });
               } finally {
                 setIsDeleteTopicModalOpen(false);
@@ -1865,14 +1861,14 @@ const ClassDetailPage: React.FC = () => {
               }
             }}
           >
-            Delete
+            Xóa
           </AntButton>,
         ]}
       >
         <p className="text-slate-600">
-          Are you sure you want to delete topic{" "}
-          <strong>{editingTopic?.topicName}</strong>? This action cannot be
-          undone.
+          Bạn có chắc muốn xóa chủ đề{" "}
+          <strong>{editingTopic?.topicName}</strong>? Hành động này không thể
+          hoàn tác.
         </p>
       </Modal>
 

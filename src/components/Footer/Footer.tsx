@@ -28,46 +28,46 @@ const FooterSection = ({
 
 const Footer: React.FC = () => {
   const businessLinks = [
-    { name: "GTM Enablement", href: "#" },
-    { name: "Learning & Development", href: "#" },
-    { name: "Partner Enablement", href: "#" },
-    { name: "Corporate Communications", href: "#" },
-    { name: "Leadership", href: "#" },
-    { name: "Engineering", href: "#" },
+    { name: "Hỗ trợ triển khai", href: "#" },
+    { name: "Đào tạo & phát triển", href: "#" },
+    { name: "Hỗ trợ đối tác", href: "#" },
+    { name: "Truyền thông nội bộ", href: "#" },
+    { name: "Lãnh đạo", href: "#" },
+    { name: "Kỹ thuật", href: "#" },
   ];
 
   const aboutLinks = [
-    { name: "Our Team", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "AI Roleplays", href: "#" },
-    { name: "FAQ", href: "#" },
-    { name: "Webinars", href: "#" },
-    { name: "Status", href: "#" },
-    { name: "Feature Announcements", href: "#" },
-    { name: "Coach Directory", href: "#" },
-    { name: "Glossary", href: "#" },
+    { name: "Đội ngũ", href: "#" },
+    { name: "Tuyển dụng", href: "#" },
+    { name: "Mô phỏng AI", href: "#" },
+    { name: "Câu hỏi thường gặp", href: "#" },
+    { name: "Hội thảo", href: "#" },
+    { name: "Trạng thái hệ thống", href: "#" },
+    { name: "Thông báo tính năng", href: "#" },
+    { name: "Danh bạ huấn luyện viên", href: "#" },
+    { name: "Thuật ngữ", href: "#" },
   ];
 
   const useCasesLinks = [
-    { name: "Conversation Roleplays", href: "#" },
-    { name: "Interview Preparation", href: "#" },
-    { name: "Presentation Practice", href: "#" },
-    { name: "Online Meetings", href: "#" },
+    { name: "Mô phỏng hội thoại", href: "#" },
+    { name: "Luyện phỏng vấn", href: "#" },
+    { name: "Luyện thuyết trình", href: "#" },
+    { name: "Họp trực tuyến", href: "#" },
     { name: "Toastmasters", href: "#" },
-    { name: "Speech Coaches", href: "#" },
+    { name: "Huấn luyện viên diễn thuyết", href: "#" },
   ];
 
   const resourcesLinks = [
     { name: "Blog", href: "#" },
-    { name: "Our Partnerships", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Help Center", href: "#" },
-    { name: "Sample Speeches", href: "#" },
-    { name: "Community", href: "#" },
-    { name: "Trust Center", href: "#" },
-    { name: "Ambassadors", href: "#" },
-    { name: "Courses", href: "#" },
-    { name: "Video Tutorials", href: "#" },
+    { name: "Đối tác", href: "#" },
+    { name: "Báo chí", href: "#" },
+    { name: "Trung tâm trợ giúp", href: "#" },
+    { name: "Bài nói mẫu", href: "#" },
+    { name: "Cộng đồng", href: "#" },
+    { name: "Trung tâm tin cậy", href: "#" },
+    { name: "Đại sứ", href: "#" },
+    { name: "Khóa học", href: "#" },
+    { name: "Video hướng dẫn", href: "#" },
   ];
 
   return (
@@ -75,16 +75,16 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <FooterSection
-            title="FOR BUSINESS"
+            title="CHO TỔ CHỨC"
             links={businessLinks}
           />
-          <FooterSection title="ABOUT" links={aboutLinks} />
+          <FooterSection title="GIỚI THIỆU" links={aboutLinks} />
           <FooterSection
-            title="USE CASES"
+            title="KỊCH BẢN ỨNG DỤNG"
             links={useCasesLinks}
           />
           <FooterSection
-            title="RESOURCES"
+            title="TÀI NGUYÊN"
             links={resourcesLinks}
           />
         </div>
@@ -116,19 +116,19 @@ const Footer: React.FC = () => {
               href="#"
               className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-200 hover:border-blue-500 transition-colors"
             >
-              <span className="text-black font-medium">See pricing plans</span>
+              <span className="text-black font-medium">Xem bảng giá</span>
             </a>
             <a
               href="#"
               className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-200 hover:border-blue-500 transition-colors"
             >
-              <span className="text-black font-medium">Talk to Sales</span>
+              <span className="text-black font-medium">Liên hệ tư vấn</span>
             </a>
             <a
               href="#"
               className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-200 hover:border-blue-500 transition-colors"
             >
-              <span className="text-black font-medium">Join our community</span>
+              <span className="text-black font-medium">Tham gia cộng đồng</span>
             </a>
           </div>
         </div>
@@ -137,16 +137,16 @@ const Footer: React.FC = () => {
           <p>© {new Date().getFullYear()} OratorAI.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-blue-600 transition-colors">
-              Contact Us
+              Liên hệ
             </a>
             <a href="#" className="hover:text-blue-600 transition-colors">
-              Privacy Policy
+              Chính sách bảo mật
             </a>
             <a href="#" className="hover:text-blue-600 transition-colors">
-              Terms of Service
+              Điều khoản dịch vụ
             </a>
             <a href="#" className="hover:text-blue-600 transition-colors">
-              Cookie Preferences
+              Tùy chọn cookie
             </a>
           </div>
         </div>

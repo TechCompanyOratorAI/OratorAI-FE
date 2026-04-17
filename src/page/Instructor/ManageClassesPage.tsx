@@ -122,7 +122,7 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
-      title: "Students",
+      title: "Sinh viên",
       key: "students",
       render: (_, record) => (
         <Space>
@@ -134,7 +134,7 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
-      title: "Dates",
+      title: "Thời gian",
       key: "dates",
       render: (_, record) => (
         <Text type="secondary" className="text-xs">
@@ -143,12 +143,12 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
         <Tag color={status === "active" ? "green" : "default"}>
-          {status === "active" ? "Active" : "Archived"}
+          {status === "active" ? "Đang mở" : "Đã lưu trữ"}
         </Tag>
       ),
     },
@@ -161,7 +161,7 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       width: 160,
       render: (_, record) => (
@@ -170,7 +170,7 @@ const ManageClassesPage: React.FC = () => {
             type="text"
             icon={<Eye size={14} />}
             onClick={() => navigate(`/instructor/class/${record.classId}`)}
-            title="View Class"
+            title="Xem lớp học"
           />
           <Button
             type="text"
@@ -179,7 +179,7 @@ const ManageClassesPage: React.FC = () => {
               setEditingClass(record);
               setClassModalOpen(true);
             }}
-            title="Edit"
+            title="Chỉnh sửa"
           />
         </Space>
       ),
@@ -195,12 +195,12 @@ const ManageClassesPage: React.FC = () => {
           classData,
         }),
       ).unwrap();
-      antdMessage.success("Class updated successfully!");
+      antdMessage.success("Cập nhật lớp học thành công!");
       setClassModalOpen(false);
       setEditingClass(null);
       dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
     } catch {
-      antdMessage.error("Failed to update class. Please try again.");
+      antdMessage.error("Không thể cập nhật lớp học. Vui lòng thử lại.");
     }
   };
 
@@ -213,9 +213,9 @@ const ManageClassesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <Text className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Instructor
+                Giảng viên
               </Text>
-              <h1 className="text-2xl font-bold text-gray-900">My Classes</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Lớp học của tôi</h1>
               <p className="text-sm text-gray-600">
                 Quản lý các lớp học đang giảng dạy
               </p>
@@ -227,7 +227,7 @@ const ManageClassesPage: React.FC = () => {
               }
               loading={loading}
             >
-              Refresh
+              Làm mới
             </Button>
           </div>
 
@@ -240,7 +240,7 @@ const ManageClassesPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Students
+                    Sinh viên
                   </p>
                   <p className="text-xl font-bold">{totalStudents}</p>
                 </div>
@@ -253,7 +253,7 @@ const ManageClassesPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Active Classes
+                    Lớp đang mở
                   </p>
                   <p className="text-xl font-bold">{activeCourses}</p>
                 </div>
@@ -266,7 +266,7 @@ const ManageClassesPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Pending
+                    Chờ xử lý
                   </p>
                   <p className="text-xl font-bold">{pendingReviews}</p>
                 </div>
@@ -279,13 +279,13 @@ const ManageClassesPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div>
                 <Text className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                  Directory
+                  Danh mục
                 </Text>
-                <h2 className="text-lg font-bold text-gray-900">Classes</h2>
+                <h2 className="text-lg font-bold text-gray-900">Lớp học</h2>
               </div>
               <Space wrap>
                 <Input.Search
-                  placeholder="Search by class code, course..."
+                  placeholder="Tìm theo mã lớp, khóa học..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -302,57 +302,57 @@ const ManageClassesPage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "All Classes" },
-                    { value: "active", label: "Active" },
-                    { value: "archived", label: "Archived" },
+                    { value: "all", label: "Tất cả lớp" },
+                    { value: "active", label: "Đang mở" },
+                    { value: "archived", label: "Đã lưu trữ" },
                   ]}
                 />
               </Space>
             </div>
 
             <Tooltip title="Click to view class details" placement="top">
-            <Table
-              columns={columns}
-              dataSource={filteredCourses}
-              rowKey="classId"
-              loading={loading}
-              onRow={(record, index) => ({
-                className: getRowClassName(record, index ?? 0),
-                onClick: () => navigate(`/instructor/class/${record.classId}`),
-                style: { cursor: "pointer" },
-                onMouseEnter: (e) => {
-                  // Highlight chevron on hover
-                  const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
-                  if (chevron) chevron.classList.add("text-blue-500");
-                },
-                onMouseLeave: (e) => {
-                  const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
-                  if (chevron) chevron.classList.remove("text-blue-500");
-                },
-              })}
-              pagination={
-                pagination && pagination.total > 0
-                  ? {
+              <Table
+                columns={columns}
+                dataSource={filteredCourses}
+                rowKey="classId"
+                loading={loading}
+                onRow={(record, index) => ({
+                  className: getRowClassName(record, index ?? 0),
+                  onClick: () => navigate(`/instructor/class/${record.classId}`),
+                  style: { cursor: "pointer" },
+                  onMouseEnter: (e) => {
+                    // Highlight chevron on hover
+                    const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                    if (chevron) chevron.classList.add("text-blue-500");
+                  },
+                  onMouseLeave: (e) => {
+                    const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                    if (chevron) chevron.classList.remove("text-blue-500");
+                  },
+                })}
+                pagination={
+                  pagination && pagination.total > 0
+                    ? {
                       current: currentPage,
                       pageSize,
                       total: pagination.total,
                       showSizeChanger: true,
                       pageSizeOptions: ["10", "20", "50"],
                       showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} classes`,
+                        `${range[0]}-${range[1]} trên ${total} lớp`,
                       onChange: (p, ps) => {
                         setCurrentPage(p);
                         setPageSize(ps);
                       },
                     }
-                  : false
-              }
-              locale={{
-                emptyText: searchQuery
-                  ? "No classes found matching your search"
-                  : "No classes available",
-              }}
-            />
+                    : false
+                }
+                locale={{
+                  emptyText: searchQuery
+                    ? "Không tìm thấy lớp học phù hợp từ khóa"
+                    : "Chưa có lớp học",
+                }}
+              />
             </Tooltip>
           </Card>
         </div>

@@ -106,13 +106,12 @@ const SortableCriterionItem = ({
           onSelect(criterion);
         }
       }}
-      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${
-        isDragging
-          ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
-          : isEditing
-            ? "border-sky-300 bg-sky-50/70 shadow-sm"
-            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-      }`}
+      className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${isDragging
+        ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
+        : isEditing
+          ? "border-sky-300 bg-sky-50/70 shadow-sm"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
@@ -125,7 +124,7 @@ const SortableCriterionItem = ({
               {criterion.displayOrder}. {criterion.criteriaName}
             </p>
             <p className="mt-1 text-xs text-slate-600 line-clamp-2">
-              {criterion.criteriaDescription || "No description"}
+              {criterion.criteriaDescription || "Không có mô tả"}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
               <span className="rounded-full bg-slate-100 px-2 py-0.5">
@@ -135,20 +134,21 @@ const SortableCriterionItem = ({
                 Max: {Number(criterion.maxScore)}
               </span>
               <span
-                className={`rounded-full px-2 py-0.5 ${
-                  Number(criterion.isActive ?? 1) === 1
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-rose-100 text-rose-700"
-                }`}
+                className={`rounded-full px-2 py-0.5 ${Number(criterion.isActive ?? 1) === 1
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-rose-100 text-rose-700"
+                  }`}
               >
-                {Number(criterion.isActive ?? 1) === 1 ? "Active" : "Inactive"}
+                {Number(criterion.isActive ?? 1) === 1
+                  ? "Đang hoạt động"
+                  : "Không hoạt động"}
               </span>
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 gap-1">
-          <span className="rounded-xl p-2 text-sky-600" title="Edit criterion">
+          <span className="rounded-xl p-2 text-sky-600" title="Sửa tiêu chí">
             <Edit className="h-4 w-4" />
           </span>
           {onDelete && (
@@ -159,7 +159,7 @@ const SortableCriterionItem = ({
                 onDelete(criterion);
               }}
               className="rounded-xl p-2 text-rose-600 hover:bg-rose-50"
-              title="Delete criterion"
+              title="Xóa tiêu chí"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -394,21 +394,21 @@ const RubricModal: React.FC<RubricModalProps> = ({
     const displayOrder = Number(formData.displayOrder);
 
     if (!formData.criteriaName.trim()) {
-      newErrors.criteriaName = "Criteria name is required";
+      newErrors.criteriaName = "Tên tiêu chí không được để trống";
     }
     if (!Number.isFinite(weight) || weight <= 0) {
-      newErrors.weight = "Weight must be greater than 0";
+      newErrors.weight = "Trọng số phải lớn hơn 0";
     }
     if (!Number.isFinite(maxScore) || maxScore <= 0) {
-      newErrors.maxScore = "Max score must be greater than 0";
+      newErrors.maxScore = "Điểm tối đa phải lớn hơn 0";
     }
     if (!Number.isFinite(displayOrder) || displayOrder <= 0) {
-      newErrors.displayOrder = "Display order must be greater than 0";
+      newErrors.displayOrder = "Thứ tự hiển thị phải lớn hơn 0";
     }
 
     // Check if total percentage exceeds 100% when this is marked as active
     if (formData.isActive && potentialTotalPercentage > 100) {
-      newErrors.weight = `Total percentage will exceed 100% (will be ${potentialTotalPercentage.toFixed(1)}%)`;
+      newErrors.weight = `Tổng tỷ lệ sẽ vượt quá 100% (sẽ là ${potentialTotalPercentage.toFixed(1)}%)`;
     }
 
     setErrors(newErrors);
@@ -506,13 +506,13 @@ const RubricModal: React.FC<RubricModalProps> = ({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Rubric Template
+                Mẫu rubric
               </p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">
-                Criteria Management
+                Quản lý tiêu chí
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                {templateName || "Class Rubric"}
+                {templateName || "Rubric lớp học"}
               </p>
             </div>
             <button
@@ -527,7 +527,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Total
+                Tổng
               </p>
               <p className="text-lg font-bold text-slate-900">
                 {localCriteria.length}
@@ -548,11 +548,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     Percentage
                   </p>
                   <p
-                    className={`text-lg font-bold ${
-                      isPercentageComplete
-                        ? "text-emerald-700"
-                        : "text-rose-700"
-                    }`}
+                    className={`text-lg font-bold ${isPercentageComplete
+                      ? "text-emerald-700"
+                      : "text-rose-700"
+                      }`}
                   >
                     {totalActivePercentage % 1 === 0
                       ? Math.floor(totalActivePercentage)
@@ -564,7 +563,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Next Order
+                Thứ tự tiếp theo
               </p>
               <p className="text-lg font-bold text-slate-900">{nextOrder}</p>
             </div>
@@ -575,7 +574,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
           <section className="rounded-3xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between gap-2 mb-3">
               <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Criteria List
+                Danh sách tiêu chí
               </h4>
               <button
                 type="button"
@@ -593,7 +592,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 }}
                 className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
               >
-                + Add New
+                + Thêm mới
               </button>
             </div>
 
@@ -603,7 +602,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, description, guide..."
+                placeholder="Tìm theo tên, mô tả, hướng dẫn..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
               />
             </div>
@@ -612,8 +611,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
               {filteredCriteria.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">
                   {searchTerm
-                    ? "No criteria matched your search"
-                    : "This class has no criteria yet"}
+                    ? "Không có tiêu chí phù hợp với từ khóa tìm kiếm"
+                    : "Lớp học này chưa có tiêu chí"}
                 </div>
               ) : (
                 <DndContext
@@ -634,7 +633,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                         criterion={criterion}
                         isEditing={
                           selectedCriterionId ===
-                            criterion.classRubricCriteriaId
+                          criterion.classRubricCriteriaId
                         }
                         onSelect={handleSelectCriterion}
                         onDelete={
@@ -655,7 +654,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   disabled={isLoading || !onReorderCriteria}
                   className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading ? "Saving..." : "Save Order"}
+                  {isLoading ? "Đang lưu..." : "Lưu thứ tự"}
                 </button>
                 <button
                   type="button"
@@ -663,7 +662,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   disabled={isLoading}
                   className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             )}
@@ -673,16 +672,15 @@ const RubricModal: React.FC<RubricModalProps> = ({
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <h4
-                  className={`text-base font-semibold ${
-                    selectedCriterionId ? "text-slate-800" : "text-slate-700"
-                  }`}
+                  className={`text-base font-semibold ${selectedCriterionId ? "text-slate-800" : "text-slate-700"
+                    }`}
                 >
-                  {selectedCriterionId ? "Edit Criteria" : "New Criteria"}
+                  {selectedCriterionId ? "Sửa tiêu chí" : "Tiêu chí mới"}
                 </h4>
                 <p className="text-xs text-slate-500">
                   {selectedCriterionId
-                    ? "Update criterion details and evaluation guide"
-                    : "Create criteria for class rubric"}
+                    ? "Cập nhật chi tiết tiêu chí và hướng dẫn đánh giá"
+                    : "Tạo tiêu chí cho rubric lớp học"}
                 </p>
               </div>
             </div>
@@ -690,16 +688,15 @@ const RubricModal: React.FC<RubricModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Criteria Name
+                  Tên tiêu chí
                 </label>
                 <input
                   name="criteriaName"
                   value={formData.criteriaName}
                   onChange={handleChange}
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.criteriaName ? "border-rose-300" : "border-slate-300"
-                  }`}
-                  placeholder="Content Quality"
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                    }`}
+                  placeholder="Chất lượng nội dung"
                 />
                 {errors.criteriaName && (
                   <p className="mt-1 text-xs text-rose-600">
@@ -710,7 +707,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Description
+                  Mô tả
                 </label>
                 <textarea
                   rows={2}
@@ -718,7 +715,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   value={formData.criteriaDescription}
                   onChange={handleChange}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
-                  placeholder="Evaluates content clarity and depth"
+                  placeholder="Đánh giá độ rõ ràng và chiều sâu của nội dung"
                 />
               </div>
 
@@ -736,9 +733,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     onBlur={() =>
                       normalizeNumberValue("persen", formData.weight)
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.weight ? "border-rose-300" : "border-slate-300"
-                    }`}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+                      }`}
                   />
                   {errors.weight && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -747,15 +743,15 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   )}
                   {isPercentageExceeded && (
                     <p className="mt-1 text-xs text-amber-600 font-semibold">
-                      ⚠️ Total sẽ vượt 100% 
-                     
+                      ⚠️ Total sẽ vượt 100%
+
                     </p>
                   )}
                 </div>
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Max Score
+                    Điểm tối đa
                   </label>
                   <input
                     type="number"
@@ -766,9 +762,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     onBlur={() =>
                       normalizeNumberValue("maxScore", formData.maxScore)
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.maxScore ? "border-rose-300" : "border-slate-300"
-                    }`}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.maxScore ? "border-rose-300" : "border-slate-300"
+                      }`}
                   />
                   {errors.maxScore && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -779,7 +774,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Display Order
+                    Thứ tự hiển thị
                   </label>
                   <input
                     type="number"
@@ -792,11 +787,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                         formData.displayOrder,
                       )
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.displayOrder
-                        ? "border-rose-300"
-                        : "border-slate-300"
-                    }`}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.displayOrder
+                      ? "border-rose-300"
+                      : "border-slate-300"
+                      }`}
                   />
                   {errors.displayOrder && (
                     <p className="mt-1 text-xs text-rose-600">
@@ -808,7 +802,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Evaluation Guide
+                  Hướng dẫn đánh giá
                 </label>
                 <textarea
                   rows={3}
@@ -816,7 +810,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   value={formData.evaluationGuide}
                   onChange={handleChange}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
-                  placeholder="Guide for evaluation..."
+                  placeholder="Nhập hướng dẫn đánh giá..."
                 />
               </div>
 
@@ -826,7 +820,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   onClick={onClose}
                   className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  Close
+                  Đóng
                 </button>
                 <button
                   type="submit"
@@ -834,10 +828,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading
-                    ? "Saving..."
+                    ? "Đang lưu..."
                     : !selectedCriterionId
-                      ? "Create Criteria"
-                      : "Update Criteria"}
+                      ? "Tạo tiêu chí"
+                      : "Cập nhật tiêu chí"}
                 </button>
               </div>
             </form>
@@ -854,10 +848,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
               </div>
               <div>
                 <h4 className="text-base font-semibold text-slate-900">
-                  Delete criteria?
+                  Xóa tiêu chí?
                 </h4>
                 <p className="mt-1 text-sm text-slate-600">
-                  Are you sure you want to delete{" "}
+                  Bạn có chắc muốn xóa{" "}
                   {deletingCriterion.criteriaName}?
                 </p>
               </div>
@@ -869,7 +863,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 onClick={() => setDeletingCriterion(null)}
                 className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="button"
@@ -877,7 +871,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 disabled={isLoading}
                 className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
               >
-                Delete
+                Xóa
               </button>
             </div>
           </div>
