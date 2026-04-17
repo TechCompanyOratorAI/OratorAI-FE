@@ -265,3 +265,6 @@ export const INSTRUCTOR_APPROVE_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/approve`;
 export const INSTRUCTOR_UNAPPROVE_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/unapprove`;
+
+// Admin Dashboard endpoints
+export const ADMIN_DASHBOARD_ENDPOINT = `${BASE_URL}/api/v1/admin/dashboard`;

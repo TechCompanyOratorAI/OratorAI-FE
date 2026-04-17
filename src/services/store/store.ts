@@ -21,6 +21,7 @@ import instructorApprovalReducer from "../features/instructor/instructorApproval
 import uploadPermissionReducer from "../features/uploadPermission/uploadPermissionSlice";
 import socketReducer from "../features/socket/socketSlice";
 import notificationReducer from "../features/notification/notificationSlice";
+import adminDashboardReducer from "../features/admin/adminDashboardSlice";
 
 const presistConfig = {
   key: "root",
@@ -49,6 +50,7 @@ const rootReducer = combineReducers({
   uploadPermission: uploadPermissionReducer,
   socket: socketReducer,
   notification: notificationReducer,
+  adminDashboard: adminDashboardReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
