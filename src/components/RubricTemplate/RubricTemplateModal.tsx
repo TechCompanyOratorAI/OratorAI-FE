@@ -39,9 +39,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
 
   return (
     <Modal
-      title={
-        mode === "create" ? "Tạo mẫu rubric" : "Sửa mẫu rubric"
-      }
+      title={mode === "create" ? "Tạo mẫu rubric" : "Sửa mẫu rubric"}
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
@@ -54,7 +52,18 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark="optional"
+        requiredMark={(label, { required }) =>
+          required ? (
+            label
+          ) : (
+            <>
+              {label}{" "}
+              <span style={{ color: "#999", fontSize: "12px" }}>
+                (không bắt buộc)
+              </span>
+            </>
+          )
+        }
         disabled={isLoading}
         className="mt-4"
         initialValues={{
@@ -72,7 +81,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
             { min: 2, max: 200, message: "Tên mẫu từ 2 - 200 ký tự" },
           ]}
         >
-          <Input placeholder="VD: Rubric thuyết trình v1" />
+          <Input placeholder="VD: Tiêu chí thuyết trình  " />
         </Form.Item>
 
         <Form.Item
@@ -84,7 +93,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
           ]}
         >
           <Input.TextArea
-            placeholder="Rubric cho bài thuyết trình nhóm"
+            placeholder="Tiêu chí cho bài thuyết trình nhóm"
             rows={3}
           />
         </Form.Item>
@@ -92,7 +101,9 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
         <Form.Item
           name="assignmentType"
           label={<Text strong>Loại bài nộp</Text>}
-          rules={[{ required: true, message: "Loại bài nộp không được để trống" }]}
+          rules={[
+            { required: true, message: "Loại bài nộp không được để trống" },
+          ]}
         >
           <Input placeholder="VD: thuyet-trinh" />
         </Form.Item>

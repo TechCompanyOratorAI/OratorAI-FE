@@ -14,10 +14,10 @@ const Pitch: React.FC = () => {
               </span>
             </div>
             <h3 className="text-2xl font-bold mb-4">
-              Bám sát rubric của giảng viên
+              Bám sát tiêu chí của giảng viên
             </h3>
             <p className="text-lg">
-              OratorAI chấm điểm dựa trên rubric của môn học, giúp phản hồi nhất quán
+              OratorAI chấm điểm dựa trên tiêu chí của môn học, giúp phản hồi nhất quán
               giữa các lớp và giảng viên.
             </p>
           </div>

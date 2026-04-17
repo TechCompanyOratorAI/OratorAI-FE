@@ -78,7 +78,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
     },
     {
       id: "rubric-templates",
-      label: "Mẫu rubric",
+      label: "Mẫu tiêu chí",
       icon: ClipboardList,
       path: "/admin/rubric-templates",
     },

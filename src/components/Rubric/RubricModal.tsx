@@ -128,10 +128,10 @@ const SortableCriterionItem = ({
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
               <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                Persen {Number(criterion.weight).toFixed(0)}%
+                Phần trăm: {Number(criterion.weight).toFixed(0)}%
               </span>
               <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                Max: {Number(criterion.maxScore)}
+                Điểm tối đa: {Number(criterion.maxScore)}
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 ${Number(criterion.isActive ?? 1) === 1
@@ -506,13 +506,13 @@ const RubricModal: React.FC<RubricModalProps> = ({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Mẫu rubric
+                Mẫu tiêu chí
               </p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">
                 Quản lý tiêu chí
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                {templateName || "Rubric lớp học"}
+                {templateName || "Tiêu chí lớp học"}
               </p>
             </div>
             <button
@@ -680,7 +680,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 <p className="text-xs text-slate-500">
                   {selectedCriterionId
                     ? "Cập nhật chi tiết tiêu chí và hướng dẫn đánh giá"
-                    : "Tạo tiêu chí cho rubric lớp học"}
+                    : "Tạo tiêu chí đánh giá cho lớp học"}
                 </p>
               </div>
             </div>
@@ -722,7 +722,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Persen %
+                    Phần trăm (%)
                   </label>
                   <input
                     type="number"
@@ -743,7 +743,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   )}
                   {isPercentageExceeded && (
                     <p className="mt-1 text-xs text-amber-600 font-semibold">
-                      ⚠️ Total sẽ vượt 100%
+                      ⚠️ Tổng sẽ vượt 100%
 
                     </p>
                   )}

@@ -239,7 +239,7 @@ const AdminDepartmentPage: React.FC = () => {
         if (!val) return "-";
         const date = new Date(val);
         if (Number.isNaN(date.getTime())) return "-";
-        return date.toLocaleDateString("en-US", {
+        return date.toLocaleDateString("vi-VN", {
           year: "numeric",
           month: "short",
           day: "2-digit",
@@ -312,7 +312,10 @@ const AdminDepartmentPage: React.FC = () => {
             </Space>
           </div>
 
-          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
+          <SummaryMetrics
+            items={summaryItems}
+            columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4"
+          />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">

@@ -19,7 +19,7 @@ const employees = [
         name: "Trung tâm Kỹ năng mềm",
         role: "Trường ĐH Y",
         photo: "/testimonials/nicole_kayla.webp",
-        quote: "Sinh viên rất hào hứng khi được xem transcript, điểm rubric và biểu đồ tiến bộ của mình. OratorAI giúp các buổi luyện thuyết trình trở nên cụ thể và đo được.",
+        quote: "Sinh viên rất hào hứng khi được xem transcript, điểm tiêu chí và biểu đồ tiến bộ của mình. OratorAI giúp các buổi luyện thuyết trình trở nên cụ thể và đo được.",
     },
     {
         name: "PGS. Trần Hồng Phúc",

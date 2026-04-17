@@ -154,7 +154,7 @@ const AdminRubricTemplePage: React.FC = () => {
       value: stats.active,
       icon: <ProfileOutlined style={{ fontSize: 20 }} />,
       tone: "green",
-      description: "Đang sử dụng",
+      description: "Đang hoạt động",
     },
     {
       key: "default-templates",
@@ -176,7 +176,7 @@ const AdminRubricTemplePage: React.FC = () => {
     if (!value) return "-";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "short",
       day: "2-digit",
@@ -192,7 +192,7 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleCreateTemplate = async (payload: RubricTemplatePayload) => {
     try {
       await dispatch(createRubricTemplate(payload)).unwrap();
-      notifySuccess("Tạo thành công", "Tạo mẫu rubric thành công.");
+      notifySuccess("Tạo thành công", "Tạo mẫu tiêu chí thành công.");
       setIsCreateModalOpen(false);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
@@ -200,7 +200,7 @@ const AdminRubricTemplePage: React.FC = () => {
         "Tạo thất bại",
         typeof createError === "string"
           ? createError
-          : createError?.message || "Không thể tạo mẫu rubric",
+          : createError?.message || "Không thể tạo mẫu tiêu chí",
       );
     }
   };
@@ -214,7 +214,7 @@ const AdminRubricTemplePage: React.FC = () => {
           data: payload,
         }),
       ).unwrap();
-      notifySuccess("Cập nhật thành công", "Cập nhật mẫu rubric thành công.");
+      notifySuccess("Cập nhật thành công", "Cập nhật mẫu tiêu chí thành công.");
       setIsEditModalOpen(false);
       setEditingTemplate(null);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
@@ -223,7 +223,7 @@ const AdminRubricTemplePage: React.FC = () => {
         "Cập nhật thất bại",
         typeof updateError === "string"
           ? updateError
-          : updateError?.message || "Không thể cập nhật mẫu rubric",
+          : updateError?.message || "Không thể cập nhật mẫu tiêu chí",
       );
     }
   };
@@ -231,14 +231,14 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleDeleteTemplate = async (rubricTemplateId: number) => {
     try {
       await dispatch(deleteRubricTemplate(rubricTemplateId)).unwrap();
-      notifySuccess("Xóa thành công", "Xóa mẫu rubric thành công.");
+      notifySuccess("Xóa thành công", "Xóa mẫu tiêu chí thành công.");
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
       notifyError(
         "Xóa thất bại",
         typeof deleteError === "string"
           ? deleteError
-          : deleteError?.message || "Không thể xóa mẫu rubric",
+          : deleteError?.message || "Không thể xóa mẫu tiêu chí",
       );
     }
   };
@@ -334,7 +334,10 @@ const AdminRubricTemplePage: React.FC = () => {
           ).unwrap(),
         ),
       );
-      notifySuccess("Cập nhật thành công", "Cập nhật thứ tự tiêu chí thành công.");
+      notifySuccess(
+        "Cập nhật thành công",
+        "Cập nhật thứ tự tiêu chí thành công.",
+      );
       await dispatch(
         fetchRubricTemplates({ page: currentPage, limit: pageSize }),
       ).unwrap();
@@ -344,7 +347,7 @@ const AdminRubricTemplePage: React.FC = () => {
         typeof reorderCriteriaError === "string"
           ? reorderCriteriaError
           : reorderCriteriaError?.message ||
-          "Không thể cập nhật thứ tự tiêu chí",
+              "Không thể cập nhật thứ tự tiêu chí",
       );
       throw reorderCriteriaError;
     }
@@ -384,7 +387,9 @@ const AdminRubricTemplePage: React.FC = () => {
           (a, b) => a.displayOrder - b.displayOrder,
         );
         if (sortedCriteria.length === 0) {
-          return <span className="text-xs text-gray-400">Không có tiêu chí</span>;
+          return (
+            <span className="text-xs text-gray-400">Không có tiêu chí</span>
+          );
         }
         return (
           <div className="space-y-1 max-w-xs">
@@ -474,12 +479,7 @@ const AdminRubricTemplePage: React.FC = () => {
             okButtonProps={{ danger: true }}
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              danger
-              title="Xóa"
-            />
+            <Button type="text" icon={<DeleteOutlined />} danger title="Xóa" />
           </Popconfirm>
         </Space>
       ),
@@ -497,10 +497,10 @@ const AdminRubricTemplePage: React.FC = () => {
                 Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Quản lý mẫu rubric
+                Quản lý mẫu tiêu chí
               </h1>
               <p className="text-sm text-gray-600">
-                Quản lý bộ rubric mẫu cho các loại bài nộp
+                Quản lý bộ tiêu chí mẫu cho các loại bài nộp
               </p>
             </div>
             <Space>
@@ -528,7 +528,10 @@ const AdminRubricTemplePage: React.FC = () => {
             </Space>
           </div>
 
-          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
+          <SummaryMetrics
+            items={summaryItems}
+            columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4"
+          />
 
           <Card className="rounded-2xl overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -537,7 +540,7 @@ const AdminRubricTemplePage: React.FC = () => {
                   Danh mục
                 </p>
                 <h2 className="text-lg font-bold text-gray-900">
-                  Mẫu rubric
+                  Mẫu tiêu chí
                 </h2>
               </div>
               <Space wrap>
@@ -587,29 +590,29 @@ const AdminRubricTemplePage: React.FC = () => {
               pagination={
                 pagination && pagination.total > 0
                   ? {
-                    current: currentPage,
-                    pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showQuickJumper: false,
-                    pageSizeOptions: ["10", "20", "50"],
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} trên tổng ${total} mẫu`,
-                    onChange: (p, ps) => {
-                      setCurrentPage(p);
-                      setPageSize(ps);
-                    },
-                  }
+                      current: currentPage,
+                      pageSize,
+                      total: pagination.total,
+                      showSizeChanger: true,
+                      showQuickJumper: false,
+                      pageSizeOptions: ["10", "20", "50"],
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} trên tổng ${total} mẫu`,
+                      onChange: (p, ps) => {
+                        setCurrentPage(p);
+                        setPageSize(ps);
+                      },
+                    }
                   : false
               }
               locale={{
                 emptyText: error
                   ? error
                   : searchTerm ||
-                    filterStatus !== "all" ||
-                    filterAssignmentType !== "all"
-                    ? "Không tìm thấy mẫu rubric phù hợp bộ lọc"
-                    : "Chưa có mẫu rubric nào. Hãy tạo mẫu đầu tiên để bắt đầu.",
+                      filterStatus !== "all" ||
+                      filterAssignmentType !== "all"
+                    ? "Không tìm thấy mẫu tiêu chí phù hợp bộ lọc"
+                    : "Chưa có mẫu tiêu chí nào. Hãy tạo mẫu đầu tiên để bắt đầu.",
               }}
             />
           </Card>
@@ -631,11 +634,11 @@ const AdminRubricTemplePage: React.FC = () => {
         initialData={
           editingTemplate
             ? {
-              templateName: editingTemplate.templateName,
-              description: editingTemplate.description,
-              assignmentType: editingTemplate.assignmentType,
-              isDefault: editingTemplate.isDefault,
-            }
+                templateName: editingTemplate.templateName,
+                description: editingTemplate.description,
+                assignmentType: editingTemplate.assignmentType,
+                isDefault: editingTemplate.isDefault,
+              }
             : undefined
         }
         onClose={() => {

@@ -10,7 +10,7 @@ const HowToUse: React.FC = () => {
     switch (tab) {
       case "Đại học / Học viện":
         return [
-          "Giảng viên tạo lớp học, upload slide và cấu hình rubric chấm điểm",
+          "Giảng viên tạo lớp học, upload slide và cấu hình tiêu chí chấm điểm",
           "Sinh viên nộp bài thuyết trình (ghi âm hoặc video) trực tiếp trên hệ thống",
           "Tự động sinh báo cáo điểm và biểu đồ tiến bộ cho từng sinh viên",
         ];
