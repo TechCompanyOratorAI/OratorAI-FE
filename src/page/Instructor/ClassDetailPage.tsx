@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
-  List,
   Tag,
   Typography,
   Spin,
@@ -34,12 +33,7 @@ import {
 } from "@ant-design/icons";
 import {
   Calendar,
-  Users,
-  BookOpen,
   CheckCircle2,
-  Clock,
-  KeyRound,
-  MoreVertical,
   Edit,
   Trash2,
 } from "lucide-react";
@@ -279,6 +273,13 @@ const ClassDetailPage: React.FC = () => {
         (template) => template.rubricTemplateId === pendingTemplateId,
       ) || null,
     [pendingTemplateId, rubricTemplates],
+  );
+  const selectedTemplate = useMemo(
+    () =>
+      rubricTemplates.find(
+        (template) => template.rubricTemplateId === selectedTemplateId,
+      ) || null,
+    [rubricTemplates, selectedTemplateId],
   );
 
   const buildPickPayload = useCallback(
@@ -767,44 +768,44 @@ const ClassDetailPage: React.FC = () => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Không có";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
-      month: "long",
-      day: "numeric",
     });
   };
 
-  const statusConfig: Record<
-    string,
-    { label: string; bg: string; icon: React.ReactNode }
-  > = {
-    active: {
-      label: "Đang hoạt động",
-      bg: "bg-emerald-100 text-emerald-700",
-      icon: <CheckCircle2 className="w-3 h-3" />,
-    },
-    inactive: {
-      label: "Không hoạt động",
-      bg: "bg-slate-100 text-slate-700",
-      icon: <Clock className="w-3 h-3" />,
-    },
-    archived: {
-      label: "Đã lưu trữ",
-      bg: "bg-rose-100 text-rose-700",
-      icon: <Clock className="w-3 h-3" />,
-    },
-  };
+  // const statusConfig: Record<
+  //   string,
+  //   { label: string; bg: string; icon: React.ReactNode }
+  // > = {
+  //   active: {
+  //     label: "Đang hoạt động",
+  //     bg: "bg-emerald-100 text-emerald-700",
+  //     icon: <CheckCircle2 className="w-3 h-3" />,
+  //   },
+  //   inactive: {
+  //     label: "Không hoạt động",
+  //     bg: "bg-slate-100 text-slate-700",
+  //     icon: <Clock className="w-3 h-3" />,
+  //   },
+  //   archived: {
+  //     label: "Đã lưu trữ",
+  //     bg: "bg-rose-100 text-rose-700",
+  //     icon: <Clock className="w-3 h-3" />,
+  //   },
+  // };
 
-  const status = statusConfig[selectedClass.status] || statusConfig.inactive;
-  const enrollKeyValue =
-    selectedClass.activeKeys?.[0]?.keyValue ||
-    selectedClass.enrollKeys?.[0]?.keyValue ||
-    "Không có";
-  const totalStudents =
-    selectedClass.totalStudents ??
-    selectedClass.enrollmentCount ??
-    selectedClass.enrollments?.length ??
-    0;
+  // const status = statusConfig[selectedClass.status] || statusConfig.inactive;
+  // const enrollKeyValue =
+  //   selectedClass.activeKeys?.[0]?.keyValue ||
+  //   selectedClass.enrollKeys?.[0]?.keyValue ||
+  //   "Không có";
+  // const totalStudents =
+  //   selectedClass.totalStudents ??
+  //   selectedClass.enrollmentCount ??
+  //   selectedClass.enrollments?.length ??
+  //   0;
   const topicsForClass = selectedClass.topics || courseForTopics?.topics || [];
   const groupsForClass = groups.filter((group) => {
     const groupClassId = Number(
@@ -849,7 +850,7 @@ const ClassDetailPage: React.FC = () => {
               Tổng quan lớp học của giảng viên
             </div>
           </div>
-
+          {/* 
           <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-indigo-600 via-sky-600 to-sky-500 text-white shadow-lg">
             <div
               className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.12),transparent_30%)]"
@@ -939,11 +940,11 @@ const ClassDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
-          </section>
+          </section> */}
 
           {/* Upload Permission Card */}
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-sky-700 to-sky-600 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isUploadEnabled ? "bg-white/20" : "bg-white/10"
                   }`}>
@@ -975,32 +976,31 @@ const ClassDetailPage: React.FC = () => {
                 }}
                 checkedChildren={<CheckOutlined />}
                 unCheckedChildren={<CloseOutlined />}
-                className={`${isUploadEnabled ? "bg-emerald-400" : "bg-slate-300"}`}
+                className={`${isUploadEnabled ? "bg-sky-400" : "bg-slate-300"}`}
               />
             </div>
             {isUploadEnabled && (
-              <div className="px-6 py-3 bg-emerald-50 border-t border-emerald-100 flex items-center gap-2">
-                <CheckCircleOutlined className="text-emerald-500 text-sm" />
-                <span className="text-sm text-emerald-700">Tính năng upload đang hoạt động</span>
+              <div className="px-6 py-3 bg-sky-50 border-t border-sky-100 flex items-center gap-2">
+                <CheckCircleOutlined className="text-sky-500 text-sm" />
+                <span className="text-sm text-sky-700">Tính năng upload đang hoạt động</span>
               </div>
             )}
             {!isUploadEnabled && (
-              <div className="px-6 py-3 bg-amber-50 border-t border-amber-100 flex items-center gap-2">
-                <ExclamationCircleOutlined className="text-amber-500 text-sm" />
-                <span className="text-sm text-amber-700">Tính năng upload đang bị tắt</span>
+              <div className="px-6 py-3 bg-slate-50 border-t border-sky-100 flex items-center gap-2">
+                <ExclamationCircleOutlined className="text-sky-500 text-sm" />
+                <span className="text-sm text-sky-700">Tính năng upload đang bị tắt</span>
               </div>
             )}
           </section>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_360px] gap-6 items-start">
             <div className="space-y-6">
-              {/* Student Groups - Main Section */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <Avatar
                     icon={<TeamOutlined />}
                     size={44}
-                    style={{ backgroundColor: "#7c3aed", flexShrink: 0 }}
+                    style={{ backgroundColor: "#0284c7", flexShrink: 0 }}
                   />
                   <div>
                     <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
@@ -1013,7 +1013,7 @@ const ClassDetailPage: React.FC = () => {
                       <Badge
                         count={groupsForClass.length}
                         showZero
-                        style={{ backgroundColor: "#7c3aed" }}
+                        style={{ backgroundColor: "#0284c7" }}
                       />
                     </div>
                   </div>
@@ -1030,7 +1030,6 @@ const ClassDetailPage: React.FC = () => {
                       const memberCount =
                         group.memberCount ?? group.students?.length ?? 0;
                       const leaderName = getGroupLeaderName(group);
-                      const hue = (groupId * 47) % 360;
                       const isEven = index % 2 === 0;
 
                       return (
@@ -1046,14 +1045,14 @@ const ClassDetailPage: React.FC = () => {
                               dispatch(fetchGroupDetail(groupId));
                               setShowGroupDetail(true);
                             }}
-                            className={`cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-md transition-all group relative ${isEven ? "bg-slate-50" : "bg-white"
+                            className={`cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-sky-300 hover:bg-sky-50/50 hover:shadow-md transition-all group relative ${isEven ? "bg-slate-50" : "bg-white"
                               }`}
                           >
                             <div className="flex items-center gap-3 mb-3">
                               <Avatar
                                 size={46}
                                 style={{
-                                  backgroundColor: `hsl(${hue}, 60%, 55%)`,
+                                  backgroundColor: isEven ? "#0ea5e9" : "#0284c7",
                                   fontWeight: 700,
                                   fontSize: 18,
                                   flexShrink: 0,
@@ -1071,7 +1070,7 @@ const ClassDetailPage: React.FC = () => {
                                 </Typography.Text>
                                 <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                   <CrownOutlined
-                                    style={{ color: "#f59e0b", fontSize: 11 }}
+                                    style={{ color: "#0284c7", fontSize: 11 }}
                                   />
                                   <span className="truncate">{leaderName}</span>
                                 </div>
@@ -1080,7 +1079,7 @@ const ClassDetailPage: React.FC = () => {
                             <div className="flex justify-between items-center">
                               <Tag
                                 icon={<TeamOutlined />}
-                                color="purple"
+                                color="blue"
                                 style={{
                                   borderRadius: 20,
                                   fontWeight: 600,
@@ -1089,7 +1088,7 @@ const ClassDetailPage: React.FC = () => {
                               >
                                 {memberCount} thành viên
                               </Tag>
-                              <span className="group-hover:text-violet-500 text-slate-300 text-lg transition-colors duration-150">
+                              <span className="group-hover:text-sky-500 text-slate-300 text-lg transition-colors duration-150">
                                 ›
                               </span>
                             </div>
@@ -1111,9 +1110,7 @@ const ClassDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
 
-            <aside className="xl:sticky xl:top-6 space-y-6">
               <Card
                 variant="borderless"
                 style={{
@@ -1125,147 +1122,7 @@ const ClassDetailPage: React.FC = () => {
                   <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
                       <div className="rounded-xl bg-sky-100 p-2">
-                        <BookOpen className="w-4 h-4 text-sky-700" />
-                      </div>
-                      <div>
-                        <Typography.Text
-                          style={{ fontSize: 11, letterSpacing: "0.08em" }}
-                          className="text-xs uppercase text-slate-400 font-semibold block"
-                        >
-                          Thuyết trình
-                        </Typography.Text>
-                        <Typography.Text
-                          strong
-                          style={{ fontSize: 15, color: "#1e293b" }}
-                        >
-                          Chủ đề
-                          <Badge
-                            count={topicsForClass.length}
-                            showZero
-                            style={{
-                              backgroundColor: "#0284c7",
-                              marginLeft: 8,
-                              fontSize: 11,
-                            }}
-                          />
-                        </Typography.Text>
-                      </div>
-                    </div>
-                    <AntButton
-                      type="primary"
-                      shape="round"
-                      size="small"
-                      icon={<PlusOutlined />}
-                      onClick={() => setIsTopicModalOpen(true)}
-                    >
-                      Thêm
-                    </AntButton>
-                  </div>
-                }
-              >
-                {topicsForClass.length > 0 ? (
-                  <List
-                    dataSource={topicsForClass}
-                    renderItem={(topic, index) => {
-                      const isEven = index % 2 === 0;
-                      return (
-                        <Tooltip
-                          key={topic.topicId}
-                          title="Nhấn để xem chi tiết chủ đề"
-                          placement="top"
-                        >
-                          <List.Item
-                            style={{ padding: "10px 16px", cursor: "pointer" }}
-                            className={`transition-colors duration-150 hover:bg-sky-50 group ${isEven ? "bg-white" : "bg-slate-50/50"
-                              }`}
-                            onClick={() =>
-                              navigate(
-                                `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
-                              )
-                            }
-                          >
-                            <div className="flex items-center gap-3 w-full">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700 shrink-0">
-                                {topic.sequenceNumber}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-900 truncate">
-                                  {topic.topicName}
-                                </p>
-                                {topic.dueDate && (
-                                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                    <Calendar className="w-3 h-3" />
-                                    Hạn {formatDate(topic.dueDate)}
-                                  </p>
-                                )}
-                              </div>
-                              <span className="group-hover:text-sky-500 text-slate-300 text-lg transition-colors duration-150 mr-2">
-                                ›
-                              </span>
-                              <div
-                                className="group/menu relative shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button className="p-1.5 hover:bg-slate-200 rounded-lg transition">
-                                  <MoreVertical className="w-4 h-4 text-slate-500" />
-                                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-10">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditTopic(topic.topicId);
-                                      }}
-                                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-xl flex items-center gap-2"
-                                    >
-                                      <Edit className="w-3.5 h-3.5 text-sky-600" />
-                                      Sửa
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteTopic({
-                                          topicId: topic.topicId,
-                                          topicName: topic.topicName,
-                                        });
-                                      }}
-                                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-xl flex items-center gap-2"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                      Xóa
-                                    </button>
-                                  </div>
-                                </button>
-                              </div>
-                            </div>
-                          </List.Item>
-                        </Tooltip>
-                      );
-                    }}
-                  />
-                ) : (
-                  <div className="py-10 px-6">
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <Typography.Text type="secondary">
-                          Chưa có chủ đề. Nhấn + Thêm để tạo mới.
-                        </Typography.Text>
-                      }
-                    />
-                  </div>
-                )}
-              </Card>
-              <Card
-                variant="borderless"
-                style={{
-                  borderRadius: 16,
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                }}
-                styles={{ body: { padding: 0 } }}
-                title={
-                  <div className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-xl bg-emerald-100 p-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                        <CheckCircle2 className="w-4 h-4 text-sky-700" />
                       </div>
                       <div>
                         <Typography.Text
@@ -1283,7 +1140,7 @@ const ClassDetailPage: React.FC = () => {
                             count={localCriteria.length}
                             showZero
                             style={{
-                              backgroundColor: "#059669",
+                              backgroundColor: "#0284c7",
                               marginLeft: 8,
                               fontSize: 11,
                             }}
@@ -1293,7 +1150,7 @@ const ClassDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       {!isRubricActive && (
-                        <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 mr-1">
+                        <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700 mr-1">
                           Chưa đạt
                         </span>
                       )}
@@ -1305,7 +1162,7 @@ const ClassDetailPage: React.FC = () => {
                               Tiêu chí chỉ hoạt động khi tổng phần trăm
                               chính xác bằng 100%.
                             </p>
-                            <p className="mt-1 text-red-300 font-medium">
+                            <p className="mt-1 text-sky-200 font-medium">
                               Tổng khi thêm tiêu chí không được vượt quá 100%.
                             </p>
                           </div>
@@ -1344,7 +1201,7 @@ const ClassDetailPage: React.FC = () => {
                       <p className="text-xs font-semibold text-slate-700">
                         Chọn mẫu cho lớp học này
                       </p>
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
                         Chưa chọn mẫu
                       </span>
                     </div>
@@ -1519,6 +1376,135 @@ const ClassDetailPage: React.FC = () => {
                   </div>
                 )}
               </Card>
+            </div>
+
+            <aside className="xl:sticky xl:top-6">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-700 to-sky-600 px-5 py-4 text-white">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/75 font-semibold">
+                        Topic
+                      </p>
+                      <h3 className="mt-1 text-xl font-bold">Chủ đề</h3>
+                      <p className="mt-1 text-sm text-white/80">
+                        Nhấn vào topic để mở trang chi tiết.
+                      </p>
+                    </div>
+                    <AntButton
+                      type="primary"
+                      shape="round"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => setIsTopicModalOpen(true)}
+                      className="!bg-white !text-sky-700 !border-white hover:!bg-sky-50"
+                    >
+                      Thêm
+                    </AntButton>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 text-xs">
+                    <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
+                      {topicsForClass.length} topic
+                    </span>
+                    <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
+                      {selectedTemplate
+                        ? selectedTemplate.templateName
+                        : "Chưa có rubric"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  {topicsForClass.length > 0 ? (
+                    <div className="space-y-3">
+                      {topicsForClass.map((topic, index) => (
+                        <Tooltip
+                          key={topic.topicId}
+                          placement="left"
+                          title={
+                            <div className="space-y-1">
+                              <p>Nhấn để xem topic detail</p>
+                            </div>
+                          }
+                        >
+                          <div
+                            onClick={() =>
+                              navigate(
+                                `/instructor/class/${selectedClass.classId}/topic/${topic.topicId}`,
+                              )
+                            }
+                            className={`group cursor-pointer rounded-2xl border p-4 transition-all hover:shadow-md hover:-translate-y-0.5 ${index % 2 === 0
+                              ? "border-sky-200 bg-sky-50/70 hover:border-sky-300"
+                              : "border-slate-200 bg-white hover:border-sky-300"
+                              }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-bold text-white">
+                                {topic.sequenceNumber}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-sm font-bold text-slate-900 line-clamp-2">
+                                    {topic.topicName}
+                                  </p>
+                                  <span className="text-slate-300 group-hover:text-sky-500 transition-colors">
+                                    ›
+                                  </span>
+                                </div>
+                                {topic.dueDate && (
+                                  <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                                    <Calendar className="w-3 h-3" />
+                                    Hạn {formatDate(topic.dueDate)}
+                                  </p>
+                                )}
+                                <div className="mt-3 flex items-center justify-end gap-2">
+                                  <AntButton
+                                    size="small"
+                                    icon={<Edit className="w-3.5 h-3.5" />}
+                                    className="!inline-flex !items-center !gap-1.5 !rounded-lg !border-sky-200 !bg-sky-50 !px-2.5 !text-xs !font-semibold !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditTopic(topic.topicId);
+                                    }}
+                                  >
+                                    Sửa
+                                  </AntButton>
+                                  <AntButton
+                                    size="small"
+                                    danger
+                                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                                    className="!inline-flex !items-center !gap-1.5 !rounded-lg !border-red-200 !bg-red-50 !px-2.5 !text-xs !font-semibold hover:!border-red-300 hover:!bg-red-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTopic({
+                                        topicId: topic.topicId,
+                                        topicName: topic.topicName,
+                                      });
+                                    }}
+                                  >
+                                    Xóa
+                                  </AntButton>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-10">
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <Typography.Text type="secondary">
+                            Chưa có chủ đề.
+                          </Typography.Text>
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </aside>
           </div>
         </div>

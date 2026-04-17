@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/yoodli/Button";
+import React, { useEffect, useState } from "react";
+import { Button, DatePicker, Input, InputNumber, Modal, Select } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { CreateTopicData } from "@/services/features/topic/topicSlice";
+
+const { TextArea } = Input;
 
 export interface TopicClassOption {
   classId: number;
   className: string;
   classCode?: string;
-  endDate?: string; // Thêm trường endDate để kiểm tra lớp hết hạn
+  endDate?: string;
 }
 
 interface TopicModalProps {
@@ -18,9 +21,17 @@ interface TopicModalProps {
     meta?: { classId: number },
   ) => void;
   isLoading?: boolean;
-  /** When creating from the course page, pick which class receives the new topic */
   classOptions?: TopicClassOption[];
 }
+
+const initialFormData: CreateTopicData = {
+  topicName: "",
+  description: "",
+  sequenceNumber: 1,
+  dueDate: "",
+  maxDurationMinutes: 20,
+  requirements: "",
+};
 
 const TopicModal: React.FC<TopicModalProps> = ({
   isOpen,
@@ -29,38 +40,22 @@ const TopicModal: React.FC<TopicModalProps> = ({
   isLoading = false,
   classOptions,
 }) => {
-  const [formData, setFormData] = useState<CreateTopicData>({
-    topicName: "",
-    description: "",
-    sequenceNumber: 1,
-    dueDate: "",
-    maxDurationMinutes: 20,
-    requirements: "",
-  });
-
+  const [formData, setFormData] = useState<CreateTopicData>(initialFormData);
   const [errors, setErrors] = useState<
     Partial<Record<keyof CreateTopicData, string>>
   >({});
-
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [classError, setClassError] = useState<string | null>(null);
 
-  // Reset form when modal opens/closes; default class when creating from course page
   useEffect(() => {
     if (!isOpen) {
-      setFormData({
-        topicName: "",
-        description: "",
-        sequenceNumber: 1,
-        dueDate: "",
-        maxDurationMinutes: 20,
-        requirements: "",
-      });
+      setFormData(initialFormData);
       setErrors({});
       setSelectedClassId(null);
       setClassError(null);
       return;
     }
+
     if (classOptions?.length) {
       setSelectedClassId(classOptions[0].classId);
     }
@@ -78,10 +73,10 @@ const TopicModal: React.FC<TopicModalProps> = ({
     if (!formData.dueDate) {
       newErrors.dueDate = "Hạn nộp không được để trống";
     }
-    if (formData.maxDurationMinutes <= 0) {
+    if ((formData.maxDurationMinutes ?? 0) <= 0) {
       newErrors.maxDurationMinutes = "Thời lượng phải lớn hơn 0";
     }
-    if (formData.sequenceNumber <= 0) {
+    if ((formData.sequenceNumber ?? 0) <= 0) {
       newErrors.sequenceNumber = "Thứ tự phải lớn hơn 0";
     }
 
@@ -98,245 +93,198 @@ const TopicModal: React.FC<TopicModalProps> = ({
     );
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  const updateField = <K extends keyof CreateTopicData>(
+    key: K,
+    value: CreateTopicData[K],
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "sequenceNumber" || name === "maxDurationMinutes"
-          ? value === ""
-            ? 0
-            : parseInt(value, 10)
-          : value,
-    }));
-    // Clear error for this field
-    if (errors[name as keyof CreateTopicData]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      // Convert datetime-local format to ISO string
-      let dueDateISO = formData.dueDate;
-      if (
-        formData.dueDate &&
-        !formData.dueDate.includes("Z") &&
-        !formData.dueDate.includes("+")
-      ) {
-        // If it's in datetime-local format (YYYY-MM-DDTHH:mm), convert to ISO
-        dueDateISO = new Date(formData.dueDate).toISOString();
-      }
+  const handleSubmit = () => {
+    if (!validateForm()) return;
 
-      const submitData: CreateTopicData = {
-        ...formData,
-        dueDate: dueDateISO,
-        requirements: formData.requirements || undefined,
-      };
-      if (classOptions?.length && selectedClassId != null) {
-        onSubmit(submitData, { classId: selectedClassId });
-      } else {
-        onSubmit(submitData);
-      }
+    let dueDateISO = formData.dueDate;
+    if (
+      formData.dueDate &&
+      !formData.dueDate.includes("Z") &&
+      !formData.dueDate.includes("+")
+    ) {
+      dueDateISO = new Date(formData.dueDate).toISOString();
     }
+
+    const submitData: CreateTopicData = {
+      ...formData,
+      dueDate: dueDateISO,
+      requirements: formData.requirements || undefined,
+    };
+
+    if (classOptions?.length && selectedClassId != null) {
+      onSubmit(submitData, { classId: selectedClassId });
+      return;
+    }
+
+    onSubmit(submitData);
   };
 
-  if (!isOpen) return null;
+  const dueDateValue = formData.dueDate ? dayjs(formData.dueDate) : null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Tạo chủ đề mới</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
-          >
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+    <Modal
+      open={isOpen}
+      title="Tạo chủ đề mới"
+      onCancel={onClose}
+      width={760}
+      destroyOnHidden
+      maskClosable={!isLoading}
+      footer={[
+        <Button key="cancel" onClick={onClose} disabled={isLoading}>
+          Hủy
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          loading={isLoading}
+          onClick={handleSubmit}
+        >
+          Tạo chủ đề
+        </Button>,
+      ]}
+    >
+      <div className="space-y-4 pt-2">
+        {classOptions && classOptions.length > 1 && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Lớp học *
+            </label>
+            <Select
+              className="w-full"
+              placeholder="Chọn lớp"
+              value={selectedClassId ?? undefined}
+              onChange={(value) => {
+                setSelectedClassId(value);
+                if (classError) setClassError(null);
+              }}
+              options={classOptions.map((c) => ({
+                value: c.classId,
+                label: `${c.classCode ? `${c.classCode} — ` : ""}${c.className}`,
+              }))}
+              status={classError ? "error" : undefined}
+            />
+            {classError && (
+              <p className="mt-1 text-sm text-red-600">{classError}</p>
+            )}
+          </div>
+        )}
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Tên chủ đề *
+          </label>
+          <Input
+            value={formData.topicName}
+            onChange={(e) => updateField("topicName", e.target.value)}
+            placeholder="VD: Phương pháp phát triển Agile"
+            status={errors.topicName ? "error" : undefined}
+          />
+          {errors.topicName && (
+            <p className="mt-1 text-sm text-red-600">{errors.topicName}</p>
+          )}
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {classOptions && classOptions.length > 1 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lớp học *
-              </label>
-              <select
-                value={selectedClassId ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setSelectedClassId(v ? parseInt(v, 10) : null);
-                  if (classError) setClassError(null);
-                }}
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${classError ? "border-red-500" : "border-gray-300"
-                  }`}
-              >
-                {classOptions.map((c) => (
-                  <option key={c.classId} value={c.classId}>
-                    {c.classCode ? `${c.classCode} — ` : ""}
-                    {c.className}
-                  </option>
-                ))}
-              </select>
-              {classError && (
-                <p className="text-red-600 text-sm mt-1">{classError}</p>
-              )}
-            </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Mô tả *
+          </label>
+          <TextArea
+            rows={4}
+            value={formData.description}
+            onChange={(e) => updateField("description", e.target.value)}
+            placeholder="Nhập mô tả chủ đề..."
+            status={errors.description ? "error" : undefined}
+          />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
           )}
+        </div>
 
-          {/* Topic Name */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tên chủ đề *
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Thứ tự *
             </label>
-            <input
-              type="text"
-              name="topicName"
-              value={formData.topicName}
-              onChange={handleChange}
-              placeholder="VD: Phương pháp phát triển Agile"
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.topicName ? "border-red-500" : "border-gray-300"
-                }`}
+            <InputNumber
+              className="w-full"
+              min={1}
+              value={formData.sequenceNumber}
+              onChange={(value) => updateField("sequenceNumber", Number(value || 0))}
+              status={errors.sequenceNumber ? "error" : undefined}
             />
-            {errors.topicName && (
-              <p className="text-red-600 text-sm mt-1">{errors.topicName}</p>
+            {errors.sequenceNumber && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.sequenceNumber}
+              </p>
             )}
           </div>
 
-          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mô tả *
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Thời lượng tối đa (phút) *
             </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Nhập mô tả chủ đề..."
-              rows={4}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none ${errors.description ? "border-red-500" : "border-gray-300"
-                }`}
+            <InputNumber
+              className="w-full"
+              min={1}
+              value={formData.maxDurationMinutes}
+              onChange={(value) =>
+                updateField("maxDurationMinutes", Number(value || 0))
+              }
+              status={errors.maxDurationMinutes ? "error" : undefined}
             />
-            {errors.description && (
-              <p className="text-red-600 text-sm mt-1">{errors.description}</p>
+            {errors.maxDurationMinutes && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.maxDurationMinutes}
+              </p>
             )}
           </div>
+        </div>
 
-          {/* Sequence Number and Max Duration */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Sequence Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Thứ tự *
-              </label>
-              <input
-                type="number"
-                name="sequenceNumber"
-                value={formData.sequenceNumber || ""}
-                onChange={handleChange}
-                min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.sequenceNumber ? "border-red-500" : "border-gray-300"
-                  }`}
-              />
-              {errors.sequenceNumber && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.sequenceNumber}
-                </p>
-              )}
-            </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Hạn nộp *
+          </label>
+          <DatePicker
+            showTime={{ format: "HH:mm" }}
+            format="YYYY-MM-DD HH:mm"
+            className="w-full"
+            value={dueDateValue && dueDateValue.isValid() ? dueDateValue : null}
+            onChange={(value: Dayjs | null) =>
+              updateField("dueDate", value ? value.toISOString() : "")
+            }
+            status={errors.dueDate ? "error" : undefined}
+          />
+          {errors.dueDate && (
+            <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
+          )}
+        </div>
 
-            {/* Max Duration */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Thời lượng tối đa (phút) *
-              </label>
-              <input
-                type="number"
-                name="maxDurationMinutes"
-                value={formData.maxDurationMinutes}
-                onChange={handleChange}
-                min="1"
-                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.maxDurationMinutes
-                    ? "border-red-500"
-                    : "border-gray-300"
-                  }`}
-              />
-              {errors.maxDurationMinutes && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.maxDurationMinutes}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Due Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hạn nộp *
-            </label>
-            <input
-              type="datetime-local"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 ${errors.dueDate ? "border-red-500" : "border-gray-300"
-                }`}
-            />
-            {errors.dueDate && (
-              <p className="text-red-600 text-sm mt-1">{errors.dueDate}</p>
-            )}
-          </div>
-
-          {/* Requirements */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Yêu cầu (tuỳ chọn)
-            </label>
-            <textarea
-              name="requirements"
-              value={formData.requirements}
-              onChange={handleChange}
-              placeholder="Nhập yêu cầu (mỗi dòng một ý)..."
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Nhập yêu cầu, mỗi dòng một ý (VD: "- Trình bày vai trò trong Scrum")
-            </p>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
-            <Button
-              text="Huỷ"
-              variant="secondary"
-              fontSize="14px"
-              borderRadius="999px"
-              paddingWidth="18px"
-              paddingHeight="10px"
-              onClick={() => onClose()}
-            />
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="px-6 py-2 bg-sky-600 text-white rounded-full font-medium hover:bg-sky-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-            >
-              {isLoading ? "Đang tạo..." : "Tạo chủ đề"}
-            </button>
-          </div>
-        </form>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Yêu cầu (tùy chọn)
+          </label>
+          <TextArea
+            rows={4}
+            value={formData.requirements}
+            onChange={(e) => updateField("requirements", e.target.value)}
+            placeholder="Nhập yêu cầu (mỗi dòng một ý)..."
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Nhập yêu cầu, mỗi dòng một ý.
+          </p>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 

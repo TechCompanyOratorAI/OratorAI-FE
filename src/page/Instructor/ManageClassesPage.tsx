@@ -200,13 +200,17 @@ const ManageClassesPage: React.FC = () => {
           <Button
             type="text"
             icon={<Eye size={14} />}
-            onClick={() => navigate(`/instructor/class/${record.classId}`)}
+            onClick={(event) => {
+              event.stopPropagation();
+              navigate(`/instructor/class/${record.classId}`);
+            }}
             title="Xem lớp học"
           />
           <Button
             type="text"
             icon={<EditOutlined />}
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation();
               setEditingClass(record);
               setClassModalOpen(true);
             }}
@@ -359,6 +363,7 @@ const ManageClassesPage: React.FC = () => {
         initialData={editingClass || undefined}
         isLoading={loading}
         courses={[]}
+        mode="instructor-edit"
       />
     </div>
   );

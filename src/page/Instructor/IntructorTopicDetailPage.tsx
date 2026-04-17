@@ -8,6 +8,7 @@ import {
   Spin,
   Table,
   Empty,
+  Tooltip,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -30,32 +31,28 @@ const { Text, Title } = Typography;
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   draft: { color: "default", label: "Bản nháp" },
   submitted: { color: "blue", label: "Đã nộp" },
-  processing: { color: "orange", label: "Đang xử lý" },
-  analyzed: { color: "cyan", label: "Đã phân tích" },
-  done: { color: "green", label: "Hoàn tất" },
+  processing: { color: "blue", label: "Đang xử lý" },
+  analyzed: { color: "blue", label: "Đã phân tích" },
+  done: { color: "blue", label: "Hoàn tất" },
   failed: { color: "red", label: "Thất bại" },
 };
 
 const formatDate = (dateStr?: string | null) => {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleString("vi-VN", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     year: "numeric",
+    hour12: false,
     hour: "2-digit",
     minute: "2-digit",
   });
 };
 
-const formatDuration = (seconds?: number | null) => {
-  if (!seconds) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPresentation = any;
+
+const presentationDetailTooltip = "Nhấn để xem chi tiết bài trình bày";
 
 const IntructorTopicDetailPage: React.FC = () => {
   const { topicId, classId } = useParams<{ topicId: string; classId: string }>();
@@ -114,26 +111,30 @@ const IntructorTopicDetailPage: React.FC = () => {
       title: "#",
       width: 52,
       render: (_: unknown, __: unknown, index: number) => (
-        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-500">
-          {String(index + 1).padStart(2, "0")}
-        </div>
+        <Tooltip title={presentationDetailTooltip}>
+          <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-xs font-bold text-sky-600">
+            {String(index + 1).padStart(2, "0")}
+          </div>
+        </Tooltip>
       ),
     },
     {
       title: "Sinh viên",
       render: (_: unknown, record: AnyPresentation) => (
-        <div>
-          <Text strong className="text-slate-800 block text-sm">
-            {record.student
-              ? `${record.student.firstName} ${record.student.lastName}`
-              : `Sinh viên #${record.studentId}`}
-          </Text>
-          {record.student?.email && (
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              {record.student.email}
+        <Tooltip title={presentationDetailTooltip}>
+          <div>
+            <Text strong className="text-slate-800 block text-sm">
+              {record.student
+                ? `${record.student.firstName} ${record.student.lastName}`
+                : `Sinh viên #${record.studentId}`}
             </Text>
-          )}
-        </div>
+            {record.student?.email && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {record.student.email}
+              </Text>
+            )}
+          </div>
+        </Tooltip>
       ),
     },
     {
@@ -142,24 +143,26 @@ const IntructorTopicDetailPage: React.FC = () => {
       width: 120,
       render: (groupCode: string | null) =>
         groupCode ? (
-          <Tag
-            icon={<TeamOutlined />}
-            color="purple"
-            style={{ borderRadius: 20 }}
-          >
-            {groupCode}
-          </Tag>
+          <Tooltip title={presentationDetailTooltip}>
+            <Tag icon={<TeamOutlined />} color="blue" style={{ borderRadius: 20 }}>
+              {groupCode}
+            </Tag>
+          </Tooltip>
         ) : (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            —
-          </Text>
+          <Tooltip title={presentationDetailTooltip}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              —
+            </Text>
+          </Tooltip>
         ),
     },
     {
       title: "Tiêu đề",
       dataIndex: "title",
       render: (title: string) => (
-        <Text className="text-slate-700 text-sm">{title || "—"}</Text>
+        <Tooltip title={presentationDetailTooltip}>
+          <Text className="text-slate-700 text-sm">{title || "—"}</Text>
+        </Tooltip>
       ),
     },
     {
@@ -169,12 +172,14 @@ const IntructorTopicDetailPage: React.FC = () => {
       render: (status: string) => {
         const sc = STATUS_CONFIG[status?.toLowerCase()] || STATUS_CONFIG.draft;
         return (
-          <Tag
-            color={sc.color}
-            style={{ borderRadius: 20, margin: 0, fontWeight: 500 }}
-          >
-            {sc.label}
-          </Tag>
+          <Tooltip title={presentationDetailTooltip}>
+            <Tag
+              color={sc.color}
+              style={{ borderRadius: 20, margin: 0, fontWeight: 500 }}
+            >
+              {sc.label}
+            </Tag>
+          </Tooltip>
         );
       },
     },
@@ -183,20 +188,11 @@ const IntructorTopicDetailPage: React.FC = () => {
       dataIndex: "submissionDate",
       width: 155,
       render: (date: string | null) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {formatDate(date)}
-        </Text>
-      ),
-    },
-    {
-      title: "Thời lượng",
-      dataIndex: "durationSeconds",
-      width: 90,
-      align: "center" as const,
-      render: (d: number | null) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {formatDuration(d)}
-        </Text>
+        <Tooltip title={presentationDetailTooltip}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {formatDate(date)}
+          </Text>
+        </Tooltip>
       ),
     },
     {
@@ -206,12 +202,15 @@ const IntructorTopicDetailPage: React.FC = () => {
         <Link
           to={`/intructor/presentation/${record.presentationId}`}
           state={{ presentation: record }}
+          onClick={(event) => event.stopPropagation()}
         >
-          <Button
-            type="text"
-            icon={<RightOutlined style={{ color: "#94a3b8" }} />}
-            size="small"
-          />
+          <Tooltip title={presentationDetailTooltip}>
+            <Button
+              type="text"
+              icon={<RightOutlined style={{ color: "#94a3b8" }} />}
+              size="small"
+            />
+          </Tooltip>
         </Link>
       ),
     },
@@ -270,7 +269,7 @@ const IntructorTopicDetailPage: React.FC = () => {
             className="relative overflow-hidden rounded-3xl shadow-lg text-white"
             style={{
               background:
-                "linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #7c3aed 100%)",
+                "linear-gradient(135deg, #0369a1 0%, #0284c7 55%, #0ea5e9 100%)",
             }}
           >
             <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/5" />
@@ -361,26 +360,26 @@ const IntructorTopicDetailPage: React.FC = () => {
                   {
                     label: "Tổng",
                     count: mergedPresentations.length,
-                    color: "#6366f1",
-                    bg: "#eef2ff",
+                    color: "#0369a1",
+                    bg: "#e0f2fe",
                   },
                   {
                     label: "Đã nộp",
                     count: statusCounts.submitted,
-                    color: "#3b82f6",
+                    color: "#0284c7",
                     bg: "#eff6ff",
                   },
                   {
                     label: "Đang xử lý",
                     count: statusCounts.processing,
-                    color: "#f59e0b",
-                    bg: "#fffbeb",
+                    color: "#0ea5e9",
+                    bg: "#f0f9ff",
                   },
                   {
                     label: "Hoàn tất",
                     count: statusCounts.done,
-                    color: "#10b981",
-                    bg: "#ecfdf5",
+                    color: "#38bdf8",
+                    bg: "#f0f9ff",
                   },
                   {
                     label: "Thất bại",
@@ -424,15 +423,12 @@ const IntructorTopicDetailPage: React.FC = () => {
                 title={
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
-                      <FileTextOutlined style={{ color: "#6366f1" }} />
+                      <FileTextOutlined style={{ color: "#0284c7" }} />
                     </div>
                     <Text strong style={{ fontSize: 15 }}>
                       Bài trình bày
                     </Text>
-                    <Tag
-                      color="purple"
-                      style={{ borderRadius: 20, marginLeft: 4 }}
-                    >
+                    <Tag color="blue" style={{ borderRadius: 20, marginLeft: 4 }}>
                       {mergedPresentations.length}
                     </Tag>
                   </div>
@@ -447,13 +443,20 @@ const IntructorTopicDetailPage: React.FC = () => {
                     dataSource={mergedPresentations}
                     columns={columns}
                     rowKey="presentationId"
+                    onRow={(record) => ({
+                      onClick: () =>
+                        navigate(`/intructor/presentation/${record.presentationId}`, {
+                          state: { presentation: record },
+                        }),
+                      style: { cursor: "pointer" },
+                    })}
                     pagination={
                       mergedPresentations.length > 10
                         ? { pageSize: 10, size: "small" }
                         : false
                     }
                     size="middle"
-                    rowClassName="hover:bg-slate-50/60"
+                    rowClassName="hover:bg-sky-50/60 transition-colors"
                     style={{ borderRadius: "0 0 16px 16px" }}
                   />
                 ) : (
@@ -498,7 +501,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                 }}
                 title={
                   <div className="flex items-center gap-2">
-                    <ClockCircleOutlined style={{ color: "#8b5cf6" }} />
+                    <ClockCircleOutlined style={{ color: "#0284c7" }} />
                     <Text strong>Chi tiết chủ đề</Text>
                   </div>
                 }
@@ -508,7 +511,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                     <Text type="secondary" className="text-sm">
                       Thứ tự
                     </Text>
-                    <Tag color="purple" style={{ borderRadius: 20 }}>
+                    <Tag color="blue" style={{ borderRadius: 20 }}>
                       #{topic.sequenceNumber}
                     </Tag>
                   </div>
@@ -550,13 +553,13 @@ const IntructorTopicDetailPage: React.FC = () => {
                   }}
                   title={
                     <div className="flex items-center gap-2">
-                      <FileTextOutlined style={{ color: "#f59e0b" }} />
+                      <FileTextOutlined style={{ color: "#0284c7" }} />
                       <Text strong>Yêu cầu</Text>
                     </div>
                   }
                 >
                   <pre
-                    className="whitespace-pre-wrap text-sm text-slate-600 bg-slate-50 p-3 rounded-xl leading-relaxed border border-slate-100 m-0"
+                    className="whitespace-pre-wrap text-sm text-slate-600 bg-sky-50 p-3 rounded-xl leading-relaxed border border-sky-100 m-0"
                     style={{
                       fontFamily: "inherit",
                       maxHeight: 220,
