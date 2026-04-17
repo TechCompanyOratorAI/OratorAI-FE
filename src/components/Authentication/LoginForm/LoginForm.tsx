@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { loginUser } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
-import { message } from "antd";
+import { App } from "antd";
 
 type SelectedRole = "Student" | "Instructor" | "Admin" | null;
 
@@ -14,6 +14,7 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((state) => state.auth);
+  const { notification } = App.useApp();
   const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,22 +25,37 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
 
     if (!selectedRole) {
-      message.warning("Vui lòng chọn vai trò của bạn");
+      notification.warning({
+        message: "Cảnh báo",
+        description: "Vui lòng chọn vai trò của bạn",
+        placement: "topRight",
+      });
       return;
     }
 
     try {
       const resultAction = await dispatch(
-        loginUser({ usernameOrEmail, password, selectedRole })
+        loginUser({ usernameOrEmail, password, selectedRole }),
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
         const payload = resultAction.payload;
 
         if (!payload.success) {
-          message.error(payload.message);
+          notification.error({
+            message: "Đăng nhập thất bại",
+            description: payload.message,
+            placement: "topRight",
+          });
           return;
         }
+
+        // Show success notification
+        notification.success({
+          message: "Đăng nhập thành công",
+          description: "Chào mừng bạn đã quay lại!",
+          placement: "topRight",
+        });
 
         const user = payload.user;
         const primaryRole = user.roles?.[0]?.roleName;
@@ -54,10 +70,17 @@ const LoginForm: React.FC = () => {
         } else if (primaryRole === "Instructor") {
           navigate("/instructor/manage-classes");
         } else if (primaryRole === "Student") {
-          navigate("/student/dashboard");
+          navigate("/student/my-class");
         } else {
           navigate("/");
         }
+      } else if (loginUser.rejected.match(resultAction)) {
+        // Handle rejected case
+        notification.error({
+          message: "Đăng nhập thất bại",
+          
+          placement: "topRight",
+        });
       }
     } catch (error) {
       // Error is handled by authSlice with toast
@@ -85,16 +108,19 @@ const LoginForm: React.FC = () => {
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Student")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Student"
-                ? "border-sky-500 bg-sky-50 text-sky-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                }`}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                selectedRole === "Student"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <GraduationCap
                 size={24}
-                className={selectedRole === "Student" ? "text-sky-600" : "text-slate-400"}
+                className={
+                  selectedRole === "Student" ? "text-sky-600" : "text-slate-400"
+                }
               />
               <span className="text-xs font-medium">Sinh viên</span>
             </motion.button>
@@ -102,16 +128,21 @@ const LoginForm: React.FC = () => {
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Instructor")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Instructor"
-                ? "border-sky-500 bg-sky-50 text-sky-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                }`}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                selectedRole === "Instructor"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <UserCog
                 size={24}
-                className={selectedRole === "Instructor" ? "text-sky-600" : "text-slate-400"}
+                className={
+                  selectedRole === "Instructor"
+                    ? "text-sky-600"
+                    : "text-slate-400"
+                }
               />
               <span className="text-xs font-medium">Giảng viên</span>
             </motion.button>
@@ -119,20 +150,22 @@ const LoginForm: React.FC = () => {
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Admin")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${selectedRole === "Admin"
-                ? "border-sky-500 bg-sky-50 text-sky-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                }`}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                selectedRole === "Admin"
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <Settings
                 size={24}
-                className={selectedRole === "Admin" ? "text-sky-600" : "text-slate-400"}
+                className={
+                  selectedRole === "Admin" ? "text-sky-600" : "text-slate-400"
+                }
               />
               <span className="text-xs font-medium">Quản trị</span>
             </motion.button>
-
           </div>
         </ScrollAnimation>
 
@@ -182,11 +215,7 @@ const LoginForm: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -248,7 +277,7 @@ const LoginForm: React.FC = () => {
                   borderRadius="8px"
                   paddingWidth="12px"
                   paddingHeight="8px"
-                  onClick={() => { }}
+                  onClick={() => {}}
                 />
               </div>
             </div>
@@ -292,4 +321,3 @@ const LoginForm: React.FC = () => {
 };
 
 export default LoginForm;
-
