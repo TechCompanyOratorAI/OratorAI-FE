@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
     } else if (primaryRole === "Instructor") {
       navigate("/instructor/manage-classes");
     } else if (primaryRole === "Student") {
-      navigate("/student/dashboard");
+      navigate("/student/my-class");
     } else {
       navigate("/");
     }
@@ -136,28 +136,27 @@ const LoginPage: React.FC = () => {
 
             <ScrollAnimation type="slide" direction="up" delay={0.4}>
               <ul className="space-y-2 text-sm text-slate-700">
-                {[
-                  "Transcript Việt – Anh",
-                  "Chấm điểm & báo cáo",
-                ].map((item, index) => (
-                  <motion.li
-                    key={index}
-                    className="flex items-start gap-2"
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeInVariants}
-                    transition={{
-                      delay: 0.5 + index * 0.1,
-                      duration: 0.5,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <span className="mt-1 h-5 w-5 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 text-xs">
-                      ✓
-                    </span>
-                    {item}
-                  </motion.li>
-                ))}
+                {["Transcript Việt – Anh", "Chấm điểm & báo cáo"].map(
+                  (item, index) => (
+                    <motion.li
+                      key={index}
+                      className="flex items-start gap-2"
+                      initial="hidden"
+                      animate="visible"
+                      variants={fadeInVariants}
+                      transition={{
+                        delay: 0.5 + index * 0.1,
+                        duration: 0.5,
+                        ease: "easeOut",
+                      }}
+                    >
+                      <span className="mt-1 h-5 w-5 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 text-xs">
+                        ✓
+                      </span>
+                      {item}
+                    </motion.li>
+                  ),
+                )}
               </ul>
             </ScrollAnimation>
           </div>
@@ -171,4 +170,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-
