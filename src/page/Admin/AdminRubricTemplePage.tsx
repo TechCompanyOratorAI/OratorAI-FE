@@ -34,6 +34,9 @@ import {
   App,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import RubricTemplateModal from "@/components/RubricTemplate/RubricTemplateModal";
 import CriteriaModal from "@/components/RubricTemplate/CriteriaModal";
@@ -135,6 +138,33 @@ const AdminRubricTemplePage: React.FC = () => {
     const defaults = templates.filter((template) => template.isDefault).length;
     return { total, active, defaults };
   }, [templates]);
+
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "total-templates",
+      title: "Tổng mẫu",
+      value: stats.total,
+      icon: <ProfileOutlined style={{ fontSize: 20 }} />,
+      tone: "blue",
+      description: "Trong hệ thống",
+    },
+    {
+      key: "active-templates",
+      title: "Đang hoạt động",
+      value: stats.active,
+      icon: <ProfileOutlined style={{ fontSize: 20 }} />,
+      tone: "green",
+      description: "Đang sử dụng",
+    },
+    {
+      key: "default-templates",
+      title: "Mặc định",
+      value: stats.defaults,
+      icon: <CheckSquareOutlined style={{ fontSize: 20 }} />,
+      tone: "purple",
+      description: "Mẫu ưu tiên",
+    },
+  ];
 
   const assignmentTypes = useMemo(
     () =>
@@ -498,47 +528,7 @@ const AdminRubricTemplePage: React.FC = () => {
             </Space>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small" className="rounded-2xl overflow-hidden">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <ProfileOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng mẫu
-                  </p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small" className="rounded-2xl overflow-hidden">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <ProfileOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Đang hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.active}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small" className="rounded-2xl overflow-hidden">
-              <Space>
-                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <CheckSquareOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Mặc định
-                  </p>
-                  <p className="text-xl font-bold">{stats.defaults}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           <Card className="rounded-2xl overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">

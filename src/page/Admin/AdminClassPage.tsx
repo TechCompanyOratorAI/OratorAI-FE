@@ -23,6 +23,9 @@ import {
   App,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import ClassModal from "@/components/Course/ClassModal";
 import InstructorModal from "@/components/Course/InstructorModal";
@@ -233,6 +236,33 @@ const AdminClassPage: React.FC = () => {
     return { total, active, totalStudents };
   }, [classes]);
 
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "total-classes",
+      title: "Tổng lớp học",
+      value: stats.total,
+      icon: <ReadOutlined style={{ fontSize: 20 }} />,
+      tone: "blue",
+      description: "Toàn hệ thống",
+    },
+    {
+      key: "active-classes",
+      title: "Đang hoạt động",
+      value: stats.active,
+      icon: <CheckCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "green",
+      description: "Có thể mở đăng ký",
+    },
+    {
+      key: "students",
+      title: "Tổng sinh viên",
+      value: stats.totalStudents,
+      icon: <TeamOutlined style={{ fontSize: 20 }} />,
+      tone: "purple",
+      description: "Theo số lượng ghi danh",
+    },
+  ];
+
   const getAvailableInstructors = (): InstructorInfo[] => {
     return users.map((user: any) => ({
       userId: user.userId,
@@ -412,47 +442,7 @@ const AdminClassPage: React.FC = () => {
             </Space>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <ReadOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng lớp học
-                  </p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <CheckCircleOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Đang hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.active}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <TeamOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng sinh viên
-                  </p>
-                  <p className="text-xl font-bold">{stats.totalStudents}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">

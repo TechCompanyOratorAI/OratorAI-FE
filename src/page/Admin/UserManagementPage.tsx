@@ -8,6 +8,9 @@ import {
 } from "@ant-design/icons";
 import { Table, Button, Input, Select, Tag, Space, Card } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchAllUsers, AdminUser } from "@/services/features/admin/adminSlice";
@@ -60,6 +63,33 @@ const UserManagementPage: React.FC = () => {
     const verified = filteredUsers.filter((u) => u.isEmailVerified).length;
     return { total, active, verified };
   }, [filteredUsers]);
+
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "total-users",
+      title: "Tổng người dùng",
+      value: stats.total,
+      icon: <TeamOutlined style={{ fontSize: 20 }} />,
+      tone: "blue",
+      description: "Theo bộ lọc hiện tại",
+    },
+    {
+      key: "active-users",
+      title: "Đang hoạt động",
+      value: stats.active,
+      icon: <UserOutlined style={{ fontSize: 20 }} />,
+      tone: "green",
+      description: "Có thể đăng nhập",
+    },
+    {
+      key: "verified-users",
+      title: "Email đã xác minh",
+      value: stats.verified,
+      icon: <CheckCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "purple",
+      description: "Đủ điều kiện thông báo",
+    },
+  ];
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
 
@@ -167,47 +197,7 @@ const UserManagementPage: React.FC = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <TeamOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng người dùng
-                  </p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <UserOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Đang hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.active}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <CheckCircleOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Email đã xác minh
-                  </p>
-                  <p className="text-xl font-bold">{stats.verified}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">

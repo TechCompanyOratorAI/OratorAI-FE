@@ -22,6 +22,9 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import DepartmentModal, {
   DepartmentFormData,
@@ -174,6 +177,33 @@ const AdminDepartmentPage: React.FC = () => {
     return { total, active, inactive };
   }, [departments]);
 
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "total",
+      title: "Tổng bộ môn",
+      value: stats.total,
+      icon: <BookOutlined style={{ fontSize: 20 }} />,
+      tone: "blue",
+      description: "Toàn hệ thống",
+    },
+    {
+      key: "active",
+      title: "Đang hoạt động",
+      value: stats.active,
+      icon: <CheckCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "green",
+      description: "Sẵn sàng sử dụng",
+    },
+    {
+      key: "inactive",
+      title: "Không hoạt động",
+      value: stats.inactive,
+      icon: <ExclamationCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "red",
+      description: "Cần rà soát",
+    },
+  ];
+
   const columns: ColumnsType<Department> = [
     {
       title: "Bộ môn",
@@ -282,47 +312,7 @@ const AdminDepartmentPage: React.FC = () => {
             </Space>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <BookOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng bộ môn
-                  </p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <CheckCircleOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Đang hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.active}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-red-100 text-red-600 p-2">
-                  <ExclamationCircleOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Không hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.inactive}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">

@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import Toast from "@/components/Toast/Toast";
 import {
@@ -54,46 +57,6 @@ const timeAgo = (dateStr: string): string => {
   if (diff < 172800) return "Hôm qua";
   return `${Math.floor(diff / 86400)} ngày trước`;
 };
-
-type StatColor = "blue" | "indigo" | "amber" | "green";
-
-const colorMap: Record<StatColor, string> = {
-  blue: "bg-blue-50 text-blue-600",
-  indigo: "bg-indigo-50 text-indigo-600",
-  amber: "bg-amber-50 text-amber-600",
-  green: "bg-green-50 text-green-600",
-};
-
-interface StatCardProps {
-  label: string;
-  value: number | string;
-  suffix?: string;
-  icon: React.ReactNode;
-  color: StatColor;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  label,
-  value,
-  suffix,
-  icon,
-  color,
-}) => (
-  <Card size="small">
-    <Space className="w-full justify-between">
-      <Space direction="vertical" size={0}>
-        <Text type="secondary" className="text-sm">{label}</Text>
-        <Text className="text-2xl font-bold">
-          {value}
-          {suffix && <span className="text-base font-normal text-gray-400">{suffix}</span>}
-        </Text>
-      </Space>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
-        {icon}
-      </div>
-    </Space>
-  </Card>
-);
 
 const InstructorDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -157,6 +120,45 @@ const InstructorDashboardPage: React.FC = () => {
         : null;
     return { totalStudents, totalClasses: activeClasses.length, pendingReports, reviewedReports, avgScore };
   }, [activeClasses, classStats]);
+
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "students",
+      title: "Tổng sinh viên",
+      value: loading ? "—" : stats.totalStudents,
+      icon: <Users className="w-5 h-5" />,
+      tone: "blue",
+      description: `${loading ? "Đang tải" : stats.totalClasses} lớp hoạt động`,
+    },
+    {
+      key: "classes",
+      title: "Lớp học đang dạy",
+      value: loading ? "—" : stats.totalClasses,
+      icon: <BookOpen className="w-5 h-5" />,
+      tone: "purple",
+      description: "Theo học kỳ hiện tại",
+    },
+    {
+      key: "pending",
+      title: "Bài chờ duyệt",
+      value: reportsLoading ? "—" : stats.pendingReports,
+      icon: <Clock className="w-5 h-5" />,
+      tone: "amber",
+      deltaLabel: stats.pendingReports > 0 ? "Cần xử lý" : "Ổn định",
+      deltaType: stats.pendingReports > 0 ? "warning" : "success",
+      description: `${stats.reviewedReports} bài đã duyệt`,
+    },
+    {
+      key: "score",
+      title: "Điểm trung bình",
+      value: stats.avgScore ?? "—",
+      suffix: stats.avgScore !== null ? "/100" : undefined,
+      icon: <BarChart3 className="w-5 h-5" />,
+      tone: "green",
+      progress: stats.avgScore ?? undefined,
+      description: "Chất lượng trình bày tổng quan",
+    },
+  ];
 
   const presentationRows: ColumnsType<AIRReportSummary> = [
     {
@@ -302,33 +304,7 @@ const InstructorDashboardPage: React.FC = () => {
           </div>
 
           {/* Quick Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label="Tổng sinh viên"
-              value={loading ? "—" : stats.totalStudents}
-              icon={<Users className="w-5 h-5" />}
-              color="blue"
-            />
-            <StatCard
-              label="Lớp học"
-              value={loading ? "—" : stats.totalClasses}
-              icon={<BookOpen className="w-5 h-5" />}
-              color="indigo"
-            />
-            <StatCard
-              label="Bài chờ duyệt"
-              value={reportsLoading ? "—" : stats.pendingReports}
-              icon={<Clock className="w-5 h-5" />}
-              color="amber"
-            />
-            <StatCard
-              label="Điểm trung bình"
-              value={stats.avgScore ?? "—"}
-              suffix={stats.avgScore !== null ? "/100" : undefined}
-              icon={<BarChart3 className="w-5 h-5" />}
-              color="green"
-            />
-          </div>
+          <SummaryMetrics items={summaryItems} />
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

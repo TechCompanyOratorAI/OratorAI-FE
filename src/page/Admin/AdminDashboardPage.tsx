@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import Button from "@/components/yoodli/Button";
 import {
   Download,
@@ -12,7 +15,7 @@ import {
   X,
   Cog,
 } from "lucide-react";
-import { Table, Progress, Select, Slider, Input } from "antd";
+import { Table, Select, Slider, Input } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
 
@@ -156,6 +159,51 @@ const AdminDashboardPage: React.FC = () => {
     { value: 112, height: "112px" },
   ];
 
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "health",
+      title: "Sức khỏe hệ thống",
+      value: "99.9%",
+      icon: <Activity className="w-5 h-5" />,
+      tone: "green",
+      deltaLabel: "+0.1%",
+      deltaType: "success",
+      description: "Uptime 30 ngày",
+      progress: 99.9,
+    },
+    {
+      key: "users",
+      title: "Người dùng hoạt động",
+      value: "1,245",
+      icon: <Users className="w-5 h-5" />,
+      tone: "blue",
+      deltaLabel: "+12%",
+      deltaType: "success",
+      description: "Tuần hiện tại",
+    },
+    {
+      key: "ai-load",
+      title: "Tải xử lý AI",
+      value: "78%",
+      icon: <Cpu className="w-5 h-5" />,
+      tone: "amber",
+      deltaLabel: "Tải cao",
+      deltaType: "warning",
+      description: "13 hàng đợi",
+      progress: 78,
+    },
+    {
+      key: "processed",
+      title: "Bài đã phân tích",
+      value: 324,
+      icon: <Cog className="w-5 h-5" />,
+      tone: "purple",
+      deltaLabel: "+24 hôm nay",
+      deltaType: "default",
+      description: "Cập nhật theo thời gian thực",
+    },
+  ];
+
   return (
     <div className="flex h-screen bg-gray-50">
       <SidebarAdmin activeItem="dashboard" />
@@ -204,68 +252,8 @@ const AdminDashboardPage: React.FC = () => {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-[1400px] mx-auto">
             {/* Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-              {/* System Health */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Sức khỏe hệ thống
-                  </h3>
-                  <Activity className="w-6 h-6 text-gray-400" />
-                </div>
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">99.9%</span>
-                  <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded">
-                    +0.1%
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Thời gian hoạt động trong 30 ngày qua
-                </p>
-              </div>
-
-              {/* Active Users */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Người dùng hoạt động
-                  </h3>
-                  <Users className="w-6 h-6 text-gray-400" />
-                </div>
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">1,245</span>
-                  <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded">
-                    +12%
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Sinh viên và giảng viên hoạt động trong tuần này
-                </p>
-              </div>
-
-              {/* AI Processing Load */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    Tải xử lý AI
-                  </h3>
-                  <Cpu className="w-6 h-6 text-gray-400" />
-                </div>
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">78%</span>
-                  <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded">
-                    Tải cao
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <Progress
-                    percent={78}
-                    showInfo={false}
-                    strokeColor="#f97316"
-                    className="[&_.ant-progress-bg]:bg-orange-100"
-                  />
-                </div>
-              </div>
+            <div className="mb-6">
+              <SummaryMetrics items={summaryItems} />
             </div>
 
             {/* Main Content Grid */}

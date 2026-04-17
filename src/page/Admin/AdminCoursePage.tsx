@@ -39,6 +39,9 @@ import {
   App,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import axiosInstance from "@/services/constant/axiosInstance";
 import {
   ADD_INSTRUCTOR_TO_COURSE_ENDPOINT,
@@ -263,6 +266,33 @@ const AdminCoursePage: React.FC = () => {
     return { total, active, totalEnrollments };
   }, [courses]);
 
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "total-courses",
+      title: "Tổng khóa học",
+      value: stats.total,
+      icon: <ReadOutlined style={{ fontSize: 20 }} />,
+      tone: "blue",
+      description: "Toàn hệ thống",
+    },
+    {
+      key: "active-courses",
+      title: "Khóa học hoạt động",
+      value: stats.active,
+      icon: <CheckCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "green",
+      description: "Đang mở",
+    },
+    {
+      key: "enrollments",
+      title: "Tổng lượt đăng ký",
+      value: stats.totalEnrollments,
+      icon: <TeamOutlined style={{ fontSize: 20 }} />,
+      tone: "purple",
+      description: "Theo dữ liệu ghi danh",
+    },
+  ];
+
   const semesters = Array.from(new Set(courses.map((c) => c.semester)));
 
   const columns: ColumnsType<CourseData> = [
@@ -420,47 +450,7 @@ const AdminCoursePage: React.FC = () => {
             </Space>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <ReadOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng khóa học
-                  </p>
-                  <p className="text-xl font-bold">{stats.total}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <CheckCircleOutlined style={{ fontSize: 24 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Khóa học hoạt động
-                  </p>
-                  <p className="text-xl font-bold">{stats.active}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-indigo-100 text-indigo-600 p-2">
-                  <TeamOutlined style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Tổng lượt đăng ký
-                  </p>
-                  <p className="text-xl font-bold">{stats.totalEnrollments}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
