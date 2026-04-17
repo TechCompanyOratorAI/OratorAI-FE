@@ -141,10 +141,10 @@ const SortableCriterionItem = React.memo(
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold mt-2 ml-8">
               <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
-                Persen {Number(criterion.weight).toFixed(0)}%
+                Phần trăm: {Number(criterion.weight).toFixed(0)}%
               </span>
               <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
-                Max {Number(criterion.maxScore).toFixed(0)}
+                Điểm tối đa: {Number(criterion.maxScore).toFixed(0)}
               </span>
             </div>
           </div>
@@ -590,13 +590,13 @@ const ClassDetailPage: React.FC = () => {
           });
         } else {
           setToast({
-            message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí rubric thành công.`,
+            message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí đánh giá thành công.`,
             type: "success",
           });
         }
       } else {
         setToast({
-          message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí rubric thành công.`,
+          message: `Đã ${targetCriterionId ? "cập nhật" : "tạo"} tiêu chí đánh giá thành công.`,
           type: "success",
         });
       }
@@ -609,7 +609,7 @@ const ClassDetailPage: React.FC = () => {
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Thao tác rubric thất bại.",
+            : error?.message || "Thao tác tiêu chí đánh giá thất bại.",
         type: "error",
       });
     }
@@ -1272,7 +1272,7 @@ const ClassDetailPage: React.FC = () => {
                           style={{ fontSize: 11, letterSpacing: "0.08em" }}
                           className="text-xs uppercase text-slate-400 font-semibold block"
                         >
-                          Mẫu rubric
+                          Mẫu đánh giá
                         </Typography.Text>
                         <Typography.Text
                           strong
@@ -1300,9 +1300,9 @@ const ClassDetailPage: React.FC = () => {
                       <Tooltip
                         title={
                           <div>
-                            <p className="font-semibold">Hướng dẫn rubric</p>
+                            <p className="font-semibold">Hướng dẫn tiêu chí</p>
                             <p className="mt-1">
-                              Rubric chỉ hoạt động khi tổng phần trăm
+                              Tiêu chí chỉ hoạt động khi tổng phần trăm
                               chính xác bằng 100%.
                             </p>
                             <p className="mt-1 text-red-300 font-medium">
@@ -1450,7 +1450,7 @@ const ClassDetailPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-600 text-center">
-                        Không có mẫu rubric khả dụng.
+                        Không có mẫu tiêu chí khả dụng.
                       </div>
                     )}
                   </div>
@@ -1736,8 +1736,8 @@ const ClassDetailPage: React.FC = () => {
                   checked={confirmApplyPick}
                   onChange={(e) => setConfirmApplyPick(e.target.checked)}
                 >
-                  Tôi xác nhận muốn áp dụng mẫu này và ghi đè các tiêu chí
-                  rubric hiện có của lớp học này.
+                  Xác nhận sử dụng mẫu này và các tiêu chí
+                  đánh giá cho lớp học này. Chỉ được chọn một lần.
                 </Checkbox>
               </div>
             </div>

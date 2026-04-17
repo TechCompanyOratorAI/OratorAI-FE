@@ -12,7 +12,7 @@ const Roleplay: React.FC = () => {
     const cardTexts = [
         {
             title: "Chọn môn học và bài thuyết trình",
-            desc: "Giảng viên cấu hình chủ đề, rubric và upload slide tham chiếu",
+            desc: "Giảng viên cấu hình chủ đề, tiêu chí và upload slide tham chiếu",
         },
         {
             title: "Sinh viên bắt đầu trình bày",
@@ -20,7 +20,7 @@ const Roleplay: React.FC = () => {
         },
         {
             title: "Xem kết quả phân tích",
-            desc: "OratorAI chấm điểm theo rubric, đánh giá độ bám sát slide và gợi ý cải thiện",
+            desc: "OratorAI chấm điểm theo tiêu chí, đánh giá độ bám sát slide và gợi ý cải thiện",
         },
     ];
 

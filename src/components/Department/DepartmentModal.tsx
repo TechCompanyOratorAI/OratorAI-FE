@@ -53,7 +53,18 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark="optional"
+        requiredMark={(label, { required }) =>
+          required ? (
+            label
+          ) : (
+            <>
+              {label}{" "}
+              <span style={{ color: "#999", fontSize: "12px" }}>
+                (không bắt buộc)
+              </span>
+            </>
+          )
+        }
         disabled={isLoading}
         className="mt-4"
         initialValues={{
@@ -93,14 +104,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           <Input placeholder="VD: Software Engineering" />
         </Form.Item>
 
-        <Form.Item
-          name="description"
-          label={<Text strong>Mô tả</Text>}
-        >
-          <Input.TextArea
-            placeholder="Nhập mô tả khoa..."
-            rows={4}
-          />
+        <Form.Item name="description" label={<Text strong>Mô tả</Text>}>
+          <Input.TextArea placeholder="Nhập mô tả khoa..." rows={4} />
         </Form.Item>
 
         {initialData && (
@@ -118,12 +123,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             <Button onClick={handleCancel} disabled={isLoading}>
               Hủy
             </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isLoading}
-            >
-              {isLoading ? "Đang lưu..." : initialData ? "Lưu thay đổi" : "Tạo khoa"}
+            <Button type="primary" htmlType="submit" loading={isLoading}>
+              {isLoading
+                ? "Đang lưu..."
+                : initialData
+                  ? "Lưu thay đổi"
+                  : "Tạo khoa"}
             </Button>
           </Space>
         </Form.Item>

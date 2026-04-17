@@ -121,7 +121,18 @@ const ClassModal: React.FC<ClassModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark="optional"
+        requiredMark={(label, { required }) =>
+          required ? (
+            label
+          ) : (
+            <>
+              {label}{" "}
+              <span style={{ color: "#999", fontSize: "12px" }}>
+                (không bắt buộc)
+              </span>
+            </>
+          )
+        }
         disabled={submitting || isLoading}
         className="mt-4"
       >

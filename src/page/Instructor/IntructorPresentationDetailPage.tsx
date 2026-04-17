@@ -588,7 +588,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                 Đánh giá tự động
                               </Typography.Title>
                               <Typography.Text type="secondary" className="text-sm">
-                                Mỗi tiêu chí rubric có form phản hồi riêng bên dưới phần nhận xét AI — lưu từng tiêu chí độc lập.
+                                Mỗi tiêu chí đánh giá có form phản hồi riêng bên dưới phần nhận xét AI — lưu từng tiêu chí độc lập.
                               </Typography.Text>
                             </div>
 

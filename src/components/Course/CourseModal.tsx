@@ -9,7 +9,6 @@ import {
   Button,
   Space,
   Typography,
-  
 } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { CourseData } from "@/services/features/course/courseSlice";
@@ -94,7 +93,18 @@ const CourseModal: React.FC<CourseModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark="optional"
+        requiredMark={(label, { required }) =>
+          required ? (
+            label
+          ) : (
+            <>
+              {label}{" "}
+              <span style={{ color: "#999", fontSize: "12px" }}>
+                (không bắt buộc)
+              </span>
+            </>
+          )
+        }
         disabled={isLoading}
         className="mt-4"
         initialValues={{
