@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import dayjs from "dayjs";
 import {
   DeleteOutlined,
   EditOutlined,
@@ -167,7 +168,10 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      notifySuccess("Thêm giảng viên thành công", "Đã thêm giảng viên thành công.");
+      notifySuccess(
+        "Thêm giảng viên thành công",
+        "Đã thêm giảng viên thành công.",
+      );
     } catch {
       notifyError("Thêm giảng viên thất bại", "Không thể thêm giảng viên.");
     }
@@ -194,10 +198,7 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      notifySuccess(
-        "Gỡ giảng viên thành công",
-        "Đã gỡ giảng viên thành công.",
-      );
+      notifySuccess("Gỡ giảng viên thành công", "Đã gỡ giảng viên thành công.");
     } catch {
       notifyError("Gỡ giảng viên thất bại", "Không thể gỡ giảng viên.");
     }
@@ -283,7 +284,7 @@ const AdminClassPage: React.FC = () => {
     searchTerm || filterStatus !== "all"
       ? filteredClasses.length
       : filteredClasses.length > pageSize &&
-        filteredClasses.length < pagination.total
+          filteredClasses.length < pagination.total
         ? filteredClasses.length
         : pagination.total;
 
@@ -363,7 +364,7 @@ const AdminClassPage: React.FC = () => {
       title: "Ngày bắt đầu",
       dataIndex: "startDate",
       key: "startDate",
-      render: (val) => new Date(val).toLocaleDateString(),
+      render: (val) => dayjs(val).format("D [thg] M, YYYY"),
     },
     {
       title: "Thao tác",
@@ -393,12 +394,7 @@ const AdminClassPage: React.FC = () => {
             okButtonProps={{ danger: true, loading: actionLoading }}
             cancelText="Hủy"
           >
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              danger
-              title="Xóa"
-            />
+            <Button type="text" icon={<DeleteOutlined />} danger title="Xóa" />
           </Popconfirm>
         </Space>
       ),
@@ -442,7 +438,10 @@ const AdminClassPage: React.FC = () => {
             </Space>
           </div>
 
-          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
+          <SummaryMetrics
+            items={summaryItems}
+            columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4"
+          />
 
           <Card>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -487,26 +486,26 @@ const AdminClassPage: React.FC = () => {
               rowKey={(record) =>
                 String(
                   record.classId ??
-                  `${record.courseId}-${record.classCode}-${record.startDate}`,
+                    `${record.courseId}-${record.classCode}-${record.startDate}`,
                 )
               }
               loading={loading}
               pagination={
                 tableTotal > 0
                   ? {
-                    current: currentPage,
-                    pageSize,
-                    total: tableTotal,
-                    showSizeChanger: true,
-                    showQuickJumper: false,
-                    pageSizeOptions: ["10", "20", "50"],
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} trên ${total} lớp`,
-                    onChange: (p, ps) => {
-                      setCurrentPage(p);
-                      setPageSize(ps);
-                    },
-                  }
+                      current: currentPage,
+                      pageSize,
+                      total: tableTotal,
+                      showSizeChanger: true,
+                      showQuickJumper: false,
+                      pageSizeOptions: ["10", "20", "50"],
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} trên ${total} lớp`,
+                      onChange: (p, ps) => {
+                        setCurrentPage(p);
+                        setPageSize(ps);
+                      },
+                    }
                   : false
               }
               locale={{

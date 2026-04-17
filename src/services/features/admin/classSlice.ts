@@ -94,6 +94,15 @@ export interface ClassResponse {
   };
 }
 
+export interface CreateClassPayload {
+  courseId: number;
+  classCode: string;
+  startDate: string;
+  endDate: string;
+  maxStudents: number;
+  status: "active" | "inactive" | "archived";
+}
+
 export interface ClassState {
   classes: ClassData[];
   selectedClass: ClassData | null;
@@ -198,18 +207,7 @@ export const fetchClasses = createAsyncThunk(
 // Create class
 export const createClass = createAsyncThunk(
   "class/createClass",
-  async (
-    classData: Omit<
-      ClassData,
-      | "classId"
-      | "courseId"
-      | "createdAt"
-      | "updatedAt"
-      | "createdBy"
-      | "status"
-    > & { courseId: number },
-    { rejectWithValue },
-  ) => {
+  async (classData: CreateClassPayload, { rejectWithValue }) => {
     try {
       const { courseId, ...requestBody } = classData;
       const response = await api.post<ClassResponse>(
@@ -556,7 +554,8 @@ const classSlice = createSlice({
       })
       // Upload permission reducers
       .addCase(fetchUploadPermission.fulfilled, (state, action) => {
-        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } = action.payload;
+        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } =
+          action.payload;
         // Update selectedClass if it matches
         if (state.selectedClass && state.selectedClass.classId === classId) {
           state.selectedClass.isUploadEnabled = isUploadEnabled;
@@ -564,7 +563,9 @@ const classSlice = createSlice({
           state.selectedClass.uploadEndDate = uploadEndDate;
         }
         // Always update in classes array if exists
-        const classIndex = state.classes.findIndex(c => c.classId === classId);
+        const classIndex = state.classes.findIndex(
+          (c) => c.classId === classId,
+        );
         if (classIndex !== -1) {
           state.classes[classIndex].isUploadEnabled = isUploadEnabled;
           state.classes[classIndex].uploadStartDate = uploadStartDate;
@@ -572,7 +573,8 @@ const classSlice = createSlice({
         }
       })
       .addCase(setUploadPermission.fulfilled, (state, action) => {
-        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } = action.payload;
+        const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } =
+          action.payload;
         // Update selectedClass if it matches
         if (state.selectedClass && state.selectedClass.classId === classId) {
           state.selectedClass.isUploadEnabled = isUploadEnabled;
@@ -580,7 +582,9 @@ const classSlice = createSlice({
           state.selectedClass.uploadEndDate = uploadEndDate;
         }
         // Also update in classes array
-        const classIndex = state.classes.findIndex(c => c.classId === classId);
+        const classIndex = state.classes.findIndex(
+          (c) => c.classId === classId,
+        );
         if (classIndex !== -1) {
           state.classes[classIndex].isUploadEnabled = isUploadEnabled;
           state.classes[classIndex].uploadStartDate = uploadStartDate;
@@ -597,37 +601,44 @@ export const fetchUploadPermission = createAsyncThunk(
   "class/fetchUploadPermission",
   async (classId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()));
+      const response = await api.get(
+        CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()),
+      );
       return { classId, ...response.data.data };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch upload permission",
       );
     }
-  }
+  },
 );
 
 export const setUploadPermission = createAsyncThunk(
   "class/setUploadPermission",
   async (
     { classId, isUploadEnabled }: { classId: number; isUploadEnabled: boolean },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
-      const response = await api.post(CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()), {
-        isUploadEnabled,
-      });
+      const response = await api.post(
+        CLASS_UPLOAD_PERMISSION_ENDPOINT(classId.toString()),
+        {
+          isUploadEnabled,
+        },
+      );
       void message.success(
         isUploadEnabled
           ? "Đã mở cho phép upload bài thuyết trình"
-          : "Đã đóng không cho phép upload bài thuyết trình"
+          : "Đã đóng không cho phép upload bài thuyết trình",
       );
       return { classId, ...response.data.data };
     } catch (error: any) {
-      void message.error(error.response?.data?.message || "Failed to update upload permission");
+      void message.error(
+        error.response?.data?.message || "Failed to update upload permission",
+      );
       return rejectWithValue(error.response?.data);
     }
-  }
+  },
 );
 
 export default classSlice.reducer;
