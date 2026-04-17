@@ -111,24 +111,29 @@ const ClassModal: React.FC<ClassModalProps> = ({
       const payload: Record<string, unknown> = isEditMode
         ? isInstructorEditMode
           ? {
-              maxGroupMembers: values.maxGroupMembers ?? null,
-            }
+            classCode: values.classCode,
+            courseId: values.courseId,
+            startDate: values.startDate?.format("YYYY-MM-DD"),
+            endDate: values.endDate?.format("YYYY-MM-DD"),
+            maxStudents: values.maxStudents,
+            maxGroupMembers: values.maxGroupMembers ?? null,
+          }
           : {
-              courseId: values.courseId,
-              classCode: values.classCode,
-              startDate: values.startDate.format("YYYY-MM-DD"),
-              endDate: values.endDate.format("YYYY-MM-DD"),
-              maxStudents: values.maxStudents,
-              maxGroupMembers: values.maxGroupMembers ?? null,
-            }
-        : {
             courseId: values.courseId,
             classCode: values.classCode,
             startDate: values.startDate.format("YYYY-MM-DD"),
             endDate: values.endDate.format("YYYY-MM-DD"),
             maxStudents: values.maxStudents,
-            status: "active",
-          };
+            maxGroupMembers: values.maxGroupMembers ?? null,
+          }
+        : {
+          courseId: values.courseId,
+          classCode: values.classCode,
+          startDate: values.startDate.format("YYYY-MM-DD"),
+          endDate: values.endDate.format("YYYY-MM-DD"),
+          maxStudents: values.maxStudents,
+          status: "active",
+        };
 
       if (isEditMode) {
         const enrollKey = values.enrollKey?.trim();
@@ -250,7 +255,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               name="maxGroupMembers"
               label={
                 <>
-                  <Text strong>Số nhóm tối đa</Text>{" "}
+                  <Text strong>Số thành viên tối đa</Text>{" "}
                   <span style={{ color: "#999", fontSize: "12px" }}>
                     (không bắt buộc)
                   </span>
@@ -271,7 +276,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                     if (maxStudents && Number(value) >= Number(maxStudents)) {
                       return Promise.reject(
                         new Error(
-                          "Số nhóm tối đa phải nhỏ hơn Số sinh viên tối đa",
+                          "Số thành viên tối đa phải nhỏ hơn Số sinh viên tối đa",
                         ),
                       );
                     }

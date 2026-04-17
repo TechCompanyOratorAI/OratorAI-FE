@@ -14,9 +14,13 @@ import {
   Typography,
   App,
   Tooltip,
+  Modal,
+  Form,
+  DatePicker,
+  InputNumber,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined } from "@ant-design/icons";
+import { EditOutlined, KeyOutlined } from "@ant-design/icons";
 import {
   BookOpen,
   Users,
@@ -24,11 +28,13 @@ import {
   RefreshCw,
   Eye,
 } from "lucide-react";
+import dayjs from "dayjs";
 import ClassModal from "@/components/Course/ClassModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   fetchClassesByInstructor,
   updateClass,
+  createEnrollKey,
   ClassData,
 } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
@@ -58,6 +64,9 @@ const ManageClassesPage: React.FC = () => {
   const [editingClass, setEditingClass] = useState<ClassData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [keyTargetClass, setKeyTargetClass] = useState<ClassData | null>(null);
+  const [keyForm] = Form.useForm();
 
   const { message: antdMessage } = App.useApp();
 
@@ -216,6 +225,16 @@ const ManageClassesPage: React.FC = () => {
             }}
             title="Chỉnh sửa"
           />
+          <Button
+            type="text"
+            icon={<KeyOutlined />}
+            onClick={(event) => {
+              event.stopPropagation();
+              setKeyTargetClass(record);
+              setKeyModalOpen(true);
+            }}
+            title="Tạo mã đăng ký"
+          />
         </Space>
       ),
     },
@@ -236,6 +255,27 @@ const ManageClassesPage: React.FC = () => {
       dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
     } catch {
       antdMessage.error("Không thể cập nhật lớp học. Vui lòng thử lại.");
+    }
+  };
+
+  const handleCreateKey = async () => {
+    if (!keyTargetClass) return;
+    try {
+      const values = await keyForm.validateFields();
+      await dispatch(
+        createEnrollKey({
+          classId: keyTargetClass.classId,
+          customKey: values.customKey || undefined,
+          expiresAt: values.expiresAt ? values.expiresAt.toISOString() : undefined,
+          maxUses: values.maxUses || undefined,
+        }),
+      ).unwrap();
+      antdMessage.success("Tạo mã đăng ký thành công!");
+      setKeyModalOpen(false);
+      setKeyTargetClass(null);
+      keyForm.resetFields();
+    } catch (err: any) {
+      antdMessage.error(err || "Không thể tạo mã đăng ký. Vui lòng thử lại.");
     }
   };
 
@@ -365,6 +405,46 @@ const ManageClassesPage: React.FC = () => {
         courses={[]}
         mode="instructor-edit"
       />
+
+      <Modal
+        title={`Tạo mã đăng ký — ${keyTargetClass?.classCode ?? ""}`}
+        open={keyModalOpen}
+        onOk={handleCreateKey}
+        onCancel={() => {
+          setKeyModalOpen(false);
+          setKeyTargetClass(null);
+          keyForm.resetFields();
+        }}
+        okText="Tạo mã"
+        cancelText="Hủy"
+        confirmLoading={loading}
+      >
+        <Form form={keyForm} layout="vertical" className="mt-4">
+          <Form.Item
+            label="Mã tùy chỉnh (customKey)"
+            name="customKey"
+            rules={[{ max: 50, message: "Tối đa 50 ký tự" }]}
+          >
+            <Input placeholder="Để trống để tự động tạo" allowClear />
+          </Form.Item>
+          <Form.Item label="Ngày hết hạn" name="expiresAt">
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              className="w-full"
+              disabledDate={(d) => d && d.isBefore(dayjs(), "day")}
+              placeholder="Không giới hạn"
+            />
+          </Form.Item>
+          <Form.Item
+            label="Số lượt đăng ký tối đa (maxUses)"
+            name="maxUses"
+            rules={[{ type: "number", min: 1, message: "Phải lớn hơn 0" }]}
+          >
+            <InputNumber min={1} className="w-full" placeholder="Không giới hạn" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

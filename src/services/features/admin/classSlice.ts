@@ -12,6 +12,7 @@ import {
   CLASS_DETAIL_ENDPOINT,
   GET_CLASSES_BY_COURSE_ENDPOINT,
   CLASS_UPLOAD_PERMISSION_ENDPOINT,
+  ENROLL_KEYS_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
@@ -145,6 +146,27 @@ export const fetchClassesByInstructor = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           "Failed to fetch classes by instructor",
+      );
+    }
+  },
+);
+
+export interface CreateEnrollKeyPayload {
+  classId: number;
+  customKey?: string;
+  expiresAt?: string;
+  maxUses?: number;
+}
+
+export const createEnrollKey = createAsyncThunk(
+  "class/createEnrollKey",
+  async (payload: CreateEnrollKeyPayload, { rejectWithValue }) => {
+    try {
+      const response = await api.post(ENROLL_KEYS_ENDPOINT, payload);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create enroll key",
       );
     }
   },

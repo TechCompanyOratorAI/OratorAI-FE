@@ -78,9 +78,9 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
     }
   };
 
-  const handleFinalize = async (distributionId: number) => {
+  const handleFinalize = async (distributionId: number, reportId: number) => {
     try {
-      await dispatch(finalizeDistribution({ groupId, distributionId })).unwrap();
+      await dispatch(finalizeDistribution({ groupId, distributionId, reportId })).unwrap();
       void message.success("Đã chốt điểm thành công!");
       void dispatch(fetchGradeDistributionsByGroup(groupId));
     } catch (e: any) {
@@ -176,7 +176,7 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
                         okText="Chốt điểm"
                         okButtonProps={{ danger: false, type: "primary" }}
                         cancelText="Hủy"
-                        onConfirm={() => handleFinalize(dist.id)}
+                        onConfirm={() => handleFinalize(dist.id, dist.reportId)}
                       >
                         <Button
                           size="small"
