@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import SummaryMetrics, {
+  SummaryMetricItem,
+} from "@/components/Dashboard/SummaryMetrics";
 import {
   Table,
   Card,
@@ -97,6 +100,34 @@ const ManageClassesPage: React.FC = () => {
   );
   const activeCourses = filteredCourses.filter((c) => c.status === "active").length;
   const pendingReviews = 3;
+
+  const summaryItems: SummaryMetricItem[] = [
+    {
+      key: "students",
+      title: "Sinh viên",
+      value: totalStudents,
+      icon: <Users size={20} />,
+      tone: "blue",
+      description: "Theo lớp hiển thị",
+    },
+    {
+      key: "active-classes",
+      title: "Lớp đang mở",
+      value: activeCourses,
+      icon: <BookOpen size={20} />,
+      tone: "green",
+      description: "Trạng thái active",
+    },
+    {
+      key: "pending",
+      title: "Chờ xử lý",
+      value: pendingReviews,
+      icon: <Clock size={20} />,
+      tone: "amber",
+      deltaLabel: pendingReviews > 0 ? "Cần duyệt" : "Ổn định",
+      deltaType: pendingReviews > 0 ? "warning" : "success",
+    },
+  ];
 
   const columns: ColumnsType<ClassData> = [
     {
@@ -232,47 +263,7 @@ const ManageClassesPage: React.FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-blue-100 text-blue-600 p-2">
-                  <Users size={20} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Sinh viên
-                  </p>
-                  <p className="text-xl font-bold">{totalStudents}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-green-100 text-green-600 p-2">
-                  <BookOpen size={20} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Lớp đang mở
-                  </p>
-                  <p className="text-xl font-bold">{activeCourses}</p>
-                </div>
-              </Space>
-            </Card>
-            <Card size="small">
-              <Space>
-                <div className="rounded-lg bg-amber-100 text-amber-600 p-2">
-                  <Clock size={20} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase text-gray-500 font-semibold">
-                    Chờ xử lý
-                  </p>
-                  <p className="text-xl font-bold">{pendingReviews}</p>
-                </div>
-              </Space>
-            </Card>
-          </div>
+          <SummaryMetrics items={summaryItems} columnsClassName="grid grid-cols-1 sm:grid-cols-3 gap-4" />
 
           {/* Filters & Search */}
           <Card>
