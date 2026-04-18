@@ -80,10 +80,14 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 relative overflow-hidden flex flex-col">
+      {/* Decorative background blobs */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-indigo-200/30 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-violet-200/30 blur-3xl pointer-events-none" />
+
       {/* Top nav đơn giản với logo */}
       <motion.header
-        className="px-4 py-4"
+        className="relative z-10 px-4 py-4"
         initial="hidden"
         animate="visible"
         variants={headerVariants}

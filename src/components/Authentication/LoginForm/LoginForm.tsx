@@ -90,14 +90,14 @@ const LoginForm: React.FC = () => {
 
   return (
     <ScrollAnimation type="slide" direction="left" delay={0.2}>
-      <div className="bg-white/80 backdrop-blur border border-slate-100 shadow-xl shadow-sky-100/40 rounded-2xl p-6 md:p-8">
+      <div className="bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xl shadow-indigo-100/50 rounded-3xl p-6 md:p-8">
         <ScrollAnimation type="fade" delay={0.3}>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">
             Chào bạn
           </h2>
         </ScrollAnimation>
         <ScrollAnimation type="fade" delay={0.4}>
-          <p className="text-sm text-slate-500 mb-4">
+          <p className="text-sm text-slate-500 mb-5">
             Chọn vai trò để tiếp tục
           </p>
         </ScrollAnimation>
@@ -108,63 +108,63 @@ const LoginForm: React.FC = () => {
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Student")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
                 selectedRole === "Student"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-lg shadow-indigo-200/50"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:shadow-md"
               }`}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <GraduationCap
                 size={24}
                 className={
-                  selectedRole === "Student" ? "text-sky-600" : "text-slate-400"
+                  selectedRole === "Student" ? "text-indigo-600" : "text-slate-400"
                 }
               />
-              <span className="text-xs font-medium">Sinh viên</span>
+              <span className="text-xs font-semibold">Sinh viên</span>
             </motion.button>
 
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Instructor")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
                 selectedRole === "Instructor"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-lg shadow-indigo-200/50"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:shadow-md"
               }`}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <UserCog
                 size={24}
                 className={
                   selectedRole === "Instructor"
-                    ? "text-sky-600"
+                    ? "text-indigo-600"
                     : "text-slate-400"
                 }
               />
-              <span className="text-xs font-medium">Giảng viên</span>
+              <span className="text-xs font-semibold">Giảng viên</span>
             </motion.button>
 
             <motion.button
               type="button"
               onClick={() => setSelectedRole("Admin")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
                 selectedRole === "Admin"
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-lg shadow-indigo-200/50"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:shadow-md"
               }`}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.97 }}
             >
               <Settings
                 size={24}
                 className={
-                  selectedRole === "Admin" ? "text-sky-600" : "text-slate-400"
+                  selectedRole === "Admin" ? "text-indigo-600" : "text-slate-400"
                 }
               />
-              <span className="text-xs font-medium">Quản trị</span>
+              <span className="text-xs font-semibold">Quản trị</span>
             </motion.button>
           </div>
         </ScrollAnimation>
@@ -174,7 +174,7 @@ const LoginForm: React.FC = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="usernameOrEmail"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-semibold text-slate-700"
               >
                 Tên đăng nhập hoặc Email
               </label>
@@ -184,7 +184,7 @@ const LoginForm: React.FC = () => {
                 required
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 focus:bg-indigo-50/30 bg-white/80 transition-all duration-200"
                 placeholder="Nhập tên đăng nhập hoặc email"
                 whileFocus={{ scale: 1.01 }}
               />
@@ -195,7 +195,7 @@ const LoginForm: React.FC = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="password"
-                className="text-sm font-medium text-slate-700"
+                className="text-sm font-semibold text-slate-700"
               >
                 Mật khẩu
               </label>
@@ -206,14 +206,14 @@ const LoginForm: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-sky-500/60 focus:border-sky-400 bg-white"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 focus:bg-indigo-50/30 bg-white/80 transition-all duration-200"
                   placeholder="Nhập mật khẩu của bạn"
                   whileFocus={{ scale: 1.01 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors p-1"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -223,14 +223,14 @@ const LoginForm: React.FC = () => {
 
           <ScrollAnimation type="fade" delay={0.7}>
             <div className="flex items-center justify-between text-xs">
-              <label className="flex items-center gap-2 text-slate-600">
+              <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="rounded border-slate-300 text-sky-500 focus:ring-sky-400"
+                  className="rounded border-slate-300 text-indigo-500 focus:ring-indigo-400 w-4 h-4"
                 />
-                Ghi nhớ đăng nhập
+                <span className="font-medium">Ghi nhớ đăng nhập</span>
               </label>
               <Button
                 text="Quên mật khẩu?"
@@ -249,7 +249,7 @@ const LoginForm: React.FC = () => {
                 <Button
                   text={loading ? "Đang đăng nhập..." : "Đăng nhập"}
                   variant="primary"
-                  paddingHeight="10px"
+                  paddingHeight="11px"
                   paddingWidth="16px"
                   fontSize="14px"
                   borderRadius="12px"
@@ -261,10 +261,10 @@ const LoginForm: React.FC = () => {
         </form>
 
         <ScrollAnimation type="fade" delay={0.9}>
-          <div className="mt-6">
+          <div className="mt-5">
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <span className="flex-1 h-px bg-slate-200" />
-              Hoặc
+              <span className="font-medium">Hoặc</span>
               <span className="flex-1 h-px bg-slate-200" />
             </div>
 
@@ -274,7 +274,7 @@ const LoginForm: React.FC = () => {
                   text="Đăng nhập với Google"
                   variant="secondary"
                   fontSize="12px"
-                  borderRadius="8px"
+                  borderRadius="12px"
                   paddingWidth="12px"
                   paddingHeight="8px"
                   onClick={() => {}}
@@ -285,20 +285,20 @@ const LoginForm: React.FC = () => {
         </ScrollAnimation>
 
         <ScrollAnimation type="fade" delay={1.0}>
-          <div className="mt-6">
+          <div className="mt-5">
             <p className="text-xs text-slate-500 text-center">
               Chưa có tài khoản?{" "}
               {selectedRole === "Instructor" ? (
                 <button
                   onClick={() => navigate("/register-instructor")}
-                  className="text-sky-600 hover:text-sky-700 font-medium"
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
                 >
                   Yêu cầu truy cập
                 </button>
               ) : (
                 <button
                   onClick={() => navigate("/register")}
-                  className="text-sky-600 hover:text-sky-700 font-medium"
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
                 >
                   Đăng ký ngay
                 </button>
@@ -310,8 +310,8 @@ const LoginForm: React.FC = () => {
         <ScrollAnimation type="fade" delay={1.1}>
           <p className="mt-4 text-[11px] text-slate-400 text-center leading-relaxed">
             Bằng việc tiếp tục, bạn đồng ý với{" "}
-            <span className="text-sky-600">Điều khoản sử dụng</span> và{" "}
-            <span className="text-sky-600">Chính sách bảo mật</span> của
+            <span className="text-indigo-500 font-medium">Điều khoản sử dụng</span> và{" "}
+            <span className="text-indigo-500 font-medium">Chính sách bảo mật</span> của
             OratorAI.
           </p>
         </ScrollAnimation>
