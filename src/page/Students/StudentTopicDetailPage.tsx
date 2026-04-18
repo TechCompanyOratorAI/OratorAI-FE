@@ -2,24 +2,34 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
-import { Button } from "antd";
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  BookOpen,
-  CheckCircle2,
-  Plus,
-  Upload,
-  FileText as FileTextIcon,
-  Users,
-  X,
-  Loader2,
-  Crown,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-} from "lucide-react";
+  Card,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Typography,
+  Tag,
+  Space,
+  Alert,
+  Skeleton,
+  Collapse,
+  Empty,
+} from "antd";
+import {
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
+  UploadOutlined,
+  LoadingOutlined,
+  CrownOutlined,
+  ReloadOutlined,
+  BookOutlined,
+} from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchTopicDetail } from "@/services/features/topic/topicSlice";
 import {
@@ -34,67 +44,87 @@ import {
 } from "@/services/features/group/groupSlice";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
-import {
-  fetchUploadPermissionByClass,
-} from "@/services/features/uploadPermission/uploadPermissionSlice";
+import { fetchUploadPermissionByClass } from "@/services/features/uploadPermission/uploadPermissionSlice";
+
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 interface TopicStudentDetailPageProps {
   isModalMode?: boolean;
   onCloseModal?: () => void;
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  draft: { label: "Nháp", color: "bg-slate-100 text-slate-700 border-slate-200", icon: <FileTextIcon className="w-3 h-3" /> },
-  submitted: { label: "Đã nộp", color: "bg-blue-100 text-blue-700 border-blue-200", icon: <CheckCircle2 className="w-3 h-3" /> },
-  processing: { label: "Đang xử lý", color: "bg-amber-100 text-amber-700 border-amber-200", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-  analyzed: { label: "Đã chấm", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
-  done: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
-  failed: { label: "Thất bại", color: "bg-red-100 text-red-700 border-red-200", icon: <FileTextIcon className="w-3 h-3" /> },
+const statusConfig: Record<
+  string,
+  { label: string; color: string }
+> = {
+  draft: { label: "Nháp", color: "default" },
+  submitted: { label: "Đã nộp", color: "processing" },
+  processing: { label: "Đang xử lý", color: "processing" },
+  analyzed: { label: "Đã chấm", color: "success" },
+  done: { label: "Hoàn thành", color: "success" },
+  failed: { label: "Thất bại", color: "error" },
 };
 
 const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   isModalMode = false,
   onCloseModal,
 }) => {
-  const { topicId, classId } = useParams<{ topicId: string; classId: string }>();
+  const { topicId, classId } = useParams<{
+    topicId: string;
+    classId: string;
+  }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { selectedTopic: topic, loading: topicLoading, error: topicError } = useAppSelector((state) => state.topic);
+  const {
+    selectedTopic: topic,
+    loading: topicLoading,
+    error: topicError,
+  } = useAppSelector((state) => state.topic);
   const { presentations } = useAppSelector((state) => state.presentation);
   const { user } = useAppSelector((state) => state.auth);
-  void user; // suppress unused warning
+  void user;
   const {
     myGroupForClass,
     groupTopic,
     actionLoading: groupActionLoading,
   } = useAppSelector((state) => state.group);
 
+  const [form] = Form.useForm();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isUploadResubmit, setIsUploadResubmit] = useState(false);
-  const [presentationTitle, setPresentationTitle] = useState("");
-  const [presentationDescription, setPresentationDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedPresentationId, setSelectedPresentationId] = useState<number | null>(null);
-  const [showRequirements, setShowRequirements] = useState(true);
+  const [selectedPresentationId, setSelectedPresentationId] = useState<
+    number | null
+  >(null);
+  const [selectedPresentationTitle, setSelectedPresentationTitle] =
+    useState("");
 
   const topicIdNumber = topicId ? parseInt(topicId) : null;
   const classIdNumber = classId ? parseInt(classId) : null;
-  const myGroupId = myGroupForClass?.groupId != null
-    ? Number(myGroupForClass.groupId)
-    : null;
+  const myGroupId =
+    myGroupForClass?.groupId != null
+      ? Number(myGroupForClass.groupId)
+      : null;
   const isGroupTopicThis =
     topicIdNumber != null && groupTopic?.topicId === topicIdNumber;
-  /** Chỉ theo chủ đề nhóm (GET /groups/:id/topic), không dùng ghi danh cá nhân — tránh hiển thị sai sau khi rời nhóm */
   const isEnrolled = Boolean(myGroupForClass && isGroupTopicThis);
-  const myPresentation = presentations.find((p) => p.studentId === user?.userId);
+  const myPresentation = presentations.find(
+    (p) => p.studentId === user?.userId,
+  );
   const isCurrentUserLeader = myGroupForClass?.myRole === "leader";
 
   useEffect(() => {
     if (topicIdNumber && classIdNumber) {
       dispatch(fetchTopicDetail(topicIdNumber));
-      dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
+      dispatch(
+        fetchPresentationsByClassAndTopic({
+          classId: classIdNumber,
+          topicId: topicIdNumber,
+        }),
+      );
     }
     if (classIdNumber) {
       dispatch(fetchMyGroupByClass(classIdNumber));
@@ -102,8 +132,9 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     }
   }, [topicIdNumber, classIdNumber, dispatch]);
 
-  // Kiểm tra upload permission từ slice riêng
-  const uploadPermission = useAppSelector((state) => state.uploadPermission.permissions[classIdNumber ?? -1]);
+  const uploadPermission = useAppSelector(
+    (state) => state.uploadPermission.permissions[classIdNumber ?? -1],
+  );
   const isUploadEnabled = uploadPermission?.isUploadEnabled ?? false;
   const canUpload = isUploadEnabled;
 
@@ -116,11 +147,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const handlePickTopicForGroup = async () => {
     if (!topicIdNumber || !myGroupId) return;
     try {
-      await dispatch(pickGroupTopic({ groupId: myGroupId, topicId: topicIdNumber })).unwrap();
+      await dispatch(
+        pickGroupTopic({ groupId: myGroupId, topicId: topicIdNumber }),
+      ).unwrap();
       toast.success("Đã chọn chủ đề cho nhóm.");
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Chọn chủ đề thất bại");
+      toast.error(
+        err instanceof Error ? err.message : "Chọn chủ đề thất bại",
+      );
     }
   };
 
@@ -131,49 +166,72 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       toast.success("Đã hủy chọn chủ đề cho nhóm.");
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Hủy chủ đề thất bại");
+      toast.error(
+        err instanceof Error ? err.message : "Hủy chủ đề thất bại",
+      );
     }
   };
 
   const handleCreatePresentation = async () => {
     if (!topicIdNumber || !classIdNumber) return;
-    if (!isCurrentUserLeader) { toast.info("Chỉ nhóm trưởng mới có thể tạo bài thuyết trình"); return; }
-    const trimmedTitle = presentationTitle.trim();
-    if (!trimmedTitle) { toast.info("Vui lòng nhập tiêu đề"); return; }
-    setIsCreating(true);
+    if (!isCurrentUserLeader) {
+      toast.info("Chỉ nhóm trưởng mới có thể tạo bài thuyết trình");
+      return;
+    }
     try {
-      const groupCode = myGroupForClass?.groupName || myGroupForClass?.name || undefined;
-      await dispatch(createPresentation({ classId: classIdNumber, topicId: topicIdNumber, title: trimmedTitle, description: presentationDescription.trim() || undefined, groupCode })).unwrap();
+      const values = await form.validateFields();
+      setIsCreating(true);
+      const groupCode =
+        myGroupForClass?.groupName || myGroupForClass?.name || undefined;
+      await dispatch(
+        createPresentation({
+          classId: classIdNumber,
+          topicId: topicIdNumber,
+          title: values.title.trim(),
+          description: values.description?.trim() || undefined,
+          groupCode,
+        }),
+      ).unwrap();
       toast.success("Tạo bài thuyết trình thành công!");
-      setIsCreateModalOpen(false); setPresentationTitle(""); setPresentationDescription("");
-      dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
+      setIsCreateModalOpen(false);
+      form.resetFields();
+      dispatch(
+        fetchPresentationsByClassAndTopic({
+          classId: classIdNumber,
+          topicId: topicIdNumber,
+        }),
+      );
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Tạo bài thuyết trình thất bại");
-    } finally { setIsCreating(false); }
+      if (err instanceof Error)
+        toast.error(err.message || "Tạo bài thuyết trình thất bại");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleOpenUploadModal = (presentationId: number, title: string) => {
     setSelectedPresentationId(presentationId);
-    setPresentationTitle(title);
+    setSelectedPresentationTitle(title);
     setIsUploadResubmit(false);
     setIsUploadModalOpen(true);
   };
 
   const handleRetry = (presentationId: number, title: string) => {
     setSelectedPresentationId(presentationId);
-    setPresentationTitle(title);
+    setSelectedPresentationTitle(title);
     setIsUploadResubmit(true);
     setIsUploadModalOpen(true);
   };
 
+  const goBack = () =>
+    isModalMode && onCloseModal ? onCloseModal() : navigate(-1);
+
   if (topicLoading) {
     return (
       <StudentLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-slate-500">Đang tải thông tin chủ đề...</p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+          <Skeleton active paragraph={{ rows: 3 }} />
+          <Skeleton active paragraph={{ rows: 6 }} />
         </div>
       </StudentLayout>
     );
@@ -183,12 +241,19 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     return (
       <StudentLayout>
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <button onClick={() => isModalMode && onCloseModal ? onCloseModal() : navigate(-1)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6">
-            <ArrowLeft className="w-5 h-5" /> Quay lại
-          </button>
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-            <p className="text-red-700 font-medium">{topicError || "Không tìm thấy chủ đề"}</p>
-          </div>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            type="link"
+            className="mb-6 pl-0"
+            onClick={goBack}>
+            Quay lại
+          </Button>
+          <Alert
+            type="error"
+            message="Không thể tải thông tin chủ đề"
+            description={topicError || "Không tìm thấy chủ đề"}
+            showIcon
+          />
         </div>
       </StudentLayout>
     );
@@ -196,424 +261,589 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => isModalMode && onCloseModal ? onCloseModal() : navigate(-1)} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition">
-            <ArrowLeft className="w-4 h-4" /> Quay lại
-          </button>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-500 truncate">{topic.topicName}</span>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            type="link"
+            className="pl-0 font-medium"
+            onClick={goBack}>
+            Quay lại
+          </Button>
+          <Text type="secondary">/</Text>
+          <Text type="secondary" className="truncate">
+            {topic.topicName}
+          </Text>
         </div>
 
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8"
-        >
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
           <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
-          <div className="relative">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-semibold">Chủ đề #{topic.sequenceNumber}</span>
-              {isEnrolled && <span className="inline-flex items-center gap-1.5 bg-emerald-400/30 text-white text-xs px-2.5 py-1 rounded-full font-semibold"><CheckCircle2 className="w-3.5 h-3.5" /> Đã ghi danh (nhóm)</span>}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{topic.topicName}</h1>
-            {topic.description && <p className="text-white/80 mb-4 max-w-2xl">{topic.description}</p>}
-            <div className="flex flex-wrap gap-3">
+          <div className="relative space-y-3">
+            <Space wrap>
+              <Tag className="!bg-white/20 !border-white/30 !text-white !font-semibold">
+                Chủ đề #{topic.sequenceNumber}
+              </Tag>
+              {isEnrolled && (
+                <Tag
+                  icon={<CheckCircleOutlined />}
+                  className="!bg-emerald-400/30 !border-white/30 !text-white !font-semibold">
+                  Đã ghi danh (nhóm)
+                </Tag>
+              )}
+            </Space>
+
+            <Title level={2} className="!text-white !mb-0 !leading-tight">
+              {topic.topicName}
+            </Title>
+            {topic.description && (
+              <Paragraph className="!text-white/80 !mb-0 max-w-2xl">
+                {topic.description}
+              </Paragraph>
+            )}
+
+            <div className="flex flex-wrap gap-3 pt-1">
               {topic.dueDate && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                  <Calendar className="w-4 h-4 text-white/80" />
+                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
+                  <CalendarOutlined className="text-white/80" />
                   <div>
-                    <p className="text-white/60 text-xs">Hạn nộp</p>
-                    <p className="text-white font-semibold text-xs">{new Date(topic.dueDate).toLocaleDateString("vi-VN")}</p>
+                    <div className="text-white/60 text-xs">Hạn nộp</div>
+                    <div className="text-white font-semibold text-xs">
+                      {new Date(topic.dueDate).toLocaleDateString("vi-VN")}
+                    </div>
                   </div>
                 </div>
               )}
               {topic.maxDurationMinutes && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                  <Clock className="w-4 h-4 text-white/80" />
+                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
+                  <ClockCircleOutlined className="text-white/80" />
                   <div>
-                    <p className="text-white/60 text-xs">Thời lượng</p>
-                    <p className="text-white font-semibold text-xs">{topic.maxDurationMinutes} phút</p>
+                    <div className="text-white/60 text-xs">Thời lượng</div>
+                    <div className="text-white font-semibold text-xs">
+                      {topic.maxDurationMinutes} phút
+                    </div>
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-sm">
-                <FileTextIcon className="w-4 h-4 text-white/80" />
+              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
+                <FileTextOutlined className="text-white/80" />
                 <div>
-                  <p className="text-white/60 text-xs">Bài nộp</p>
-                  <p className="text-white font-semibold text-xs">{presentations.length}</p>
+                  <div className="text-white/60 text-xs">Bài nộp</div>
+                  <div className="text-white font-semibold text-xs">
+                    {presentations.length}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Main content: split layout on desktop */}
-        <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-          {/* Left: Topic details + submission history */}
-          <div className="space-y-6">
-            {/* Requirements accordion */}
+        {/* Main grid */}
+        <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
+          {/* Left column */}
+          <div className="space-y-5">
+            {/* Requirements */}
             {topic.requirements && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <button
-                  onClick={() => setShowRequirements(!showRequirements)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-                      <FileTextIcon className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <span className="font-bold text-slate-900">Yêu cầu chủ đề</span>
-                  </div>
-                  {showRequirements ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                </button>
-                <AnimatePresence initial={false}>
-                  {showRequirements && (
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-5 pt-0">
-                        <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed">
-                          {topic.requirements}
-                        </pre>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <Collapse
+                defaultActiveKey={["req"]}
+                className="!rounded-2xl !border-slate-200 !shadow-sm !bg-white"
+                expandIconPosition="end"
+                items={[
+                  {
+                    key: "req",
+                    label: (
+                      <Space>
+                        <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                          <FileTextOutlined className="text-amber-600" />
+                        </div>
+                        <Text strong>Yêu cầu chủ đề</Text>
+                      </Space>
+                    ),
+                    children: (
+                      <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed m-0">
+                        {topic.requirements}
+                      </pre>
+                    ),
+                  },
+                ]}
+              />
             )}
 
             {/* Presentations list */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                    <FileTextIcon className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">Bài thuyết trình</h3>
-                    <p className="text-xs text-slate-500">{presentations.length} bài đã nộp</p>
-                  </div>
+            <Card className="!rounded-2xl !border-slate-200 !shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <FileTextOutlined className="text-indigo-600" />
+                </div>
+                <div>
+                  <Text strong className="block text-base">
+                    Bài thuyết trình
+                  </Text>
+                  <Text type="secondary" className="text-xs">
+                    {presentations.length} bài đã nộp
+                  </Text>
                 </div>
               </div>
 
               {presentations.length > 0 ? (
                 <div className="space-y-3">
                   {presentations.map((presentation) => {
-                    const sc = statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
+                    const sc =
+                      statusConfig[presentation.status?.toLowerCase()] ||
+                      statusConfig.draft;
                     const isFailed = presentation.status === "failed";
                     return (
                       <div
                         key={presentation.presentationId}
-                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                          <FileTextIcon className="w-4 h-4 text-indigo-600" />
+                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                          <FileTextOutlined className="text-indigo-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-slate-900 text-sm truncate">{presentation.title}</h4>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${sc.color}`}>{sc.icon}{sc.label}</span>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Text
+                              strong
+                              className="text-sm truncate max-w-[200px]">
+                              {presentation.title}
+                            </Text>
+                            <Tag
+                              color={sc.color}
+                              className="!rounded-full !text-xs !font-medium">
+                              {sc.label}
+                            </Tag>
                           </div>
-                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                          <Space size={12} className="text-xs text-slate-500">
                             {presentation.submissionDate && (
-                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(presentation.submissionDate).toLocaleDateString("vi-VN")}</span>
+                              <span className="flex items-center gap-1">
+                                <CalendarOutlined />
+                                {new Date(
+                                  presentation.submissionDate,
+                                ).toLocaleDateString("vi-VN")}
+                              </span>
                             )}
                             {presentation.groupCode && (
-                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {presentation.groupCode}</span>
+                              <span className="flex items-center gap-1">
+                                <TeamOutlined />
+                                {presentation.groupCode}
+                              </span>
                             )}
-                          </div>
+                          </Space>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Link to={`/student/presentation/${presentation.presentationId}`}>
-                            <Button type="primary" size="small">Xem</Button>
+                        <Space className="shrink-0">
+                          <Link
+                            to={`/student/presentation/${presentation.presentationId}`}>
+                            <Button type="primary" size="small">
+                              Xem
+                            </Button>
                           </Link>
                           {isFailed && (
                             <Button
                               type="primary"
                               danger
                               size="small"
-                              icon={<RefreshCw className="w-3 h-3" />}
-                              onClick={() => handleRetry(presentation.presentationId, presentation.title)}
-                            >
+                              icon={<ReloadOutlined />}
+                              onClick={() =>
+                                handleRetry(
+                                  presentation.presentationId,
+                                  presentation.title,
+                                )
+                              }>
                               Gửi lại
                             </Button>
                           )}
-                        </div>
+                        </Space>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
-                  <FileTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500">Chưa có bài thuyết trình nào.</p>
-                </div>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="Chưa có bài thuyết trình nào."
+                />
               )}
-            </div>
+            </Card>
           </div>
 
-          {/* Right: Action zone */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sticky top-24">
-              {!isEnrolled ? (
-                <div className="text-center py-4">
-                  {myGroupForClass && !isCurrentUserLeader ? (
-                    <>
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-7 h-7 text-slate-500" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
-                      <p className="text-sm text-slate-500 mb-4">
-                        Chỉ nhóm trưởng mới chọn chủ đề cho cả nhóm. Bạn sẽ được ghi danh khi nhóm trưởng đã chọn.
-                      </p>
-                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
-                        <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
-                      </div>
-                    </>
-                  ) : isCurrentUserLeader && myGroupId && groupTopic ? (
-                    <>
-                      <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Nhóm đã chọn chủ đề</h3>
-                      <p className="text-sm text-slate-500 mb-4">
-                        Nhóm đang làm chủ đề:{" "}
-                        <span className="font-semibold text-slate-800">{groupTopic.topicName}</span>
-                      </p>
-                      {classId && groupTopic.topicId !== topicIdNumber ? (
-                        <Link
-                          to={`/student/class/${classId}/topic/${groupTopic.topicId}`}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-                        >
-                          <BookOpen className="w-4 h-4" /> Đi tới chủ đề của nhóm
+          {/* Right column: Action zone */}
+          <div>
+            <Card className="!rounded-2xl !border-slate-200 !shadow-sm sticky top-24">
+              <AnimatePresence mode="wait">
+                {!isEnrolled ? (
+                  <motion.div
+                    key="not-enrolled"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-4 space-y-4">
+                    {myGroupForClass && !isCurrentUserLeader ? (
+                      <>
+                        <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <TeamOutlined className="text-2xl text-slate-500" />
+                        </div>
+                        <Title level={5} className="!mb-1">
+                          Chờ nhóm trưởng
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Chỉ nhóm trưởng mới chọn chủ đề cho cả nhóm. Bạn sẽ
+                          được ghi danh khi nhóm trưởng đã chọn.
+                        </Text>
+                        <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
+                          <TeamOutlined />
+                          {myGroupForClass.groupName || myGroupForClass.name}
+                        </div>
+                      </>
+                    ) : isCurrentUserLeader && myGroupId && groupTopic ? (
+                      <>
+                        <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <CheckCircleOutlined className="text-2xl text-emerald-600" />
+                        </div>
+                        <Title level={5} className="!mb-1">
+                          Nhóm đã chọn chủ đề
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Nhóm đang làm chủ đề:{" "}
+                          <Text strong>{groupTopic.topicName}</Text>
+                        </Text>
+                        {classId && groupTopic.topicId !== topicIdNumber && (
+                          <Link
+                            to={`/student/class/${classId}/topic/${groupTopic.topicId}`}>
+                            <Button
+                              type="primary"
+                              icon={<BookOutlined />}
+                              block>
+                              Đi tới chủ đề của nhóm
+                            </Button>
+                          </Link>
+                        )}
+                      </>
+                    ) : isCurrentUserLeader && myGroupId ? (
+                      <>
+                        <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <CrownOutlined className="text-2xl text-amber-600" />
+                        </div>
+                        <Title level={5} className="!mb-1">
+                          Chọn chủ đề cho nhóm
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Chọn chủ đề này cho cả nhóm — các thành viên sẽ
+                          được ghi danh cùng lúc.
+                        </Text>
+                        <Button
+                          type="primary"
+                          block
+                          icon={
+                            groupActionLoading ? (
+                              <LoadingOutlined />
+                            ) : (
+                              <CheckCircleOutlined />
+                            )
+                          }
+                          loading={groupActionLoading}
+                          onClick={handlePickTopicForGroup}>
+                          Chọn chủ đề này cho nhóm
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <BookOutlined className="text-2xl text-amber-600" />
+                        </div>
+                        <Title level={5} className="!mb-1">
+                          Tham gia nhóm trước
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Bạn cần ở trong một nhóm để nhóm trưởng chọn chủ
+                          đề.
+                        </Text>
+                        <Link to={`/student/class/${classId}`}>
+                          <Button
+                            type="primary"
+                            block
+                            icon={<TeamOutlined />}>
+                            Đến quản lý nhóm
+                          </Button>
                         </Link>
-                      ) : null}
-                    </>
-                  ) : isCurrentUserLeader && myGroupId ? (
-                    <>
-                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Crown className="w-7 h-7 text-amber-600" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Chọn chủ đề cho nhóm</h3>
-                      <p className="text-sm text-slate-500 mb-5">
-                        Chọn chủ đề này cho cả nhóm — các thành viên sẽ được ghi danh cùng lúc.
-                      </p>
+                      </>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="enrolled"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4">
+                    {isCurrentUserLeader && isGroupTopicThis && myGroupId && (
                       <Button
-                        type="primary"
+                        type="text"
+                        danger
                         block
-                        icon={groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                        onClick={handlePickTopicForGroup}
                         loading={groupActionLoading}
-                      >
-                        Chọn chủ đề này cho nhóm
+                        onClick={handleClearGroupTopic}>
+                        Hủy chọn chủ đề cho nhóm
                       </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-7 h-7 text-amber-600" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
-                      <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để nhóm trưởng chọn chủ đề.</p>
-                      <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                        <Users className="w-4 h-4" /> Đến quản lý nhóm
-                      </Link>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {isCurrentUserLeader && isGroupTopicThis && myGroupId ? (
-                    <Button
-                      type="text"
-                      danger
-                      block
-                      icon={groupActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      onClick={handleClearGroupTopic}
-                      loading={groupActionLoading}
-                    >
-                      Hủy chọn chủ đề cho nhóm
-                    </Button>
-                  ) : null}
-                  {myPresentation ? (
-                    <div className="text-center py-4">
-                      <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Bài của bạn</h3>
+                    )}
+
+                    {myPresentation ? (
+                      <div className="text-center py-2 space-y-3">
+                        <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <CheckCircleOutlined className="text-2xl text-emerald-600" />
+                        </div>
+                        <Title level={5} className="!mb-0">
+                          Bài của bạn
+                        </Title>
                         {myPresentation.status === "failed" ? (
-                          <p className="text-sm text-red-600 font-medium mb-3">
-                            Xử lý thất bại. Bạn có thể gửi lại bài để thử lại.
-                          </p>
+                          <Alert
+                            type="error"
+                            message="Xử lý thất bại. Bạn có thể gửi lại bài để thử lại."
+                            showIcon
+                            className="!rounded-xl text-left"
+                          />
                         ) : (
-                          <p className="text-sm text-slate-500 mb-4">
+                          <Text type="secondary" className="text-sm block">
                             {myPresentation.status === "draft"
                               ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
-                              : myPresentation.status === "submitted" || myPresentation.status === "processing"
+                              : myPresentation.status === "submitted" ||
+                                myPresentation.status === "processing"
                                 ? "Bài đã được nộp và đang xử lý AI."
                                 : myPresentation.status === "done"
                                   ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
                                   : ""}
-                          </p>
+                          </Text>
                         )}
-                        <div className="space-y-3">
-                        {/* Chỉ hiện nút upload khi còn ở trạng thái draft và instructor đã mở upload */}
-                        {myPresentation.status === "draft" && (
-                          <>
-                            {!canUpload ? (
-                              <Button
-                                type="primary"
-                                block
-                                icon={<Upload className="w-4 h-4" />}
-                                disabled
-                                className="!bg-slate-300 !border-slate-300"
-                              >
-                                Giảng viên chưa mở upload
-                              </Button>
-                            ) : (
-                              <Button
-                                type="primary"
-                                block
-                                icon={<Upload className="w-4 h-4" />}
-                                onClick={() => handleOpenUploadModal(myPresentation.presentationId, myPresentation.title)}
-                              >
-                                Tải lên file
-                              </Button>
-                            )}
-                          </>
-                        )}
-                        {myPresentation.status === "failed" && (
-                          <Button
-                            type="primary"
-                            danger
-                            block
-                            icon={<RefreshCw className="w-4 h-4" />}
-                            onClick={() => handleRetry(myPresentation.presentationId, myPresentation.title)}
-                          >
-                            Gửi lại bài (upload file mới)
-                          </Button>
-                        )}
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-medium mx-auto ${(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).color}`}>
-                          {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).icon}
-                          {(statusConfig[myPresentation.status?.toLowerCase()] || statusConfig.draft).label}
+
+                        <div className="space-y-2">
+                          <Tag
+                            color={
+                              (
+                                statusConfig[
+                                myPresentation.status?.toLowerCase()
+                                ] || statusConfig.draft
+                              ).color
+                            }
+                            className="!rounded-full !px-3 !py-1 !text-sm">
+                            {(
+                              statusConfig[
+                              myPresentation.status?.toLowerCase()
+                              ] || statusConfig.draft
+                            ).label}
+                          </Tag>
+
+                          {myPresentation.status === "draft" && (
+                            <div className="pt-1">
+                              {!canUpload ? (
+                                <Button
+                                  type="primary"
+                                  block
+                                  icon={<UploadOutlined />}
+                                  disabled>
+                                  Giảng viên chưa mở upload
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="primary"
+                                  block
+                                  icon={<UploadOutlined />}
+                                  onClick={() =>
+                                    handleOpenUploadModal(
+                                      myPresentation.presentationId,
+                                      myPresentation.title,
+                                    )
+                                  }>
+                                  Tải lên file
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          {myPresentation.status === "failed" && (
+                            <Button
+                              type="primary"
+                              danger
+                              block
+                              icon={<ReloadOutlined />}
+                              onClick={() =>
+                                handleRetry(
+                                  myPresentation.presentationId,
+                                  myPresentation.title,
+                                )
+                              }>
+                              Gửi lại bài (upload file mới)
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ) : myGroupForClass && isCurrentUserLeader ? (
-                    <div className="text-center py-4">
-                      <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Crown className="w-7 h-7 text-blue-600" />
+                    ) : myGroupForClass && isCurrentUserLeader ? (
+                      <div className="text-center py-2 space-y-3">
+                        <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <CrownOutlined className="text-2xl text-blue-600" />
+                        </div>
+                        <Title level={5} className="!mb-0">
+                          Tạo bài thuyết trình
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Là nhóm trưởng, bạn có thể tạo bài thuyết trình
+                          cho chủ đề này.
+                        </Text>
+                        <Button
+                          type="primary"
+                          block
+                          icon={<PlusOutlined />}
+                          onClick={() => setIsCreateModalOpen(true)}>
+                          Tạo bài thuyết trình
+                        </Button>
                       </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Tạo bài thuyết trình</h3>
-                      <p className="text-sm text-slate-500 mb-5">Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho chủ đề này.</p>
-                      <Button
-                        type="primary"
-                        block
-                        icon={<Plus className="w-4 h-4" />}
-                        onClick={() => setIsCreateModalOpen(true)}
-                      >
-                        Tạo bài thuyết trình
-                      </Button>
-                    </div>
-                  ) : myGroupForClass ? (
-                    <div className="text-center py-4">
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-7 h-7 text-slate-500" />
+                    ) : myGroupForClass ? (
+                      <div className="text-center py-2 space-y-3">
+                        <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <TeamOutlined className="text-2xl text-slate-500" />
+                        </div>
+                        <Title level={5} className="!mb-0">
+                          Chờ nhóm trưởng
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ.
+                        </Text>
+                        <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
+                          <TeamOutlined />
+                          {myGroupForClass.groupName || myGroupForClass.name}
+                        </div>
                       </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Chờ nhóm trưởng</h3>
-                      <p className="text-sm text-slate-500 mb-4">Nhóm trưởng cần tạo bài thuyết trình. Vui lòng chờ.</p>
-                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
-                        <Users className="w-4 h-4" /> {myGroupForClass.groupName || myGroupForClass.name}
+                    ) : (
+                      <div className="text-center py-2 space-y-3">
+                        <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <TeamOutlined className="text-2xl text-slate-400" />
+                        </div>
+                        <Title level={5} className="!mb-0">
+                          Tham gia nhóm trước
+                        </Title>
+                        <Text type="secondary" className="text-sm block">
+                          Bạn cần ở trong một nhóm để tạo bài thuyết trình.
+                        </Text>
+                        <Link to={`/student/class/${classId}`}>
+                          <Button
+                            type="primary"
+                            block
+                            icon={<TeamOutlined />}>
+                            Đến quản lý nhóm
+                          </Button>
+                        </Link>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-7 h-7 text-slate-400" />
-                      </div>
-                      <h3 className="font-bold text-slate-900 mb-1">Tham gia nhóm trước</h3>
-                      <p className="text-sm text-slate-500 mb-5">Bạn cần ở trong một nhóm để tạo bài thuyết trình.</p>
-                      <Link to={`/student/class/${classId}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
-                        <Users className="w-4 h-4" /> Đến quản lý nhóm
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
           </div>
         </div>
       </div>
 
       {/* Create Presentation Modal */}
-      <AnimatePresence>
-        {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Crown className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs text-amber-600 font-semibold uppercase tracking-wide">Chỉ nhóm trưởng</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Tạo bài thuyết trình</h3>
-                </div>
-                <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition"><X className="w-4 h-4 text-slate-500" /></button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Tiêu đề *</label>
-                  <input value={presentationTitle} onChange={(e) => setPresentationTitle(e.target.value)} placeholder="Nhập tiêu đề bài thuyết trình" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Mô tả <span className="text-slate-400 font-normal">(tùy chọn)</span></label>
-                  <textarea value={presentationDescription} onChange={(e) => setPresentationDescription(e.target.value)} placeholder="Mô tả bài thuyết trình" rows={3} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" />
-                </div>
-                {myGroupForClass && (
-                  <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 flex items-center gap-2 text-sm text-blue-700">
-                    <Users className="w-4 h-4 shrink-0" />
-                    Bài thuyết trình sẽ được tạo cho nhóm: <span className="font-semibold">{myGroupForClass.groupName || myGroupForClass.name}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button block onClick={() => setIsCreateModalOpen(false)}>Hủy</Button>
-                <Button
-                  type="primary"
-                  block
-                  onClick={handleCreatePresentation}
-                  loading={isCreating}
-                  disabled={!presentationTitle.trim()}
-                >
-                  Tạo bài thuyết trình
-                </Button>
-              </div>
-            </motion.div>
+      <Modal
+        title={
+          <div>
+            <Space className="mb-1">
+              <CrownOutlined className="text-amber-500" />
+              <Text className="text-xs text-amber-600 font-semibold uppercase tracking-wide">
+                Chỉ nhóm trưởng
+              </Text>
+            </Space>
+            <Title level={4} className="!mb-0">
+              Tạo bài thuyết trình
+            </Title>
           </div>
-        )}
-      </AnimatePresence>
+        }
+        open={isCreateModalOpen}
+        onCancel={() => {
+          setIsCreateModalOpen(false);
+          form.resetFields();
+        }}
+        footer={
+          <Space className="w-full justify-end">
+            <Button
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                form.resetFields();
+              }}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              loading={isCreating}
+              onClick={handleCreatePresentation}>
+              Tạo bài thuyết trình
+            </Button>
+          </Space>
+        }
+        className="!rounded-2xl"
+        centered>
+        <Form form={form} layout="vertical" className="mt-4">
+          <Form.Item
+            name="title"
+            label={<Text strong>Tiêu đề</Text>}
+            rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}>
+            <Input
+              placeholder="Nhập tiêu đề bài thuyết trình"
+              size="large"
+              className="!rounded-xl"
+            />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label={
+              <span>
+                <Text strong>Mô tả</Text>{" "}
+                <Text type="secondary">(tùy chọn)</Text>
+              </span>
+            }>
+            <TextArea
+              placeholder="Mô tả bài thuyết trình"
+              rows={3}
+              className="!rounded-xl"
+            />
+          </Form.Item>
+          {myGroupForClass && (
+            <Alert
+              type="info"
+              icon={<TeamOutlined />}
+              showIcon
+              message={
+                <span>
+                  Bài thuyết trình sẽ được tạo cho nhóm:{" "}
+                  <Text strong>
+                    {myGroupForClass.groupName || myGroupForClass.name}
+                  </Text>
+                </span>
+              }
+              className="!rounded-xl"
+            />
+          )}
+        </Form>
+      </Modal>
 
       {isUploadModalOpen && selectedPresentationId && (
         <PresentationUploadModal
           isOpen={isUploadModalOpen}
           onClose={() => {
             setIsUploadModalOpen(false);
-            if (classIdNumber && topicIdNumber) dispatch(fetchPresentationsByClassAndTopic({ classId: classIdNumber, topicId: topicIdNumber }));
+            if (classIdNumber && topicIdNumber)
+              dispatch(
+                fetchPresentationsByClassAndTopic({
+                  classId: classIdNumber,
+                  topicId: topicIdNumber,
+                }),
+              );
           }}
           presentationId={selectedPresentationId}
-          presentationTitle={presentationTitle}
+          presentationTitle={selectedPresentationTitle}
           isResubmit={isUploadResubmit}
         />
       )}
-
     </StudentLayout>
   );
 };

@@ -1,23 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
-  FileText,
   Clock,
-  Calendar,
   User,
   Users,
   BookOpen,
-  Link2,
   MessageSquare,
   Cpu,
   Star,
   Award,
   CheckCircle2,
-  RefreshCw,
-  Trophy,
+  FileText,
+  Target,
+  Lightbulb,
 } from "lucide-react";
 import {
   TrophyOutlined,
@@ -29,8 +27,13 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   UserSwitchOutlined,
+  ShareAltOutlined,
+  ReloadOutlined,
+  BarChartOutlined,
+  RobotOutlined,
+  CommentOutlined,
+  TrophyOutlined as TrophyAD,
 } from "@ant-design/icons";
-import SpeakerMappingModal from "@/components/Speaker/SpeakerMappingModal";
 import {
   Button,
   Tag,
@@ -38,7 +41,26 @@ import {
   Input,
   message as antdMessage,
   Popconfirm,
+  Card,
+  Row,
+  Col,
+  Segmented,
+  Progress,
+  Badge,
+  Space,
+  Collapse,
+  List,
+  Avatar,
+  Rate,
+  Spin,
+  Alert,
+  Empty,
+  Typography,
+  Skeleton,
+  ConfigProvider,
 } from "antd";
+import type { SegmentedProps } from "antd";
+import SpeakerMappingModal from "@/components/Speaker/SpeakerMappingModal";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
 import {
@@ -73,46 +95,43 @@ import {
   GradeDistribution,
 } from "@/services/features/groupGrade/groupGradeSlice";
 
-const statusConfig: Record<
-  string,
-  { label: string; gradient: string; border: string }
-> = {
-  draft: {
-    label: "Nháp",
-    gradient: "from-slate-100 to-slate-200",
-    border: "border-slate-300",
-  },
-  submitted: {
-    label: "Đã nộp",
-    gradient: "from-sky-100 to-blue-200",
-    border: "border-blue-300",
-  },
-  processing: {
-    label: "Đang xử lý",
-    gradient: "from-amber-100 to-orange-200",
-    border: "border-amber-300",
-  },
-  analyzed: {
-    label: "Đã chấm",
-    gradient: "from-emerald-100 to-green-200",
-    border: "border-emerald-300",
-  },
-  done: {
-    label: "Hoàn thành",
-    gradient: "from-emerald-100 to-green-200",
-    border: "border-emerald-300",
-  },
-  failed: {
-    label: "Thất bại",
-    gradient: "from-red-100 to-rose-200",
-    border: "border-red-300",
-  },
-};
+const { Text, Title, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 const REPORT_SCROLL_TOP_GAP = 12;
 
-// ── Inline member feedback sub-component ──────────────────────────────────────
+// ── Color Palette (Ant Design CSS Variables) ───────────────────────────────────
+const PALETTE = {
+  primary: "#4F46E5",        // Indigo-600
+  primaryLight: "#818CF8",   // Indigo-400
+  primaryDark: "#3730A3",     // Indigo-800
+  success: "#059669",         // Emerald-600
+  successLight: "#D1FAE5",   // Emerald-100
+  warning: "#D97706",         // Amber-600
+  warningLight: "#FEF3C7",   // Amber-100
+  danger: "#DC2626",          // Red-600
+  dangerLight: "#FEE2E2",    // Red-100
+  info: "#0284C7",            // Sky-600
+  infoLight: "#E0F2FE",      // Sky-100
+  purple: "#7C3AED",          // Violet-600
+  purpleLight: "#EDE9FE",    // Violet-100
+  slate: "#475569",           // Slate-600
+  slateLight: "#F1F5F9",     // Slate-100
+  white: "#FFFFFF",
+  bg: "#F8FAFC",              // Slate-50
+};
 
+// ── Status Config ──────────────────────────────────────────────────────────────
+const statusConfig: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
+  draft:       { label: "Nháp",         color: "#64748B", bg: "#F1F5F9", border: "#CBD5E1", dot: "default" },
+  submitted:   { label: "Đã nộp",      color: "#0284C7", bg: "#E0F2FE", border: "#BAE6FD", dot: "processing" },
+  processing:  { label: "Đang xử lý",  color: "#D97706", bg: "#FEF3C7", border: "#FDE68A", dot: "processing" },
+  analyzed:    { label: "Đã chấm",      color: "#059669", bg: "#D1FAE5", border: "#A7F3D0", dot: "success" },
+  done:        { label: "Hoàn thành",   color: "#059669", bg: "#D1FAE5", border: "#A7F3D0", dot: "success" },
+  failed:      { label: "Thất bại",     color: "#DC2626", bg: "#FEE2E2", border: "#FECACA", dot: "error" },
+};
+
+// ── Inline member feedback sub-component ──────────────────────────────────────
 const MemberFeedbackInline: React.FC<{
   groupId: number;
   distributionId: number;
@@ -129,9 +148,7 @@ const MemberFeedbackInline: React.FC<{
       return;
     }
     try {
-      await dispatch(
-        submitMemberFeedback({ groupId, distributionId, feedback: text }),
-      ).unwrap();
+      await dispatch(submitMemberFeedback({ groupId, distributionId, feedback: text })).unwrap();
       void antdMessage.success("Gửi phản hồi thành công!");
       setSent(true);
     } catch (e: any) {
@@ -140,11 +157,17 @@ const MemberFeedbackInline: React.FC<{
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-sky-100 space-y-2">
-      <p className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-        <MessageOutlined className="text-blue-400" />
-        {sent ? "Phản hồi của bạn" : "Gửi phản hồi về điểm này"}
-      </p>
+    <Card
+      size="small"
+      style={{ background: PALETTE.slateLight, border: `1px solid ${PALETTE.slateLight}` }}
+      className="mt-3"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <MessageOutlined style={{ color: PALETTE.info }} />
+        <Text strong style={{ fontSize: 12, color: PALETTE.slate }}>
+          {sent ? "Phản hồi của bạn" : "Gửi phản hồi về điểm này"}
+        </Text>
+      </div>
       <Input.TextArea
         rows={2}
         value={text}
@@ -153,7 +176,7 @@ const MemberFeedbackInline: React.FC<{
         maxLength={500}
         showCount
         disabled={actionLoading}
-        className="!text-sm"
+        style={{ fontSize: 13 }}
       />
       <Button
         size="small"
@@ -161,23 +184,54 @@ const MemberFeedbackInline: React.FC<{
         icon={<SendOutlined />}
         loading={actionLoading}
         onClick={handleSend}
-        style={
-          sent
-            ? {}
-            : {
-                background: "linear-gradient(135deg,#0284c7,#06b6d4)",
-                borderColor: "#0284c7",
-              }
-        }
+        className="mt-2"
+        style={sent ? {} : { background: PALETTE.primary, borderColor: PALETTE.primary }}
       >
         {sent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
       </Button>
+    </Card>
+  );
+};
+
+// ── Score Badge ────────────────────────────────────────────────────────────────
+const ScoreBadge: React.FC<{ score: number; max: number; size?: "small" | "default" }> = ({
+  score,
+  max,
+  size = "default",
+}) => {
+  const percent = (score / max) * 100;
+  const color =
+    percent >= 80 ? PALETTE.success :
+    percent >= 60 ? PALETTE.warning :
+    PALETTE.danger;
+
+  return (
+    <div className="flex items-center gap-2">
+      <Tag
+        color={color}
+        style={{
+          fontSize: size === "small" ? 12 : 14,
+          fontWeight: 700,
+          padding: size === "small" ? "0 6px" : "2px 10px",
+          borderRadius: 20,
+          border: "none",
+        }}
+      >
+        {score}/{max}
+      </Tag>
+      <Progress
+        percent={percent}
+        showInfo={false}
+        size="small"
+        strokeColor={color}
+        style={{ width: 60 }}
+        trailColor="#E2E8F0"
+      />
     </div>
   );
 };
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-
 const PresentationDetailPage: React.FC = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
   const navigate = useNavigate();
@@ -198,7 +252,6 @@ const PresentationDetailPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const { currentDistribution } = useAppSelector((state) => state.groupGrade);
   const { approvingIds } = useAppSelector((state) => state.instructorApproval);
-  const { selectedClass } = useAppSelector((state) => state.class);
 
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -206,11 +259,9 @@ const PresentationDetailPage: React.FC = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadResubmit, setUploadResubmit] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
-  // Ref để tránh stale closure trong socket listeners
   const currentReportRef = useRef(currentReport);
   currentReportRef.current = currentReport;
-  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] =
-    useState(false);
+  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] = useState(false);
   const [speakerModalOpen, setSpeakerModalOpen] = useState(false);
   const [groupDetail, setGroupDetail] = useState<{
     groupId?: number | string;
@@ -220,7 +271,7 @@ const PresentationDetailPage: React.FC = () => {
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
 
-  // ── Socket: listen for grade distribution events ──────────────────────────────
+  // ── Socket ───────────────────────────────────────────────────────────────────
   const { joinGroup, leaveGroup, on, socket } = useSocket();
 
   useEffect(() => {
@@ -228,7 +279,6 @@ const PresentationDetailPage: React.FC = () => {
     socket.joinPresentation(presentationIdNumber);
   }, [presentationIdNumber, socket]);
 
-  // ── Socket: listen for report:generated → auto-open report tab ─────────────
   useEffect(() => {
     if (!presentationIdNumber) return;
 
@@ -280,50 +330,36 @@ const PresentationDetailPage: React.FC = () => {
     const numGroupId = Number(currentGroupId);
     joinGroup(numGroupId);
 
-    const unwatchDistributed = on<{
-      groupId: number;
-      reportId: number;
-      distribution: GradeDistribution;
-    }>("grade:distributed", (payload) => {
-      if (
-        payload.groupId === numGroupId &&
-        payload.reportId === currentReportRef.current?.reportId
-      ) {
-        dispatch(setCurrentDistribution(payload.distribution));
-        void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
+    const unwatchDistributed = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:distributed",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+          void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
+        }
       }
-    });
+    );
 
-    const unwatchFinalized = on<{
-      groupId: number;
-      reportId: number;
-      distribution: GradeDistribution;
-    }>("grade:finalized", (payload) => {
-      if (
-        payload.groupId === numGroupId &&
-        payload.reportId === currentReportRef.current?.reportId
-      ) {
-        dispatch(setCurrentDistribution(payload.distribution));
-        void toast.success("Điểm đã được chốt bởi giảng viên!");
+    const unwatchFinalized = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:finalized",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+          void toast.success("Điểm đã được chốt bởi giảng viên!");
+        }
       }
-    });
+    );
 
     return () => {
       leaveGroup(numGroupId);
       unwatchDistributed?.();
       unwatchFinalized?.();
     };
-  }, [
-    group?.groupId,
-    joinGroup,
-    leaveGroup,
-    on,
-    dispatch,
-  ]);
+  }, [group?.groupId, joinGroup, leaveGroup, on, dispatch]);
 
+  // ── Data fetching ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (presentationIdNumber)
-      dispatch(fetchPresentationDetail(presentationIdNumber));
+    if (presentationIdNumber) dispatch(fetchPresentationDetail(presentationIdNumber));
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
@@ -332,38 +368,21 @@ const PresentationDetailPage: React.FC = () => {
     setShowReport(false);
   }, [presentationIdNumber, dispatch]);
 
-  useEffect(() => {
-    if (error) toast.error(error);
-  }, [error]);
+  useEffect(() => { if (error) toast.error(error); }, [error]);
+  useEffect(() => { if (reportError) toast.error(reportError); }, [reportError]);
 
-  useEffect(() => {
-    if (reportError) toast.error(reportError);
-  }, [reportError]);
-
-  // Fetch instructor feedbacks when report is shown
   useEffect(() => {
     if (showReport && currentReport?.reportId) {
       dispatch(fetchCriterionFeedbacks(currentReport.reportId));
     }
   }, [showReport, currentReport?.reportId, dispatch]);
 
-  // Fetch grade distribution when report is confirmed
   useEffect(() => {
-    if (
-      currentReport?.reportId &&
-      currentReport.reportStatus === "confirmed" &&
-      showReport
-    ) {
+    if (currentReport?.reportId && currentReport.reportStatus === "confirmed" && showReport) {
       void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
     }
-  }, [
-    currentReport?.reportId,
-    currentReport?.reportStatus,
-    showReport,
-    dispatch,
-  ]);
+  }, [currentReport?.reportId, currentReport?.reportStatus, showReport, dispatch]);
 
-  // Fetch group info khi có classId để biết leader/students
   useEffect(() => {
     if (presentation?.classId) {
       void dispatch(fetchMyGroupByClass(presentation.classId));
@@ -371,11 +390,17 @@ const PresentationDetailPage: React.FC = () => {
     }
   }, [presentation?.classId, dispatch]);
 
-  // Kiểm tra upload permission
-  const _isUploadEnabled = selectedClass?.isUploadEnabled ?? false;
-  void _isUploadEnabled;
+  // ── Role checks ───────────────────────────────────────────────────────────────
+  const isCurrentUserLeader = group?.myRole === "leader";
+  const isGroupMember = !!group?.groupId;
+  const hasDistribution = !!currentDistribution;
 
-  // Handler mở modal chia điểm
+  const isInstructor = user?.roles?.some((r) => r.roleName === "Instructor" || r.roleName === "Admin");
+  const isInstructorOfPresentation = isInstructor && presentation?.classId;
+  const canApprove = isInstructorOfPresentation && !presentation?.instructorApproved;
+  const isApproved = presentation?.instructorApproved;
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleOpenGradeDistribution = async () => {
     if (!presentation?.classId || !currentReport?.reportId) return;
     try {
@@ -383,89 +408,49 @@ const PresentationDetailPage: React.FC = () => {
       if (!groupId) return;
       const result = await dispatch(fetchGroupDetail(groupId)).unwrap();
       if (result) {
-        setGroupDetail({
-          groupId: result.groupId ?? result.id,
-          students: result.students,
-          myRole: result.myRole,
-        });
+        setGroupDetail({ groupId: result.groupId ?? result.id, students: result.students, myRole: result.myRole });
       } else {
-        if (group?.groupId) {
-          setGroupDetail({
-            groupId: group.groupId,
-            students: group.students,
-            myRole: group.myRole,
-          });
-        }
+        if (group?.groupId) setGroupDetail({ groupId: group.groupId, students: group.students, myRole: group.myRole });
       }
       setGradeDistributionModalOpen(true);
     } catch {
-      if (group?.groupId) {
-        setGroupDetail({
-          groupId: group.groupId,
-          students: group.students,
-          myRole: group.myRole,
-        });
-      }
+      if (group?.groupId) setGroupDetail({ groupId: group.groupId, students: group.students, myRole: group.myRole });
       setGradeDistributionModalOpen(true);
     }
   };
 
-  // Kiểm tra user hiện tại có phải là leader không
-  const isCurrentUserLeader = group?.myRole === "leader";
-  const isGroupMember = !!group?.groupId;
-  const hasDistribution = !!currentDistribution;
-
-  // Instructor approval check
-  const isInstructor = user?.roles?.some(
-    (r) => r.roleName === "Instructor" || r.roleName === "Admin",
-  );
-  const isInstructorOfPresentation = isInstructor && presentation?.classId;
-  const canApprove =
-    isInstructorOfPresentation && !presentation?.instructorApproved;
-  const isApproved = presentation?.instructorApproved;
-
-  // Handler approve từ instructor
   const handleApproveSubmission = async () => {
     if (!presentationIdNumber) return;
     try {
-      await dispatch(
-        approvePresentation({ presentationId: presentationIdNumber }),
-      ).unwrap();
+      await dispatch(approvePresentation({ presentationId: presentationIdNumber })).unwrap();
       void antdMessage.success("Đã duyệt cho nộp bài!");
-      // Refresh presentation detail
       dispatch(fetchPresentationDetail(presentationIdNumber));
-    } catch {
-      // Error đã được handle trong slice
-    }
+    } catch { /* handled in slice */ }
   };
 
-  // Handler unapprove từ instructor
   const handleUnapproveSubmission = async () => {
     if (!presentationIdNumber) return;
     try {
       await dispatch(unapprovePresentation(presentationIdNumber)).unwrap();
       void antdMessage.success("Đã huỷ duyệt!");
-      // Refresh presentation detail
       dispatch(fetchPresentationDetail(presentationIdNumber));
-    } catch {
-      // Error đã được handle trong slice
-    }
+    } catch { /* handled in slice */ }
   };
 
-  // Tìm điểm cá nhân của user hiện tại trong distribution
+  const handleViewReport = () => {
+    if (!presentationIdNumber) return;
+    setShowReport(true);
+    dispatch(fetchPresentationReport(presentationIdNumber));
+  };
+
+  // ── Memos ────────────────────────────────────────────────────────────────────
   const myDistributionGrade = useMemo(() => {
     if (!currentDistribution?.members || !user?.userId) return null;
-    return (
-      currentDistribution.members.find((m) => m.studentId === user.userId) ??
-      null
-    );
+    return currentDistribution.members.find((m) => m.studentId === user.userId) ?? null;
   }, [currentDistribution, user?.userId]);
 
   const syncedFeedbacks = useMemo(() => {
-    if (
-      currentReport?.criterionFeedbacks &&
-      currentReport.criterionFeedbacks.length > 0
-    ) {
+    if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
       return currentReport.criterionFeedbacks;
     }
     return criterionFeedbacks;
@@ -473,10 +458,7 @@ const PresentationDetailPage: React.FC = () => {
 
   const criteriaScores = useMemo(() => {
     if (!currentReport?.criterionScores) return [];
-
-    return Object.values(currentReport.criterionScores).sort(
-      (a, b) => a.criteriaId - b.criteriaId,
-    );
+    return Object.values(currentReport.criterionScores).sort((a, b) => a.criteriaId - b.criteriaId);
   }, [currentReport]);
 
   const aiOverallOutOf10 = useMemo(() => {
@@ -488,45 +470,46 @@ const PresentationDetailPage: React.FC = () => {
   const scrollToReportSection = () => {
     window.requestAnimationFrame(() => {
       if (!reportSectionRef.current) return;
-
-      const stickyHeader = document.querySelector(
-        "header.sticky",
-      ) as HTMLElement | null;
+      const stickyHeader = document.querySelector("header") as HTMLElement | null;
       const stickyHeaderHeight = stickyHeader?.offsetHeight || 0;
-
       const targetTop =
         window.scrollY +
         reportSectionRef.current.getBoundingClientRect().top +
         -stickyHeaderHeight -
         REPORT_SCROLL_TOP_GAP;
-
-      window.scrollTo({
-        top: targetTop,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
     });
   };
 
   useEffect(() => {
-    if (showReport) {
-      scrollToReportSection();
-    }
+    if (showReport) scrollToReportSection();
   }, [showReport]);
 
   useEffect(() => {
-    if (showReport && !reportLoading) {
-      scrollToReportSection();
-    }
+    if (showReport && !reportLoading) scrollToReportSection();
   }, [showReport, reportLoading, currentReport]);
 
+  // ── Derived values ────────────────────────────────────────────────────────────
+  const studentName = presentation?.student
+    ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() || "Student"
+    : "Unknown";
+
+  const sc = statusConfig[presentation?.status?.toLowerCase() ?? "draft"] ?? statusConfig.draft;
+
+  // ── Render Loading ───────────────────────────────────────────────────────────
   if (detailLoading) {
     return (
       <StudentLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-slate-500">Đang tải bài thuyết trình...</p>
-          </div>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
+          <Skeleton active paragraph={{ rows: 1 }} style={{ marginBottom: 16 }} />
+          <Row gutter={[16, 16]}>
+            {[1, 2, 3, 4].map((i) => (
+              <Col xs={12} sm={12} md={6} key={i}>
+                <Card><Skeleton active paragraph={{ rows: 1 }} /></Card>
+              </Col>
+            ))}
+          </Row>
+          <Card style={{ marginTop: 16 }}><Skeleton active paragraph={{ rows: 6 }} /></Card>
         </div>
       </StudentLayout>
     );
@@ -535,214 +518,308 @@ const PresentationDetailPage: React.FC = () => {
   if (error || !presentation) {
     return (
       <StudentLayout>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" /> Quay lại
-          </button>
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-            <p className="text-red-700 font-medium">
-              {error || "Không tìm thấy bài thuyết trình"}
-            </p>
-          </div>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
+          <Button icon={<ArrowLeft size={16} />} onClick={() => navigate(-1)} style={{ marginBottom: 16 }}>
+            Quay lại
+          </Button>
+          <Alert
+            message={error || "Không tìm thấy bài thuyết trình"}
+            type="error"
+            showIcon
+            action={<Button size="small" onClick={() => navigate(-1)}>Quay lại</Button>}
+          />
         </div>
       </StudentLayout>
     );
   }
 
-  const studentName = presentation.student
-    ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
-      "Student"
-    : "Unknown";
-
-  const sc =
-    statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
-
-  const handleViewReport = () => {
-    if (!presentationIdNumber) return;
-    if (showReport) {
-      scrollToReportSection();
-    }
-    setShowReport(true);
-    dispatch(fetchPresentationReport(presentationIdNumber));
-  };
-
-  const statCards = [
+  // ── Segmented options ────────────────────────────────────────────────────────
+  const reportSegmentOptions: SegmentedProps["options"] = [
     {
-      icon: User,
-      label: "Người thuyết trình",
-      value: studentName,
-      gradient: "from-blue-50 to-indigo-50",
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-100",
+      label: (
+        <Space size={4}>
+          <RobotOutlined />
+          <span>AI Đánh giá</span>
+        </Space>
+      ),
+      value: "ai",
     },
     {
-      icon: BookOpen,
-      label: "Chủ đề",
-      value: presentation.topic?.topicName || "N/A",
-      gradient: "from-emerald-50 to-teal-50",
-      iconColor: "text-emerald-600",
-      iconBg: "bg-emerald-100",
-    },
-    {
-      icon: Clock,
-      label: "Thời lượng",
-      value: presentation.durationSeconds
-        ? `${Math.floor(presentation.durationSeconds / 60)}m ${presentation.durationSeconds % 60}s`
-        : "Chưa có",
-      gradient: "from-amber-50 to-orange-50",
-      iconColor: "text-amber-600",
-      iconBg: "bg-amber-100",
-    },
-    {
-      icon: Calendar,
-      label: "Trạng thái",
-      value: sc.label,
-      gradient: `bg-gradient-to-br ${sc.gradient}`,
-      iconColor: "text-slate-600",
-      iconBg: "bg-white",
+      label: (
+        <Space size={4}>
+          <CommentOutlined />
+          <span>Phản hồi GV</span>
+          {syncedFeedbacks.length > 0 && (
+            <Badge count={syncedFeedbacks.length} size="small" style={{ backgroundColor: PALETTE.success }} />
+          )}
+        </Space>
+      ),
+      value: "instructor",
     },
   ];
 
+  // ── Main Render ─────────────────────────────────────────────────────────────
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition text-sm"
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: PALETTE.primary,
+            colorSuccess: PALETTE.success,
+            colorWarning: PALETTE.warning,
+            colorError: PALETTE.danger,
+            colorInfo: PALETTE.info,
+            borderRadius: 12,
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          },
+          components: {
+            Card: { borderRadiusLG: 16 },
+            Button: { borderRadiusLG: 10 },
+            Tag: { borderRadiusSM: 20 },
+          },
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 8px 32px" }}>
+
+          {/* ── Page Header ── */}
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
           >
-            <ArrowLeft className="w-4 h-4" /> Quay lại
-          </button>
-          <div className="flex items-center gap-2">
-            {/* Instructor: Hiển thị nút duyệt/huỷ duyệt */}
-            {isInstructorOfPresentation && (
-              <>
-                {canApprove && (
+            {/* Breadcrumb + Action Bar */}
+            <div className="flex items-center justify-between mb-4" style={{ flexWrap: "wrap", gap: 8 }}>
+              <Button
+                icon={<ArrowLeft size={14} />}
+                onClick={() => navigate(-1)}
+                type="text"
+                style={{ color: PALETTE.slate, padding: "4px 8px", height: "auto" }}
+              >
+                Quay lại
+              </Button>
+
+              <Space wrap size={8} align="center">
+                {/* Instructor actions */}
+                {isInstructorOfPresentation && canApprove && (
                   <Popconfirm
                     title="Duyệt cho nộp bài?"
                     description="Sinh viên sẽ có thể nộp bài thuyết trình sau khi duyệt."
                     okText="Duyệt"
                     cancelText="Hủy"
                     onConfirm={handleApproveSubmission}
-                    okButtonProps={{
-                      loading: approvingIds.includes(presentationIdNumber ?? 0),
-                    }}
+                    okButtonProps={{ loading: approvingIds.includes(presentationIdNumber ?? 0) }}
                   >
-                    <Button
-                      type="primary"
-                      icon={<CheckCircleOutlined />}
-                      style={{
-                        background: "linear-gradient(135deg, #10b981, #059669)",
-                        borderColor: "#10b981",
-                      }}
-                    >
+                    <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: PALETTE.success, borderColor: PALETTE.success }}>
                       Duyệt nộp bài
                     </Button>
                   </Popconfirm>
                 )}
-                {isApproved && (
+                {isInstructorOfPresentation && isApproved && (
                   <Popconfirm
                     title="Huỷ duyệt?"
                     description="Sinh viên sẽ không thể nộp bài cho đến khi được duyệt lại."
                     okText="Huỷ duyệt"
                     cancelText="Hủy"
                     onConfirm={handleUnapproveSubmission}
-                    okButtonProps={{
-                      danger: true,
-                      loading: approvingIds.includes(presentationIdNumber ?? 0),
-                    }}
+                    okButtonProps={{ danger: true, loading: approvingIds.includes(presentationIdNumber ?? 0) }}
                   >
-                    <Button danger icon={<ExclamationCircleOutlined />}>
-                      Huỷ duyệt
-                    </Button>
+                    <Button danger icon={<ExclamationCircleOutlined />}>Huỷ duyệt</Button>
                   </Popconfirm>
                 )}
-              </>
-            )}
 
-            {/* Trạng thái đã duyệt cho student */}
-            {!isInstructor && isApproved && (
-              <Tag
-                icon={<CheckCircleOutlined />}
-                color="success"
-                className="!py-1.5 !px-3 !text-sm !font-medium"
-              >
-                Đã được duyệt
-              </Tag>
-            )}
+                {!isInstructor && isApproved && (
+                  <Tag icon={<CheckCircleOutlined />} color="success" style={{ borderRadius: 20, padding: "2px 12px", fontWeight: 600 }}>
+                    Đã được duyệt
+                  </Tag>
+                )}
 
-            {isCurrentUserLeader && (
-              <Button
-                icon={<UserSwitchOutlined />}
-                onClick={() => setSpeakerModalOpen(true)}
-              >
-                Ánh xạ diễn giả
-              </Button>
-            )}
-            <Button
-              icon={<Link2 className="w-4 h-4" />}
-              onClick={() => setShareModalOpen(true)}
+                {isCurrentUserLeader && (
+                  <Button icon={<UserSwitchOutlined />} onClick={() => setSpeakerModalOpen(true)}>
+                    Ánh xạ diễn giả
+                  </Button>
+                )}
+
+                <Button icon={<ShareAltOutlined />} onClick={() => setShareModalOpen(true)}>
+                  Chia sẻ
+                </Button>
+
+                <Badge dot status={sc.dot as "success" | "error" | "default" | "processing" | "warning"}>
+                  <Tag style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontWeight: 600, borderRadius: 20 }}>
+                    {sc.label}
+                  </Tag>
+                </Badge>
+              </Space>
+            </div>
+
+            {/* Title Section */}
+            <Card
+              style={{
+                borderRadius: 20,
+                border: "none",
+                background: `linear-gradient(135deg, ${PALETTE.primary} 0%, ${PALETTE.primaryDark} 100%)`,
+                color: PALETTE.white,
+                overflow: "hidden",
+                position: "relative",
+              }}
+              styles={{ body: { padding: "28px 28px 24px" } }}
+              className="shadow-lg"
             >
-              Chia sẻ
-            </Button>
-            <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border font-semibold bg-gradient-to-r ${sc.gradient} ${sc.border}`}
-            >
-              <FileText className="w-3.5 h-3.5" /> {sc.label}
-            </span>
-          </div>
-        </div>
+              {/* Decorative circles */}
+              <div style={{
+                position: "absolute", top: -30, right: -30, width: 160, height: 160,
+                borderRadius: "50%", background: "rgba(255,255,255,0.06)",
+              }} />
+              <div style={{
+                position: "absolute", bottom: -20, right: 80, width: 100, height: 100,
+                borderRadius: "50%", background: "rgba(255,255,255,0.04)",
+              }} />
 
-        {/* Page title */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            {presentation.title}
-          </h1>
-          {presentation.description && (
-            <p className="text-slate-500 mt-1">{presentation.description}</p>
-          )}
-        </motion.div>
-
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map(
-            ({ icon: Icon, label, value, gradient, iconColor, iconBg }, i) => (
-              <motion.div
-                key={label}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
-                className={`bg-gradient-to-br ${gradient} rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4`}
-              >
-                <div
-                  className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <Title level={2} style={{ color: PALETTE.white, margin: 0, fontWeight: 800, fontSize: 24, lineHeight: 1.3 }}
+                  ellipsis={{ rows: 2, expandable: false, tooltip: presentation.title }}
                 >
-                  <Icon className={`w-5 h-5 ${iconColor}`} />
+                  {presentation.title}
+                </Title>
+                {presentation.description && (
+                  <Paragraph style={{ color: "rgba(255,255,255,0.75)", margin: "8px 0 0", fontSize: 14 }}>
+                    {presentation.description}
+                  </Paragraph>
+                )}
+                <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Avatar size={32} style={{ background: "rgba(255,255,255,0.2)", color: PALETTE.white, fontWeight: 600 }}>
+                    {studentName.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <div>
+                    <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600 }}>{studentName}</Text>
+                    {presentation.createdAt && (
+                      <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, display: "block" }}>
+                        {new Date(presentation.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </Text>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                    {label}
-                  </p>
-                  <p className="font-bold text-slate-900 truncate">{value}</p>
-                </div>
-              </motion.div>
-            ),
-          )}
-        </div>
+              </div>
+            </Card>
+          </motion.div>
 
-        {/* Presentation Player */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+          {/* ── Stat Cards ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+          >
+            <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
+              {/* Presenter */}
+              <Col xs={12} sm={12} md={6}>
+                <Card
+                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  styles={{ body: { padding: "16px" } }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: PALETTE.infoLight, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <User size={20} color={PALETTE.info} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                        Người thuyết trình
+                      </Text>
+                      <Text strong style={{ fontSize: 13, display: "block" }} ellipsis={{ tooltip: studentName }}>
+                        {studentName}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* Topic */}
+              <Col xs={12} sm={12} md={6}>
+                <Card
+                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  styles={{ body: { padding: "16px" } }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: PALETTE.successLight, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <BookOpen size={20} color={PALETTE.success} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                        Chủ đề
+                      </Text>
+                      <Text strong style={{ fontSize: 13, display: "block" }} ellipsis={{ tooltip: presentation.topic?.topicName || "N/A" }}>
+                        {presentation.topic?.topicName || "N/A"}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* Duration */}
+              <Col xs={12} sm={12} md={6}>
+                <Card
+                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  styles={{ body: { padding: "16px" } }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: PALETTE.warningLight, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Clock size={20} color={PALETTE.warning} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                        Thời lượng
+                      </Text>
+                      <Text strong style={{ fontSize: 13, display: "block" }}>
+                        {presentation.durationSeconds
+                          ? `${Math.floor(presentation.durationSeconds / 60)}m ${presentation.durationSeconds % 60}s`
+                          : "Chưa có"}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* Slides count */}
+              <Col xs={12} sm={12} md={6}>
+                <Card
+                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  styles={{ body: { padding: "16px" } }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: PALETTE.purpleLight, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <FileText size={20} color={PALETTE.purple} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                        Số slide
+                      </Text>
+                      <Text strong style={{ fontSize: 13, display: "block" }}>
+                        {presentation.slides?.length ?? 0} slide
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </motion.div>
+
+          {/* ── Presentation Player ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            style={{ marginTop: 16 }}
+          >
           <PresentationPlayer
             slides={presentation.slides || []}
             audioRecord={presentation.audioRecord || null}
@@ -753,949 +830,842 @@ const PresentationDetailPage: React.FC = () => {
             createdAt={presentation.createdAt}
             onResultClick={handleViewReport}
             resultLoading={reportLoading}
+            showHeader={false}
           />
-        </motion.div>
+          </motion.div>
 
-        {/* Progress Tracker — hiển thị khi đang xử lý */}
-        {(presentation.status === "submitted" ||
-          presentation.status === "processing") &&
-          presentationIdNumber && (
+          {/* ── Progress Tracker ── */}
+          {(presentation.status === "submitted" || presentation.status === "processing") && presentationIdNumber && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.25 }}
+              style={{ marginTop: 16 }}
             >
               <PresentationProgressTracker
                 presentationId={presentationIdNumber}
-                onCompleted={() => {
-                  dispatch(fetchPresentationDetail(presentationIdNumber));
-                }}
+                onCompleted={() => dispatch(fetchPresentationDetail(presentationIdNumber))}
               />
             </motion.div>
           )}
 
-        {/* Retry button when presentation failed — hiển thị ngoài report section */}
-        {presentation.status === "failed" && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <FileText className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-red-700">
-                  Xử lý AI thất bại
-                </p>
-                <p className="text-xs text-red-600">
-                  Bài thuyết trình không thể được phân tích. Bạn có thể gửi lại
-                  để thử lại.
-                </p>
-              </div>
-            </div>
-            <Button
-              type="primary"
-              danger
-              icon={<RefreshCw className="w-4 h-4" />}
-              onClick={() => {
-                setUploadResubmit(true);
-                setUploadModalOpen(true);
-              }}
+          {/* ── Failed State ── */}
+          {presentation.status === "failed" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              style={{ marginTop: 16 }}
             >
-              Gửi lại
-            </Button>
-          </motion.div>
-        )}
+              <Alert
+                message="Xử lý AI thất bại"
+                description="Bài thuyết trình không thể được phân tích. Bạn có thể gửi lại để thử lại."
+                type="error"
+                showIcon
+                icon={<ExclamationCircleOutlined />}
+                action={
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<ReloadOutlined />}
+                    onClick={() => { setUploadResubmit(true); setUploadModalOpen(true); }}
+                  >
+                    Gửi lại
+                  </Button>
+                }
+                style={{ borderRadius: 16 }}
+              />
+            </motion.div>
+          )}
 
-        {showReport && (
-          <motion.div
-            ref={reportSectionRef}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                Kết quả đánh giá
-              </h2>
-              {currentReport?.generatedAt && (
-                <span className="text-sm text-slate-500">
-                  {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
-                </span>
-              )}
-            </div>
-
-            {/* Retry button when report is rejected */}
-            {currentReport?.reportStatus === "rejected" && (
-              <div className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-red-700">
-                      Báo cáo AI bị từ chối
-                    </p>
-                    <p className="text-xs text-red-600">
-                      Bạn có thể gửi lại bài thuyết trình để được đánh giá lại.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="primary"
-                  danger
-                  icon={<RefreshCw className="w-4 h-4" />}
-                  onClick={() => {
-                    setUploadResubmit(true);
-                    setUploadModalOpen(true);
-                  }}
-                >
-                  Gửi lại
-                </Button>
-              </div>
-            )}
-
-            {/* Tabs: AI vs Giảng viên */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-              <button
-                type="button"
-                onClick={() => setReportTab("ai")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  reportTab === "ai"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+          {/* ── Report Section ── */}
+          {showReport && (
+            <motion.div
+              ref={reportSectionRef as React.RefObject<HTMLDivElement>}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              style={{ marginTop: 16 }}
+            >
+              <Card
+                style={{ borderRadius: 20, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.07)" }}
+                styles={{ body: { padding: "24px 24px 20px" } }}
               >
-                <Cpu className="w-4 h-4" />
-                AI Đánh giá
-              </button>
-              <button
-                type="button"
-                onClick={() => setReportTab("instructor")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  reportTab === "instructor"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <MessageSquare className="w-4 h-4" />
-                Phản hồi GV
-                {syncedFeedbacks.length > 0 && (
-                  <span className="bg-emerald-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {syncedFeedbacks.length}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {reportLoading ? (
-              <div className="flex items-center justify-center py-10 text-slate-500">
-                <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin mr-3" />
-                Đang tải kết quả...
-              </div>
-            ) : currentReport ? (
-              <>
-                {/* ── Tab AI ── */}
-                {reportTab === "ai" && (
-                  <div className="space-y-4">
-                    <div className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-blue-50 p-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-slate-600">
-                            Điểm tổng (AI)
-                          </p>
-                          <p className="text-3xl font-bold text-sky-700">
-                            {aiOverallOutOf10 !== null ? (
-                              <>
-                                {aiOverallOutOf10}
-                                <span className="text-2xl font-semibold text-sky-600">
-                                  {" "}
-                                  / 10
-                                </span>
-                              </>
-                            ) : (
-                              "—"
-                            )}
-                          </p>
-                        </div>
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
-                          <Cpu className="w-8 h-8 text-sky-600" />
-                        </div>
-                      </div>
+                {/* Report Header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12,
+                      background: `${PALETTE.primary}15`, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <BarChartOutlined style={{ fontSize: 18, color: PALETTE.primary }} />
                     </div>
+                    <div>
+                      <Title level={4} style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>Kết quả đánh giá</Title>
+                      {currentReport?.generatedAt && (
+                        <Text style={{ fontSize: 12, color: PALETTE.slate }}>
+                          {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                        </Text>
+                      )}
+                    </div>
+                  </div>
+                  <Segmented
+                    options={reportSegmentOptions}
+                    value={reportTab}
+                    onChange={(val) => setReportTab(val as "ai" | "instructor")}
+                    size="large"
+                  />
+                </div>
 
-                    {/* ── Confirmed Grade & Distribution Section ── */}
-                    {currentReport?.reportStatus === "confirmed" &&
-                      currentReport.gradeForInstructor !== null &&
-                      isGroupMember && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="space-y-3"
+                {/* Rejected Alert */}
+                {currentReport?.reportStatus === "rejected" && (
+                  <Alert
+                    message="Báo cáo AI bị từ chối"
+                    description="Bạn có thể gửi lại bài thuyết trình để được đánh giá lại."
+                    type="warning"
+                    showIcon
+                    icon={<ExclamationCircleOutlined />}
+                    action={
+                      <Button
+                        type="primary"
+                        danger
+                        icon={<ReloadOutlined />}
+                        onClick={() => { setUploadResubmit(true); setUploadModalOpen(true); }}
+                      >
+                        Gửi lại
+                      </Button>
+                    }
+                    style={{ marginBottom: 16, borderRadius: 12 }}
+                  />
+                )}
+
+                {/* Report Content */}
+                {reportLoading ? (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <Spin size="large" />
+                    <Text style={{ display: "block", marginTop: 12, color: PALETTE.slate }}>Đang tải kết quả...</Text>
+                  </div>
+                ) : currentReport ? (
+                  <AnimatePresence mode="wait">
+                    {reportTab === "ai" && (
+                      <motion.div
+                        key="ai-tab"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        {/* AI Score Hero */}
+                        <Card
+                          style={{
+                            borderRadius: 16,
+                            background: `linear-gradient(135deg, ${PALETTE.infoLight} 0%, ${PALETTE.purpleLight} 100%)`,
+                            border: `1px solid ${PALETTE.infoLight}`,
+                            marginBottom: 16,
+                          }}
+                          styles={{ body: { padding: "20px 24px" } }}
                         >
-                          {/* ── Instructor Grade Card ── */}
-                          <div
-                            className={`rounded-2xl border-2 p-5 transition-all ${
-                              hasDistribution
-                                ? "border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-teal-50"
-                                : "border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50"
-                            }`}
-                          >
-                            {/* Top row: grade info + action */}
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-4">
-                                <div
-                                  className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
-                                    hasDistribution
-                                      ? currentDistribution?.status ===
-                                        "finalized"
-                                        ? "bg-gradient-to-br from-emerald-500 to-teal-600"
-                                        : currentDistribution?.status ===
-                                            "reopened"
-                                          ? "bg-gradient-to-br from-blue-500 to-indigo-600"
-                                          : "bg-gradient-to-br from-orange-400 to-amber-500"
-                                      : "bg-gradient-to-br from-amber-500 to-orange-600"
-                                  }`}
-                                >
-                                  <Trophy className="w-7 h-7 text-white" />
-                                </div>
-                                <div>
-                                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
-                                    Điểm giảng viên
-                                  </p>
-                                  <p className="text-2xl font-bold text-slate-900">
-                                    {currentReport.gradeForInstructor}
-                                    <span className="text-base font-semibold text-slate-400">
-                                      {" "}
-                                      / 10
-                                    </span>
-                                  </p>
-                                </div>
+                          <Row gutter={24} align="middle">
+                            <Col flex="none">
+                              <div style={{
+                                width: 72, height: 72, borderRadius: "50%",
+                                background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.primaryDark})`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                boxShadow: `0 8px 24px ${PALETTE.primary}40`,
+                              }}>
+                                <RobotOutlined style={{ fontSize: 28, color: PALETTE.white }} />
                               </div>
+                            </Col>
+                            <Col flex="auto">
+                              <Text style={{ fontSize: 13, color: PALETTE.slate, fontWeight: 500, display: "block", marginBottom: 4 }}>
+                                Điểm tổng (AI)
+                              </Text>
+                              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                                <span style={{ fontSize: 36, fontWeight: 800, color: PALETTE.primary, lineHeight: 1 }}>
+                                  {aiOverallOutOf10 !== null ? aiOverallOutOf10 : "—"}
+                                </span>
+                                <span style={{ fontSize: 20, fontWeight: 600, color: PALETTE.primaryLight }}>/ 10</span>
+                              </div>
+                            </Col>
+                            <Col flex="none">
+                              <Rate
+                                disabled
+                                allowHalf
+                                value={aiOverallOutOf10 !== null ? Math.min(5, Math.max(0, parseFloat(aiOverallOutOf10) / 2)) : 0}
+                                style={{ fontSize: 18 }}
+                              />
+                            </Col>
+                          </Row>
+                        </Card>
 
-                              {/* ── Leader actions ── */}
-                              {isCurrentUserLeader && (
-                                <div className="flex flex-col items-end gap-1.5">
-                                  {/* Not yet submitted */}
-                                  {!hasDistribution && (
+                        {/* Confirmed Grade & Distribution */}
+                        {currentReport?.reportStatus === "confirmed" && currentReport.gradeForInstructor !== null && isGroupMember && (
+                          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 16 }}>
+                            {/* Instructor Grade Card */}
+                            <Card
+                              style={{
+                                borderRadius: 16,
+                                border: hasDistribution ? `2px solid ${PALETTE.successLight}` : `2px solid ${PALETTE.warningLight}`,
+                                background: hasDistribution
+                                  ? `linear-gradient(135deg, ${PALETTE.successLight}40 0%, #fff 100%)`
+                                  : `linear-gradient(135deg, ${PALETTE.warningLight}40 0%, #fff 100%)`,
+                              }}
+                              styles={{ body: { padding: "20px 24px" } }}
+                            >
+                              <Row gutter={24} align="middle">
+                                <Col flex="none">
+                                  <div style={{
+                                    width: 52, height: 52, borderRadius: 14,
+                                    background: hasDistribution
+                                      ? `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.primary})`
+                                      : `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                  }}>
+                                    <TrophyAD style={{ fontSize: 22, color: PALETTE.white }} />
+                                  </div>
+                                </Col>
+                                <Col flex="auto">
+                                  <Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate, display: "block", marginBottom: 2 }}>
+                                    Điểm giảng viên
+                                  </Text>
+                                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                                    <span style={{ fontSize: 28, fontWeight: 800, color: PALETTE.slate }}>
+                                      {currentReport.gradeForInstructor}
+                                    </span>
+                                    <span style={{ fontSize: 16, color: "#94A3B8" }}>/ 10</span>
+                                  </div>
+                                </Col>
+                                <Col flex="none">
+                                  {isCurrentUserLeader && !hasDistribution && (
                                     <Button
                                       type="primary"
                                       size="large"
                                       icon={<TrophyOutlined />}
+                                      onClick={handleOpenGradeDistribution}
                                       style={{
-                                        background:
-                                          "linear-gradient(135deg,#d97706,#ea580c)",
-                                        borderColor: "#d97706",
+                                        background: `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
+                                        border: "none",
                                         borderRadius: 12,
                                         height: 44,
                                         fontWeight: 600,
+                                        boxShadow: "0 4px 12px rgba(217,119,6,0.3)",
                                       }}
-                                      onClick={handleOpenGradeDistribution}
-                                      className="shadow-md"
                                     >
                                       Chia điểm cho nhóm
                                     </Button>
                                   )}
-                                  {/* Submitted — locked, waiting */}
-                                  {hasDistribution &&
-                                    currentDistribution?.status ===
-                                      "submitted" && (
-                                      <Tooltip title="Đã nộp. Chờ instructor xem xét hoặc mở lại.">
-                                        <Tag
-                                          icon={<LockOutlined />}
-                                          color="orange"
-                                          className="!py-1.5 !px-3 !text-sm cursor-not-allowed"
-                                        >
-                                          Đã nộp — chờ instructor xem xét
-                                        </Tag>
-                                      </Tooltip>
-                                    )}
-                                  {/* Reopened — can edit again */}
-                                  {hasDistribution &&
-                                    currentDistribution?.status ===
-                                      "reopened" && (
-                                      <Button
-                                        type="primary"
-                                        size="large"
-                                        icon={<EditOutlined />}
-                                        style={{
-                                          background:
-                                            "linear-gradient(135deg,#0284c7,#0ea5e9)",
-                                          borderColor: "#0284c7",
-                                          borderRadius: 12,
-                                          height: 44,
-                                          fontWeight: 600,
-                                        }}
-                                        onClick={handleOpenGradeDistribution}
-                                        className="shadow-md"
-                                      >
-                                        Cập nhật điểm (lần cuối)
-                                      </Button>
-                                    )}
-                                  {/* Finalized — permanently locked */}
-                                  {hasDistribution &&
-                                    currentDistribution?.status ===
-                                      "finalized" && (
-                                      <Tooltip title="Điểm đã được chốt bởi instructor. Không thể thay đổi.">
-                                        <Tag
-                                          icon={<LockOutlined />}
-                                          color="green"
-                                          className="!py-1.5 !px-3 !text-sm cursor-not-allowed"
-                                        >
-                                          Đã chốt điểm
-                                        </Tag>
-                                      </Tooltip>
-                                    )}
-                                </div>
-                              )}
-
-                              {/* ── Non-leader members ── */}
-                              {!isCurrentUserLeader && hasDistribution && (
-                                <Button
-                                  icon={<EyeOutlined />}
-                                  size="large"
-                                  style={{
-                                    borderRadius: 12,
-                                    height: 44,
-                                    fontWeight: 600,
-                                  }}
-                                  onClick={handleOpenGradeDistribution}
-                                >
-                                  Xem chi tiết
-                                </Button>
-                              )}
-                            </div>
-
-                            {/* Status info row */}
-                            <div className="mt-4 pt-3 border-t border-slate-100">
-                              {hasDistribution ? (
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                                  <p className="text-sm text-emerald-700 font-medium">
-                                    Phân chia bởi{" "}
-                                    <span className="font-bold">
-                                      {currentDistribution.leader?.firstName ??
-                                        ""}{" "}
-                                      {currentDistribution.leader?.lastName ??
-                                        ""}
-                                    </span>
-                                    {currentDistribution.distributedAt && (
-                                      <span className="text-emerald-500 font-normal">
-                                        {" "}
-                                        —{" "}
-                                        {new Date(
-                                          currentDistribution.distributedAt,
-                                        ).toLocaleDateString("vi-VN", {
-                                          day: "2-digit",
-                                          month: "short",
-                                          year: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </span>
-                                    )}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                                  <p className="text-sm text-amber-700">
-                                    {isCurrentUserLeader
-                                      ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
-                                      : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* ── Personal received grade card ── */}
-                          {hasDistribution && myDistributionGrade && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.98 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.1 }}
-                              className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-indigo-50 p-5"
-                            >
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                                    <User className="w-6 h-6 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-0.5">
-                                      Điểm cá nhân của bạn
-                                    </p>
-                                    <div className="flex items-baseline gap-2">
-                                      <p className="text-2xl font-bold text-sky-700">
-                                        {Number(
-                                          myDistributionGrade.receivedGrade,
-                                        ).toFixed(2)}
-                                      </p>
-                                      <span className="text-sm text-slate-400 font-medium">
-                                        / {currentReport.gradeForInstructor}{" "}
-                                        điểm
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <Tooltip title="Phần trăm đóng góp được phân chia">
-                                    <Tag
-                                      color="blue"
-                                      className="!text-base !font-bold !px-3 !py-1 !rounded-lg"
-                                    >
-                                      {Number(
-                                        myDistributionGrade.percentage,
-                                      ).toFixed(0)}
-                                      %
+                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "submitted" && (
+                                    <Tag icon={<LockOutlined />} color="orange" style={{ fontSize: 12, padding: "4px 12px", borderRadius: 20 }}>
+                                      Đã nộp — chờ instructor xem xét
                                     </Tag>
-                                  </Tooltip>
-                                  <p className="text-xs text-slate-400 mt-1">
-                                    tỷ lệ đóng góp
-                                  </p>
-                                </div>
-                              </div>
-                              {myDistributionGrade.reason && (
-                                <div className="mt-3 pt-3 border-t border-sky-100">
-                                  <p className="text-xs text-slate-500">
-                                    <span className="font-semibold">
-                                      Lý do:{" "}
-                                    </span>
-                                    {myDistributionGrade.reason}
-                                  </p>
-                                </div>
-                              )}
+                                  )}
+                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "reopened" && (
+                                    <Button
+                                      type="primary"
+                                      size="large"
+                                      icon={<EditOutlined />}
+                                      onClick={handleOpenGradeDistribution}
+                                      style={{
+                                        background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.info})`,
+                                        border: "none",
+                                        borderRadius: 12,
+                                        height: 44,
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      Cập nhật điểm (lần cuối)
+                                    </Button>
+                                  )}
+                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "finalized" && (
+                                    <Tag icon={<LockOutlined />} color="success" style={{ fontSize: 12, padding: "4px 12px", borderRadius: 20 }}>
+                                      Đã chốt điểm
+                                    </Tag>
+                                  )}
+                                  {!isCurrentUserLeader && hasDistribution && (
+                                    <Button icon={<EyeOutlined />} size="large" onClick={handleOpenGradeDistribution}>
+                                      Xem chi tiết
+                                    </Button>
+                                  )}
+                                </Col>
+                              </Row>
 
-                              {/* ── Inline member feedback (non-leader only, not finalized) ── */}
-                              {!isCurrentUserLeader &&
-                                currentDistribution?.status !== "finalized" && (
-                                  <MemberFeedbackInline
-                                    groupId={Number(
-                                      groupDetail?.groupId ??
-                                        group?.groupId ??
-                                        0,
-                                    )}
-                                    distributionId={
-                                      currentDistribution?.id ?? 0
-                                    }
-                                    existingFeedback={
-                                      myDistributionGrade.memberFeedback ?? null
-                                    }
-                                  />
-                                )}
-                              {/* Finalized notice for member */}
-                              {!isCurrentUserLeader &&
-                                currentDistribution?.status === "finalized" && (
-                                  <div className="mt-3 pt-3 border-t border-sky-100 flex items-center gap-2">
-                                    <LockOutlined className="text-emerald-500" />
-                                    <p className="text-xs text-emerald-600 font-medium">
-                                      Điểm đã được chốt. Không thể phản hồi.
-                                    </p>
+                              {/* Status Row */}
+                              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
+                                {hasDistribution ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <CheckCircle2 size={14} color={PALETTE.success} />
+                                    <Text style={{ fontSize: 13, color: PALETTE.success }}>
+                                      Phân chia bởi <strong>{currentDistribution.leader?.firstName ?? ""} {currentDistribution.leader?.lastName ?? ""}</strong>
+                                      {currentDistribution.distributedAt && (
+                                        <Text style={{ color: "#94A3B8", fontWeight: 400 }}>
+                                          {" — "}{new Date(currentDistribution.distributedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                        </Text>
+                                      )}
+                                    </Text>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <Users size={14} color={PALETTE.warning} />
+                                    <Text style={{ fontSize: 13, color: PALETTE.warning }}>
+                                      {isCurrentUserLeader
+                                        ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
+                                        : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."}
+                                    </Text>
                                   </div>
                                 )}
-                            </motion.div>
-                          )}
+                              </div>
+                            </Card>
 
-                          {/* ── Summary grid for leader ── */}
-                          {hasDistribution &&
-                            isCurrentUserLeader &&
-                            currentDistribution.members &&
-                            currentDistribution.members.length > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.15 }}
-                                className="rounded-2xl border border-slate-200 bg-white p-4"
-                              >
-                                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                  <Users className="w-3.5 h-3.5" />
-                                  Tổng quan phân chia (
-                                  {currentDistribution.members.length} thành
-                                  viên)
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {currentDistribution.members.map((member) => {
-                                    const isMe =
-                                      member.studentId === user?.userId;
-                                    const hasFeedback = !!member.memberFeedback;
-                                    return (
-                                      <div
-                                        key={member.studentId}
-                                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${isMe ? "bg-sky-50 border border-sky-200 shadow-sm" : hasFeedback ? "bg-blue-50 border border-blue-200" : "bg-slate-50 border border-transparent"}`}
+                            {/* Personal Grade Card */}
+                            {hasDistribution && myDistributionGrade && (
+                              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                                <Card
+                                  style={{
+                                    borderRadius: 16,
+                                    border: `1px solid ${PALETTE.infoLight}`,
+                                    background: `linear-gradient(135deg, ${PALETTE.infoLight}30 0%, #fff 100%)`,
+                                    marginTop: 12,
+                                  }}
+                                  styles={{ body: { padding: "16px 20px" } }}
+                                >
+                                  <Row gutter={16} align="middle">
+                                    <Col flex="none">
+                                      <Avatar
+                                        size={44}
+                                        style={{
+                                          background: `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})`,
+                                          fontWeight: 700,
+                                          fontSize: 16,
+                                        }}
                                       >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <div
-                                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${isMe ? "bg-gradient-to-br from-sky-500 to-indigo-500" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}
-                                          >
-                                            {member.student?.firstName
-                                              ?.charAt(0)
-                                              ?.toUpperCase() ?? "?"}
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p
-                                              className={`text-sm truncate ${isMe ? "font-bold text-sky-700" : "font-medium text-slate-700"}`}
-                                            >
-                                              {member.student?.firstName}{" "}
-                                              {member.student?.lastName}
-                                              {isMe && (
-                                                <span className="text-sky-500 text-xs ml-1">
-                                                  (Bạn)
-                                                </span>
-                                              )}
-                                              {hasFeedback && !isMe && (
-                                                <Tooltip
-                                                  title={member.memberFeedback}
-                                                >
-                                                  <MessageOutlined className="text-blue-400 ml-1 text-xs" />
-                                                </Tooltip>
-                                              )}
-                                            </p>
-                                          </div>
-                                        </div>
-                                        <div className="text-right flex-shrink-0 ml-2">
-                                          <span
-                                            className={`text-sm font-bold tabular-nums ${isMe ? "text-sky-700" : "text-slate-700"}`}
-                                          >
-                                            {Number(
-                                              member.receivedGrade,
-                                            ).toFixed(2)}
-                                          </span>
-                                          <span className="text-xs text-slate-400 ml-1">
-                                            (
-                                            {Number(member.percentage).toFixed(
-                                              0,
-                                            )}
-                                            %)
-                                          </span>
-                                        </div>
+                                        {studentName.charAt(0).toUpperCase()}
+                                      </Avatar>
+                                    </Col>
+                                    <Col flex="auto">
+                                      <Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate, display: "block", marginBottom: 2 }}>
+                                        Điểm cá nhân của bạn
+                                      </Text>
+                                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                                        <span style={{ fontSize: 24, fontWeight: 800, color: PALETTE.info }}>
+                                          {Number(myDistributionGrade.receivedGrade).toFixed(2)}
+                                        </span>
+                                        <span style={{ fontSize: 13, color: "#94A3B8" }}>
+                                          / {currentReport.gradeForInstructor} điểm
+                                        </span>
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                    </Col>
+                                    <Col flex="none">
+                                      <div style={{ textAlign: "center" }}>
+                                        <Tag color="blue" style={{ fontSize: 16, fontWeight: 700, padding: "2px 12px", borderRadius: 20, border: "none" }}>
+                                          {Number(myDistributionGrade.percentage).toFixed(0)}%
+                                        </Tag>
+                                        <Text style={{ fontSize: 11, color: "#94A3B8", display: "block", marginTop: 2 }}>
+                                          tỷ lệ đóng góp
+                                        </Text>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                  {myDistributionGrade.reason && (
+                                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #F1F5F9" }}>
+                                      <Text style={{ fontSize: 12, color: PALETTE.slate }}>
+                                        <strong>Lý do:</strong> {myDistributionGrade.reason}
+                                      </Text>
+                                    </div>
+                                  )}
+                                  {!isCurrentUserLeader && currentDistribution?.status !== "finalized" && (
+                                    <MemberFeedbackInline
+                                      groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
+                                      distributionId={currentDistribution?.id ?? 0}
+                                      existingFeedback={myDistributionGrade.memberFeedback ?? null}
+                                    />
+                                  )}
+                                  {!isCurrentUserLeader && currentDistribution?.status === "finalized" && (
+                                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 6 }}>
+                                      <LockOutlined style={{ color: PALETTE.success, fontSize: 12 }} />
+                                      <Text style={{ fontSize: 12, color: PALETTE.success, fontWeight: 500 }}>
+                                        Điểm đã được chốt. Không thể phản hồi.
+                                      </Text>
+                                    </div>
+                                  )}
+                                </Card>
                               </motion.div>
                             )}
-                        </motion.div>
-                      )}
 
-                    <div className="space-y-3">
-                      {criteriaScores.map((criterion) => {
-                        const hasInstructorFeedback = syncedFeedbacks.some(
-                          (fb) =>
-                            fb.classRubricCriteriaId === criterion.criteriaId,
-                        );
-                        return (
-                          <div
-                            key={criterion.criteriaId}
-                            className="rounded-xl border border-slate-200 p-4 hover:border-sky-200 transition-colors"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-slate-900">
-                                  {criterion.criteriaName}
-                                </h3>
-                                {hasInstructorFeedback && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium border border-emerald-200">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Có phản hồi GV
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-sm font-bold text-sky-700">
-                                {criterion.score}/{criterion.maxScore}
-                                <span className="text-slate-400 font-normal">
-                                  {" "}
-                                  (
-                                  {(
-                                    (criterion.score / criterion.maxScore) *
-                                    100
-                                  ).toFixed(0)}
-                                  %)
-                                </span>
-                              </span>
-                            </div>
-                            <p className="text-sm text-slate-600 mb-3">
-                              {criterion.comment}
-                            </p>
-                            {criterion.suggestions?.length > 0 && (
-                              <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">
-                                  Đề xuất cải thiện
-                                </p>
-                                <ul className="space-y-1">
-                                  {criterion.suggestions.map(
-                                    (suggestion, index) => (
-                                      <li
-                                        key={`${criterion.criteriaId}-${index}`}
-                                        className="flex items-start gap-2 text-sm text-slate-700"
-                                      >
-                                        <span className="text-amber-500 mt-0.5">
-                                          •
-                                        </span>
-                                        {suggestion}
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              </div>
+                            {/* Summary Grid for Leader */}
+                            {hasDistribution && isCurrentUserLeader && currentDistribution.members && currentDistribution.members.length > 0 && (
+                              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ marginTop: 12 }}>
+                                <Card
+                                  style={{ borderRadius: 16, border: "1px solid #F1F5F9" }}
+                                  styles={{ body: { padding: "16px 20px" } }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                    <Users size={14} color={PALETTE.slate} />
+                                    <Text strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate }}>
+                                      Tổng quan phân chia ({currentDistribution.members.length} thành viên)
+                                    </Text>
+                                  </div>
+                                  <List
+                                    size="small"
+                                    dataSource={currentDistribution.members}
+                                    renderItem={(member) => {
+                                      const isMe = member.studentId === user?.userId;
+                                      const hasFeedback = !!member.memberFeedback;
+                                      return (
+                                        <List.Item
+                                          style={{
+                                            padding: "8px 0",
+                                            background: isMe ? PALETTE.infoLight : hasFeedback ? `${PALETTE.primary}08` : "transparent",
+                                            borderRadius: 10,
+                                            paddingLeft: 10,
+                                            paddingRight: 10,
+                                            marginBottom: 4,
+                                            border: "none",
+                                          }}
+                                        >
+                                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                              <Avatar
+                                                size={30}
+                                                style={{
+                                                  background: isMe ? `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})` : "#94A3B8",
+                                                  fontSize: 12,
+                                                  fontWeight: 600,
+                                                }}
+                                              >
+                                                {member.student?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
+                                              </Avatar>
+                                              <div>
+                                                <Text strong={isMe} style={{ fontSize: 13, color: isMe ? PALETTE.info : PALETTE.slate }}>
+                                                  {member.student?.firstName} {member.student?.lastName}
+                                                  {isMe && <Tag color="blue" style={{ marginLeft: 6, fontSize: 10, padding: "0 4px", borderRadius: 10 }}>Bạn</Tag>}
+                                                  {hasFeedback && !isMe && (
+                                                    <Tooltip title={member.memberFeedback}>
+                                                      <MessageOutlined style={{ color: PALETTE.primary, marginLeft: 4, fontSize: 12 }} />
+                                                    </Tooltip>
+                                                  )}
+                                                </Text>
+                                              </div>
+                                            </div>
+                                            <div style={{ textAlign: "right" }}>
+                                              <Text strong={isMe} style={{ fontSize: 14, color: isMe ? PALETTE.info : PALETTE.slate, fontVariantNumeric: "tabular-nums" }}>
+                                                {Number(member.receivedGrade).toFixed(2)}
+                                              </Text>
+                                              <Text style={{ fontSize: 11, color: "#94A3B8", marginLeft: 4 }}>
+                                                ({Number(member.percentage).toFixed(0)}%)
+                                              </Text>
+                                            </div>
+                                          </div>
+                                        </List.Item>
+                                      );
+                                    }}
+                                  />
+                                </Card>
+                              </motion.div>
                             )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                          </motion.div>
+                        )}
 
-                {/* ── Tab Feedback Giảng viên ── */}
-                {reportTab === "instructor" && (
-                  <div className="space-y-4">
-                    {syncedFeedbacks.length === 0 ? (
-                      <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center mx-auto mb-4">
-                          <MessageSquare className="w-10 h-10 text-slate-400" />
-                        </div>
-                        <h4 className="text-lg font-bold text-slate-700 mb-2">
-                          Chưa có phản hồi từ giảng viên
-                        </h4>
-                        <p className="text-sm text-slate-500 max-w-md mx-auto">
-                          Giảng viên sẽ gửi phản hồi chi tiết cho từng tiêu chí
-                          đánh giá sau khi xem xét bài thuyết trình của bạn.
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
-                            <div className="flex items-center gap-2 mb-1">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
-                                Đã feedback
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-emerald-700">
-                              {syncedFeedbacks.length}
-                            </p>
-                            <p className="text-xs text-emerald-500">
-                              / {criteriaScores.length} tiêu chí
-                            </p>
+                        {/* Criteria Scores */}
+                        {criteriaScores.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <Title level={5} style={{ fontWeight: 700, marginBottom: 12, fontSize: 15 }}>
+                              <BarChartOutlined style={{ marginRight: 8 }} />
+                              Chi tiết theo tiêu chí
+                            </Title>
+                            <Collapse
+                              ghost
+                              expandIconPosition="end"
+                              style={{ background: "transparent" }}
+                            >
+                              {criteriaScores.map((criterion) => {
+                                const hasInstructorFeedback = syncedFeedbacks.some(
+                                  (fb) => fb.classRubricCriteriaId === criterion.criteriaId
+                                );
+                                return (
+                                  <Panel
+                                    key={criterion.criteriaId}
+                                    header={
+                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 8 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                          <Target size={14} color={PALETTE.primary} />
+                                          <Text strong style={{ fontSize: 14 }}>{criterion.criteriaName}</Text>
+                                          {hasInstructorFeedback && (
+                                            <Tag color="success" style={{ fontSize: 10, padding: "0 6px", borderRadius: 10, border: "none" }}>
+                                              Có phản hồi GV
+                                            </Tag>
+                                          )}
+                                        </div>
+                                        <ScoreBadge score={criterion.score} max={criterion.maxScore} size="small" />
+                                      </div>
+                                    }
+                                    style={{
+                                      background: PALETTE.white,
+                                      borderRadius: 12,
+                                      marginBottom: 8,
+                                      border: "1px solid #F1F5F9",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <Paragraph style={{ fontSize: 13, color: PALETTE.slate, marginBottom: 8 }}>
+                                      {criterion.comment}
+                                    </Paragraph>
+                                    {criterion.suggestions?.length > 0 && (
+                                      <Card
+                                        size="small"
+                                        style={{
+                                          background: PALETTE.warningLight,
+                                          border: `1px solid ${PALETTE.warningLight}`,
+                                          borderRadius: 10,
+                                        }}
+                                        styles={{ body: { padding: "12px" } }}
+                                      >
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                                          <Lightbulb size={13} color={PALETTE.warning} />
+                                          <Text strong style={{ fontSize: 11, color: PALETTE.warning, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                                            Đề xuất cải thiện
+                                          </Text>
+                                        </div>
+                                        <ul style={{ margin: 0, paddingLeft: 16 }}>
+                                          {criterion.suggestions.map((suggestion, index) => (
+                                            <li key={index} style={{ fontSize: 13, color: PALETTE.slate, marginBottom: 4 }}>
+                                              {suggestion}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </Card>
+                                    )}
+                                  </Panel>
+                                );
+                              })}
+                            </Collapse>
                           </div>
-                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Star className="w-4 h-4 text-indigo-600" />
-                              <span className="text-xs font-medium text-indigo-600 uppercase tracking-wide">
-                                Điểm TB
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-indigo-700">
-                              {(
-                                syncedFeedbacks.reduce(
-                                  (sum, f) => sum + (Number(f.score) || 0),
-                                  0,
-                                ) /
-                                Math.max(
-                                  syncedFeedbacks.filter(
-                                    (f) => f.score !== null && f.score !== "",
-                                  ).length,
-                                  1,
-                                )
-                              ).toFixed(1)}
-                            </p>
-                            <p className="text-xs text-indigo-500">trên 100</p>
-                          </div>
-                          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Award className="w-4 h-4 text-amber-600" />
-                              <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
-                                Chưa feedback
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-amber-700">
-                              {criteriaScores.length - syncedFeedbacks.length}
-                            </p>
-                            <p className="text-xs text-amber-500">tiêu chí</p>
-                          </div>
-                        </div>
+                        )}
+                      </motion.div>
+                    )}
 
-                        {/* Progress bar */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
-                              style={{
-                                width: `${(syncedFeedbacks.length / Math.max(criteriaScores.length, 1)) * 100}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-xs font-semibold text-slate-500">
-                            {syncedFeedbacks.length}/{criteriaScores.length}{" "}
-                            tiêu chí
-                          </span>
-                        </div>
+                    {reportTab === "instructor" && (
+                      <motion.div
+                        key="instructor-tab"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        {syncedFeedbacks.length === 0 ? (
+                          <Empty
+                            image={
+                              <div style={{
+                                width: 80, height: 80, borderRadius: "50%",
+                                background: PALETTE.slateLight, display: "flex", alignItems: "center", justifyContent: "center",
+                                margin: "0 auto",
+                              }}>
+                                <MessageSquare size={36} color={PALETTE.slate} style={{ opacity: 0.5 }} />
+                              </div>
+                            }
+                            description={
+                              <div>
+                                <Text strong style={{ fontSize: 16, display: "block", marginBottom: 4 }}>Chưa có phản hồi từ giảng viên</Text>
+                                <Text style={{ color: PALETTE.slate, fontSize: 13 }}>
+                                  Giảng viên sẽ gửi phản hồi chi tiết cho từng tiêu chí đánh giá sau khi xem xét bài thuyết trình của bạn.
+                                </Text>
+                              </div>
+                            }
+                            style={{ padding: "40px 0" }}
+                          />
+                        ) : (
+                          <div>
+                            {/* Feedback Stats */}
+                            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                              <Col xs={8}>
+                                <Card style={{ borderRadius: 14, background: PALETTE.successLight, border: `1px solid ${PALETTE.successLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
+                                  <CheckCircle2 size={18} color={PALETTE.success} style={{ marginBottom: 6 }} />
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.success }}>{syncedFeedbacks.length}</div>
+                                  <Text style={{ fontSize: 11, color: PALETTE.success }}>Đã feedback</Text>
+                                  <div style={{ fontSize: 11, color: "#6B7280" }}>/ {criteriaScores.length} tiêu chí</div>
+                                </Card>
+                              </Col>
+                              <Col xs={8}>
+                                <Card style={{ borderRadius: 14, background: PALETTE.purpleLight, border: `1px solid ${PALETTE.purpleLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
+                                  <Star size={18} color={PALETTE.purple} style={{ marginBottom: 6 }} />
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.purple }}>
+                                    {(syncedFeedbacks.reduce((sum, f) => sum + (Number(f.score) || 0), 0) / Math.max(syncedFeedbacks.filter((f) => f.score !== null && f.score !== "").length, 1)).toFixed(1)}
+                                  </div>
+                                  <Text style={{ fontSize: 11, color: PALETTE.purple }}>Điểm TB</Text>
+                                  <div style={{ fontSize: 11, color: "#6B7280" }}>trên 100</div>
+                                </Card>
+                              </Col>
+                              <Col xs={8}>
+                                <Card style={{ borderRadius: 14, background: PALETTE.warningLight, border: `1px solid ${PALETTE.warningLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
+                                  <Award size={18} color={PALETTE.warning} style={{ marginBottom: 6 }} />
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.warning }}>{criteriaScores.length - syncedFeedbacks.length}</div>
+                                  <Text style={{ fontSize: 11, color: PALETTE.warning }}>Chưa feedback</Text>
+                                  <div style={{ fontSize: 11, color: "#6B7280" }}>tiêu chí</div>
+                                </Card>
+                              </Col>
+                            </Row>
 
-                        {/* Feedback Cards */}
-                        <div className="space-y-3">
-                          {[...syncedFeedbacks]
-                            .sort(
-                              (a, b) =>
-                                a.criterionFeedbackId - b.criterionFeedbackId,
-                            )
-                            .map((fb) => {
+                            {/* Progress */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                              <Progress
+                                percent={(syncedFeedbacks.length / Math.max(criteriaScores.length, 1)) * 100}
+                                showInfo={false}
+                                strokeColor={PALETTE.success}
+                                trailColor="#E2E8F0"
+                                style={{ flex: 1 }}
+                              />
+                              <Text style={{ fontSize: 12, color: PALETTE.slate, whiteSpace: "nowrap", fontWeight: 600 }}>
+                                {syncedFeedbacks.length}/{criteriaScores.length} tiêu chí
+                              </Text>
+                            </div>
+
+                            {/* Feedback Cards */}
+                            {[...syncedFeedbacks].sort((a, b) => a.criterionFeedbackId - b.criterionFeedbackId).map((fb) => {
                               const criteriaLabel =
                                 fb.classRubricCriteria?.criteriaName ||
-                                criteriaScores.find(
-                                  (c) =>
-                                    c.criteriaId === fb.classRubricCriteriaId,
-                                )?.criteriaName ||
+                                criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId)?.criteriaName ||
                                 `Tiêu chí #${fb.classRubricCriteriaId}`;
                               const instructorLabel = fb.instructor
-                                ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
-                                  fb.instructor.email ||
-                                  "Giảng viên"
+                                ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() || fb.instructor.email || "Giảng viên"
                                 : "Giảng viên";
-                              const aiCriterion = criteriaScores.find(
-                                (c) =>
-                                  c.criteriaId === fb.classRubricCriteriaId,
-                              );
+                              const aiCriterion = criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId);
                               const hasAiData = !!aiCriterion;
-                              const scoreDiff =
-                                aiCriterion &&
-                                fb.score !== null &&
-                                fb.score !== ""
-                                  ? (
-                                      Number(fb.score) -
-                                      (aiCriterion.score /
-                                        aiCriterion.maxScore) *
-                                        100
-                                    ).toFixed(1)
-                                  : null;
+                              const scoreDiff = aiCriterion && fb.score !== null && fb.score !== ""
+                                ? (Number(fb.score) - (aiCriterion.score / aiCriterion.maxScore) * 100).toFixed(1)
+                                : null;
 
                               return (
                                 <motion.div
                                   key={fb.criterionFeedbackId}
                                   initial={{ opacity: 0, y: 8 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/80 p-5 shadow-sm hover:shadow-md transition-shadow"
+                                  transition={{ duration: 0.3 }}
                                 >
-                                  {/* Header */}
-                                  <div className="flex items-start justify-between gap-3 mb-3">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                        {criteriaLabel.charAt(0).toUpperCase()}
-                                      </div>
-                                      <div>
-                                        <h4 className="font-bold text-slate-900 text-lg">
-                                          {criteriaLabel}
-                                        </h4>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                                            <User className="w-3 h-3 text-emerald-600" />
-                                          </div>
-                                          <p className="text-sm text-slate-500">
-                                            {instructorLabel}
+                                  <Card
+                                    style={{
+                                      borderRadius: 16,
+                                      border: `1px solid ${PALETTE.successLight}`,
+                                      background: `linear-gradient(135deg, ${PALETTE.successLight}30 0%, #fff 100%)`,
+                                      marginBottom: 12,
+                                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                                    }}
+                                    styles={{ body: { padding: "20px" } }}
+                                  >
+                                    {/* Header */}
+                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                        <Avatar
+                                          size={44}
+                                          style={{
+                                            background: `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.info})`,
+                                            fontWeight: 700,
+                                            fontSize: 18,
+                                          }}
+                                        >
+                                          {criteriaLabel.charAt(0).toUpperCase()}
+                                        </Avatar>
+                                        <div>
+                                          <Text strong style={{ fontSize: 16, display: "block" }}>{criteriaLabel}</Text>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                                            <User size={12} color={PALETTE.success} />
+                                            <Text style={{ fontSize: 12, color: PALETTE.slate }}>{instructorLabel}</Text>
                                             {fb.updatedAt && (
-                                              <>
-                                                {" "}
-                                                ·{" "}
-                                                {new Date(
-                                                  fb.updatedAt,
-                                                ).toLocaleString("vi-VN", {
-                                                  day: "2-digit",
-                                                  month: "2-digit",
-                                                  year: "numeric",
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                })}
-                                              </>
+                                              <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+                                                · {new Date(fb.updatedAt).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                              </Text>
                                             )}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    {fb.score !== null && fb.score !== "" && (
-                                      <div className="text-right">
-                                        <div className="flex items-center gap-1 justify-end">
-                                          <Star className="w-5 h-5 text-amber-500" />
-                                          <span className="text-2xl font-bold text-emerald-700">
-                                            {Number(fb.score).toFixed(1)}
-                                          </span>
-                                        </div>
-                                        <p className="text-xs text-slate-400">
-                                          / 100 điểm
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Comment */}
-                                  {fb.comment ? (
-                                    <div className="bg-white rounded-xl p-4 border border-emerald-100 mb-3 shadow-sm">
-                                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                        {fb.comment}
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 mb-3 text-center">
-                                      <p className="text-sm text-slate-400 italic">
-                                        Chưa có nhận xét
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {/* AI comparison */}
-                                  {hasAiData && (
-                                    <div className="bg-gradient-to-r from-slate-50 to-sky-50 rounded-xl p-4 border border-slate-200">
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <Cpu className="w-4 h-4 text-sky-600" />
-                                        <span className="text-xs font-bold text-sky-600 uppercase tracking-wide">
-                                          So sánh với đánh giá AI
-                                        </span>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-white rounded-lg p-3 border border-sky-100">
-                                          <p className="text-xs text-slate-500 mb-1">
-                                            Điểm AI
-                                          </p>
-                                          <div className="flex items-center gap-1">
-                                            <Cpu className="w-3 h-3 text-sky-500" />
-                                            <span className="font-bold text-sky-700">
-                                              {aiCriterion.score}/
-                                              {aiCriterion.maxScore}
-                                            </span>
-                                            <span className="text-xs text-slate-400">
-                                              (
-                                              {(
-                                                (aiCriterion.score /
-                                                  aiCriterion.maxScore) *
-                                                100
-                                              ).toFixed(0)}
-                                              %)
-                                            </span>
                                           </div>
                                         </div>
-                                        {scoreDiff !== null && (
-                                          <div className="bg-white rounded-lg p-3 border border-sky-100">
-                                            <p className="text-xs text-slate-500 mb-1">
-                                              Chênh lệch
-                                            </p>
-                                            <div className="flex items-center gap-1">
-                                              {Number(scoreDiff) >= 0 ? (
-                                                <span className="text-emerald-500">
-                                                  ▲
-                                                </span>
-                                              ) : (
-                                                <span className="text-red-500">
-                                                  ▼
-                                                </span>
-                                              )}
-                                              <span
-                                                className={`font-bold ${Number(scoreDiff) >= 0 ? "text-emerald-600" : "text-red-600"}`}
-                                              >
-                                                {Number(scoreDiff) >= 0
-                                                  ? "+"
-                                                  : ""}
-                                                {scoreDiff}%
-                                              </span>
-                                            </div>
-                                          </div>
-                                        )}
                                       </div>
-                                      {aiCriterion.comment && (
-                                        <div className="mt-2 pt-2 border-t border-slate-200">
-                                          <p className="text-xs text-slate-500 line-clamp-2">
-                                            <span className="font-semibold">
-                                              Nhận xét AI:{" "}
-                                            </span>
-                                            {aiCriterion.comment}
-                                          </p>
+                                      {fb.score !== null && fb.score !== "" && (
+                                        <div style={{ textAlign: "right" }}>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                                            <Star size={16} color={PALETTE.warning} />
+                                            <span style={{ fontSize: 24, fontWeight: 800, color: PALETTE.success }}>{Number(fb.score).toFixed(1)}</span>
+                                          </div>
+                                          <Text style={{ fontSize: 11, color: "#94A3B8" }}>/ 100 điểm</Text>
                                         </div>
                                       )}
                                     </div>
-                                  )}
+
+                                    {/* Comment */}
+                                    {fb.comment ? (
+                                      <Card
+                                        size="small"
+                                        style={{ borderRadius: 12, background: PALETTE.white, border: `1px solid ${PALETTE.successLight}`, marginBottom: 12 }}
+                                        styles={{ body: { padding: "14px 16px" } }}
+                                      >
+                                        <Paragraph style={{ fontSize: 14, color: PALETTE.slate, margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                                          {fb.comment}
+                                        </Paragraph>
+                                      </Card>
+                                    ) : (
+                                      <div style={{ textAlign: "center", padding: "14px", borderRadius: 12, background: PALETTE.slateLight, border: "1px dashed #CBD5E1", marginBottom: 12 }}>
+                                        <Text style={{ fontSize: 13, color: "#94A3B8", fontStyle: "italic" }}>Chưa có nhận xét</Text>
+                                      </div>
+                                    )}
+
+                                    {/* AI Comparison */}
+                                    {hasAiData && (
+                                      <Card
+                                        size="small"
+                                        style={{ borderRadius: 12, background: PALETTE.slateLight, border: "1px solid #F1F5F9" }}
+                                        styles={{ body: { padding: "14px 16px" } }}
+                                      >
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                                          <Cpu size={13} color={PALETTE.info} />
+                                          <Text strong style={{ fontSize: 11, color: PALETTE.info, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                                            So sánh với đánh giá AI
+                                          </Text>
+                                        </div>
+                                        <Row gutter={[12, 8]}>
+                                          <Col span={12}>
+                                            <Card size="small" style={{ borderRadius: 10, background: PALETTE.white, border: `1px solid ${PALETTE.infoLight}` }} styles={{ body: { padding: "10px 12px" } }}>
+                                              <Text style={{ fontSize: 11, color: PALETTE.slate, display: "block", marginBottom: 4 }}>Điểm AI</Text>
+                                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                                <Cpu size={12} color={PALETTE.info} />
+                                                <Text strong style={{ fontSize: 13, color: PALETTE.info }}>
+                                                  {aiCriterion.score}/{aiCriterion.maxScore}
+                                                </Text>
+                                                <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+                                                  ({(aiCriterion.score / aiCriterion.maxScore * 100).toFixed(0)}%)
+                                                </Text>
+                                              </div>
+                                            </Card>
+                                          </Col>
+                                          {scoreDiff !== null && (
+                                            <Col span={12}>
+                                              <Card size="small" style={{ borderRadius: 10, background: PALETTE.white, border: `1px solid ${PALETTE.infoLight}` }} styles={{ body: { padding: "10px 12px" } }}>
+                                                <Text style={{ fontSize: 11, color: PALETTE.slate, display: "block", marginBottom: 4 }}>Chênh lệch</Text>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                                  {Number(scoreDiff) >= 0
+                                                    ? <span style={{ color: PALETTE.success, fontWeight: 700, fontSize: 14 }}>▲</span>
+                                                    : <span style={{ color: PALETTE.danger, fontWeight: 700, fontSize: 14 }}>▼</span>}
+                                                  <Text strong style={{ fontSize: 13, color: Number(scoreDiff) >= 0 ? PALETTE.success : PALETTE.danger }}>
+                                                    {Number(scoreDiff) >= 0 ? "+" : ""}{scoreDiff}%
+                                                  </Text>
+                                                </div>
+                                              </Card>
+                                            </Col>
+                                          )}
+                                        </Row>
+                                        {aiCriterion.comment && (
+                                          <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #E2E8F0" }}>
+                                            <Text style={{ fontSize: 12, color: "#6B7280" }}>
+                                              <strong style={{ color: PALETTE.info }}>Nhận xét AI:</strong> {aiCriterion.comment}
+                                            </Text>
+                                          </div>
+                                        )}
+                                      </Card>
+                                    )}
+                                  </Card>
                                 </motion.div>
                               );
                             })}
-                        </div>
-                      </>
+                          </div>
+                        )}
+                      </motion.div>
                     )}
-                  </div>
+                  </AnimatePresence>
+                ) : (
+                  <Alert
+                    message="Chưa có kết quả đánh giá cho bài thuyết trình này."
+                    type="info"
+                    showIcon
+                    style={{ borderRadius: 12 }}
+                  />
                 )}
-              </>
-            ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
-                Chưa có kết quả đánh giá cho bài thuyết trình này.
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
+              </Card>
+            </motion.div>
+          )}
 
-      {presentationIdNumber && (
-        <PresentationUploadModal
-          isOpen={uploadModalOpen}
+          {/* Floating "View Report" button */}
+          {!showReport && currentReport && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              style={{ position: "fixed", bottom: 24, right: 24, zIndex: 100 }}
+            >
+              <Button
+                type="primary"
+                size="large"
+                icon={<BarChartOutlined />}
+                onClick={handleViewReport}
+                style={{
+                  background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.primaryDark})`,
+                  border: "none",
+                  borderRadius: 14,
+                  height: 52,
+                  paddingInline: 24,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  boxShadow: `0 8px 24px ${PALETTE.primary}50`,
+                }}
+              >
+                Xem kết quả AI
+              </Button>
+            </motion.div>
+          )}
+        </div>
+
+        {/* ── Modals ── */}
+        {presentationIdNumber && (
+          <PresentationUploadModal
+            isOpen={uploadModalOpen}
+            onClose={() => {
+              setUploadModalOpen(false);
+              if (presentationIdNumber) {
+                dispatch(fetchPresentationDetail(presentationIdNumber));
+                dispatch(clearCurrentReport());
+                setShowReport(false);
+              }
+            }}
+            presentationId={presentationIdNumber}
+            presentationTitle={presentation?.title || ""}
+            isResubmit={uploadResubmit}
+          />
+        )}
+
+        {presentationIdNumber && (
+          <ShareModal
+            open={shareModalOpen}
+            presentationId={presentationIdNumber}
+            onClose={() => setShareModalOpen(false)}
+          />
+        )}
+
+        {isCurrentUserLeader && presentationIdNumber && (
+          <SpeakerMappingModal
+            presentationId={presentationIdNumber}
+            open={speakerModalOpen}
+            onClose={() => setSpeakerModalOpen(false)}
+          />
+        )}
+
+        <GradeDistributionModal
+          isOpen={gradeDistributionModalOpen}
           onClose={() => {
-            setUploadModalOpen(false);
-            if (presentationIdNumber) {
-              dispatch(fetchPresentationDetail(presentationIdNumber));
-              dispatch(clearCurrentReport());
-              setShowReport(false);
+            setGradeDistributionModalOpen(false);
+            if (currentReport?.reportId) {
+              void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
             }
           }}
-          presentationId={presentationIdNumber}
-          presentationTitle={presentation?.title || ""}
-          isResubmit={uploadResubmit}
+          reportId={currentReport?.reportId ?? 0}
+          instructorGrade={currentReport?.gradeForInstructor ?? 0}
+          groupMembers={groupDetail?.students ?? group?.students ?? []}
+          leaderId={(() => {
+            const students = groupDetail?.students ?? group?.students ?? [];
+            const leader = students.find((s) => s.GroupStudent?.role === "leader");
+            return Number(leader?.userId ?? leader?.id ?? 0);
+          })()}
+          currentUserId={user?.userId}
+          groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
+          onSuccess={() => {
+            void dispatch(fetchGradeDistributionByReport(currentReport?.reportId ?? 0));
+          }}
         />
-      )}
-
-      {presentationIdNumber && (
-        <ShareModal
-          open={shareModalOpen}
-          presentationId={presentationIdNumber}
-          onClose={() => setShareModalOpen(false)}
-        />
-      )}
-
-      {/* Modal ánh xạ diễn giả (Leader only) */}
-      {isCurrentUserLeader && presentationIdNumber && (
-        <SpeakerMappingModal
-          presentationId={presentationIdNumber}
-          open={speakerModalOpen}
-          onClose={() => setSpeakerModalOpen(false)}
-        />
-      )}
-
-      {/* Modal phân chia điểm cho nhóm (Leader) */}
-      <GradeDistributionModal
-        isOpen={gradeDistributionModalOpen}
-        onClose={() => {
-          setGradeDistributionModalOpen(false);
-          // Refresh distribution data khi modal đóng để trang chính hiển thị đúng trạng thái mới nhất
-          if (currentReport?.reportId) {
-            void dispatch(
-              fetchGradeDistributionByReport(currentReport.reportId),
-            );
-          }
-        }}
-        reportId={currentReport?.reportId ?? 0}
-        instructorGrade={currentReport?.gradeForInstructor ?? 0}
-        groupMembers={groupDetail?.students ?? group?.students ?? []}
-        leaderId={(() => {
-          const students = groupDetail?.students ?? group?.students ?? [];
-          const leader = students.find(
-            (s) => s.GroupStudent?.role === "leader",
-          );
-          return Number(leader?.userId ?? leader?.id ?? 0);
-        })()}
-        currentUserId={user?.userId}
-        groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
-        onSuccess={() => {
-          void dispatch(
-            fetchGradeDistributionByReport(currentReport?.reportId ?? 0),
-          );
-        }}
-      />
+      </ConfigProvider>
     </StudentLayout>
   );
 };
