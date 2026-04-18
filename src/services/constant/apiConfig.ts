@@ -268,3 +268,18 @@ export const INSTRUCTOR_UNAPPROVE_ENDPOINT = (presentationId: string) =>
 
 // Admin Dashboard endpoints
 export const ADMIN_DASHBOARD_ENDPOINT = `${BASE_URL}/api/v1/admin/dashboard`;
+
+// Speaker mapping endpoints
+export const SPEAKERS_BY_PRESENTATION_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/presentation/${id}`;
+export const SPEAKER_SUGGESTIONS_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/presentation/${id}/suggestions`;
+export const SPEAKER_GROUP_MEMBERS_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/presentation/${id}/group-members`;
+export const SPEAKER_AUTO_MAP_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/presentation/${id}/auto-map`;
+export const SPEAKER_MAP_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/${id}/map`;
+export const SPEAKER_UNMAP_ENDPOINT = (id: string) =>
+  `${BASE_URL}/api/v1/speakers/${id}/unmap`;
+export const SPEAKER_BATCH_MAP_ENDPOINT = `${BASE_URL}/api/v1/speakers/batch-map`;

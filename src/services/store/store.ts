@@ -22,6 +22,7 @@ import uploadPermissionReducer from "../features/uploadPermission/uploadPermissi
 import socketReducer from "../features/socket/socketSlice";
 import notificationReducer from "../features/notification/notificationSlice";
 import adminDashboardReducer from "../features/admin/adminDashboardSlice";
+import speakerReducer from "../features/speaker/speakerSlice";
 
 const presistConfig = {
   key: "root",
@@ -51,6 +52,7 @@ const rootReducer = combineReducers({
   socket: socketReducer,
   notification: notificationReducer,
   adminDashboard: adminDashboardReducer,
+  speaker: speakerReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
