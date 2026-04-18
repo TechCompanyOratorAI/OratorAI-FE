@@ -94,23 +94,23 @@ const StatCard: React.FC<{
 }> = ({ icon, label, value, sub, bg, iconColor, onClick }) => (
   <Card
     size="small"
-    styles={{ body: { padding: "18px 20px" } }}
-    className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-all h-full"
+    styles={{ body: { padding: "20px 22px" } }}
+    className="border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer h-full group"
     onClick={onClick}
   >
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: bg }}>
         <span style={{ color: iconColor }}>{icon}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <Text className="text-xs font-medium block" style={{ color: C.gray[500] }}>
+        <Text className="text-xs font-semibold block uppercase tracking-wide" style={{ color: C.gray[500] }}>
           {label}
         </Text>
-        <Text className="text-2xl font-bold block leading-none mt-0.5" style={{ color: C.gray[800] }}>
+        <Text className="text-2xl font-bold block leading-none mt-1" style={{ color: C.gray[800] }}>
           {value.toLocaleString("vi-VN")}
         </Text>
         {sub && (
-          <Text className="text-xs mt-1 block" style={{ color: C.gray[400] }}>
+          <Text className="text-xs mt-1.5 block" style={{ color: C.gray[400] }}>
             {sub}
           </Text>
         )}
@@ -145,16 +145,16 @@ const DonutCard: React.FC<{
 }> = ({ title, subtitle, icon, iconBg, iconColor, data, colors, total }) => (
   <Card
     size="small"
-    styles={{ body: { padding: "16px" } }}
-    className="border-0 shadow-sm h-full"
+    styles={{ body: { padding: "18px" } }}
+    className="border border-slate-100 shadow-sm h-full hover:shadow-xl transition-all duration-300 group"
   >
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300" style={{ background: iconBg }}>
         <span style={{ color: iconColor }}>{icon}</span>
       </div>
       <div>
         <Text strong className="text-sm block leading-none" style={{ color: C.gray[800] }}>{title}</Text>
-        {subtitle && <Text className="text-xs" style={{ color: C.gray[400] }}>{subtitle}</Text>}
+        {subtitle && <Text className="text-xs mt-0.5 block" style={{ color: C.gray[400] }}>{subtitle}</Text>}
       </div>
     </div>
 
@@ -409,24 +409,19 @@ const AdminDashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.gray[50] }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: "#f8fafc" }}>
       <SidebarAdmin activeItem="dashboard" />
       <main className="flex-1 overflow-y-auto">
-
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-white border-b px-6 py-4" style={{ borderColor: C.gray[100] }}>
+        <header
+          className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b px-6 py-4"
+          style={{ borderColor: C.gray[100], boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+        >
           <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs mb-1" style={{ color: C.gray[500] }}>
-                <span className="hover:text-gray-700 cursor-pointer" onClick={() => navigate("/")}>Trang chủ</span>
-                <span className="mx-1">/</span>
-                <span style={{ color: C.gray[700] }}>Bảng điều khiển</span>
-              </div>
-              <Title level={3} className="m-0" style={{ color: C.gray[800] }}>Tổng quan hệ thống</Title>
-            </div>
+            <Title level={3} className="m-0" style={{ color: C.gray[800] }}>Tổng quan hệ thống</Title>
             <button
               onClick={() => dispatch(fetchAdminDashboard())}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]"
               style={{ borderColor: C.gray[200], color: C.gray[600] }}
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -497,9 +492,9 @@ const AdminDashboardPage: React.FC = () => {
           {/* ── BAR CHARTS ROW: Pres per day + Report per day ─────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card size="small" styles={{ body: { padding: "16px 20px 12px" } }}
-              className="border-0 shadow-sm">
+              className="border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.primaryLight }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md transition-transform duration-300 hover:scale-110" style={{ background: C.primaryLight }}>
                   <BarChart3 size={16} style={{ color: C.primary }} />
                 </div>
                 <div>
@@ -532,9 +527,9 @@ const AdminDashboardPage: React.FC = () => {
             </Card>
 
             <Card size="small" styles={{ body: { padding: "16px 20px 12px" } }}
-              className="border-0 shadow-sm">
+              className="border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.successLight }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md transition-transform duration-300 hover:scale-110" style={{ background: C.successLight }}>
                   <FileBarChart size={16} style={{ color: C.success }} />
                 </div>
                 <div>
@@ -603,7 +598,7 @@ const AdminDashboardPage: React.FC = () => {
 
           {/* ── SCORE DISTRIBUTION ─────────────────────────────────────── */}
           <Card size="small" styles={{ body: { padding: "16px 20px" } }}
-            className="border-0 shadow-sm">
+            className="border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.successLight }}>
                 <Trophy size={16} style={{ color: C.success }} />
@@ -621,7 +616,7 @@ const AdminDashboardPage: React.FC = () => {
           {/* ── TABLES ROW ──────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card size="small" styles={{ body: { padding: 0 } }}
-              className="border-0 shadow-sm">
+              className="border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300">
               <div className="px-5 py-4 border-b flex items-center justify-between"
                 style={{ borderColor: C.gray[100] }}>
                 <Text strong className="text-sm" style={{ color: C.gray[800] }}>
@@ -644,7 +639,7 @@ const AdminDashboardPage: React.FC = () => {
             </Card>
 
             <Card size="small" styles={{ body: { padding: 0 } }}
-              className="border-0 shadow-sm">
+              className="border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300">
               <div className="px-5 py-4 border-b flex items-center justify-between"
                 style={{ borderColor: C.gray[100] }}>
                 <Text strong className="text-sm" style={{ color: C.gray[800] }}>
@@ -669,7 +664,7 @@ const AdminDashboardPage: React.FC = () => {
 
           {/* ── CLASSES & INSTRUCTORS ROW ─────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card size="small" styles={{ body: { padding: 0 } }} className="border-0 shadow-sm">
+            <Card size="small" styles={{ body: { padding: 0 } }} className="border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300">
               <div className="px-5 py-4 border-b" style={{ borderColor: C.gray[100] }}>
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center"

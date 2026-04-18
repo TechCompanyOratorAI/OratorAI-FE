@@ -281,7 +281,7 @@ const ManageClassesPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarInstructor activeItem="courses" />
+      <SidebarInstructor activeItem="manage-classes" />
       <main className="flex-1 overflow-y-auto p-6 sm:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}

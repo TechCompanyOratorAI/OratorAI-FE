@@ -89,7 +89,7 @@ const CourseDetailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50">
-        <SidebarInstructor activeItem="manage-courses" />
+        <SidebarInstructor activeItem="manage-classes" />
         <main className="flex-1 flex items-center justify-center">
           <Spin size="large" />
         </main>
@@ -100,7 +100,7 @@ const CourseDetailPage: React.FC = () => {
   if (error || !course) {
     return (
       <div className="flex h-screen bg-gray-50">
-        <SidebarInstructor activeItem="manage-courses" />
+        <SidebarInstructor activeItem="manage-classes" />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1280px] mx-auto px-4 py-8">
             <Button icon={<ArrowLeft size={14} />} onClick={() => navigate(-1)}>
@@ -182,7 +182,7 @@ const CourseDetailPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarInstructor activeItem="manage-courses" />
+      <SidebarInstructor activeItem="manage-classes" />
       <main className="flex-1 overflow-y-auto p-6 sm:p-8">
         <div className="max-w-[1280px] mx-auto space-y-6">
           {/* Back */}

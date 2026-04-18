@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavItem from "./NavItem";
 import Button from "../yoodli/Button";
@@ -7,21 +7,11 @@ import { motion, Variants } from "framer-motion";
 
 const Nav: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const navVariants: Variants = {
     hidden: { y: -100 },
@@ -34,8 +24,7 @@ const Nav: React.FC = () => {
   return (
     <>
       <motion.nav
-        className={`bg-white sticky top-0 z-50 shadow-md px-2 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-sm"
-          }`}
+        className={`bg-white/90 backdrop-blur-xl sticky top-0 z-50 shadow-lg px-2 transition-all duration-300`}
         initial="hidden"
         animate="visible"
         variants={navVariants}
@@ -57,43 +46,6 @@ const Nav: React.FC = () => {
           </button>
 
           <div className="hidden lg:flex items-center w-full">
-            {/* <div className="flex space-x-6 lg:space-x-12 ml-10">
-                            <NavItem
-                                text="FOR BUSINESS"
-                                more={[
-                                    "GTM Enablement",
-                                    "Learning & Development",
-                                    "Partner Enablement",
-                                    "Corporate Communications",
-                                ]}
-                            />
-                            <NavItem text="PRICING" />
-                            <NavItem
-                                text="ABOUT"
-                                more={["Our Team", "Careers", "AI Roleplays", "FAQ"]}
-                            />
-                            <NavItem
-                                text="USE CASES"
-                                more={[
-                                    "Conversation Roleplays",
-                                    "Interview Preparation",
-                                    "Presentation Practice",
-                                    "Online Meetings",
-                                ]}
-                            />
-                            <NavItem
-                                text="RESOURCES"
-                                more={[
-                                    "Blog",
-                                    "Our Partnerships",
-                                    "Press",
-                                    "Help Center",
-                                    "Sample Speeches",
-                                    "Community",
-                                    "Trust Center",
-                                ]}
-                            />
-                        </div> */}
             <div className="flex space-x-2 lg:space-x-4 ml-auto">
               <Button
                 text="Đăng nhập"

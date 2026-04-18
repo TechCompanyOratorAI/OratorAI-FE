@@ -174,10 +174,10 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const selectedKey = getSelectedKey();
 
   return (
-    <Layout className="min-h-screen bg-[#f5f6fa]">
-      {/* Top Header: container có max-width + padding ngang — tránh dính sát mép */}
+    <Layout className="min-h-screen bg-slate-50/50">
+      {/* Top Header */}
       <Header
-        className="fixed top-0 left-0 right-0 z-50 !h-[68px] !leading-none !px-0 !py-0 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+        className="fixed top-0 left-0 right-0 z-50 !h-[68px] !leading-none !px-0 !py-0 bg-white/95 backdrop-blur-md border-b border-slate-200/60 shadow-sm"
       >
         <div className="mx-auto flex h-[68px] w-full max-w-none items-center px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-4 lg:gap-8">
@@ -186,9 +186,9 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
               <AppLogo to="/" size="lg" className="!text-xl !font-bold !tracking-tight sm:!text-2xl" />
             </div>
 
-            {/* Desktop Nav — custom (không dùng antd Menu ngang: tránh thu gọn … và ẩn "Bài thuyết trình") */}
+            {/* Desktop Nav */}
             <nav
-              className="hidden min-h-0 min-w-0 items-center justify-center gap-2 overflow-x-auto lg:flex xl:gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              className="hidden min-h-0 min-w-0 items-center justify-center gap-2 overflow-x-auto lg:flex xl:gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               aria-label="Điều hướng học sinh"
             >
               {navItems.map((item) => {
@@ -199,10 +199,10 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                     type="button"
                     onClick={() => navigate(item.key)}
                     className={[
-                      "inline-flex shrink-0 items-center gap-2.5 rounded-2xl px-5 py-3 text-sm font-medium transition-all lg:px-4 xl:px-6 xl:py-3.5",
+                      "inline-flex shrink-0 items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
                       active
-                        ? "bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:shadow-sm",
                     ].join(" ")}
                   >
                     {item.icon}
@@ -213,12 +213,12 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
             </nav>
 
             {/* Right */}
-            <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+            <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
               <Badge count={unreadCount} size="small" offset={[-2, 2]} overflowCount={99}>
                 <Button
                   type="text"
                   icon={<Bell className="h-5 w-5" />}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
                   aria-label="Thông báo"
                   onClick={() => dispatch({ type: "notification/markAllRead" })}
                 />
@@ -227,12 +227,12 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
               <Dropdown menu={{ items: userMenuItems }} trigger={["click"]} placement="bottomRight">
                 <Button
                   type="text"
-                  className="flex h-auto max-w-[220px] items-center gap-3 rounded-xl py-2 pl-2 pr-3 hover:bg-slate-100 sm:max-w-[280px]"
+                  className="flex h-auto max-w-[220px] items-center gap-3 rounded-xl py-1.5 pl-1.5 pr-3 hover:bg-slate-100 transition-all duration-200 sm:max-w-[280px]"
                 >
                   <Avatar
                     size={38}
                     src={avatarSrc}
-                    className="flex shrink-0 items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white"
+                    className="flex shrink-0 items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-blue-500/20"
                   >
                     {!avatarSrc && initials}
                   </Avatar>
@@ -248,7 +248,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                 type="text"
                 icon={mobileOpen ? <X className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden transition-all duration-200"
                 aria-label="Mở menu"
               />
             </div>
