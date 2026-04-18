@@ -45,6 +45,7 @@ import {
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 import { fetchUploadPermissionByClass } from "@/services/features/uploadPermission/uploadPermissionSlice";
+import { useClassUploadPermission } from "@/hooks/useSocket";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -137,6 +138,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   );
   const isUploadEnabled = uploadPermission?.isUploadEnabled ?? false;
   const canUpload = isUploadEnabled;
+
+  useClassUploadPermission(classIdNumber ?? 0);
 
   useEffect(() => {
     if (myGroupId != null && Number.isFinite(myGroupId)) {

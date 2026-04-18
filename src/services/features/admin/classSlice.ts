@@ -350,6 +350,29 @@ const classSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    applyUploadPermissionUpdate: (
+      state,
+      action: PayloadAction<{
+        classId: number;
+        isUploadEnabled: boolean;
+        uploadStartDate: string | null;
+        uploadEndDate: string | null;
+      }>,
+    ) => {
+      const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } = action.payload;
+      if (state.selectedClass?.classId === classId) {
+        state.selectedClass.isUploadEnabled = isUploadEnabled;
+        state.selectedClass.uploadStartDate = uploadStartDate;
+        state.selectedClass.uploadEndDate = uploadEndDate;
+      }
+
+      const classIndex = state.classes.findIndex((c) => c.classId === classId);
+      if (classIndex !== -1) {
+        state.classes[classIndex].isUploadEnabled = isUploadEnabled;
+        state.classes[classIndex].uploadStartDate = uploadStartDate;
+        state.classes[classIndex].uploadEndDate = uploadEndDate;
+      }
+    },
   },
   extraReducers: (builder) => {
     // Fetch classes
@@ -616,7 +639,7 @@ const classSlice = createSlice({
   },
 });
 
-export const { setSelectedClass, clearError } = classSlice.actions;
+export const { setSelectedClass, clearError, applyUploadPermissionUpdate } = classSlice.actions;
 
 // Upload permission async thunks
 export const fetchUploadPermission = createAsyncThunk(

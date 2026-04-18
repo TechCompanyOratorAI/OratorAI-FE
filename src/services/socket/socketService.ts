@@ -14,6 +14,7 @@ export class SocketService {
   // Track rooms that should be joined so we can rejoin on reconnect
   private joinedClasses = new Set<number>();
   private joinedPresentations = new Set<number>();
+  private joinedGroups = new Set<number>();
 
   private getToken(): string | null {
     return localStorage.getItem("accessToken") || null;
@@ -31,9 +32,17 @@ export class SocketService {
       this.socket!.emit("join:presentation", presentationId);
     });
 
-    if (this.joinedClasses.size > 0 || this.joinedPresentations.size > 0) {
+    this.joinedGroups.forEach((groupId) => {
+      this.socket!.emit("join:group", groupId);
+    });
+
+    if (
+      this.joinedClasses.size > 0 ||
+      this.joinedPresentations.size > 0 ||
+      this.joinedGroups.size > 0
+    ) {
       console.log(
-        `[SocketService] Rejoined rooms: classes=${[...this.joinedClasses]}, presentations=${[...this.joinedPresentations]}`,
+        `[SocketService] Rejoined rooms: classes=${[...this.joinedClasses]}, presentations=${[...this.joinedPresentations]}, groups=${[...this.joinedGroups]}`,
       );
     }
   }
@@ -191,7 +200,26 @@ export class SocketService {
    */
   leavePresentation(presentationId: number) {
     this.joinedPresentations.delete(presentationId);
-    this.socket?.emit("leave:presentation", { presentationId });
+    this.socket?.emit("leave:presentation", presentationId);
+  }
+
+  /**
+   * Join a group room. Safe to call multiple times.
+   * Room is tracked so it will be rejoined automatically on reconnect.
+   */
+  joinGroup(groupId: number) {
+    this.joinedGroups.add(groupId);
+    if (this.socket?.connected) {
+      this.socket.emit("join:group", groupId);
+    }
+  }
+
+  /**
+   * Leave a group room and remove from tracked rooms.
+   */
+  leaveGroup(groupId: number) {
+    this.joinedGroups.delete(groupId);
+    this.socket?.emit("leave:group", groupId);
   }
 }
 

@@ -57,7 +57,12 @@ export const setUploadPermissionByClass = createAsyncThunk(
 const uploadPermissionSlice = createSlice({
   name: "uploadPermission",
   initialState,
-  reducers: {},
+  reducers: {
+    applyUploadPermissionUpdate: (state, action) => {
+      const permission = action.payload as UploadPermission;
+      state.permissions[permission.classId] = permission;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch
@@ -90,4 +95,4 @@ const uploadPermissionSlice = createSlice({
 });
 
 export default uploadPermissionSlice.reducer;
-export const {  } = uploadPermissionSlice.actions;
+export const { applyUploadPermissionUpdate } = uploadPermissionSlice.actions;
