@@ -42,9 +42,11 @@ import {
   fetchGradeDistributionsByClass,
   DistributionStatus,
   GradeDistribution,
+  setClassDistribution,
 } from "@/services/features/groupGrade/groupGradeSlice";
 import { fetchGroupsByClass } from "@/services/features/group/groupSlice";
 import type { GroupStudent } from "@/services/features/group/groupSlice";
+import { useSocket } from "@/hooks/useSocket";
 
 const { Text, Title } = Typography;
 
@@ -338,6 +340,7 @@ const InstructorClassStudentsPage: React.FC = () => {
     useAppSelector((state) => state.classScore);
   const { classDistributions } = useAppSelector((state) => state.groupGrade);
   const { groups, loading: groupLoading } = useAppSelector((state) => state.group);
+  const { joinGroup, leaveGroup, on } = useSocket();
 
   const data = numericClassId != null ? classScores[numericClassId] : undefined;
   const scoresLoading = numericClassId != null ? Boolean(loadingByClassId[numericClassId]) : false;
@@ -354,6 +357,48 @@ const InstructorClassStudentsPage: React.FC = () => {
   useEffect(() => {
     if (scoresError) toast.error(scoresError);
   }, [scoresError]);
+
+  useEffect(() => {
+    const classGroups = groups.filter(
+      (g) => Number(g.classId ?? g.class?.classId) === numericClassId,
+    );
+    const groupIds = classGroups
+      .map((g) => Number(g.groupId ?? g.id))
+      .filter((groupId) => Number.isFinite(groupId) && groupId > 0);
+
+    if (groupIds.length === 0) return;
+
+    groupIds.forEach((groupId) => joinGroup(groupId));
+
+    const syncDistribution = (payload: { distribution: GradeDistribution }) => {
+      dispatch(setClassDistribution(payload.distribution));
+    };
+
+    const unwatchDistributed = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:distributed",
+      syncDistribution,
+    );
+    const unwatchFinalized = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:finalized",
+      syncDistribution,
+    );
+    const unwatchReopened = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:reopened",
+      syncDistribution,
+    );
+    const unwatchFeedbackUpdated = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:feedback-updated",
+      syncDistribution,
+    );
+
+    return () => {
+      groupIds.forEach((groupId) => leaveGroup(groupId));
+      unwatchDistributed?.();
+      unwatchFinalized?.();
+      unwatchReopened?.();
+      unwatchFeedbackUpdated?.();
+    };
+  }, [groups, numericClassId, joinGroup, leaveGroup, on, dispatch]);
 
   const overallClassAverage = useMemo(() => {
     if (!data?.students) return null;

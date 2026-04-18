@@ -48,6 +48,7 @@ import {
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import CriterionFeedbackRubricForm from "@/components/CriterionFeedback/CriterionFeedbackRubricForm";
+import { useSocket } from "@/hooks/useSocket";
 
 const statusConfig: Record<
   string,
@@ -114,6 +115,8 @@ const IntructorPresentationDetailPage: React.FC = () => {
   const [confirmGrade, setConfirmGrade] = useState<number | null>(null);
   const [confirmFeedback, setConfirmFeedback] = useState("");
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
+  const currentReportRef = useRef(currentReport);
+  currentReportRef.current = currentReport;
 
   const presentationIdNumber = presentationId
     ? parseInt(presentationId, 10)
@@ -124,6 +127,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
     !!presentation &&
     !!presentationIdNumber &&
     presentation.presentationId === presentationIdNumber;
+  const { on, socket } = useSocket();
 
   useEffect(() => {
     if (isValidPresentationId && presentationIdNumber)
@@ -194,6 +198,44 @@ const IntructorPresentationDetailPage: React.FC = () => {
       dispatch(fetchCriterionFeedbacks(currentReport.reportId));
     }
   }, [showReport, currentReport?.reportId, dispatch]);
+
+  useEffect(() => {
+    if (!presentationIdNumber) return;
+    socket.joinPresentation(presentationIdNumber);
+  }, [presentationIdNumber, socket]);
+
+  useEffect(() => {
+    if (!presentationIdNumber) return;
+
+    const unwatchReportGenerated = on<{ presentationId: number; reportId: number; message?: string }>(
+      "report:generated",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          void dispatch(fetchPresentationReport(presentationIdNumber));
+          setShowReport(true);
+          setReportTab("ai");
+          toast.info(payload.message || "Báo cáo AI đã sẵn sàng.");
+        }
+      },
+    );
+
+    const unwatchCriterionFeedbackChanged = on<{ presentationId: number; reportId: number }>(
+      "report:criterion-feedback-changed",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          void dispatch(fetchPresentationReport(presentationIdNumber));
+          if (currentReportRef.current?.reportId) {
+            void dispatch(fetchCriterionFeedbacks(currentReportRef.current.reportId));
+          }
+        }
+      },
+    );
+
+    return () => {
+      unwatchReportGenerated?.();
+      unwatchCriterionFeedbackChanged?.();
+    };
+  }, [presentationIdNumber, on, socket, dispatch]);
 
   useEffect(() => {
     if (reportDecisionModal === "confirm" && currentReport) {

@@ -3,6 +3,8 @@ import { useAppDispatch, useAppSelector } from "../services/store/store";
 import { socketService } from "../services/socket/socketService";
 import { setConnected, updateUploadPermission } from "../services/features/socket/socketSlice";
 import type { UploadPermissionChangedPayload } from "../services/features/socket/socketSlice";
+import { applyUploadPermissionUpdate as applyUploadPermissionState } from "../services/features/uploadPermission/uploadPermissionSlice";
+import { applyUploadPermissionUpdate as applyClassUploadPermission } from "../services/features/admin/classSlice";
 
 export const useSocket = () => {
   const dispatch = useAppDispatch();
@@ -28,17 +30,20 @@ export const useSocket = () => {
     const socket = socketService.getSocket();
     if (!socket) return;
 
-    socket.on("connect", () => {
+    const handleConnect = () => {
       if (mountedRef.current) dispatch(setConnected(true));
-    });
+    };
 
-    socket.on("disconnect", () => {
+    const handleDisconnect = () => {
       if (mountedRef.current) dispatch(setConnected(false));
-    });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
     };
   }, [user, dispatch]);
 
@@ -64,12 +69,12 @@ export const useSocket = () => {
 
   /** Join a group room for grade distribution events. */
   const joinGroup = useCallback((groupId: number) => {
-    socketService.emit("join:group", groupId);
+    socketService.joinGroup(groupId);
   }, []);
 
   /** Leave a group room. */
   const leaveGroup = useCallback((groupId: number) => {
-    socketService.emit("leave:group", groupId);
+    socketService.leaveGroup(groupId);
   }, []);
 
   /** Generic listen to a socket event, auto-cleaned up on unmount. */
@@ -116,6 +121,8 @@ export const useClassUploadPermission = (
       (payload) => {
         if (payload.classId === classId) {
           dispatch(updateUploadPermission(payload));
+          dispatch(applyUploadPermissionState(payload));
+          dispatch(applyClassUploadPermission(payload));
           onPermissionChange?.(payload.isUploadEnabled);
         }
       }

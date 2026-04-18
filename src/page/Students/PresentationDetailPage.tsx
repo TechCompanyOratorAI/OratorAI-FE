@@ -89,7 +89,7 @@ import {
   GroupStudent,
 } from "@/services/features/group/groupSlice";
 import { fetchUploadPermission } from "@/services/features/admin/classSlice";
-import { useSocket } from "@/hooks/useSocket";
+import { useClassUploadPermission, useSocket } from "@/hooks/useSocket";
 import {
   setCurrentDistribution,
   GradeDistribution,
@@ -270,6 +270,7 @@ const PresentationDetailPage: React.FC = () => {
   } | null>(null);
 
   const presentationIdNumber = presentationId ? parseInt(presentationId) : null;
+  useClassUploadPermission(presentation?.classId ?? 0);
 
   // ── Socket ───────────────────────────────────────────────────────────────────
   const { joinGroup, leaveGroup, on, socket } = useSocket();
@@ -316,10 +317,23 @@ const PresentationDetailPage: React.FC = () => {
       }
     );
 
+    const unwatchCriterionFeedbackChanged = on<{ presentationId: number; reportId: number }>(
+      "report:criterion-feedback-changed",
+      (payload) => {
+        if (payload.presentationId === presentationIdNumber) {
+          dispatch(fetchPresentationReport(presentationIdNumber));
+          if (currentReportRef.current?.reportId) {
+            dispatch(fetchCriterionFeedbacks(currentReportRef.current.reportId));
+          }
+        }
+      }
+    );
+
     return () => {
       unwatchGenerated?.();
       unwatchConfirmed?.();
       unwatchRejected?.();
+      unwatchCriterionFeedbackChanged?.();
     };
   }, [presentationIdNumber, showReport, on, socket, dispatch]);
 
@@ -350,10 +364,31 @@ const PresentationDetailPage: React.FC = () => {
       }
     );
 
+    const unwatchReopened = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:reopened",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+          void toast.info("Giảng viên đã mở lại phân chia điểm.");
+        }
+      }
+    );
+
+    const unwatchFeedbackUpdated = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
+      "grade:feedback-updated",
+      (payload) => {
+        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
+          dispatch(setCurrentDistribution(payload.distribution));
+        }
+      }
+    );
+
     return () => {
       leaveGroup(numGroupId);
       unwatchDistributed?.();
       unwatchFinalized?.();
+      unwatchReopened?.();
+      unwatchFeedbackUpdated?.();
     };
   }, [group?.groupId, joinGroup, leaveGroup, on, dispatch]);
 
@@ -363,13 +398,23 @@ const PresentationDetailPage: React.FC = () => {
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
+    if (presentationIdNumber) {
+      void dispatch(fetchPresentationReport(presentationIdNumber));
+    }
+  }, [presentationIdNumber, dispatch]);
+
+  useEffect(() => {
     dispatch(clearCurrentReport());
     dispatch(clearCurrentDistribution());
     setShowReport(false);
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => { if (error) toast.error(error); }, [error]);
-  useEffect(() => { if (reportError) toast.error(reportError); }, [reportError]);
+  useEffect(() => {
+    if (reportError && !reportError.toLowerCase().includes("không tìm thấy")) {
+      toast.error(reportError);
+    }
+  }, [reportError]);
 
   useEffect(() => {
     if (showReport && currentReport?.reportId) {

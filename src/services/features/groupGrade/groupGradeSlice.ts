@@ -265,6 +265,14 @@ const groupGradeSlice = createSlice({
     setCurrentDistribution: (state, action: { payload: GradeDistribution }) => {
       state.currentDistribution = action.payload;
       upsertDistribution(state.distributions, action.payload);
+      upsertDistribution(state.classDistributions, action.payload);
+    },
+    setClassDistribution: (state, action: { payload: GradeDistribution }) => {
+      upsertDistribution(state.classDistributions, action.payload);
+      if (state.currentDistribution?.id === action.payload.id) {
+        state.currentDistribution = action.payload;
+      }
+      upsertDistribution(state.distributions, action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -374,6 +382,7 @@ export const {
   clearDistributions,
   clearMemberGrades,
   setCurrentDistribution,
+  setClassDistribution,
 } = groupGradeSlice.actions;
 
 export default groupGradeSlice.reducer;
