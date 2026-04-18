@@ -30,20 +30,7 @@ import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const { Title, Text } = Typography;
 
-const GRADIENTS = [
-  "linear-gradient(145deg, #3b82f6 0%, #6366f1 55%, #8b5cf6 100%)",
-  "linear-gradient(145deg, #10b981 0%, #059669 100%)",
-  "linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%)",
-  "linear-gradient(145deg, #f59e0b 0%, #ea580c 100%)",
-  "linear-gradient(145deg, #ec4899 0%, #db2777 100%)",
-  "linear-gradient(145deg, #06b6d4 0%, #2563eb 100%)",
-];
-const getGradient = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++)
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
-};
+const CARD_HEADER_BG = "linear-gradient(160deg, #1d4ed8 0%, #2563eb 60%, #3b82f6 100%)";
 
 type FilterType = "all" | "active" | "inactive";
 
@@ -261,9 +248,6 @@ const StudentMyClassesPage: React.FC = () => {
             <Row gutter={[20, 20]}>
               {filteredClasses.map((cls) => {
                 const isActive = cls.class.status === "active";
-                const gradient = getGradient(
-                  cls.class.className || cls.class.classCode,
-                );
 
                 return (
                   <Col xs={24} sm={12} lg={8} key={cls.enrollmentId}>
@@ -288,7 +272,7 @@ const StudentMyClassesPage: React.FC = () => {
                         }>
                         <div
                           className="relative px-5 pt-6 pb-5 text-white overflow-hidden"
-                          style={{ background: gradient }}>
+                          style={{ background: CARD_HEADER_BG }}>
                           <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
                           <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-white/10" />
                           <Flex
@@ -356,8 +340,8 @@ const StudentMyClassesPage: React.FC = () => {
                             size={14}
                             className="w-full">
                             {cls.enrolledAt && (
-                              <div className="flex items-center gap-3 bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-100">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+                              <div className="flex items-center gap-3 bg-blue-50 rounded-xl px-3 py-2.5 border border-blue-100">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
                                   <CheckCircleOutlined />
                                 </div>
                                 <div>
@@ -366,7 +350,7 @@ const StudentMyClassesPage: React.FC = () => {
                                     className="!text-[11px] !block !uppercase !tracking-wide">
                                     Ngày ghi danh
                                   </Text>
-                                  <Text className="!text-sm !font-bold !text-emerald-700">
+                                  <Text className="!text-sm !font-bold !text-blue-700">
                                     {new Date(cls.enrolledAt).toLocaleDateString(
                                       "vi-VN",
                                       { year: "numeric", month: "long", day: "numeric" },

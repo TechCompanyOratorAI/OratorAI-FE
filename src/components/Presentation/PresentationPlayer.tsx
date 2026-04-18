@@ -50,6 +50,8 @@ interface PresentationPlayerProps {
   createdAt?: string;
   onResultClick?: () => void;
   resultLoading?: boolean;
+  /** Hide the top header bar (useful when parent already renders a hero/title section). Default: true. */
+  showHeader?: boolean;
 }
 
 // Helper to check if file is video
@@ -89,6 +91,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
   createdAt,
   onResultClick,
   resultLoading = false,
+  showHeader = true,
 }) => {
   const [pageNumber, setPageNumber] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -402,7 +405,8 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      {/* Header */}
+      {/* Header — hide when parent already renders a hero/title section */}
+      {showHeader && (
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -444,6 +448,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
           </span>
         </div>
       </div>
+      )}
 
       {/* Tabs cho media và slides (chỉ hiển thị khi vừa có slide vừa có media) */}
       {hasMediaContent && hasSlides && (

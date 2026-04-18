@@ -2,16 +2,18 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  Search,
-  GraduationCap,
-  Users,
-  Calendar,
-  CheckCircle2,
-  ChevronRight,
-  KeyRound,
-  ShieldCheck,
-  BookOpen,
-} from "lucide-react";
+  SearchOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  RightOutlined,
+  KeyOutlined,
+  SafetyOutlined,
+  ReadOutlined,
+  FilterOutlined,
+  BookOutlined,
+  ArrowRightOutlined,
+} from "@ant-design/icons";
 import {
   Card,
   Row,
@@ -26,6 +28,7 @@ import {
   Typography,
   ConfigProvider,
   Avatar,
+  Divider,
 } from "antd";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassesByCourse } from "@/services/features/admin/classSlice";
@@ -65,7 +68,6 @@ const StudentClassesPage: React.FC = () => {
     searchParams.get("courseId") ? parseInt(searchParams.get("courseId")!, 10) : null
   );
 
-  // Modal ghi danh
   const [enrollModal, setEnrollModal] = useState<{ open: boolean; data: ClassItem | null }>({
     open: false,
     data: null,
@@ -178,336 +180,324 @@ const StudentClassesPage: React.FC = () => {
   }));
 
   const selectedCourseName = courses.find((c) => c.courseId === selectedCourseId)?.courseName;
+  const enrolledCount = filteredClasses.filter((c) => isEnrolled(c.classId)).length;
 
   return (
     <StudentLayout>
       <ConfigProvider componentSize="large">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="max-w-7xl mx-auto space-y-5">
 
-          {/* Tiêu đề */}
-          <div
-            className="rounded-2xl px-6 py-5 sm:px-8 sm:py-6"
-            style={{ background: "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)", border: "1px solid #e0e7ff" }}
-          >
-            <Title level={2} className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold">
-              Khám phá lớp học
-            </Title>
-            <Text className="text-sm sm:text-base text-indigo-500/80">
-              Chọn khóa học để xem và ghi danh các lớp học phù hợp
-            </Text>
+          {/* Page header */}
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Title level={3} className="!mb-0.5 !text-gray-900 !font-semibold !text-xl sm:!text-2xl">
+                Khám phá lớp học
+              </Title>
+              <Text className="text-sm text-gray-400">
+                Chọn khóa học, tìm lớp và ghi danh bằng mã do giảng viên cung cấp
+              </Text>
+            </div>
+            {selectedCourseId && filteredClasses.length > 0 && (
+              <Text className="text-xs text-gray-400 pb-0.5">
+                {filteredClasses.length} lớp
+                {enrolledCount > 0 && ` · ${enrolledCount} đã ghi danh`}
+              </Text>
+            )}
           </div>
 
-          {/* Bộ lọc khóa học + tìm kiếm */}
-          <div
-            className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm space-y-5"
-            style={{ border: "1px solid #f1f5f9" }}
-          >
+          {/* Filter bar */}
+          <div className="rounded-xl bg-white px-5 py-4 border border-gray-100 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Select
-                showSearch
-                allowClear
-                placeholder="Chọn khóa học..."
-                value={selectedCourseId ?? undefined}
-                onChange={(val) => handleCourseChange(val ?? null)}
-                options={courseOptions}
-                filterOption={(input, option) =>
-                  String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }
-                className="w-full sm:w-72"
-                style={{ borderRadius: 12 }}
-                suffixIcon={<BookOpen className="h-4 w-4 text-slate-400" />}
-              />
-              {selectedCourseId && (
-                <Input
-                  placeholder="Tìm kiếm lớp, mã lớp, giảng viên..."
-                  prefix={<Search className="h-4 w-4 text-slate-400" />}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+              <div className="flex items-center gap-2">
+                <FilterOutlined className="text-gray-400 text-sm" />
+                <Text className="text-xs font-medium text-gray-500 whitespace-nowrap">Bộ lọc</Text>
+              </div>
+              <Divider type="vertical" className="!h-4 !mx-1 hidden sm:block" />
+              <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+                <Select
+                  showSearch
                   allowClear
-                  className="w-full sm:max-w-[320px]"
-                  style={{ borderRadius: 12 }}
+                  placeholder="Chọn khóa học..."
+                  value={selectedCourseId ?? undefined}
+                  onChange={(val) => handleCourseChange(val ?? null)}
+                  options={courseOptions}
+                  filterOption={(input, option) =>
+                    String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                  }
+                  className="w-full sm:w-80"
+                  suffixIcon={<BookOutlined className="text-gray-400" />}
                 />
+                {selectedCourseId && (
+                  <Input
+                    placeholder="Tìm lớp, mã lớp, giảng viên..."
+                    prefix={<SearchOutlined className="text-gray-400" />}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    allowClear
+                    className="w-full sm:max-w-xs"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Content area */}
+          {!selectedCourseId ? (
+            <div className="flex flex-col items-center justify-center rounded-xl bg-white py-20 border border-gray-100 shadow-sm">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-50 border border-gray-200">
+                <ReadOutlined className="text-2xl text-gray-400" />
+              </div>
+              <Text strong className="mb-1 block text-gray-700">
+                Chọn một khóa học để bắt đầu
+              </Text>
+              <Text type="secondary" className="text-sm text-center max-w-xs">
+                Danh sách lớp học sẽ hiển thị sau khi bạn chọn khóa học ở trên
+              </Text>
+            </div>
+          ) : loading ? (
+            <Row gutter={[16, 16]}>
+              {[1, 2, 3, 4].map((i) => (
+                <Col xs={24} sm={12} xl={8} xxl={6} key={i}>
+                  <Card className="rounded-xl border-gray-100" styles={{ body: { padding: "20px" } }}>
+                    <Skeleton active paragraph={{ rows: 3 }} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ) : filteredClasses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl bg-white py-16 border border-gray-100 shadow-sm">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span className="text-sm text-gray-400">
+                    {searchQuery ? "Không tìm thấy lớp nào phù hợp" : "Khóa học này chưa có lớp học nào"}
+                  </span>
+                }
+              />
+              {searchQuery && (
+                <Button type="link" size="small" onClick={() => setSearchQuery("")}>
+                  Xóa tìm kiếm
+                </Button>
               )}
             </div>
-
-            {/* Chưa chọn khóa học */}
-            {!selectedCourseId && (
-              <div className="flex flex-col items-center justify-center py-14 gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
-                  <BookOpen className="h-8 w-8 text-indigo-400" />
+          ) : (
+            <>
+              {selectedCourseName && (
+                <div className="flex items-center gap-2">
+                  <Text type="secondary" className="text-xs">Khóa học:</Text>
+                  <Tag className="!rounded-full !text-xs !m-0 !border-gray-200 !text-gray-600 !bg-gray-50">
+                    {selectedCourseName}
+                  </Tag>
                 </div>
-                <div className="text-center">
-                  <Text strong className="block text-slate-700 text-base mb-1">
-                    Chọn một khóa học để bắt đầu
-                  </Text>
-                  <Text type="secondary" className="text-sm">
-                    Danh sách lớp học sẽ hiển thị sau khi bạn chọn khóa học ở trên
-                  </Text>
-                </div>
-              </div>
-            )}
+              )}
+              <Row gutter={[16, 16]}>
+                {filteredClasses.map((c) => {
+                  const enrolled = isEnrolled(c.classId);
+                  const isActive = c.status === "active";
+                  return (
+                    <Col xs={24} sm={12} xl={8} xxl={6} key={c.classId}>
+                      <Card
+                        hoverable
+                        className="group h-full rounded-xl overflow-hidden transition-shadow duration-200 hover:shadow-md"
+                        style={{ border: "1px solid #f0f0f0" }}
+                        styles={{ body: { padding: 0 } }}
+                      >
+                        {/* Top border indicator */}
+                        <div
+                          className="h-0.5 w-full"
+                          style={{
+                            background: enrolled ? "#52c41a" : isActive ? "#1677ff" : "#d9d9d9",
+                          }}
+                        />
 
-            {/* Đã chọn khóa học — danh sách lớp */}
-            {selectedCourseId && (
-              <>
-                {selectedCourseName && (
-                  <div className="flex items-center gap-2">
-                    <Text type="secondary" className="text-sm">Lớp thuộc:</Text>
-                    <Tag color="blue" style={{ borderRadius: 8, fontSize: 12 }}>{selectedCourseName}</Tag>
-                  </div>
-                )}
-
-                {loading ? (
-                  <Row gutter={[20, 20]}>
-                    {[1, 2, 3, 4].map((i) => (
-                      <Col xs={24} md={12} xl={8} xxl={6} key={i}>
-                        <Card style={{ borderRadius: 16 }} styles={{ body: { padding: "20px 18px" } }}>
-                          <Skeleton active paragraph={{ rows: 3 }} />
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
-                ) : filteredClasses.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <span className="text-sm text-slate-500">
-                          {searchQuery ? "Không tìm thấy lớp nào phù hợp" : "Khóa học này chưa có lớp học nào"}
-                        </span>
-                      }
-                    />
-                    {searchQuery && (
-                      <Button type="link" className="!text-sm" onClick={() => setSearchQuery("")}>
-                        Xóa tìm kiếm
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <Row gutter={[20, 20]}>
-                    {filteredClasses.map((c) => {
-                      const enrolled = isEnrolled(c.classId);
-                      const isActive = c.status === "active";
-                      return (
-                        <Col xs={24} md={12} xl={8} xxl={6} key={c.classId}>
-                          <Card
-                            hoverable
-                            style={{
-                              borderRadius: 16,
-                              border: "1px solid #e8e8e8",
-                              overflow: "hidden",
-                              transition: "all 0.2s",
-                            }}
-                            styles={{ body: { padding: 0 } }}
-                            className="group h-full"
-                          >
-                            {/* Header gradient */}
-                            <div
-                              className="relative p-5 pb-4"
-                              style={{
-                                background: isActive
-                                  ? "linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)"
-                                  : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-                              }}
-                            >
-                              <div className="mb-2.5 flex items-center justify-between">
-                                <Tag
-                                  style={{
-                                    borderRadius: 20,
-                                    border: "none",
-                                    fontSize: 11,
-                                    padding: "2px 10px",
-                                    background: isActive ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)",
-                                    color: "#fff",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {isActive ? "Đang mở" : "Đã đóng"}
-                                </Tag>
-                                {enrolled && (
-                                  <div className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
-                                    <ShieldCheck className="h-3 w-3" />
-                                    Đã ghi danh
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-start gap-3">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                                  <GraduationCap className="h-6 w-6 text-white" />
+                        <div className="p-5 space-y-4">
+                          {/* Class identity */}
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100">
+                              <ReadOutlined className={`text-base ${isActive ? "text-blue-500" : "text-gray-300"}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <Title
+                                level={5}
+                                className="!mb-0.5 !text-gray-800 !text-sm !font-semibold !leading-snug line-clamp-2"
+                              >
+                                {c.className}
+                              </Title>
+                              <Text className="text-xs text-gray-400">
+                                {c.classCode}
+                                {c.courseCode ? ` · ${c.courseCode}` : ""}
+                              </Text>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                              <Tag
+                                className="!m-0 !text-[10px] !px-2 !py-0 !rounded-full !font-medium"
+                                color={isActive ? "processing" : "default"}
+                              >
+                                {isActive ? "Đang mở" : "Đã đóng"}
+                              </Tag>
+                              {enrolled && (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <SafetyOutlined className="text-[11px]" />
+                                  <span className="text-[10px] font-semibold">Đã ghi danh</span>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <Title
-                                    level={4}
-                                    className="!mb-0.5 !text-white !text-base sm:!text-lg !leading-snug !font-bold line-clamp-2"
-                                  >
-                                    {c.className}
-                                  </Title>
-                                  <Text className="text-white/80 text-xs sm:text-sm">
-                                    {c.classCode}
-                                    {c.courseCode ? ` • ${c.courseCode}` : ""}
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Details */}
+                          <div className="space-y-2.5 rounded-lg bg-gray-50 px-3.5 py-3 border border-gray-100">
+                            {c.instructorName && c.instructorName !== "Chưa có giảng viên" && (
+                              <div className="flex items-center gap-2.5">
+                                <Avatar
+                                  size={24}
+                                  className="shrink-0 !bg-gray-200 !text-gray-600 !text-[10px] !font-bold flex items-center justify-center"
+                                >
+                                  {c.instructorName.split(" ").slice(-2).map((n) => n[0]).join("").toUpperCase()}
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <Text className="text-[10px] text-gray-400 block">Giảng viên</Text>
+                                  <Text className="text-xs font-medium text-gray-700 truncate block">
+                                    {c.instructorName}
                                   </Text>
                                 </div>
                               </div>
-                            </div>
+                            )}
 
-                            {/* Body */}
-                            <div className="p-4 space-y-3">
-                              <div className="space-y-2.5">
-                                {c.instructorName && c.instructorName !== "Chưa có giảng viên" && (
-                                  <div className="flex items-center gap-2.5">
-                                    <Avatar
-                                      size={30}
-                                      className="flex shrink-0 items-center justify-center bg-blue-100 text-blue-600 text-xs font-bold"
-                                    >
-                                      {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
-                                    </Avatar>
-                                    <div className="min-w-0 flex-1">
-                                      <Text type="secondary" className="block text-xs">Giảng viên</Text>
-                                      <Text className="text-xs sm:text-sm font-semibold text-slate-800 truncate block">
-                                        {c.instructorName}
-                                      </Text>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="flex items-center gap-2.5">
-                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                                    <Users className="h-4 w-4 text-slate-500" />
-                                  </div>
-                                  <div>
-                                    <Text type="secondary" className="block text-xs">Học sinh</Text>
-                                    <Text className="text-xs sm:text-sm font-semibold text-slate-800">
-                                      {c.enrollmentCount}
-                                      {c.maxStudents ? ` / ${c.maxStudents}` : ""}
-                                    </Text>
-                                  </div>
-                                </div>
-
-                                {c.schedule && (
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                                      <Calendar className="h-4 w-4 text-slate-500" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <Text type="secondary" className="block text-xs">Lịch học</Text>
-                                      <Text className="text-xs sm:text-sm font-semibold text-slate-800 truncate block">
-                                        {c.schedule}
-                                      </Text>
-                                    </div>
-                                  </div>
-                                )}
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center">
+                                <TeamOutlined className="text-gray-400 text-sm" />
                               </div>
-
-                              {c.description && (
-                                <Text type="secondary" className="text-xs sm:text-sm line-clamp-2 block">
-                                  {c.description}
+                              <div>
+                                <Text className="text-[10px] text-gray-400 block">Học sinh</Text>
+                                <Text className="text-xs font-medium text-gray-700">
+                                  {c.enrollmentCount}
+                                  {c.maxStudents ? ` / ${c.maxStudents}` : ""}
                                 </Text>
-                              )}
-
-                              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                                {enrolled ? (
-                                  <>
-                                    <Button
-                                      type="default"
-                                      icon={<CheckCircle2 className="h-4 w-4" />}
-                                      className="rounded-xl !text-sm !font-semibold !border-emerald-200 !text-emerald-700 !bg-emerald-50 h-10"
-                                      onClick={() => navigate(`/student/class/${c.classId}`)}
-                                    >
-                                      Vào lớp
-                                    </Button>
-                                    <Button
-                                      type="text"
-                                      className="rounded-xl h-10 w-10 !p-0 flex items-center justify-center"
-                                      onClick={() => navigate(`/student/class/${c.classId}`)}
-                                      icon={<ChevronRight className="h-4 w-4" />}
-                                      aria-label="Chi tiết lớp"
-                                    />
-                                  </>
-                                ) : (
-                                  <Button
-                                    type="primary"
-                                    icon={<KeyRound className="h-4 w-4" />}
-                                    className="rounded-xl !text-sm !font-semibold h-10"
-                                    onClick={() => openEnroll(c)}
-                                    disabled={!isActive}
-                                  >
-                                    Ghi danh
-                                  </Button>
-                                )}
                               </div>
                             </div>
-                          </Card>
-                        </Col>
-                      );
-                    })}
-                  </Row>
-                )}
-              </>
-            )}
-          </div>
+
+                            {c.schedule && (
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center">
+                                  <CalendarOutlined className="text-gray-400 text-sm" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <Text className="text-[10px] text-gray-400 block">Thời gian</Text>
+                                  <Text className="text-xs font-medium text-gray-700 truncate block">
+                                    {c.schedule}
+                                  </Text>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {c.description && (
+                            <Text type="secondary" className="text-xs line-clamp-2 block leading-relaxed">
+                              {c.description}
+                            </Text>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            {enrolled ? (
+                              <Button
+                                type="default"
+                                icon={<CheckCircleOutlined className="text-green-600" />}
+                                size="middle"
+                                className="rounded-lg !text-xs !font-medium !border-gray-200 !text-gray-700 flex items-center gap-1"
+                                onClick={() => navigate(`/student/class/${c.classId}`)}
+                                iconPosition="start"
+                              >
+                                Vào lớp
+                                <RightOutlined className="text-[10px] text-gray-400" />
+                              </Button>
+                            ) : (
+                              <Button
+                                type="primary"
+                                icon={<KeyOutlined />}
+                                size="middle"
+                                className="rounded-lg !text-xs !font-medium flex items-center gap-1"
+                                onClick={() => openEnroll(c)}
+                                disabled={!isActive}
+                              >
+                                Ghi danh
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            </>
+          )}
         </div>
 
-        {/* Modal Ghi danh */}
+        {/* Enroll Modal */}
         <Modal
           open={enrollModal.open}
           onCancel={closeEnroll}
           footer={null}
           centered
-          width={440}
-          destroyOnClose
+          width={400}
+          destroyOnHidden
           styles={{
-            content: { borderRadius: 16, padding: "24px 20px 20px" },
+            content: { borderRadius: 16, padding: "24px" },
             header: { display: "none" },
           }}
         >
           <div className="space-y-5">
-            <div
-              className="flex items-center gap-3 rounded-xl p-4"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                <KeyRound className="h-6 w-6 text-white" />
+            {/* Modal header */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100">
+                <KeyOutlined className="text-gray-500 text-base" />
               </div>
               <div>
-                <Title level={4} className="!mb-0.5 !text-white !text-lg !font-bold">
+                <Title level={5} className="!mb-0 !text-gray-800 !font-semibold">
                   Ghi danh lớp học
                 </Title>
-                <Text className="text-white/80 text-sm">
+                <Text type="secondary" className="text-xs">
                   {enrollModal.data?.className}
                 </Text>
               </div>
             </div>
 
+            <Divider className="!my-0" />
+
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
                 Mã ghi danh
               </label>
               <Input
-                placeholder="Nhập mã ghi danh do giáo viên cung cấp"
-                prefix={<KeyRound className="h-4 w-4 text-slate-400" />}
+                placeholder="Nhập mã do giảng viên cung cấp..."
+                prefix={<KeyOutlined className="text-gray-400" />}
                 value={enrollKey}
                 onChange={(e) => {
                   setEnrollKey(e.target.value);
                   if (enrollError) setEnrollError("");
                 }}
+                onPressEnter={submitEnroll}
                 status={enrollError ? "error" : undefined}
-                style={{ borderRadius: 12, height: 44 }}
+                style={{ borderRadius: 10, height: 42 }}
                 className="text-sm"
+                autoFocus
               />
               {enrollError && (
-                <Text type="danger" className="mt-1.5 block text-sm">
+                <Text type="danger" className="mt-1.5 block text-xs">
                   {enrollError}
                 </Text>
               )}
+              <Text type="secondary" className="mt-1.5 block text-xs">
+                Mã ghi danh được cung cấp bởi giảng viên phụ trách lớp
+              </Text>
             </div>
 
             <div className="flex items-center justify-end gap-2">
               <Button
                 onClick={closeEnroll}
                 disabled={enrolling}
-                style={{ borderRadius: 10, height: 40 }}
-                className="!text-sm !font-semibold min-w-[90px]"
+                className="rounded-lg !font-medium min-w-[72px]"
               >
                 Hủy
               </Button>
@@ -515,8 +505,9 @@ const StudentClassesPage: React.FC = () => {
                 type="primary"
                 onClick={submitEnroll}
                 loading={enrolling}
-                style={{ borderRadius: 10, height: 40 }}
-                className="!text-sm !font-semibold min-w-[130px]"
+                icon={!enrolling && <ArrowRightOutlined />}
+                iconPosition="end"
+                className="rounded-lg !font-medium min-w-[110px]"
               >
                 {enrolling ? "Đang ghi danh..." : "Xác nhận"}
               </Button>
