@@ -1009,6 +1009,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
         </p>
       </Modal>
 
+
     </div>
   );
 };

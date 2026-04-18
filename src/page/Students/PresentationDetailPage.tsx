@@ -28,7 +28,9 @@ import {
   SendOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
+  UserSwitchOutlined,
 } from "@ant-design/icons";
+import SpeakerMappingModal from "@/components/Speaker/SpeakerMappingModal";
 import {
   Button,
   Tag,
@@ -209,6 +211,7 @@ const PresentationDetailPage: React.FC = () => {
   currentReportRef.current = currentReport;
   const [gradeDistributionModalOpen, setGradeDistributionModalOpen] =
     useState(false);
+  const [speakerModalOpen, setSpeakerModalOpen] = useState(false);
   const [groupDetail, setGroupDetail] = useState<{
     groupId?: number | string;
     students?: GroupStudent[];
@@ -672,6 +675,14 @@ const PresentationDetailPage: React.FC = () => {
               </Tag>
             )}
 
+            {isCurrentUserLeader && (
+              <Button
+                icon={<UserSwitchOutlined />}
+                onClick={() => setSpeakerModalOpen(true)}
+              >
+                Ánh xạ diễn giả
+              </Button>
+            )}
             <Button
               icon={<Link2 className="w-4 h-4" />}
               onClick={() => setShareModalOpen(true)}
@@ -1643,6 +1654,15 @@ const PresentationDetailPage: React.FC = () => {
           open={shareModalOpen}
           presentationId={presentationIdNumber}
           onClose={() => setShareModalOpen(false)}
+        />
+      )}
+
+      {/* Modal ánh xạ diễn giả (Leader only) */}
+      {isCurrentUserLeader && presentationIdNumber && (
+        <SpeakerMappingModal
+          presentationId={presentationIdNumber}
+          open={speakerModalOpen}
+          onClose={() => setSpeakerModalOpen(false)}
         />
       )}
 
