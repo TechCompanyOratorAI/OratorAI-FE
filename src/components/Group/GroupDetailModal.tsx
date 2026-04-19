@@ -296,6 +296,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                             <div className="relative flex-shrink-0">
                               <Avatar
                                 size={44}
+                                src={member.avatar || undefined}
                                 style={{
                                   background: isLeader
                                     ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
@@ -307,7 +308,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                                     : "0 4px 12px rgba(14, 165, 233, 0.25)",
                                 }}
                               >
-                                {getInitials(name)}
+                                {!member.avatar && getInitials(name)}
                               </Avatar>
                               {isLeader && (
                                 <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">

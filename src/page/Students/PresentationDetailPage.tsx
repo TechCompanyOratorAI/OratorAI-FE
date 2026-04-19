@@ -37,7 +37,6 @@ import {
 import {
   Button,
   Tag,
-  Tooltip,
   Input,
   message as antdMessage,
   Popconfirm,
@@ -102,33 +101,72 @@ const REPORT_SCROLL_TOP_GAP = 12;
 
 // ── Color Palette (Ant Design CSS Variables) ───────────────────────────────────
 const PALETTE = {
-  primary: "#4F46E5",        // Indigo-600
-  primaryLight: "#818CF8",   // Indigo-400
-  primaryDark: "#3730A3",     // Indigo-800
-  success: "#059669",         // Emerald-600
-  successLight: "#D1FAE5",   // Emerald-100
-  warning: "#D97706",         // Amber-600
-  warningLight: "#FEF3C7",   // Amber-100
-  danger: "#DC2626",          // Red-600
-  dangerLight: "#FEE2E2",    // Red-100
-  info: "#0284C7",            // Sky-600
-  infoLight: "#E0F2FE",      // Sky-100
-  purple: "#7C3AED",          // Violet-600
-  purpleLight: "#EDE9FE",    // Violet-100
-  slate: "#475569",           // Slate-600
-  slateLight: "#F1F5F9",     // Slate-100
+  primary: "#4F46E5", // Indigo-600
+  primaryLight: "#818CF8", // Indigo-400
+  primaryDark: "#3730A3", // Indigo-800
+  success: "#059669", // Emerald-600
+  successLight: "#D1FAE5", // Emerald-100
+  warning: "#D97706", // Amber-600
+  warningLight: "#FEF3C7", // Amber-100
+  danger: "#DC2626", // Red-600
+  dangerLight: "#FEE2E2", // Red-100
+  info: "#0284C7", // Sky-600
+  infoLight: "#E0F2FE", // Sky-100
+  purple: "#7C3AED", // Violet-600
+  purpleLight: "#EDE9FE", // Violet-100
+  slate: "#475569", // Slate-600
+  slateLight: "#F1F5F9", // Slate-100
   white: "#FFFFFF",
-  bg: "#F8FAFC",              // Slate-50
+  bg: "#F8FAFC", // Slate-50
 };
 
 // ── Status Config ──────────────────────────────────────────────────────────────
-const statusConfig: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
-  draft:       { label: "Nháp",         color: "#64748B", bg: "#F1F5F9", border: "#CBD5E1", dot: "default" },
-  submitted:   { label: "Đã nộp",      color: "#0284C7", bg: "#E0F2FE", border: "#BAE6FD", dot: "processing" },
-  processing:  { label: "Đang xử lý",  color: "#D97706", bg: "#FEF3C7", border: "#FDE68A", dot: "processing" },
-  analyzed:    { label: "Đã chấm",      color: "#059669", bg: "#D1FAE5", border: "#A7F3D0", dot: "success" },
-  done:        { label: "Hoàn thành",   color: "#059669", bg: "#D1FAE5", border: "#A7F3D0", dot: "success" },
-  failed:      { label: "Thất bại",     color: "#DC2626", bg: "#FEE2E2", border: "#FECACA", dot: "error" },
+const statusConfig: Record<
+  string,
+  { label: string; color: string; bg: string; border: string; dot: string }
+> = {
+  draft: {
+    label: "Nháp",
+    color: "#64748B",
+    bg: "#F1F5F9",
+    border: "#CBD5E1",
+    dot: "default",
+  },
+  submitted: {
+    label: "Đã nộp",
+    color: "#0284C7",
+    bg: "#E0F2FE",
+    border: "#BAE6FD",
+    dot: "processing",
+  },
+  processing: {
+    label: "Đang xử lý",
+    color: "#D97706",
+    bg: "#FEF3C7",
+    border: "#FDE68A",
+    dot: "processing",
+  },
+  analyzed: {
+    label: "Đã chấm",
+    color: "#059669",
+    bg: "#D1FAE5",
+    border: "#A7F3D0",
+    dot: "success",
+  },
+  done: {
+    label: "Hoàn thành",
+    color: "#059669",
+    bg: "#D1FAE5",
+    border: "#A7F3D0",
+    dot: "success",
+  },
+  failed: {
+    label: "Thất bại",
+    color: "#DC2626",
+    bg: "#FEE2E2",
+    border: "#FECACA",
+    dot: "error",
+  },
 };
 
 // ── Inline member feedback sub-component ──────────────────────────────────────
@@ -148,7 +186,9 @@ const MemberFeedbackInline: React.FC<{
       return;
     }
     try {
-      await dispatch(submitMemberFeedback({ groupId, distributionId, feedback: text })).unwrap();
+      await dispatch(
+        submitMemberFeedback({ groupId, distributionId, feedback: text }),
+      ).unwrap();
       void antdMessage.success("Gửi phản hồi thành công!");
       setSent(true);
     } catch (e: any) {
@@ -159,7 +199,10 @@ const MemberFeedbackInline: React.FC<{
   return (
     <Card
       size="small"
-      style={{ background: PALETTE.slateLight, border: `1px solid ${PALETTE.slateLight}` }}
+      style={{
+        background: PALETTE.slateLight,
+        border: `1px solid ${PALETTE.slateLight}`,
+      }}
       className="mt-3"
     >
       <div className="flex items-center gap-2 mb-2">
@@ -185,7 +228,11 @@ const MemberFeedbackInline: React.FC<{
         loading={actionLoading}
         onClick={handleSend}
         className="mt-2"
-        style={sent ? {} : { background: PALETTE.primary, borderColor: PALETTE.primary }}
+        style={
+          sent
+            ? {}
+            : { background: PALETTE.primary, borderColor: PALETTE.primary }
+        }
       >
         {sent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
       </Button>
@@ -194,16 +241,18 @@ const MemberFeedbackInline: React.FC<{
 };
 
 // ── Score Badge ────────────────────────────────────────────────────────────────
-const ScoreBadge: React.FC<{ score: number; max: number; size?: "small" | "default" }> = ({
-  score,
-  max,
-  size = "default",
-}) => {
+const ScoreBadge: React.FC<{
+  score: number;
+  max: number;
+  size?: "small" | "default";
+}> = ({ score, max, size = "default" }) => {
   const percent = (score / max) * 100;
   const color =
-    percent >= 80 ? PALETTE.success :
-    percent >= 60 ? PALETTE.warning :
-    PALETTE.danger;
+    percent >= 80
+      ? PALETTE.success
+      : percent >= 60
+        ? PALETTE.warning
+        : PALETTE.danger;
 
   return (
     <div className="flex items-center gap-2">
@@ -261,7 +310,8 @@ const PresentationDetailPage: React.FC = () => {
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
   const currentReportRef = useRef(currentReport);
   currentReportRef.current = currentReport;
-  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] = useState(false);
+  const [gradeDistributionModalOpen, setGradeDistributionModalOpen] =
+    useState(false);
   const [speakerModalOpen, setSpeakerModalOpen] = useState(false);
   const [groupDetail, setGroupDetail] = useState<{
     groupId?: number | string;
@@ -283,19 +333,21 @@ const PresentationDetailPage: React.FC = () => {
   useEffect(() => {
     if (!presentationIdNumber) return;
 
-    const unwatchGenerated = on<{ presentationId: number; reportId: number; overallScore: number | null; message?: string }>(
-      "report:generated",
-      (payload) => {
-        if (payload.presentationId === presentationIdNumber) {
-          void toast.info(payload.message || "Báo cáo AI đã sẵn sàng!");
-          dispatch(fetchPresentationReport(presentationIdNumber));
-          if (!showReport) {
-            setShowReport(true);
-            setReportTab("ai");
-          }
+    const unwatchGenerated = on<{
+      presentationId: number;
+      reportId: number;
+      overallScore: number | null;
+      message?: string;
+    }>("report:generated", (payload) => {
+      if (payload.presentationId === presentationIdNumber) {
+        void toast.info(payload.message || "Báo cáo AI đã sẵn sàng!");
+        dispatch(fetchPresentationReport(presentationIdNumber));
+        if (!showReport) {
+          setShowReport(true);
+          setReportTab("ai");
         }
       }
-    );
+    });
 
     const unwatchConfirmed = on<{ presentationId: number; reportId: number }>(
       "report:confirmed",
@@ -304,30 +356,31 @@ const PresentationDetailPage: React.FC = () => {
           void toast.success("Giảng viên đã xác nhận báo cáo!");
           dispatch(fetchPresentationReport(presentationIdNumber));
         }
-      }
+      },
     );
 
-    const unwatchRejected = on<{ presentationId: number; reportId: number; message?: string }>(
-      "report:rejected",
-      (payload) => {
-        if (payload.presentationId === presentationIdNumber) {
-          void toast.warning(payload.message || "Giảng viên đã từ chối báo cáo!");
-          dispatch(fetchPresentationReport(presentationIdNumber));
-        }
+    const unwatchRejected = on<{
+      presentationId: number;
+      reportId: number;
+      message?: string;
+    }>("report:rejected", (payload) => {
+      if (payload.presentationId === presentationIdNumber) {
+        void toast.warning(payload.message || "Giảng viên đã từ chối báo cáo!");
+        dispatch(fetchPresentationReport(presentationIdNumber));
       }
-    );
+    });
 
-    const unwatchCriterionFeedbackChanged = on<{ presentationId: number; reportId: number }>(
-      "report:criterion-feedback-changed",
-      (payload) => {
-        if (payload.presentationId === presentationIdNumber) {
-          dispatch(fetchPresentationReport(presentationIdNumber));
-          if (currentReportRef.current?.reportId) {
-            dispatch(fetchCriterionFeedbacks(currentReportRef.current.reportId));
-          }
+    const unwatchCriterionFeedbackChanged = on<{
+      presentationId: number;
+      reportId: number;
+    }>("report:criterion-feedback-changed", (payload) => {
+      if (payload.presentationId === presentationIdNumber) {
+        dispatch(fetchPresentationReport(presentationIdNumber));
+        if (currentReportRef.current?.reportId) {
+          dispatch(fetchCriterionFeedbacks(currentReportRef.current.reportId));
         }
       }
-    );
+    });
 
     return () => {
       unwatchGenerated?.();
@@ -344,44 +397,60 @@ const PresentationDetailPage: React.FC = () => {
     const numGroupId = Number(currentGroupId);
     joinGroup(numGroupId);
 
-    const unwatchDistributed = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:distributed",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-          void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
-        }
+    const unwatchDistributed = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:distributed", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
+        void toast.info("Trưởng nhóm đã phân chia điểm! Cập nhật...");
       }
-    );
+    });
 
-    const unwatchFinalized = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:finalized",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-          void toast.success("Điểm đã được chốt bởi giảng viên!");
-        }
+    const unwatchFinalized = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:finalized", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
+        void toast.success("Điểm đã được chốt bởi giảng viên!");
       }
-    );
+    });
 
-    const unwatchReopened = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:reopened",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-          void toast.info("Giảng viên đã mở lại phân chia điểm.");
-        }
+    const unwatchReopened = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:reopened", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
+        void toast.info("Giảng viên đã mở lại phân chia điểm.");
       }
-    );
+    });
 
-    const unwatchFeedbackUpdated = on<{ groupId: number; reportId: number; distribution: GradeDistribution }>(
-      "grade:feedback-updated",
-      (payload) => {
-        if (payload.groupId === numGroupId && payload.reportId === currentReportRef.current?.reportId) {
-          dispatch(setCurrentDistribution(payload.distribution));
-        }
+    const unwatchFeedbackUpdated = on<{
+      groupId: number;
+      reportId: number;
+      distribution: GradeDistribution;
+    }>("grade:feedback-updated", (payload) => {
+      if (
+        payload.groupId === numGroupId &&
+        payload.reportId === currentReportRef.current?.reportId
+      ) {
+        dispatch(setCurrentDistribution(payload.distribution));
       }
-    );
+    });
 
     return () => {
       leaveGroup(numGroupId);
@@ -394,7 +463,8 @@ const PresentationDetailPage: React.FC = () => {
 
   // ── Data fetching ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (presentationIdNumber) dispatch(fetchPresentationDetail(presentationIdNumber));
+    if (presentationIdNumber)
+      dispatch(fetchPresentationDetail(presentationIdNumber));
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
@@ -409,7 +479,9 @@ const PresentationDetailPage: React.FC = () => {
     setShowReport(false);
   }, [presentationIdNumber, dispatch]);
 
-  useEffect(() => { if (error) toast.error(error); }, [error]);
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
   useEffect(() => {
     if (reportError && !reportError.toLowerCase().includes("không tìm thấy")) {
       toast.error(reportError);
@@ -423,10 +495,19 @@ const PresentationDetailPage: React.FC = () => {
   }, [showReport, currentReport?.reportId, dispatch]);
 
   useEffect(() => {
-    if (currentReport?.reportId && currentReport.reportStatus === "confirmed" && showReport) {
+    if (
+      currentReport?.reportId &&
+      currentReport.reportStatus === "confirmed" &&
+      showReport
+    ) {
       void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
     }
-  }, [currentReport?.reportId, currentReport?.reportStatus, showReport, dispatch]);
+  }, [
+    currentReport?.reportId,
+    currentReport?.reportStatus,
+    showReport,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (presentation?.classId) {
@@ -440,9 +521,12 @@ const PresentationDetailPage: React.FC = () => {
   const isGroupMember = !!group?.groupId;
   const hasDistribution = !!currentDistribution;
 
-  const isInstructor = user?.roles?.some((r) => r.roleName === "Instructor" || r.roleName === "Admin");
+  const isInstructor = user?.roles?.some(
+    (r) => r.roleName === "Instructor" || r.roleName === "Admin",
+  );
   const isInstructorOfPresentation = isInstructor && presentation?.classId;
-  const canApprove = isInstructorOfPresentation && !presentation?.instructorApproved;
+  const canApprove =
+    isInstructorOfPresentation && !presentation?.instructorApproved;
   const isApproved = presentation?.instructorApproved;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -453,13 +537,27 @@ const PresentationDetailPage: React.FC = () => {
       if (!groupId) return;
       const result = await dispatch(fetchGroupDetail(groupId)).unwrap();
       if (result) {
-        setGroupDetail({ groupId: result.groupId ?? result.id, students: result.students, myRole: result.myRole });
+        setGroupDetail({
+          groupId: result.groupId ?? result.id,
+          students: result.students,
+          myRole: result.myRole,
+        });
       } else {
-        if (group?.groupId) setGroupDetail({ groupId: group.groupId, students: group.students, myRole: group.myRole });
+        if (group?.groupId)
+          setGroupDetail({
+            groupId: group.groupId,
+            students: group.students,
+            myRole: group.myRole,
+          });
       }
       setGradeDistributionModalOpen(true);
     } catch {
-      if (group?.groupId) setGroupDetail({ groupId: group.groupId, students: group.students, myRole: group.myRole });
+      if (group?.groupId)
+        setGroupDetail({
+          groupId: group.groupId,
+          students: group.students,
+          myRole: group.myRole,
+        });
       setGradeDistributionModalOpen(true);
     }
   };
@@ -467,10 +565,14 @@ const PresentationDetailPage: React.FC = () => {
   const handleApproveSubmission = async () => {
     if (!presentationIdNumber) return;
     try {
-      await dispatch(approvePresentation({ presentationId: presentationIdNumber })).unwrap();
+      await dispatch(
+        approvePresentation({ presentationId: presentationIdNumber }),
+      ).unwrap();
       void antdMessage.success("Đã duyệt cho nộp bài!");
       dispatch(fetchPresentationDetail(presentationIdNumber));
-    } catch { /* handled in slice */ }
+    } catch {
+      /* handled in slice */
+    }
   };
 
   const handleUnapproveSubmission = async () => {
@@ -479,7 +581,9 @@ const PresentationDetailPage: React.FC = () => {
       await dispatch(unapprovePresentation(presentationIdNumber)).unwrap();
       void antdMessage.success("Đã huỷ duyệt!");
       dispatch(fetchPresentationDetail(presentationIdNumber));
-    } catch { /* handled in slice */ }
+    } catch {
+      /* handled in slice */
+    }
   };
 
   const handleViewReport = () => {
@@ -491,11 +595,17 @@ const PresentationDetailPage: React.FC = () => {
   // ── Memos ────────────────────────────────────────────────────────────────────
   const myDistributionGrade = useMemo(() => {
     if (!currentDistribution?.members || !user?.userId) return null;
-    return currentDistribution.members.find((m) => m.studentId === user.userId) ?? null;
+    return (
+      currentDistribution.members.find((m) => m.studentId === user.userId) ??
+      null
+    );
   }, [currentDistribution, user?.userId]);
 
   const syncedFeedbacks = useMemo(() => {
-    if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
+    if (
+      currentReport?.criterionFeedbacks &&
+      currentReport.criterionFeedbacks.length > 0
+    ) {
       return currentReport.criterionFeedbacks;
     }
     return criterionFeedbacks;
@@ -503,7 +613,9 @@ const PresentationDetailPage: React.FC = () => {
 
   const criteriaScores = useMemo(() => {
     if (!currentReport?.criterionScores) return [];
-    return Object.values(currentReport.criterionScores).sort((a, b) => a.criteriaId - b.criteriaId);
+    return Object.values(currentReport.criterionScores).sort(
+      (a, b) => a.criteriaId - b.criteriaId,
+    );
   }, [currentReport]);
 
   const aiOverallOutOf10 = useMemo(() => {
@@ -515,7 +627,9 @@ const PresentationDetailPage: React.FC = () => {
   const scrollToReportSection = () => {
     window.requestAnimationFrame(() => {
       if (!reportSectionRef.current) return;
-      const stickyHeader = document.querySelector("header") as HTMLElement | null;
+      const stickyHeader = document.querySelector(
+        "header",
+      ) as HTMLElement | null;
       const stickyHeaderHeight = stickyHeader?.offsetHeight || 0;
       const targetTop =
         window.scrollY +
@@ -536,25 +650,36 @@ const PresentationDetailPage: React.FC = () => {
 
   // ── Derived values ────────────────────────────────────────────────────────────
   const studentName = presentation?.student
-    ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() || "Student"
+    ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
+      "Student"
     : "Unknown";
 
-  const sc = statusConfig[presentation?.status?.toLowerCase() ?? "draft"] ?? statusConfig.draft;
+  const sc =
+    statusConfig[presentation?.status?.toLowerCase() ?? "draft"] ??
+    statusConfig.draft;
 
   // ── Render Loading ───────────────────────────────────────────────────────────
   if (detailLoading) {
     return (
       <StudentLayout>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-          <Skeleton active paragraph={{ rows: 1 }} style={{ marginBottom: 16 }} />
+          <Skeleton
+            active
+            paragraph={{ rows: 1 }}
+            style={{ marginBottom: 16 }}
+          />
           <Row gutter={[16, 16]}>
             {[1, 2, 3, 4].map((i) => (
               <Col xs={12} sm={12} md={6} key={i}>
-                <Card><Skeleton active paragraph={{ rows: 1 }} /></Card>
+                <Card>
+                  <Skeleton active paragraph={{ rows: 1 }} />
+                </Card>
               </Col>
             ))}
           </Row>
-          <Card style={{ marginTop: 16 }}><Skeleton active paragraph={{ rows: 6 }} /></Card>
+          <Card style={{ marginTop: 16 }}>
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </Card>
         </div>
       </StudentLayout>
     );
@@ -564,14 +689,22 @@ const PresentationDetailPage: React.FC = () => {
     return (
       <StudentLayout>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-          <Button icon={<ArrowLeft size={16} />} onClick={() => navigate(-1)} style={{ marginBottom: 16 }}>
+          <Button
+            icon={<ArrowLeft size={16} />}
+            onClick={() => navigate(-1)}
+            style={{ marginBottom: 16 }}
+          >
             Quay lại
           </Button>
           <Alert
             message={error || "Không tìm thấy bài thuyết trình"}
             type="error"
             showIcon
-            action={<Button size="small" onClick={() => navigate(-1)}>Quay lại</Button>}
+            action={
+              <Button size="small" onClick={() => navigate(-1)}>
+                Quay lại
+              </Button>
+            }
           />
         </div>
       </StudentLayout>
@@ -595,7 +728,11 @@ const PresentationDetailPage: React.FC = () => {
           <CommentOutlined />
           <span>Phản hồi GV</span>
           {syncedFeedbacks.length > 0 && (
-            <Badge count={syncedFeedbacks.length} size="small" style={{ backgroundColor: PALETTE.success }} />
+            <Badge
+              count={syncedFeedbacks.length}
+              size="small"
+              style={{ backgroundColor: PALETTE.success }}
+            />
           )}
         </Space>
       ),
@@ -615,7 +752,8 @@ const PresentationDetailPage: React.FC = () => {
             colorError: PALETTE.danger,
             colorInfo: PALETTE.info,
             borderRadius: 12,
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontFamily:
+              "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           },
           components: {
             Card: { borderRadiusLG: 16 },
@@ -624,8 +762,9 @@ const PresentationDetailPage: React.FC = () => {
           },
         }}
       >
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 8px 32px" }}>
-
+        <div
+          style={{ maxWidth: 1200, margin: "0 auto", padding: "0 8px 32px" }}
+        >
           {/* ── Page Header ── */}
           <motion.div
             initial={{ opacity: 0, y: -12 }}
@@ -633,12 +772,19 @@ const PresentationDetailPage: React.FC = () => {
             transition={{ duration: 0.4 }}
           >
             {/* Breadcrumb + Action Bar */}
-            <div className="flex items-center justify-between mb-4" style={{ flexWrap: "wrap", gap: 8 }}>
+            <div
+              className="flex items-center justify-between mb-4"
+              style={{ flexWrap: "wrap", gap: 8 }}
+            >
               <Button
                 icon={<ArrowLeft size={14} />}
                 onClick={() => navigate(-1)}
                 type="text"
-                style={{ color: PALETTE.slate, padding: "4px 8px", height: "auto" }}
+                style={{
+                  color: PALETTE.slate,
+                  padding: "4px 8px",
+                  height: "auto",
+                }}
               >
                 Quay lại
               </Button>
@@ -652,9 +798,18 @@ const PresentationDetailPage: React.FC = () => {
                     okText="Duyệt"
                     cancelText="Hủy"
                     onConfirm={handleApproveSubmission}
-                    okButtonProps={{ loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                    okButtonProps={{
+                      loading: approvingIds.includes(presentationIdNumber ?? 0),
+                    }}
                   >
-                    <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: PALETTE.success, borderColor: PALETTE.success }}>
+                    <Button
+                      type="primary"
+                      icon={<CheckCircleOutlined />}
+                      style={{
+                        background: PALETTE.success,
+                        borderColor: PALETTE.success,
+                      }}
+                    >
                       Duyệt nộp bài
                     </Button>
                   </Popconfirm>
@@ -666,30 +821,67 @@ const PresentationDetailPage: React.FC = () => {
                     okText="Huỷ duyệt"
                     cancelText="Hủy"
                     onConfirm={handleUnapproveSubmission}
-                    okButtonProps={{ danger: true, loading: approvingIds.includes(presentationIdNumber ?? 0) }}
+                    okButtonProps={{
+                      danger: true,
+                      loading: approvingIds.includes(presentationIdNumber ?? 0),
+                    }}
                   >
-                    <Button danger icon={<ExclamationCircleOutlined />}>Huỷ duyệt</Button>
+                    <Button danger icon={<ExclamationCircleOutlined />}>
+                      Huỷ duyệt
+                    </Button>
                   </Popconfirm>
                 )}
 
                 {!isInstructor && isApproved && (
-                  <Tag icon={<CheckCircleOutlined />} color="success" style={{ borderRadius: 20, padding: "2px 12px", fontWeight: 600 }}>
+                  <Tag
+                    icon={<CheckCircleOutlined />}
+                    color="success"
+                    style={{
+                      borderRadius: 20,
+                      padding: "2px 12px",
+                      fontWeight: 600,
+                    }}
+                  >
                     Đã được duyệt
                   </Tag>
                 )}
 
                 {isCurrentUserLeader && (
-                  <Button icon={<UserSwitchOutlined />} onClick={() => setSpeakerModalOpen(true)}>
+                  <Button
+                    icon={<UserSwitchOutlined />}
+                    onClick={() => setSpeakerModalOpen(true)}
+                  >
                     Ánh xạ diễn giả
                   </Button>
                 )}
 
-                <Button icon={<ShareAltOutlined />} onClick={() => setShareModalOpen(true)}>
+                <Button
+                  icon={<ShareAltOutlined />}
+                  onClick={() => setShareModalOpen(true)}
+                >
                   Chia sẻ
                 </Button>
 
-                <Badge dot status={sc.dot as "success" | "error" | "default" | "processing" | "warning"}>
-                  <Tag style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontWeight: 600, borderRadius: 20 }}>
+                <Badge
+                  dot
+                  status={
+                    sc.dot as
+                      | "success"
+                      | "error"
+                      | "default"
+                      | "processing"
+                      | "warning"
+                  }
+                >
+                  <Tag
+                    style={{
+                      background: sc.bg,
+                      color: sc.color,
+                      border: `1px solid ${sc.border}`,
+                      fontWeight: 600,
+                      borderRadius: 20,
+                    }}
+                  >
                     {sc.label}
                   </Tag>
                 </Badge>
@@ -710,35 +902,100 @@ const PresentationDetailPage: React.FC = () => {
               className="shadow-lg"
             >
               {/* Decorative circles */}
-              <div style={{
-                position: "absolute", top: -30, right: -30, width: 160, height: 160,
-                borderRadius: "50%", background: "rgba(255,255,255,0.06)",
-              }} />
-              <div style={{
-                position: "absolute", bottom: -20, right: 80, width: 100, height: 100,
-                borderRadius: "50%", background: "rgba(255,255,255,0.04)",
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  top: -30,
+                  right: -30,
+                  width: 160,
+                  height: 160,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.06)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -20,
+                  right: 80,
+                  width: 100,
+                  height: 100,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              />
 
               <div style={{ position: "relative", zIndex: 1 }}>
-                <Title level={2} style={{ color: PALETTE.white, margin: 0, fontWeight: 800, fontSize: 24, lineHeight: 1.3 }}
-                  ellipsis={{ rows: 2, expandable: false, tooltip: presentation.title }}
+                <Title
+                  level={2}
+                  style={{
+                    color: PALETTE.white,
+                    margin: 0,
+                    fontWeight: 800,
+                    fontSize: 24,
+                    lineHeight: 1.3,
+                  }}
+                  ellipsis={{
+                    rows: 2,
+                    expandable: false,
+                    tooltip: presentation.title,
+                  }}
                 >
                   {presentation.title}
                 </Title>
                 {presentation.description && (
-                  <Paragraph style={{ color: "rgba(255,255,255,0.75)", margin: "8px 0 0", fontSize: 14 }}>
+                  <Paragraph
+                    style={{
+                      color: "rgba(255,255,255,0.75)",
+                      margin: "8px 0 0",
+                      fontSize: 14,
+                    }}
+                  >
                     {presentation.description}
                   </Paragraph>
                 )}
-                <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Avatar size={32} style={{ background: "rgba(255,255,255,0.2)", color: PALETTE.white, fontWeight: 600 }}>
-                    {studentName.charAt(0).toUpperCase()}
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <Avatar
+                    size={32}
+                    src={presentation.student?.avatar || undefined}
+                    style={{
+                      background: "rgba(255,255,255,0.2)",
+                      color: PALETTE.white,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {!presentation.student?.avatar &&
+                      studentName.charAt(0).toUpperCase()}
                   </Avatar>
                   <div>
-                    <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600 }}>{studentName}</Text>
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {studentName}
+                    </Text>
                     {presentation.createdAt && (
-                      <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, display: "block" }}>
-                        {new Date(presentation.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
+                      <Text
+                        style={{
+                          color: "rgba(255,255,255,0.6)",
+                          fontSize: 11,
+                          display: "block",
+                        }}
+                      >
+                        {new Date(presentation.createdAt).toLocaleDateString(
+                          "vi-VN",
+                          { day: "2-digit", month: "short", year: "numeric" },
+                        )}
                       </Text>
                     )}
                   </div>
@@ -757,21 +1014,47 @@ const PresentationDetailPage: React.FC = () => {
               {/* Presenter */}
               <Col xs={12} sm={12} md={6}>
                 <Card
-                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  style={{
+                    borderRadius: 16,
+                    border: "none",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                  }}
                   styles={{ body: { padding: "16px" } }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: PALETTE.infoLight, display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: PALETTE.infoLight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <User size={20} color={PALETTE.info} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: PALETTE.slate,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          display: "block",
+                        }}
+                      >
                         Người thuyết trình
                       </Text>
-                      <Text strong style={{ fontSize: 13, display: "block" }} ellipsis={{ tooltip: studentName }}>
+                      <Text
+                        strong
+                        style={{ fontSize: 13, display: "block" }}
+                        ellipsis={{ tooltip: studentName }}
+                      >
                         {studentName}
                       </Text>
                     </div>
@@ -782,21 +1065,49 @@ const PresentationDetailPage: React.FC = () => {
               {/* Topic */}
               <Col xs={12} sm={12} md={6}>
                 <Card
-                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  style={{
+                    borderRadius: 16,
+                    border: "none",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                  }}
                   styles={{ body: { padding: "16px" } }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: PALETTE.successLight, display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: PALETTE.successLight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <BookOpen size={20} color={PALETTE.success} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: PALETTE.slate,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          display: "block",
+                        }}
+                      >
                         Chủ đề
                       </Text>
-                      <Text strong style={{ fontSize: 13, display: "block" }} ellipsis={{ tooltip: presentation.topic?.topicName || "N/A" }}>
+                      <Text
+                        strong
+                        style={{ fontSize: 13, display: "block" }}
+                        ellipsis={{
+                          tooltip: presentation.topic?.topicName || "N/A",
+                        }}
+                      >
                         {presentation.topic?.topicName || "N/A"}
                       </Text>
                     </div>
@@ -807,18 +1118,40 @@ const PresentationDetailPage: React.FC = () => {
               {/* Duration */}
               <Col xs={12} sm={12} md={6}>
                 <Card
-                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  style={{
+                    borderRadius: 16,
+                    border: "none",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                  }}
                   styles={{ body: { padding: "16px" } }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: PALETTE.warningLight, display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: PALETTE.warningLight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <Clock size={20} color={PALETTE.warning} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: PALETTE.slate,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          display: "block",
+                        }}
+                      >
                         Thời lượng
                       </Text>
                       <Text strong style={{ fontSize: 13, display: "block" }}>
@@ -834,18 +1167,40 @@ const PresentationDetailPage: React.FC = () => {
               {/* Slides count */}
               <Col xs={12} sm={12} md={6}>
                 <Card
-                  style={{ borderRadius: 16, border: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                  style={{
+                    borderRadius: 16,
+                    border: "none",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                  }}
                   styles={{ body: { padding: "16px" } }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: PALETTE.purpleLight, display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: PALETTE.purpleLight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <FileText size={20} color={PALETTE.purple} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <Text style={{ fontSize: 11, color: PALETTE.slate, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: PALETTE.slate,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          display: "block",
+                        }}
+                      >
                         Số slide
                       </Text>
                       <Text strong style={{ fontSize: 13, display: "block" }}>
@@ -865,34 +1220,38 @@ const PresentationDetailPage: React.FC = () => {
             transition={{ delay: 0.2, duration: 0.4 }}
             style={{ marginTop: 16 }}
           >
-          <PresentationPlayer
-            slides={presentation.slides || []}
-            audioRecord={presentation.audioRecord || null}
-            title={presentation.title}
-            description={presentation.description}
-            status={presentation.status}
-            studentName={studentName}
-            createdAt={presentation.createdAt}
-            onResultClick={handleViewReport}
-            resultLoading={reportLoading}
-            showHeader={false}
-          />
+            <PresentationPlayer
+              slides={presentation.slides || []}
+              audioRecord={presentation.audioRecord || null}
+              title={presentation.title}
+              description={presentation.description}
+              status={presentation.status}
+              studentName={studentName}
+              createdAt={presentation.createdAt}
+              onResultClick={handleViewReport}
+              resultLoading={reportLoading}
+              showHeader={false}
+            />
           </motion.div>
 
           {/* ── Progress Tracker ── */}
-          {(presentation.status === "submitted" || presentation.status === "processing") && presentationIdNumber && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              style={{ marginTop: 16 }}
-            >
-              <PresentationProgressTracker
-                presentationId={presentationIdNumber}
-                onCompleted={() => dispatch(fetchPresentationDetail(presentationIdNumber))}
-              />
-            </motion.div>
-          )}
+          {(presentation.status === "submitted" ||
+            presentation.status === "processing") &&
+            presentationIdNumber && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                style={{ marginTop: 16 }}
+              >
+                <PresentationProgressTracker
+                  presentationId={presentationIdNumber}
+                  onCompleted={() =>
+                    dispatch(fetchPresentationDetail(presentationIdNumber))
+                  }
+                />
+              </motion.div>
+            )}
 
           {/* ── Failed State ── */}
           {presentation.status === "failed" && (
@@ -913,7 +1272,10 @@ const PresentationDetailPage: React.FC = () => {
                     type="primary"
                     danger
                     icon={<ReloadOutlined />}
-                    onClick={() => { setUploadResubmit(true); setUploadModalOpen(true); }}
+                    onClick={() => {
+                      setUploadResubmit(true);
+                      setUploadModalOpen(true);
+                    }}
                   >
                     Gửi lại
                   </Button>
@@ -933,23 +1295,54 @@ const PresentationDetailPage: React.FC = () => {
               style={{ marginTop: 16 }}
             >
               <Card
-                style={{ borderRadius: 20, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.07)" }}
+                style={{
+                  borderRadius: 20,
+                  border: "none",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+                }}
                 styles={{ body: { padding: "24px 24px 20px" } }}
               >
                 {/* Report Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 12,
-                      background: `${PALETTE.primary}15`, display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <BarChartOutlined style={{ fontSize: 18, color: PALETTE.primary }} />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 20,
+                    flexWrap: "wrap",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: `${PALETTE.primary}15`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <BarChartOutlined
+                        style={{ fontSize: 18, color: PALETTE.primary }}
+                      />
                     </div>
                     <div>
-                      <Title level={4} style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>Kết quả đánh giá</Title>
+                      <Title
+                        level={4}
+                        style={{ margin: 0, fontWeight: 700, fontSize: 18 }}
+                      >
+                        Kết quả đánh giá
+                      </Title>
                       {currentReport?.generatedAt && (
                         <Text style={{ fontSize: 12, color: PALETTE.slate }}>
-                          {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                          {new Date(currentReport.generatedAt).toLocaleString(
+                            "vi-VN",
+                          )}
                         </Text>
                       )}
                     </div>
@@ -975,7 +1368,10 @@ const PresentationDetailPage: React.FC = () => {
                         type="primary"
                         danger
                         icon={<ReloadOutlined />}
-                        onClick={() => { setUploadResubmit(true); setUploadModalOpen(true); }}
+                        onClick={() => {
+                          setUploadResubmit(true);
+                          setUploadModalOpen(true);
+                        }}
                       >
                         Gửi lại
                       </Button>
@@ -988,7 +1384,15 @@ const PresentationDetailPage: React.FC = () => {
                 {reportLoading ? (
                   <div style={{ textAlign: "center", padding: "40px 0" }}>
                     <Spin size="large" />
-                    <Text style={{ display: "block", marginTop: 12, color: PALETTE.slate }}>Đang tải kết quả...</Text>
+                    <Text
+                      style={{
+                        display: "block",
+                        marginTop: 12,
+                        color: PALETTE.slate,
+                      }}
+                    >
+                      Đang tải kết quả...
+                    </Text>
                   </div>
                 ) : currentReport ? (
                   <AnimatePresence mode="wait">
@@ -1012,31 +1416,80 @@ const PresentationDetailPage: React.FC = () => {
                         >
                           <Row gutter={24} align="middle">
                             <Col flex="none">
-                              <div style={{
-                                width: 72, height: 72, borderRadius: "50%",
-                                background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.primaryDark})`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                boxShadow: `0 8px 24px ${PALETTE.primary}40`,
-                              }}>
-                                <RobotOutlined style={{ fontSize: 28, color: PALETTE.white }} />
+                              <div
+                                style={{
+                                  width: 72,
+                                  height: 72,
+                                  borderRadius: "50%",
+                                  background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.primaryDark})`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  boxShadow: `0 8px 24px ${PALETTE.primary}40`,
+                                }}
+                              >
+                                <RobotOutlined
+                                  style={{ fontSize: 28, color: PALETTE.white }}
+                                />
                               </div>
                             </Col>
                             <Col flex="auto">
-                              <Text style={{ fontSize: 13, color: PALETTE.slate, fontWeight: 500, display: "block", marginBottom: 4 }}>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: PALETTE.slate,
+                                  fontWeight: 500,
+                                  display: "block",
+                                  marginBottom: 4,
+                                }}
+                              >
                                 Điểm tổng (AI)
                               </Text>
-                              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                                <span style={{ fontSize: 36, fontWeight: 800, color: PALETTE.primary, lineHeight: 1 }}>
-                                  {aiOverallOutOf10 !== null ? aiOverallOutOf10 : "—"}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "baseline",
+                                  gap: 6,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: 36,
+                                    fontWeight: 800,
+                                    color: PALETTE.primary,
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  {aiOverallOutOf10 !== null
+                                    ? aiOverallOutOf10
+                                    : "—"}
                                 </span>
-                                <span style={{ fontSize: 20, fontWeight: 600, color: PALETTE.primaryLight }}>/ 10</span>
+                                <span
+                                  style={{
+                                    fontSize: 20,
+                                    fontWeight: 600,
+                                    color: PALETTE.primaryLight,
+                                  }}
+                                >
+                                  / 10
+                                </span>
                               </div>
                             </Col>
                             <Col flex="none">
                               <Rate
                                 disabled
                                 allowHalf
-                                value={aiOverallOutOf10 !== null ? Math.min(5, Math.max(0, parseFloat(aiOverallOutOf10) / 2)) : 0}
+                                value={
+                                  aiOverallOutOf10 !== null
+                                    ? Math.min(
+                                        5,
+                                        Math.max(
+                                          0,
+                                          parseFloat(aiOverallOutOf10) / 2,
+                                        ),
+                                      )
+                                    : 0
+                                }
                                 style={{ fontSize: 18 }}
                               />
                             </Col>
@@ -1044,277 +1497,728 @@ const PresentationDetailPage: React.FC = () => {
                         </Card>
 
                         {/* Confirmed Grade & Distribution */}
-                        {currentReport?.reportStatus === "confirmed" && currentReport.gradeForInstructor !== null && isGroupMember && (
-                          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 16 }}>
-                            {/* Instructor Grade Card */}
-                            <Card
-                              style={{
-                                borderRadius: 16,
-                                border: hasDistribution ? `2px solid ${PALETTE.successLight}` : `2px solid ${PALETTE.warningLight}`,
-                                background: hasDistribution
-                                  ? `linear-gradient(135deg, ${PALETTE.successLight}40 0%, #fff 100%)`
-                                  : `linear-gradient(135deg, ${PALETTE.warningLight}40 0%, #fff 100%)`,
-                              }}
-                              styles={{ body: { padding: "20px 24px" } }}
+                        {currentReport?.reportStatus === "confirmed" &&
+                          currentReport.gradeForInstructor !== null &&
+                          isGroupMember && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              style={{ marginBottom: 16 }}
                             >
-                              <Row gutter={24} align="middle">
-                                <Col flex="none">
-                                  <div style={{
-                                    width: 52, height: 52, borderRadius: 14,
-                                    background: hasDistribution
-                                      ? `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.primary})`
-                                      : `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                  }}>
-                                    <TrophyAD style={{ fontSize: 22, color: PALETTE.white }} />
-                                  </div>
-                                </Col>
-                                <Col flex="auto">
-                                  <Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate, display: "block", marginBottom: 2 }}>
-                                    Điểm giảng viên
-                                  </Text>
-                                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                                    <span style={{ fontSize: 28, fontWeight: 800, color: PALETTE.slate }}>
-                                      {currentReport.gradeForInstructor}
-                                    </span>
-                                    <span style={{ fontSize: 16, color: "#94A3B8" }}>/ 10</span>
-                                  </div>
-                                </Col>
-                                <Col flex="none">
-                                  {isCurrentUserLeader && !hasDistribution && (
-                                    <Button
-                                      type="primary"
-                                      size="large"
-                                      icon={<TrophyOutlined />}
-                                      onClick={handleOpenGradeDistribution}
+                              {/* Instructor Grade Card */}
+                              <Card
+                                style={{
+                                  borderRadius: 16,
+                                  border: hasDistribution
+                                    ? `2px solid ${PALETTE.successLight}`
+                                    : `2px solid ${PALETTE.warningLight}`,
+                                  background: hasDistribution
+                                    ? `linear-gradient(135deg, ${PALETTE.successLight}40 0%, #fff 100%)`
+                                    : `linear-gradient(135deg, ${PALETTE.warningLight}40 0%, #fff 100%)`,
+                                }}
+                                styles={{ body: { padding: "20px 24px" } }}
+                              >
+                                <Row gutter={24} align="middle">
+                                  <Col flex="none">
+                                    <div
                                       style={{
-                                        background: `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
-                                        border: "none",
-                                        borderRadius: 12,
-                                        height: 44,
-                                        fontWeight: 600,
-                                        boxShadow: "0 4px 12px rgba(217,119,6,0.3)",
+                                        width: 52,
+                                        height: 52,
+                                        borderRadius: 14,
+                                        background: hasDistribution
+                                          ? `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.primary})`
+                                          : `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        boxShadow:
+                                          "0 4px 12px rgba(0,0,0,0.15)",
                                       }}
                                     >
-                                      Chia điểm cho nhóm
-                                    </Button>
-                                  )}
-                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "submitted" && (
-                                    <Tag icon={<LockOutlined />} color="orange" style={{ fontSize: 12, padding: "4px 12px", borderRadius: 20 }}>
-                                      Đã nộp — chờ instructor xem xét
-                                    </Tag>
-                                  )}
-                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "reopened" && (
-                                    <Button
-                                      type="primary"
-                                      size="large"
-                                      icon={<EditOutlined />}
-                                      onClick={handleOpenGradeDistribution}
-                                      style={{
-                                        background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.info})`,
-                                        border: "none",
-                                        borderRadius: 12,
-                                        height: 44,
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      Cập nhật điểm (lần cuối)
-                                    </Button>
-                                  )}
-                                  {isCurrentUserLeader && hasDistribution && currentDistribution?.status === "finalized" && (
-                                    <Tag icon={<LockOutlined />} color="success" style={{ fontSize: 12, padding: "4px 12px", borderRadius: 20 }}>
-                                      Đã chốt điểm
-                                    </Tag>
-                                  )}
-                                  {!isCurrentUserLeader && hasDistribution && (
-                                    <Button icon={<EyeOutlined />} size="large" onClick={handleOpenGradeDistribution}>
-                                      Xem chi tiết
-                                    </Button>
-                                  )}
-                                </Col>
-                              </Row>
-
-                              {/* Status Row */}
-                              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
-                                {hasDistribution ? (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <CheckCircle2 size={14} color={PALETTE.success} />
-                                    <Text style={{ fontSize: 13, color: PALETTE.success }}>
-                                      Phân chia bởi <strong>{currentDistribution.leader?.firstName ?? ""} {currentDistribution.leader?.lastName ?? ""}</strong>
-                                      {currentDistribution.distributedAt && (
-                                        <Text style={{ color: "#94A3B8", fontWeight: 400 }}>
-                                          {" — "}{new Date(currentDistribution.distributedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                                        </Text>
-                                      )}
-                                    </Text>
-                                  </div>
-                                ) : (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Users size={14} color={PALETTE.warning} />
-                                    <Text style={{ fontSize: 13, color: PALETTE.warning }}>
-                                      {isCurrentUserLeader
-                                        ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
-                                        : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."}
-                                    </Text>
-                                  </div>
-                                )}
-                              </div>
-                            </Card>
-
-                            {/* Personal Grade Card */}
-                            {hasDistribution && myDistributionGrade && (
-                              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-                                <Card
-                                  style={{
-                                    borderRadius: 16,
-                                    border: `1px solid ${PALETTE.infoLight}`,
-                                    background: `linear-gradient(135deg, ${PALETTE.infoLight}30 0%, #fff 100%)`,
-                                    marginTop: 12,
-                                  }}
-                                  styles={{ body: { padding: "16px 20px" } }}
-                                >
-                                  <Row gutter={16} align="middle">
-                                    <Col flex="none">
-                                      <Avatar
-                                        size={44}
+                                      <TrophyAD
                                         style={{
-                                          background: `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})`,
-                                          fontWeight: 700,
-                                          fontSize: 16,
+                                          fontSize: 22,
+                                          color: PALETTE.white,
+                                        }}
+                                      />
+                                    </div>
+                                  </Col>
+                                  <Col flex="auto">
+                                    <Text
+                                      style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        textTransform: "uppercase",
+                                        letterSpacing: 0.5,
+                                        color: PALETTE.slate,
+                                        display: "block",
+                                        marginBottom: 2,
+                                      }}
+                                    >
+                                      Điểm giảng viên
+                                    </Text>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "baseline",
+                                        gap: 6,
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontSize: 28,
+                                          fontWeight: 800,
+                                          color: PALETTE.slate,
                                         }}
                                       >
-                                        {studentName.charAt(0).toUpperCase()}
-                                      </Avatar>
-                                    </Col>
-                                    <Col flex="auto">
-                                      <Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate, display: "block", marginBottom: 2 }}>
-                                        Điểm cá nhân của bạn
-                                      </Text>
-                                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                                        <span style={{ fontSize: 24, fontWeight: 800, color: PALETTE.info }}>
-                                          {Number(myDistributionGrade.receivedGrade).toFixed(2)}
-                                        </span>
-                                        <span style={{ fontSize: 13, color: "#94A3B8" }}>
-                                          / {currentReport.gradeForInstructor} điểm
-                                        </span>
-                                      </div>
-                                    </Col>
-                                    <Col flex="none">
-                                      <div style={{ textAlign: "center" }}>
-                                        <Tag color="blue" style={{ fontSize: 16, fontWeight: 700, padding: "2px 12px", borderRadius: 20, border: "none" }}>
-                                          {Number(myDistributionGrade.percentage).toFixed(0)}%
-                                        </Tag>
-                                        <Text style={{ fontSize: 11, color: "#94A3B8", display: "block", marginTop: 2 }}>
-                                          tỷ lệ đóng góp
-                                        </Text>
-                                      </div>
-                                    </Col>
-                                  </Row>
-                                  {myDistributionGrade.reason && (
-                                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #F1F5F9" }}>
-                                      <Text style={{ fontSize: 12, color: PALETTE.slate }}>
-                                        <strong>Lý do:</strong> {myDistributionGrade.reason}
-                                      </Text>
+                                        {currentReport.gradeForInstructor}
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: 16,
+                                          color: "#94A3B8",
+                                        }}
+                                      >
+                                        / 10
+                                      </span>
                                     </div>
-                                  )}
-                                  {!isCurrentUserLeader && currentDistribution?.status !== "finalized" && (
-                                    <MemberFeedbackInline
-                                      groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
-                                      distributionId={currentDistribution?.id ?? 0}
-                                      existingFeedback={myDistributionGrade.memberFeedback ?? null}
-                                    />
-                                  )}
-                                  {!isCurrentUserLeader && currentDistribution?.status === "finalized" && (
-                                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 6 }}>
-                                      <LockOutlined style={{ color: PALETTE.success, fontSize: 12 }} />
-                                      <Text style={{ fontSize: 12, color: PALETTE.success, fontWeight: 500 }}>
-                                        Điểm đã được chốt. Không thể phản hồi.
-                                      </Text>
-                                    </div>
-                                  )}
-                                </Card>
-                              </motion.div>
-                            )}
-
-                            {/* Summary Grid for Leader */}
-                            {hasDistribution && isCurrentUserLeader && currentDistribution.members && currentDistribution.members.length > 0 && (
-                              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ marginTop: 12 }}>
-                                <Card
-                                  style={{ borderRadius: 16, border: "1px solid #F1F5F9" }}
-                                  styles={{ body: { padding: "16px 20px" } }}
-                                >
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                                    <Users size={14} color={PALETTE.slate} />
-                                    <Text strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: PALETTE.slate }}>
-                                      Tổng quan phân chia ({currentDistribution.members.length} thành viên)
-                                    </Text>
-                                  </div>
-                                  <List
-                                    size="small"
-                                    dataSource={currentDistribution.members}
-                                    renderItem={(member) => {
-                                      const isMe = member.studentId === user?.userId;
-                                      const hasFeedback = !!member.memberFeedback;
-                                      return (
-                                        <List.Item
+                                  </Col>
+                                  <Col flex="none">
+                                    {isCurrentUserLeader &&
+                                      !hasDistribution && (
+                                        <Button
+                                          type="primary"
+                                          size="large"
+                                          icon={<TrophyOutlined />}
+                                          onClick={handleOpenGradeDistribution}
                                           style={{
-                                            padding: "8px 0",
-                                            background: isMe ? PALETTE.infoLight : hasFeedback ? `${PALETTE.primary}08` : "transparent",
-                                            borderRadius: 10,
-                                            paddingLeft: 10,
-                                            paddingRight: 10,
-                                            marginBottom: 4,
+                                            background: `linear-gradient(135deg, ${PALETTE.warning}, ${PALETTE.danger})`,
                                             border: "none",
+                                            borderRadius: 12,
+                                            height: 44,
+                                            fontWeight: 600,
+                                            boxShadow:
+                                              "0 4px 12px rgba(217,119,6,0.3)",
                                           }}
                                         >
-                                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                              <Avatar
-                                                size={30}
+                                          Chia điểm cho nhóm
+                                        </Button>
+                                      )}
+                                    {isCurrentUserLeader &&
+                                      hasDistribution &&
+                                      currentDistribution?.status ===
+                                        "submitted" && (
+                                        <Tag
+                                          icon={<LockOutlined />}
+                                          color="orange"
+                                          style={{
+                                            fontSize: 12,
+                                            padding: "4px 12px",
+                                            borderRadius: 20,
+                                          }}
+                                        >
+                                          Đã nộp — chờ instructor xem xét
+                                        </Tag>
+                                      )}
+                                    {isCurrentUserLeader &&
+                                      hasDistribution &&
+                                      currentDistribution?.status ===
+                                        "reopened" && (
+                                        <Button
+                                          type="primary"
+                                          size="large"
+                                          icon={<EditOutlined />}
+                                          onClick={handleOpenGradeDistribution}
+                                          style={{
+                                            background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.info})`,
+                                            border: "none",
+                                            borderRadius: 12,
+                                            height: 44,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          Cập nhật điểm (lần cuối)
+                                        </Button>
+                                      )}
+                                    {isCurrentUserLeader &&
+                                      hasDistribution &&
+                                      currentDistribution?.status ===
+                                        "finalized" && (
+                                        <Tag
+                                          icon={<LockOutlined />}
+                                          color="success"
+                                          style={{
+                                            fontSize: 12,
+                                            padding: "4px 12px",
+                                            borderRadius: 20,
+                                          }}
+                                        >
+                                          Đã chốt điểm
+                                        </Tag>
+                                      )}
+                                    {!isCurrentUserLeader &&
+                                      hasDistribution && (
+                                        <Button
+                                          icon={<EyeOutlined />}
+                                          size="large"
+                                          onClick={handleOpenGradeDistribution}
+                                        >
+                                          Xem chi tiết
+                                        </Button>
+                                      )}
+                                  </Col>
+                                </Row>
+
+                                {/* Status Row */}
+                                <div
+                                  style={{
+                                    marginTop: 12,
+                                    paddingTop: 12,
+                                    borderTop: "1px solid #F1F5F9",
+                                  }}
+                                >
+                                  {hasDistribution ? (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <CheckCircle2
+                                        size={14}
+                                        color={PALETTE.success}
+                                      />
+                                      <Text
+                                        style={{
+                                          fontSize: 13,
+                                          color: PALETTE.success,
+                                        }}
+                                      >
+                                        Phân chia bởi{" "}
+                                        <strong>
+                                          {currentDistribution.leader
+                                            ?.firstName ?? ""}{" "}
+                                          {currentDistribution.leader
+                                            ?.lastName ?? ""}
+                                        </strong>
+                                        {currentDistribution.distributedAt && (
+                                          <Text
+                                            style={{
+                                              color: "#94A3B8",
+                                              fontWeight: 400,
+                                            }}
+                                          >
+                                            {" — "}
+                                            {new Date(
+                                              currentDistribution.distributedAt,
+                                            ).toLocaleDateString("vi-VN", {
+                                              day: "2-digit",
+                                              month: "short",
+                                              year: "numeric",
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </Text>
+                                        )}
+                                      </Text>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <Users
+                                        size={14}
+                                        color={PALETTE.warning}
+                                      />
+                                      <Text
+                                        style={{
+                                          fontSize: 13,
+                                          color: PALETTE.warning,
+                                        }}
+                                      >
+                                        {isCurrentUserLeader
+                                          ? "Bạn là trưởng nhóm — hãy phân chia điểm cho từng thành viên"
+                                          : "Trưởng nhóm chưa phân chia điểm. Vui lòng chờ trưởng nhóm thực hiện."}
+                                      </Text>
+                                    </div>
+                                  )}
+                                </div>
+                              </Card>
+
+                              {/* Personal Grade Card */}
+                              {hasDistribution && myDistributionGrade && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.98 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.1 }}
+                                >
+                                  <Card
+                                    style={{
+                                      borderRadius: 16,
+                                      border: `1px solid ${PALETTE.infoLight}`,
+                                      background: `linear-gradient(135deg, ${PALETTE.infoLight}30 0%, #fff 100%)`,
+                                      marginTop: 12,
+                                    }}
+                                    styles={{ body: { padding: "16px 20px" } }}
+                                  >
+                                    <Row gutter={16} align="middle">
+                                      <Col flex="none">
+                                        <Avatar
+                                          size={44}
+                                          src={
+                                            presentation.student?.avatar ||
+                                            undefined
+                                          }
+                                          style={{
+                                            background: `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})`,
+                                            fontWeight: 700,
+                                            fontSize: 16,
+                                          }}
+                                        >
+                                          {!presentation.student?.avatar &&
+                                            studentName.charAt(0).toUpperCase()}
+                                        </Avatar>
+                                      </Col>
+                                      <Col flex="auto">
+                                        <Text
+                                          style={{
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            textTransform: "uppercase",
+                                            letterSpacing: 0.5,
+                                            color: PALETTE.slate,
+                                            display: "block",
+                                            marginBottom: 2,
+                                          }}
+                                        >
+                                          Điểm cá nhân của bạn
+                                        </Text>
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "baseline",
+                                            gap: 8,
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              fontSize: 24,
+                                              fontWeight: 800,
+                                              color: PALETTE.info,
+                                            }}
+                                          >
+                                            {Number(
+                                              myDistributionGrade.receivedGrade,
+                                            ).toFixed(2)}
+                                          </span>
+                                          <span
+                                            style={{
+                                              fontSize: 13,
+                                              color: "#94A3B8",
+                                            }}
+                                          >
+                                            / {currentReport.gradeForInstructor}{" "}
+                                            điểm
+                                          </span>
+                                        </div>
+                                      </Col>
+                                      <Col flex="none">
+                                        <div style={{ textAlign: "center" }}>
+                                          <Tag
+                                            color="blue"
+                                            style={{
+                                              fontSize: 16,
+                                              fontWeight: 700,
+                                              padding: "2px 12px",
+                                              borderRadius: 20,
+                                              border: "none",
+                                            }}
+                                          >
+                                            {Number(
+                                              myDistributionGrade.percentage,
+                                            ).toFixed(0)}
+                                            %
+                                          </Tag>
+                                          <Text
+                                            style={{
+                                              fontSize: 11,
+                                              color: "#94A3B8",
+                                              display: "block",
+                                              marginTop: 2,
+                                            }}
+                                          >
+                                            tỷ lệ đóng góp
+                                          </Text>
+                                        </div>
+                                      </Col>
+                                    </Row>
+                                    {myDistributionGrade.reason && (
+                                      <div
+                                        style={{
+                                          marginTop: 10,
+                                          paddingTop: 10,
+                                          borderTop: "1px solid #F1F5F9",
+                                        }}
+                                      >
+                                        <Text
+                                          style={{
+                                            fontSize: 12,
+                                            color: PALETTE.slate,
+                                          }}
+                                        >
+                                          <strong>Lý do:</strong>{" "}
+                                          {myDistributionGrade.reason}
+                                        </Text>
+                                      </div>
+                                    )}
+                                    {!isCurrentUserLeader &&
+                                      currentDistribution?.status !==
+                                        "finalized" && (
+                                        <MemberFeedbackInline
+                                          groupId={Number(
+                                            groupDetail?.groupId ??
+                                              group?.groupId ??
+                                              0,
+                                          )}
+                                          distributionId={
+                                            currentDistribution?.id ?? 0
+                                          }
+                                          existingFeedback={
+                                            myDistributionGrade.memberFeedback ??
+                                            null
+                                          }
+                                        />
+                                      )}
+                                    {!isCurrentUserLeader &&
+                                      currentDistribution?.status ===
+                                        "finalized" && (
+                                        <div
+                                          style={{
+                                            marginTop: 10,
+                                            paddingTop: 10,
+                                            borderTop: "1px solid #F1F5F9",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                          }}
+                                        >
+                                          <LockOutlined
+                                            style={{
+                                              color: PALETTE.success,
+                                              fontSize: 12,
+                                            }}
+                                          />
+                                          <Text
+                                            style={{
+                                              fontSize: 12,
+                                              color: PALETTE.success,
+                                              fontWeight: 500,
+                                            }}
+                                          >
+                                            Điểm đã được chốt. Không thể phản
+                                            hồi.
+                                          </Text>
+                                        </div>
+                                      )}
+                                  </Card>
+                                </motion.div>
+                              )}
+
+                              {/* Summary Grid for Leader */}
+                              {hasDistribution &&
+                                isCurrentUserLeader &&
+                                currentDistribution.members &&
+                                currentDistribution.members.length > 0 && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.15 }}
+                                    style={{ marginTop: 12 }}
+                                  >
+                                    <Card
+                                      style={{
+                                        borderRadius: 16,
+                                        border: "1px solid #F1F5F9",
+                                      }}
+                                      styles={{
+                                        body: { padding: "16px 20px" },
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 8,
+                                          marginBottom: 12,
+                                        }}
+                                      >
+                                        <Users
+                                          size={14}
+                                          color={PALETTE.slate}
+                                        />
+                                        <Text
+                                          strong
+                                          style={{
+                                            fontSize: 12,
+                                            textTransform: "uppercase",
+                                            letterSpacing: 0.5,
+                                            color: PALETTE.slate,
+                                          }}
+                                        >
+                                          Tổng quan phân chia (
+                                          {currentDistribution.members.length}{" "}
+                                          thành viên)
+                                        </Text>
+                                      </div>
+                                      <List
+                                        size="small"
+                                        dataSource={currentDistribution.members}
+                                        renderItem={(member) => {
+                                          const isMe =
+                                            member.studentId === user?.userId;
+                                          const hasFeedback =
+                                            !!member.memberFeedback;
+                                          const feedbackStatus =
+                                            member.feedbackStatus;
+                                          const statusConfig = {
+                                            accepted: {
+                                              label: "Đã đồng ý",
+                                              color: "#10B981",
+                                              bg: "#D1FAE5",
+                                            },
+                                            pending: {
+                                              label: "Đã phản hồi",
+                                              color: "#F59E0B",
+                                              bg: "#FEF3C7",
+                                            },
+                                            rejected: {
+                                              label: "Từ chối",
+                                              color: "#EF4444",
+                                              bg: "#FEE2E2",
+                                            },
+                                          };
+                                          const feedbackInfo =
+                                            hasFeedback && feedbackStatus
+                                              ? statusConfig[feedbackStatus]
+                                              : null;
+                                          return (
+                                            <List.Item
+                                              style={{
+                                                padding: "8px 0",
+                                                background: isMe
+                                                  ? PALETTE.infoLight
+                                                  : hasFeedback
+                                                    ? `${PALETTE.primary}08`
+                                                    : "transparent",
+                                                borderRadius: 10,
+                                                paddingLeft: 10,
+                                                paddingRight: 10,
+                                                marginBottom: 4,
+                                                border: "none",
+                                              }}
+                                            >
+                                              <div
                                                 style={{
-                                                  background: isMe ? `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})` : "#94A3B8",
-                                                  fontSize: 12,
-                                                  fontWeight: 600,
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  justifyContent:
+                                                    "space-between",
+                                                  width: "100%",
                                                 }}
                                               >
-                                                {member.student?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
-                                              </Avatar>
-                                              <div>
-                                                <Text strong={isMe} style={{ fontSize: 13, color: isMe ? PALETTE.info : PALETTE.slate }}>
-                                                  {member.student?.firstName} {member.student?.lastName}
-                                                  {isMe && <Tag color="blue" style={{ marginLeft: 6, fontSize: 10, padding: "0 4px", borderRadius: 10 }}>Bạn</Tag>}
-                                                  {hasFeedback && !isMe && (
-                                                    <Tooltip title={member.memberFeedback}>
-                                                      <MessageOutlined style={{ color: PALETTE.primary, marginLeft: 4, fontSize: 12 }} />
-                                                    </Tooltip>
-                                                  )}
-                                                </Text>
+                                                <div
+                                                  style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 10,
+                                                  }}
+                                                >
+                                                  <Avatar
+                                                    size={30}
+                                                    src={
+                                                      member.student?.avatar ||
+                                                      undefined
+                                                    }
+                                                    style={{
+                                                      background: isMe
+                                                        ? `linear-gradient(135deg, ${PALETTE.info}, ${PALETTE.primary})`
+                                                        : "#94A3B8",
+                                                      fontSize: 12,
+                                                      fontWeight: 600,
+                                                    }}
+                                                  >
+                                                    {!member.student?.avatar &&
+                                                      (member.student?.firstName
+                                                        ?.charAt(0)
+                                                        ?.toUpperCase() ??
+                                                        "?")}
+                                                  </Avatar>
+                                                  <div>
+                                                    <div
+                                                      style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 6,
+                                                      }}
+                                                    >
+                                                      <Text
+                                                        strong={isMe}
+                                                        style={{
+                                                          fontSize: 13,
+                                                          color: isMe
+                                                            ? PALETTE.info
+                                                            : PALETTE.slate,
+                                                        }}
+                                                      >
+                                                        {
+                                                          member.student
+                                                            ?.firstName
+                                                        }{" "}
+                                                        {
+                                                          member.student
+                                                            ?.lastName
+                                                        }
+                                                        {isMe && (
+                                                          <Tag
+                                                            color="blue"
+                                                            style={{
+                                                              marginLeft: 6,
+                                                              fontSize: 10,
+                                                              padding: "0 4px",
+                                                              borderRadius: 10,
+                                                            }}
+                                                          >
+                                                            Bạn
+                                                          </Tag>
+                                                        )}
+                                                      </Text>
+                                                    </div>
+                                                    {feedbackInfo ? (
+                                                      <div
+                                                        style={{
+                                                          display: "flex",
+                                                          alignItems: "center",
+                                                          gap: 6,
+                                                          marginTop: 2,
+                                                        }}
+                                                      >
+                                                        <Tag
+                                                          color={
+                                                            feedbackStatus ===
+                                                            "accepted"
+                                                              ? "success"
+                                                              : feedbackStatus ===
+                                                                  "rejected"
+                                                                ? "error"
+                                                                : "warning"
+                                                          }
+                                                          style={{
+                                                            fontSize: 10,
+                                                            padding: "0 4px",
+                                                            borderRadius: 10,
+                                                            margin: 0,
+                                                            lineHeight: "16px",
+                                                          }}
+                                                        >
+                                                          {feedbackInfo.label}
+                                                        </Tag>
+                                                        {member.memberFeedback && (
+                                                          <Text
+                                                            style={{
+                                                              fontSize: 11,
+                                                              color: "#64748B",
+                                                              fontStyle:
+                                                                "italic",
+                                                              maxWidth: 120,
+                                                              overflow:
+                                                                "hidden",
+                                                              textOverflow:
+                                                                "ellipsis",
+                                                              whiteSpace:
+                                                                "nowrap",
+                                                            }}
+                                                          >
+                                                            "
+                                                            {
+                                                              member.memberFeedback
+                                                            }
+                                                            "
+                                                          </Text>
+                                                        )}
+                                                      </div>
+                                                    ) : !isMe ? (
+                                                      <Text
+                                                        style={{
+                                                          fontSize: 11,
+                                                          color: "#94A3B8",
+                                                          marginTop: 2,
+                                                          display: "block",
+                                                        }}
+                                                      >
+                                                        Chưa phản hồi
+                                                      </Text>
+                                                    ) : null}
+                                                  </div>
+                                                </div>
+                                                <div
+                                                  style={{ textAlign: "right" }}
+                                                >
+                                                  <Text
+                                                    strong={isMe}
+                                                    style={{
+                                                      fontSize: 14,
+                                                      color: isMe
+                                                        ? PALETTE.info
+                                                        : PALETTE.slate,
+                                                      fontVariantNumeric:
+                                                        "tabular-nums",
+                                                    }}
+                                                  >
+                                                    {Number(
+                                                      member.receivedGrade,
+                                                    ).toFixed(2)}
+                                                  </Text>
+                                                  <Text
+                                                    style={{
+                                                      fontSize: 11,
+                                                      color: "#94A3B8",
+                                                      marginLeft: 4,
+                                                    }}
+                                                  >
+                                                    (
+                                                    {Number(
+                                                      member.percentage,
+                                                    ).toFixed(0)}
+                                                    %)
+                                                  </Text>
+                                                </div>
                                               </div>
-                                            </div>
-                                            <div style={{ textAlign: "right" }}>
-                                              <Text strong={isMe} style={{ fontSize: 14, color: isMe ? PALETTE.info : PALETTE.slate, fontVariantNumeric: "tabular-nums" }}>
-                                                {Number(member.receivedGrade).toFixed(2)}
-                                              </Text>
-                                              <Text style={{ fontSize: 11, color: "#94A3B8", marginLeft: 4 }}>
-                                                ({Number(member.percentage).toFixed(0)}%)
-                                              </Text>
-                                            </div>
-                                          </div>
-                                        </List.Item>
-                                      );
-                                    }}
-                                  />
-                                </Card>
-                              </motion.div>
-                            )}
-                          </motion.div>
-                        )}
+                                            </List.Item>
+                                          );
+                                        }}
+                                      />
+                                    </Card>
+                                  </motion.div>
+                                )}
+                            </motion.div>
+                          )}
 
                         {/* Criteria Scores */}
                         {criteriaScores.length > 0 && (
                           <div style={{ marginTop: 8 }}>
-                            <Title level={5} style={{ fontWeight: 700, marginBottom: 12, fontSize: 15 }}>
+                            <Title
+                              level={5}
+                              style={{
+                                fontWeight: 700,
+                                marginBottom: 12,
+                                fontSize: 15,
+                              }}
+                            >
                               <BarChartOutlined style={{ marginRight: 8 }} />
                               Chi tiết theo tiêu chí
                             </Title>
@@ -1324,24 +2228,58 @@ const PresentationDetailPage: React.FC = () => {
                               style={{ background: "transparent" }}
                             >
                               {criteriaScores.map((criterion) => {
-                                const hasInstructorFeedback = syncedFeedbacks.some(
-                                  (fb) => fb.classRubricCriteriaId === criterion.criteriaId
-                                );
+                                const hasInstructorFeedback =
+                                  syncedFeedbacks.some(
+                                    (fb) =>
+                                      fb.classRubricCriteriaId ===
+                                      criterion.criteriaId,
+                                  );
                                 return (
                                   <Panel
                                     key={criterion.criteriaId}
                                     header={
-                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 8 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                          <Target size={14} color={PALETTE.primary} />
-                                          <Text strong style={{ fontSize: 14 }}>{criterion.criteriaName}</Text>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          width: "100%",
+                                          paddingRight: 8,
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 8,
+                                          }}
+                                        >
+                                          <Target
+                                            size={14}
+                                            color={PALETTE.primary}
+                                          />
+                                          <Text strong style={{ fontSize: 14 }}>
+                                            {criterion.criteriaName}
+                                          </Text>
                                           {hasInstructorFeedback && (
-                                            <Tag color="success" style={{ fontSize: 10, padding: "0 6px", borderRadius: 10, border: "none" }}>
+                                            <Tag
+                                              color="success"
+                                              style={{
+                                                fontSize: 10,
+                                                padding: "0 6px",
+                                                borderRadius: 10,
+                                                border: "none",
+                                              }}
+                                            >
                                               Có phản hồi GV
                                             </Tag>
                                           )}
                                         </div>
-                                        <ScoreBadge score={criterion.score} max={criterion.maxScore} size="small" />
+                                        <ScoreBadge
+                                          score={criterion.score}
+                                          max={criterion.maxScore}
+                                          size="small"
+                                        />
                                       </div>
                                     }
                                     style={{
@@ -1352,7 +2290,13 @@ const PresentationDetailPage: React.FC = () => {
                                       overflow: "hidden",
                                     }}
                                   >
-                                    <Paragraph style={{ fontSize: 13, color: PALETTE.slate, marginBottom: 8 }}>
+                                    <Paragraph
+                                      style={{
+                                        fontSize: 13,
+                                        color: PALETTE.slate,
+                                        marginBottom: 8,
+                                      }}
+                                    >
                                       {criterion.comment}
                                     </Paragraph>
                                     {criterion.suggestions?.length > 0 && (
@@ -1365,18 +2309,47 @@ const PresentationDetailPage: React.FC = () => {
                                         }}
                                         styles={{ body: { padding: "12px" } }}
                                       >
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                                          <Lightbulb size={13} color={PALETTE.warning} />
-                                          <Text strong style={{ fontSize: 11, color: PALETTE.warning, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            marginBottom: 8,
+                                          }}
+                                        >
+                                          <Lightbulb
+                                            size={13}
+                                            color={PALETTE.warning}
+                                          />
+                                          <Text
+                                            strong
+                                            style={{
+                                              fontSize: 11,
+                                              color: PALETTE.warning,
+                                              textTransform: "uppercase",
+                                              letterSpacing: 0.5,
+                                            }}
+                                          >
                                             Đề xuất cải thiện
                                           </Text>
                                         </div>
-                                        <ul style={{ margin: 0, paddingLeft: 16 }}>
-                                          {criterion.suggestions.map((suggestion, index) => (
-                                            <li key={index} style={{ fontSize: 13, color: PALETTE.slate, marginBottom: 4 }}>
-                                              {suggestion}
-                                            </li>
-                                          ))}
+                                        <ul
+                                          style={{ margin: 0, paddingLeft: 16 }}
+                                        >
+                                          {criterion.suggestions.map(
+                                            (suggestion, index) => (
+                                              <li
+                                                key={index}
+                                                style={{
+                                                  fontSize: 13,
+                                                  color: PALETTE.slate,
+                                                  marginBottom: 4,
+                                                }}
+                                              >
+                                                {suggestion}
+                                              </li>
+                                            ),
+                                          )}
                                         </ul>
                                       </Card>
                                     )}
@@ -1400,19 +2373,43 @@ const PresentationDetailPage: React.FC = () => {
                         {syncedFeedbacks.length === 0 ? (
                           <Empty
                             image={
-                              <div style={{
-                                width: 80, height: 80, borderRadius: "50%",
-                                background: PALETTE.slateLight, display: "flex", alignItems: "center", justifyContent: "center",
-                                margin: "0 auto",
-                              }}>
-                                <MessageSquare size={36} color={PALETTE.slate} style={{ opacity: 0.5 }} />
+                              <div
+                                style={{
+                                  width: 80,
+                                  height: 80,
+                                  borderRadius: "50%",
+                                  background: PALETTE.slateLight,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  margin: "0 auto",
+                                }}
+                              >
+                                <MessageSquare
+                                  size={36}
+                                  color={PALETTE.slate}
+                                  style={{ opacity: 0.5 }}
+                                />
                               </div>
                             }
                             description={
                               <div>
-                                <Text strong style={{ fontSize: 16, display: "block", marginBottom: 4 }}>Chưa có phản hồi từ giảng viên</Text>
-                                <Text style={{ color: PALETTE.slate, fontSize: 13 }}>
-                                  Giảng viên sẽ gửi phản hồi chi tiết cho từng tiêu chí đánh giá sau khi xem xét bài thuyết trình của bạn.
+                                <Text
+                                  strong
+                                  style={{
+                                    fontSize: 16,
+                                    display: "block",
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  Chưa có phản hồi từ giảng viên
+                                </Text>
+                                <Text
+                                  style={{ color: PALETTE.slate, fontSize: 13 }}
+                                >
+                                  Giảng viên sẽ gửi phản hồi chi tiết cho từng
+                                  tiêu chí đánh giá sau khi xem xét bài thuyết
+                                  trình của bạn.
                                 </Text>
                               </div>
                             }
@@ -1423,190 +2420,597 @@ const PresentationDetailPage: React.FC = () => {
                             {/* Feedback Stats */}
                             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
                               <Col xs={8}>
-                                <Card style={{ borderRadius: 14, background: PALETTE.successLight, border: `1px solid ${PALETTE.successLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
-                                  <CheckCircle2 size={18} color={PALETTE.success} style={{ marginBottom: 6 }} />
-                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.success }}>{syncedFeedbacks.length}</div>
-                                  <Text style={{ fontSize: 11, color: PALETTE.success }}>Đã feedback</Text>
-                                  <div style={{ fontSize: 11, color: "#6B7280" }}>/ {criteriaScores.length} tiêu chí</div>
-                                </Card>
-                              </Col>
-                              <Col xs={8}>
-                                <Card style={{ borderRadius: 14, background: PALETTE.purpleLight, border: `1px solid ${PALETTE.purpleLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
-                                  <Star size={18} color={PALETTE.purple} style={{ marginBottom: 6 }} />
-                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.purple }}>
-                                    {(syncedFeedbacks.reduce((sum, f) => sum + (Number(f.score) || 0), 0) / Math.max(syncedFeedbacks.filter((f) => f.score !== null && f.score !== "").length, 1)).toFixed(1)}
+                                <Card
+                                  style={{
+                                    borderRadius: 14,
+                                    background: PALETTE.successLight,
+                                    border: `1px solid ${PALETTE.successLight}`,
+                                    textAlign: "center",
+                                  }}
+                                  styles={{ body: { padding: "14px 12px" } }}
+                                >
+                                  <CheckCircle2
+                                    size={18}
+                                    color={PALETTE.success}
+                                    style={{ marginBottom: 6 }}
+                                  />
+                                  <div
+                                    style={{
+                                      fontSize: 22,
+                                      fontWeight: 800,
+                                      color: PALETTE.success,
+                                    }}
+                                  >
+                                    {syncedFeedbacks.length}
                                   </div>
-                                  <Text style={{ fontSize: 11, color: PALETTE.purple }}>Điểm TB</Text>
-                                  <div style={{ fontSize: 11, color: "#6B7280" }}>trên 100</div>
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: PALETTE.success,
+                                    }}
+                                  >
+                                    Đã feedback
+                                  </Text>
+                                  <div
+                                    style={{ fontSize: 11, color: "#6B7280" }}
+                                  >
+                                    / {criteriaScores.length} tiêu chí
+                                  </div>
                                 </Card>
                               </Col>
                               <Col xs={8}>
-                                <Card style={{ borderRadius: 14, background: PALETTE.warningLight, border: `1px solid ${PALETTE.warningLight}`, textAlign: "center" }} styles={{ body: { padding: "14px 12px" } }}>
-                                  <Award size={18} color={PALETTE.warning} style={{ marginBottom: 6 }} />
-                                  <div style={{ fontSize: 22, fontWeight: 800, color: PALETTE.warning }}>{criteriaScores.length - syncedFeedbacks.length}</div>
-                                  <Text style={{ fontSize: 11, color: PALETTE.warning }}>Chưa feedback</Text>
-                                  <div style={{ fontSize: 11, color: "#6B7280" }}>tiêu chí</div>
+                                <Card
+                                  style={{
+                                    borderRadius: 14,
+                                    background: PALETTE.purpleLight,
+                                    border: `1px solid ${PALETTE.purpleLight}`,
+                                    textAlign: "center",
+                                  }}
+                                  styles={{ body: { padding: "14px 12px" } }}
+                                >
+                                  <Star
+                                    size={18}
+                                    color={PALETTE.purple}
+                                    style={{ marginBottom: 6 }}
+                                  />
+                                  <div
+                                    style={{
+                                      fontSize: 22,
+                                      fontWeight: 800,
+                                      color: PALETTE.purple,
+                                    }}
+                                  >
+                                    {(
+                                      syncedFeedbacks.reduce(
+                                        (sum, f) =>
+                                          sum + (Number(f.score) || 0),
+                                        0,
+                                      ) /
+                                      Math.max(
+                                        syncedFeedbacks.filter(
+                                          (f) =>
+                                            f.score !== null && f.score !== "",
+                                        ).length,
+                                        1,
+                                      )
+                                    ).toFixed(1)}
+                                  </div>
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: PALETTE.purple,
+                                    }}
+                                  >
+                                    Điểm TB
+                                  </Text>
+                                  <div
+                                    style={{ fontSize: 11, color: "#6B7280" }}
+                                  >
+                                    trên 100
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={8}>
+                                <Card
+                                  style={{
+                                    borderRadius: 14,
+                                    background: PALETTE.warningLight,
+                                    border: `1px solid ${PALETTE.warningLight}`,
+                                    textAlign: "center",
+                                  }}
+                                  styles={{ body: { padding: "14px 12px" } }}
+                                >
+                                  <Award
+                                    size={18}
+                                    color={PALETTE.warning}
+                                    style={{ marginBottom: 6 }}
+                                  />
+                                  <div
+                                    style={{
+                                      fontSize: 22,
+                                      fontWeight: 800,
+                                      color: PALETTE.warning,
+                                    }}
+                                  >
+                                    {criteriaScores.length -
+                                      syncedFeedbacks.length}
+                                  </div>
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: PALETTE.warning,
+                                    }}
+                                  >
+                                    Chưa feedback
+                                  </Text>
+                                  <div
+                                    style={{ fontSize: 11, color: "#6B7280" }}
+                                  >
+                                    tiêu chí
+                                  </div>
                                 </Card>
                               </Col>
                             </Row>
 
                             {/* Progress */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                                marginBottom: 20,
+                              }}
+                            >
                               <Progress
-                                percent={(syncedFeedbacks.length / Math.max(criteriaScores.length, 1)) * 100}
+                                percent={
+                                  (syncedFeedbacks.length /
+                                    Math.max(criteriaScores.length, 1)) *
+                                  100
+                                }
                                 showInfo={false}
                                 strokeColor={PALETTE.success}
                                 trailColor="#E2E8F0"
                                 style={{ flex: 1 }}
                               />
-                              <Text style={{ fontSize: 12, color: PALETTE.slate, whiteSpace: "nowrap", fontWeight: 600 }}>
-                                {syncedFeedbacks.length}/{criteriaScores.length} tiêu chí
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: PALETTE.slate,
+                                  whiteSpace: "nowrap",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {syncedFeedbacks.length}/{criteriaScores.length}{" "}
+                                tiêu chí
                               </Text>
                             </div>
 
                             {/* Feedback Cards */}
-                            {[...syncedFeedbacks].sort((a, b) => a.criterionFeedbackId - b.criterionFeedbackId).map((fb) => {
-                              const criteriaLabel =
-                                fb.classRubricCriteria?.criteriaName ||
-                                criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId)?.criteriaName ||
-                                `Tiêu chí #${fb.classRubricCriteriaId}`;
-                              const instructorLabel = fb.instructor
-                                ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() || fb.instructor.email || "Giảng viên"
-                                : "Giảng viên";
-                              const aiCriterion = criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId);
-                              const hasAiData = !!aiCriterion;
-                              const scoreDiff = aiCriterion && fb.score !== null && fb.score !== ""
-                                ? (Number(fb.score) - (aiCriterion.score / aiCriterion.maxScore) * 100).toFixed(1)
-                                : null;
+                            {[...syncedFeedbacks]
+                              .sort(
+                                (a, b) =>
+                                  a.criterionFeedbackId - b.criterionFeedbackId,
+                              )
+                              .map((fb) => {
+                                const criteriaLabel =
+                                  fb.classRubricCriteria?.criteriaName ||
+                                  criteriaScores.find(
+                                    (c) =>
+                                      c.criteriaId === fb.classRubricCriteriaId,
+                                  )?.criteriaName ||
+                                  `Tiêu chí #${fb.classRubricCriteriaId}`;
+                                const instructorLabel = fb.instructor
+                                  ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
+                                    fb.instructor.email ||
+                                    "Giảng viên"
+                                  : "Giảng viên";
+                                const aiCriterion = criteriaScores.find(
+                                  (c) =>
+                                    c.criteriaId === fb.classRubricCriteriaId,
+                                );
+                                const hasAiData = !!aiCriterion;
+                                const scoreDiff =
+                                  aiCriterion &&
+                                  fb.score !== null &&
+                                  fb.score !== ""
+                                    ? (
+                                        Number(fb.score) -
+                                        (aiCriterion.score /
+                                          aiCriterion.maxScore) *
+                                          100
+                                      ).toFixed(1)
+                                    : null;
 
-                              return (
-                                <motion.div
-                                  key={fb.criterionFeedbackId}
-                                  initial={{ opacity: 0, y: 8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                >
-                                  <Card
-                                    style={{
-                                      borderRadius: 16,
-                                      border: `1px solid ${PALETTE.successLight}`,
-                                      background: `linear-gradient(135deg, ${PALETTE.successLight}30 0%, #fff 100%)`,
-                                      marginBottom: 12,
-                                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                                    }}
-                                    styles={{ body: { padding: "20px" } }}
+                                return (
+                                  <motion.div
+                                    key={fb.criterionFeedbackId}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3 }}
                                   >
-                                    {/* Header */}
-                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                        <Avatar
-                                          size={44}
+                                    <Card
+                                      style={{
+                                        borderRadius: 16,
+                                        border: `1px solid ${PALETTE.successLight}`,
+                                        background: `linear-gradient(135deg, ${PALETTE.successLight}30 0%, #fff 100%)`,
+                                        marginBottom: 12,
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                                      }}
+                                      styles={{ body: { padding: "20px" } }}
+                                    >
+                                      {/* Header */}
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "flex-start",
+                                          justifyContent: "space-between",
+                                          marginBottom: 14,
+                                          flexWrap: "wrap",
+                                          gap: 12,
+                                        }}
+                                      >
+                                        <div
                                           style={{
-                                            background: `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.info})`,
-                                            fontWeight: 700,
-                                            fontSize: 18,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 12,
                                           }}
                                         >
-                                          {criteriaLabel.charAt(0).toUpperCase()}
-                                        </Avatar>
-                                        <div>
-                                          <Text strong style={{ fontSize: 16, display: "block" }}>{criteriaLabel}</Text>
-                                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                                            <User size={12} color={PALETTE.success} />
-                                            <Text style={{ fontSize: 12, color: PALETTE.slate }}>{instructorLabel}</Text>
-                                            {fb.updatedAt && (
-                                              <Text style={{ fontSize: 11, color: "#94A3B8" }}>
-                                                · {new Date(fb.updatedAt).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                          <Avatar
+                                            size={44}
+                                            style={{
+                                              background: `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.info})`,
+                                              fontWeight: 700,
+                                              fontSize: 18,
+                                            }}
+                                          >
+                                            {criteriaLabel
+                                              .charAt(0)
+                                              .toUpperCase()}
+                                          </Avatar>
+                                          <div>
+                                            <Text
+                                              strong
+                                              style={{
+                                                fontSize: 16,
+                                                display: "block",
+                                              }}
+                                            >
+                                              {criteriaLabel}
+                                            </Text>
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                marginTop: 2,
+                                              }}
+                                            >
+                                              <User
+                                                size={12}
+                                                color={PALETTE.success}
+                                              />
+                                              <Text
+                                                style={{
+                                                  fontSize: 12,
+                                                  color: PALETTE.slate,
+                                                }}
+                                              >
+                                                {instructorLabel}
                                               </Text>
-                                            )}
+                                              {fb.updatedAt && (
+                                                <Text
+                                                  style={{
+                                                    fontSize: 11,
+                                                    color: "#94A3B8",
+                                                  }}
+                                                >
+                                                  ·{" "}
+                                                  {new Date(
+                                                    fb.updatedAt,
+                                                  ).toLocaleString("vi-VN", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                  })}
+                                                </Text>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
+                                        {fb.score !== null &&
+                                          fb.score !== "" && (
+                                            <div style={{ textAlign: "right" }}>
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  gap: 4,
+                                                  justifyContent: "flex-end",
+                                                }}
+                                              >
+                                                <Star
+                                                  size={16}
+                                                  color={PALETTE.warning}
+                                                />
+                                                <span
+                                                  style={{
+                                                    fontSize: 24,
+                                                    fontWeight: 800,
+                                                    color: PALETTE.success,
+                                                  }}
+                                                >
+                                                  {Number(fb.score).toFixed(1)}
+                                                </span>
+                                              </div>
+                                              <Text
+                                                style={{
+                                                  fontSize: 11,
+                                                  color: "#94A3B8",
+                                                }}
+                                              >
+                                                / 100 điểm
+                                              </Text>
+                                            </div>
+                                          )}
                                       </div>
-                                      {fb.score !== null && fb.score !== "" && (
-                                        <div style={{ textAlign: "right" }}>
-                                          <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                                            <Star size={16} color={PALETTE.warning} />
-                                            <span style={{ fontSize: 24, fontWeight: 800, color: PALETTE.success }}>{Number(fb.score).toFixed(1)}</span>
-                                          </div>
-                                          <Text style={{ fontSize: 11, color: "#94A3B8" }}>/ 100 điểm</Text>
-                                        </div>
-                                      )}
-                                    </div>
 
-                                    {/* Comment */}
-                                    {fb.comment ? (
-                                      <Card
-                                        size="small"
-                                        style={{ borderRadius: 12, background: PALETTE.white, border: `1px solid ${PALETTE.successLight}`, marginBottom: 12 }}
-                                        styles={{ body: { padding: "14px 16px" } }}
-                                      >
-                                        <Paragraph style={{ fontSize: 14, color: PALETTE.slate, margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                                          {fb.comment}
-                                        </Paragraph>
-                                      </Card>
-                                    ) : (
-                                      <div style={{ textAlign: "center", padding: "14px", borderRadius: 12, background: PALETTE.slateLight, border: "1px dashed #CBD5E1", marginBottom: 12 }}>
-                                        <Text style={{ fontSize: 13, color: "#94A3B8", fontStyle: "italic" }}>Chưa có nhận xét</Text>
-                                      </div>
-                                    )}
-
-                                    {/* AI Comparison */}
-                                    {hasAiData && (
-                                      <Card
-                                        size="small"
-                                        style={{ borderRadius: 12, background: PALETTE.slateLight, border: "1px solid #F1F5F9" }}
-                                        styles={{ body: { padding: "14px 16px" } }}
-                                      >
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                                          <Cpu size={13} color={PALETTE.info} />
-                                          <Text strong style={{ fontSize: 11, color: PALETTE.info, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                                            So sánh với đánh giá AI
+                                      {/* Comment */}
+                                      {fb.comment ? (
+                                        <Card
+                                          size="small"
+                                          style={{
+                                            borderRadius: 12,
+                                            background: PALETTE.white,
+                                            border: `1px solid ${PALETTE.successLight}`,
+                                            marginBottom: 12,
+                                          }}
+                                          styles={{
+                                            body: { padding: "14px 16px" },
+                                          }}
+                                        >
+                                          <Paragraph
+                                            style={{
+                                              fontSize: 14,
+                                              color: PALETTE.slate,
+                                              margin: 0,
+                                              lineHeight: 1.7,
+                                              whiteSpace: "pre-wrap",
+                                            }}
+                                          >
+                                            {fb.comment}
+                                          </Paragraph>
+                                        </Card>
+                                      ) : (
+                                        <div
+                                          style={{
+                                            textAlign: "center",
+                                            padding: "14px",
+                                            borderRadius: 12,
+                                            background: PALETTE.slateLight,
+                                            border: "1px dashed #CBD5E1",
+                                            marginBottom: 12,
+                                          }}
+                                        >
+                                          <Text
+                                            style={{
+                                              fontSize: 13,
+                                              color: "#94A3B8",
+                                              fontStyle: "italic",
+                                            }}
+                                          >
+                                            Chưa có nhận xét
                                           </Text>
                                         </div>
-                                        <Row gutter={[12, 8]}>
-                                          <Col span={12}>
-                                            <Card size="small" style={{ borderRadius: 10, background: PALETTE.white, border: `1px solid ${PALETTE.infoLight}` }} styles={{ body: { padding: "10px 12px" } }}>
-                                              <Text style={{ fontSize: 11, color: PALETTE.slate, display: "block", marginBottom: 4 }}>Điểm AI</Text>
-                                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                                <Cpu size={12} color={PALETTE.info} />
-                                                <Text strong style={{ fontSize: 13, color: PALETTE.info }}>
-                                                  {aiCriterion.score}/{aiCriterion.maxScore}
-                                                </Text>
-                                                <Text style={{ fontSize: 11, color: "#94A3B8" }}>
-                                                  ({(aiCriterion.score / aiCriterion.maxScore * 100).toFixed(0)}%)
-                                                </Text>
-                                              </div>
-                                            </Card>
-                                          </Col>
-                                          {scoreDiff !== null && (
+                                      )}
+
+                                      {/* AI Comparison */}
+                                      {hasAiData && (
+                                        <Card
+                                          size="small"
+                                          style={{
+                                            borderRadius: 12,
+                                            background: PALETTE.slateLight,
+                                            border: "1px solid #F1F5F9",
+                                          }}
+                                          styles={{
+                                            body: { padding: "14px 16px" },
+                                          }}
+                                        >
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 6,
+                                              marginBottom: 10,
+                                            }}
+                                          >
+                                            <Cpu
+                                              size={13}
+                                              color={PALETTE.info}
+                                            />
+                                            <Text
+                                              strong
+                                              style={{
+                                                fontSize: 11,
+                                                color: PALETTE.info,
+                                                textTransform: "uppercase",
+                                                letterSpacing: 0.5,
+                                              }}
+                                            >
+                                              So sánh với đánh giá AI
+                                            </Text>
+                                          </div>
+                                          <Row gutter={[12, 8]}>
                                             <Col span={12}>
-                                              <Card size="small" style={{ borderRadius: 10, background: PALETTE.white, border: `1px solid ${PALETTE.infoLight}` }} styles={{ body: { padding: "10px 12px" } }}>
-                                                <Text style={{ fontSize: 11, color: PALETTE.slate, display: "block", marginBottom: 4 }}>Chênh lệch</Text>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                                  {Number(scoreDiff) >= 0
-                                                    ? <span style={{ color: PALETTE.success, fontWeight: 700, fontSize: 14 }}>▲</span>
-                                                    : <span style={{ color: PALETTE.danger, fontWeight: 700, fontSize: 14 }}>▼</span>}
-                                                  <Text strong style={{ fontSize: 13, color: Number(scoreDiff) >= 0 ? PALETTE.success : PALETTE.danger }}>
-                                                    {Number(scoreDiff) >= 0 ? "+" : ""}{scoreDiff}%
+                                              <Card
+                                                size="small"
+                                                style={{
+                                                  borderRadius: 10,
+                                                  background: PALETTE.white,
+                                                  border: `1px solid ${PALETTE.infoLight}`,
+                                                }}
+                                                styles={{
+                                                  body: {
+                                                    padding: "10px 12px",
+                                                  },
+                                                }}
+                                              >
+                                                <Text
+                                                  style={{
+                                                    fontSize: 11,
+                                                    color: PALETTE.slate,
+                                                    display: "block",
+                                                    marginBottom: 4,
+                                                  }}
+                                                >
+                                                  Điểm AI
+                                                </Text>
+                                                <div
+                                                  style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 4,
+                                                  }}
+                                                >
+                                                  <Cpu
+                                                    size={12}
+                                                    color={PALETTE.info}
+                                                  />
+                                                  <Text
+                                                    strong
+                                                    style={{
+                                                      fontSize: 13,
+                                                      color: PALETTE.info,
+                                                    }}
+                                                  >
+                                                    {aiCriterion.score}/
+                                                    {aiCriterion.maxScore}
+                                                  </Text>
+                                                  <Text
+                                                    style={{
+                                                      fontSize: 11,
+                                                      color: "#94A3B8",
+                                                    }}
+                                                  >
+                                                    (
+                                                    {(
+                                                      (aiCriterion.score /
+                                                        aiCriterion.maxScore) *
+                                                      100
+                                                    ).toFixed(0)}
+                                                    %)
                                                   </Text>
                                                 </div>
                                               </Card>
                                             </Col>
+                                            {scoreDiff !== null && (
+                                              <Col span={12}>
+                                                <Card
+                                                  size="small"
+                                                  style={{
+                                                    borderRadius: 10,
+                                                    background: PALETTE.white,
+                                                    border: `1px solid ${PALETTE.infoLight}`,
+                                                  }}
+                                                  styles={{
+                                                    body: {
+                                                      padding: "10px 12px",
+                                                    },
+                                                  }}
+                                                >
+                                                  <Text
+                                                    style={{
+                                                      fontSize: 11,
+                                                      color: PALETTE.slate,
+                                                      display: "block",
+                                                      marginBottom: 4,
+                                                    }}
+                                                  >
+                                                    Chênh lệch
+                                                  </Text>
+                                                  <div
+                                                    style={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 4,
+                                                    }}
+                                                  >
+                                                    {Number(scoreDiff) >= 0 ? (
+                                                      <span
+                                                        style={{
+                                                          color:
+                                                            PALETTE.success,
+                                                          fontWeight: 700,
+                                                          fontSize: 14,
+                                                        }}
+                                                      >
+                                                        ▲
+                                                      </span>
+                                                    ) : (
+                                                      <span
+                                                        style={{
+                                                          color: PALETTE.danger,
+                                                          fontWeight: 700,
+                                                          fontSize: 14,
+                                                        }}
+                                                      >
+                                                        ▼
+                                                      </span>
+                                                    )}
+                                                    <Text
+                                                      strong
+                                                      style={{
+                                                        fontSize: 13,
+                                                        color:
+                                                          Number(scoreDiff) >= 0
+                                                            ? PALETTE.success
+                                                            : PALETTE.danger,
+                                                      }}
+                                                    >
+                                                      {Number(scoreDiff) >= 0
+                                                        ? "+"
+                                                        : ""}
+                                                      {scoreDiff}%
+                                                    </Text>
+                                                  </div>
+                                                </Card>
+                                              </Col>
+                                            )}
+                                          </Row>
+                                          {aiCriterion.comment && (
+                                            <div
+                                              style={{
+                                                marginTop: 8,
+                                                paddingTop: 8,
+                                                borderTop: "1px solid #E2E8F0",
+                                              }}
+                                            >
+                                              <Text
+                                                style={{
+                                                  fontSize: 12,
+                                                  color: "#6B7280",
+                                                }}
+                                              >
+                                                <strong
+                                                  style={{
+                                                    color: PALETTE.info,
+                                                  }}
+                                                >
+                                                  Nhận xét AI:
+                                                </strong>{" "}
+                                                {aiCriterion.comment}
+                                              </Text>
+                                            </div>
                                           )}
-                                        </Row>
-                                        {aiCriterion.comment && (
-                                          <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #E2E8F0" }}>
-                                            <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                                              <strong style={{ color: PALETTE.info }}>Nhận xét AI:</strong> {aiCriterion.comment}
-                                            </Text>
-                                          </div>
-                                        )}
-                                      </Card>
-                                    )}
-                                  </Card>
-                                </motion.div>
-                              );
-                            })}
+                                        </Card>
+                                      )}
+                                    </Card>
+                                  </motion.div>
+                                );
+                              })}
                           </div>
                         )}
                       </motion.div>
@@ -1693,7 +3097,9 @@ const PresentationDetailPage: React.FC = () => {
           onClose={() => {
             setGradeDistributionModalOpen(false);
             if (currentReport?.reportId) {
-              void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
+              void dispatch(
+                fetchGradeDistributionByReport(currentReport.reportId),
+              );
             }
           }}
           reportId={currentReport?.reportId ?? 0}
@@ -1701,13 +3107,17 @@ const PresentationDetailPage: React.FC = () => {
           groupMembers={groupDetail?.students ?? group?.students ?? []}
           leaderId={(() => {
             const students = groupDetail?.students ?? group?.students ?? [];
-            const leader = students.find((s) => s.GroupStudent?.role === "leader");
+            const leader = students.find(
+              (s) => s.GroupStudent?.role === "leader",
+            );
             return Number(leader?.userId ?? leader?.id ?? 0);
           })()}
           currentUserId={user?.userId}
           groupId={Number(groupDetail?.groupId ?? group?.groupId ?? 0)}
           onSuccess={() => {
-            void dispatch(fetchGradeDistributionByReport(currentReport?.reportId ?? 0));
+            void dispatch(
+              fetchGradeDistributionByReport(currentReport?.reportId ?? 0),
+            );
           }}
         />
       </ConfigProvider>
