@@ -82,7 +82,7 @@ const CourseDetailPage: React.FC = () => {
     if (courseId) {
       const id = parseInt(courseId, 10);
       dispatch(fetchCourseDetail(id));
-      dispatch(fetchClassesByCourse(id));
+      dispatch(fetchClassesByCourse({ courseId: id }));
     }
   }, [courseId, dispatch]);
 

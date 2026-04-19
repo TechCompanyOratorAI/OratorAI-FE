@@ -83,7 +83,7 @@ const StudentClassesPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedCourseId) {
-      dispatch(fetchClassesByCourse(selectedCourseId));
+      dispatch(fetchClassesByCourse({ courseId: selectedCourseId }));
     }
   }, [dispatch, selectedCourseId]);
 
