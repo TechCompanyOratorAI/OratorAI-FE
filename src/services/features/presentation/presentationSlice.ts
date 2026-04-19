@@ -40,6 +40,7 @@ interface Student {
   firstName: string;
   lastName: string;
   email: string;
+  avatar?: string | null;
 }
 
 interface Course {

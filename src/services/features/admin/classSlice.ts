@@ -409,16 +409,19 @@ const classSlice = createSlice({
         fetchClassesByCourse.fulfilled,
         (state, action: PayloadAction<ClassResponse>) => {
           state.loading = false;
-          const data = Array.isArray(action.payload.data)
+          const newData = Array.isArray(action.payload.data)
             ? action.payload.data
             : [action.payload.data];
-          state.classes = data;
-          // Course-specific classes API does not return pagination;
-          // set a simple single-page pagination state.
+          // Merge: only add classes not already in state (dedup by classId)
+          const existingIds = new Set(state.classes.map((c) => c.classId));
+          const toAdd = newData.filter((c) => !existingIds.has(c.classId));
+          if (toAdd.length > 0) {
+            state.classes.push(...toAdd);
+          }
           state.pagination = {
-            total: data.length,
+            total: state.classes.length,
             page: 1,
-            limit: data.length || 1,
+            limit: state.classes.length || 1,
             totalPages: 1,
           };
         },

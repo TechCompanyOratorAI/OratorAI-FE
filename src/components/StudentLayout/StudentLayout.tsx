@@ -142,8 +142,15 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   };
 
   const getSelectedKey = () => {
-    if (location.pathname.startsWith("/student/my-presentations")) return "/student/my-presentations";
-    if (location.pathname.startsWith("/student/my-class")) return "/student/my-class";
+    const path = location.pathname;
+    if (
+      path.startsWith("/student/presentation/") ||
+      path.startsWith("/student/presentation-detail/")
+    ) return "/student/my-presentations";
+    if (
+      path.startsWith("/student/class/") ||
+      path.startsWith("/student/my-class/")
+    ) return "/student/my-class";
     return "/student/dashboard";
   };
 

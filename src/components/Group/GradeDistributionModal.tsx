@@ -58,6 +58,7 @@ interface MemberGradeEntry {
   studentId: number;
   studentName: string;
   studentEmail?: string;
+  studentAvatar?: string | null;
   isLeader: boolean;
   percentage: number;
   reason: string;
@@ -128,6 +129,7 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
             studentId: Number(gm.userId ?? gm.id),
             studentName: name,
             studentEmail: gm.email,
+            studentAvatar: gm.avatar ?? null,
             isLeader: role === "leader",
             percentage: existing ? Number(existing.percentage) : 100,
             reason: existing?.reason || "",
@@ -143,6 +145,7 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
             studentId: Number(gm.userId ?? gm.id),
             studentName: name,
             studentEmail: gm.email,
+            studentAvatar: gm.avatar ?? null,
             isLeader: role === "leader",
             percentage: 100,
             reason: "",
@@ -396,8 +399,11 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                   <div className="flex items-center justify-between mb-3">
                     <Space size="middle">
                       <Badge dot={!!distMember?.memberFeedback} color="blue">
-                        <Avatar style={{ background: member.isLeader ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#0ea5e9,#06b6d4)" }}>
-                          {member.studentName.charAt(0).toUpperCase()}
+                        <Avatar
+                          src={member.studentAvatar || undefined}
+                          style={{ background: member.isLeader ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#0ea5e9,#06b6d4)" }}
+                        >
+                          {!member.studentAvatar && member.studentName.charAt(0).toUpperCase()}
                         </Avatar>
                       </Badge>
                       <div>

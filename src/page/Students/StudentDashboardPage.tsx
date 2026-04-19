@@ -1,43 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  Card,
-  Row,
-  Col,
-  Input,
-  Button,
-  Select,
-  Badge,
-  Tag,
-  Typography,
-  Space,
-  Skeleton,
-  Empty,
-  Tooltip,
-  List,
-  Avatar,
-  Modal,
-  ConfigProvider,
-} from "antd";
+import { Input, Tag, Typography, Avatar, Modal, ConfigProvider } from "antd";
 import {
   Search,
-  GraduationCap,
-  Users,
-  Calendar,
   ChevronRight,
-  Sparkles,
-  AlertCircle,
+  ChevronDown,
   KeyRound,
   ShieldCheck,
   CheckCircle2,
-  X,
-  BookOpen,
+  BookText,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourses } from "@/services/features/course/courseSlice";
 import { fetchClassesByCourse } from "@/services/features/admin/classSlice";
-import type { ClassData } from "@/services/features/admin/classSlice";
+import { fetchDepartments } from "@/services/features/admin/adminSlice";
 import {
   enrollClassByKey,
   fetchEnrolledClasses,
@@ -52,7 +29,6 @@ interface ClassItem {
   className: string;
   courseCode: string;
   instructorName: string;
-  description: string;
   enrollmentCount: number;
   maxStudents?: number;
   schedule: string;
@@ -60,13 +36,15 @@ interface ClassItem {
   endDate: string;
 }
 
+const BRAND_GRADIENT = "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)";
+
 const StudentDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const classesRef = useRef<HTMLDivElement>(null);
 
-  const { user } = useAppSelector((state) => state.auth);
+  const { departments, loading: deptLoading } = useAppSelector(
+    (state) => state.admin,
+  );
   const {
     courses,
     loading: courseLoading,
@@ -77,22 +55,14 @@ const StudentDashboardPage: React.FC = () => {
   );
   const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
 
-  // Course filters
-  const [courseSearch, setCourseSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "date">("date");
-  const [filterSemester, setFilterSemester] = useState<string | undefined>(
-    undefined,
+  const [searchText, setSearchText] = useState("");
+  const [expandedDeptIds, setExpandedDeptIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [expandedCourseIds, setExpandedCourseIds] = useState<Set<number>>(
+    new Set(),
   );
 
-  // Selected course
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(
-    searchParams.get("courseId")
-      ? parseInt(searchParams.get("courseId")!, 10)
-      : null,
-  );
-  const [classSearch, setClassSearch] = useState("");
-
-  // Enroll modal
   const [enrollModal, setEnrollModal] = useState<{
     open: boolean;
     data: ClassItem | null;
@@ -101,17 +71,8 @@ const StudentDashboardPage: React.FC = () => {
   const [enrollError, setEnrollError] = useState("");
   const [enrolling, setEnrolling] = useState(false);
 
-  const fullName = user
-    ? `${user.firstName} ${user.lastName}`.trim()
-    : "Student";
-  const initials = fullName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   useEffect(() => {
+    dispatch(fetchDepartments());
     dispatch(fetchCourses({ page: 1, limit: 100 }));
     dispatch(fetchEnrolledClasses());
   }, [dispatch]);
@@ -121,146 +82,51 @@ const StudentDashboardPage: React.FC = () => {
   }, [courseError]);
 
   useEffect(() => {
-    if (selectedCourseId) {
-      dispatch(fetchClassesByCourse(selectedCourseId));
-    }
-  }, [dispatch, selectedCourseId]);
-
-  const handleSelectCourse = (courseId: number) => {
-    if (selectedCourseId === courseId) return;
-    setSelectedCourseId(courseId);
-    setClassSearch("");
-    setSearchParams({ courseId: String(courseId) });
-    setTimeout(
-      () =>
-        classesRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        }),
-      100,
-    );
-  };
-
-  const handleDeselectCourse = () => {
-    setSelectedCourseId(null);
-    setClassSearch("");
-    setFilterSemester(undefined);
-    setSearchParams({});
-  };
-
-  // Course helpers
-  const getStatusConfig = (course: (typeof courses)[0]) => {
-    const now = new Date();
-    const start = new Date(course.startDate);
-    const end = new Date(course.endDate);
-    if (!course.isActive)
-      return {
-        color: "default" as const,
-        label: "Đã đóng",
-        dot: "default" as const,
-      };
-    if (start > now)
-      return {
-        color: "processing" as const,
-        label: "Sắp mở",
-        dot: "processing" as const,
-      };
-    if (end >= now)
-      return {
-        color: "success" as const,
-        label: "Đang mở",
-        dot: "success" as const,
-      };
-    return {
-      color: "default" as const,
-      label: "Đã kết thúc",
-      dot: "default" as const,
-    };
-  };
-
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+    expandedDeptIds.forEach((id) => {
+      const deptCourses = coursesByDept[id] || [];
+      deptCourses.forEach((c) => {
+        if (!allClassesMap[c.courseId]) {
+          dispatch(fetchClassesByCourse(c.courseId));
+        }
+      });
     });
+  }, [dispatch, expandedDeptIds]);
 
-  // Extract unique semesters from courses
-  const semesterOptions = Array.from(
-    new Set(courses.filter((c) => c.semester).map((c) => c.semester)),
-  )
-    .sort()
-    .map((s) => ({ value: s, label: s }));
+  useEffect(() => {
+    expandedCourseIds.forEach((id) => {
+      if (!allClassesMap[id]) {
+        dispatch(fetchClassesByCourse(id));
+      }
+    });
+  }, [dispatch, expandedCourseIds]);
 
-  const filteredCourses = courses
-    .filter((c) => {
-      const matchesSearch =
-        !courseSearch.trim() ||
-        (() => {
-          const q = courseSearch.toLowerCase();
-          const instructorStr = (
-            c.instructors || (c.instructor ? [c.instructor] : [])
-          )
-            .filter(Boolean)
-            .map((i) =>
-              `${i?.firstName || ""} ${i?.lastName || ""}`.toLowerCase(),
-            )
-            .join(" ");
-          return (
-            c.courseName.toLowerCase().includes(q) ||
-            c.courseCode.toLowerCase().includes(q) ||
-            instructorStr.includes(q)
-          );
-        })();
-      const matchesSemester = !filterSemester || c.semester === filterSemester;
-      return matchesSearch && matchesSemester;
-    })
-    .sort((a, b) =>
-      sortBy === "name"
-        ? a.courseName.localeCompare(b.courseName)
-        : new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
-    );
-
-  // Class helpers
-  const transformClass = (apiClass: ClassData): ClassItem => {
-    const instructors = apiClass.instructors;
-    const instructorName = instructors?.length
-      ? instructors
-          .map(
-            (i) =>
-              `${i.firstName || ""} ${i.lastName || ""}`.trim() ||
-              i.username ||
-              "",
-          )
-          .filter(Boolean)
-          .join(", ")
-      : "Chưa có giảng viên";
-    return {
-      classId: apiClass.classId,
-      classCode: apiClass.classCode || "",
-      className: apiClass.className || "",
-      courseCode: apiClass.course?.courseCode || "",
-      instructorName,
-      description: apiClass.description || "",
-      enrollmentCount: apiClass.enrollmentCount ?? 0,
-      maxStudents: apiClass.maxStudents,
-      schedule: `${new Date(apiClass.startDate).toLocaleDateString("vi-VN")} – ${new Date(apiClass.endDate).toLocaleDateString("vi-VN")}`,
-      status: apiClass.status === "active" ? "active" : "inactive",
-      endDate: apiClass.endDate || "",
-    };
-  };
-
-  const classes: ClassItem[] = apiClasses.map(transformClass);
-
-  const filteredClasses = classes.filter((c) => {
-    const q = classSearch.toLowerCase();
-    return (
-      !q ||
-      c.className.toLowerCase().includes(q) ||
-      c.classCode.toLowerCase().includes(q) ||
-      c.instructorName.toLowerCase().includes(q)
-    );
-  });
+  const allClassesMap = useMemo(() => {
+    const map: Record<number, ClassItem[]> = {};
+    apiClasses.forEach((c) => {
+      const cid = c.course?.courseId;
+      if (!cid) return;
+      const item: ClassItem = {
+        classId: c.classId,
+        classCode: c.classCode || "",
+        className: c.className || "",
+        courseCode: c.course?.courseCode || "",
+        instructorName: c.instructors?.length
+          ? c.instructors
+              .map((i) => `${i.firstName || ""} ${i.lastName || ""}`.trim())
+              .filter(Boolean)
+              .join(", ")
+          : "Chưa có giảng viên",
+        enrollmentCount: c.enrollmentCount ?? 0,
+        maxStudents: c.maxStudents,
+        schedule: `${new Date(c.startDate).toLocaleDateString("vi-VN")} – ${new Date(c.endDate).toLocaleDateString("vi-VN")}`,
+        status: c.status === "active" ? "active" : "inactive",
+        endDate: c.endDate || "",
+      };
+      if (!map[cid]) map[cid] = [];
+      map[cid].push(item);
+    });
+    return map;
+  }, [apiClasses]);
 
   const isEnrolled = (classId: number) => enrolledClassIds.includes(classId);
 
@@ -302,563 +168,943 @@ const StudentDashboardPage: React.FC = () => {
     }
   };
 
-  const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
+  const coursesByDept = useMemo(() => {
+    const map: Record<number, typeof courses> = {};
+    courses.forEach((c) => {
+      if (!map[c.departmentId]) map[c.departmentId] = [];
+      map[c.departmentId].push(c);
+    });
+    return map;
+  }, [courses]);
+
+  const filteredDepts = useMemo(() => {
+    const q = searchText.toLowerCase();
+    return departments.filter((d) => {
+      if (!d.isActive) return false;
+      if (q) {
+        const deptMatch =
+          d.departmentName.toLowerCase().includes(q) ||
+          d.departmentCode.toLowerCase().includes(q);
+        if (!deptMatch) {
+          const deptCourses = coursesByDept[d.departmentId] || [];
+          const courseMatch = deptCourses.some(
+            (c) =>
+              c.courseName.toLowerCase().includes(q) ||
+              c.courseCode.toLowerCase().includes(q),
+          );
+          return courseMatch;
+        }
+      }
+      return true;
+    });
+  }, [departments, searchText, coursesByDept]);
+
+  const toggleDept = (deptId: number) => {
+    setExpandedDeptIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(deptId)) next.delete(deptId);
+      else next.add(deptId);
+      return next;
+    });
+    setExpandedCourseIds(new Set());
+  };
+
+  const toggleCourse = (courseId: number) => {
+    setExpandedCourseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+        // fetch classes if not already loaded
+        if (!allClassesMap[courseId]) {
+          dispatch(fetchClassesByCourse(courseId));
+        }
+      }
+      return next;
+    });
+  };
 
   return (
     <StudentLayout>
       <ConfigProvider componentSize="large">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          {/* Welcome */}
-          <div
-            className="flex items-center rounded-2xl px-6 py-5 sm:px-8 sm:py-6"
-            style={{
-              background:
-                "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)",
-              border: "1px solid #e0e7ff",
-            }}
-          >
-            <div className="flex items-center gap-4">
-              <Avatar
-                size={64}
-                className="bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500 flex items-center justify-center shadow-xl ring-4 ring-blue-100/60"
-              >
-                <span className="text-white font-bold text-xl">{initials}</span>
-              </Avatar>
-              <div>
-                <div className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-indigo-400 sm:text-sm">
-                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Chào bạn,
-                </div>
-                <Title
-                  level={3}
-                  className="!mb-0.5 !text-slate-800 !text-xl sm:!text-2xl lg:!text-3xl !font-bold"
-                >
-                  {fullName}
-                </Title>
-                <Text className="text-sm text-indigo-500/80">
-                  Tiếp tục hành trình chinh phục kỹ năng thuyết trình
-                </Text>
-              </div>
-            </div>
-          </div>
+        <div
+          style={{
+            background: "#F0F4F8",
+            minHeight: "100vh",
+            fontFamily: "'Poppins', sans-serif",
+          }}
+        >
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+            {/* Search */}
+            <Input
+              size="large"
+              placeholder="Tìm kiếm bộ môn, khóa học..."
+              prefix={
+                <Search style={{ color: "#1da9e6", width: 18, height: 18 }} />
+              }
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+              style={{
+                borderRadius: 12,
+                height: 48,
+                border: "2px solid #1da9e6",
+                fontSize: 15,
+                boxShadow: "0 2px 8px rgba(29,169,230,0.08)",
+              }}
+            />
 
-          {/* Khóa học */}
-          <div
-            className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm space-y-4"
-            style={{ border: "1px solid #f1f5f9" }}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Title
-                  level={4}
-                  className="!mb-0 !text-slate-800 !text-lg sm:!text-xl !font-bold"
-                >
-                  Khóa học
-                </Title>
-              </div>
-              <Space size="middle" wrap>
-                <Input
-                  placeholder="Tìm kiếm..."
-                  prefix={<Search className="h-4 w-4 text-slate-400" />}
-                  value={courseSearch}
-                  onChange={(e) => setCourseSearch(e.target.value)}
-                  allowClear
-                  className="min-h-[36px] sm:min-w-[200px]"
-                  style={{ borderRadius: 10 }}
-                />
-                <Select
-                  placeholder="Tất cả kỳ"
-                  value={filterSemester}
-                  onChange={setFilterSemester}
-                  allowClear
-                  className="min-h-[36px] min-w-[140px]"
-                  style={{ borderRadius: 10 }}
-                  options={semesterOptions}
-                />
-                <Select
-                  value={sortBy}
-                  onChange={setSortBy}
-                  className="min-h-[36px] min-w-[140px]"
-                  style={{ borderRadius: 10 }}
-                  options={[
-                    { value: "date", label: "Ngày bắt đầu" },
-                    { value: "name", label: "Tên khóa" },
-                  ]}
-                />
-              </Space>
-            </div>
-
-            {courseLoading ? (
-              <Space direction="vertical" className="w-full" size={10}>
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} style={{ borderRadius: 14 }}>
-                    <Skeleton active paragraph={{ rows: 2 }} />
-                  </Card>
-                ))}
-              </Space>
-            ) : filteredCourses.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="Chưa có khóa học nào"
-              />
-            ) : (
-              <List
-                dataSource={filteredCourses}
-                renderItem={(course) => {
-                  const status = getStatusConfig(course);
-                  const isSelected = selectedCourseId === course.courseId;
-                  const activeClassCount = course.totalActiveClasses ?? 0;
-                  const instructorNames = (
-                    course.instructors ||
-                    (course.instructor ? [course.instructor] : [])
-                  )
-                    .filter(Boolean)
-                    .map(
-                      (i) =>
-                        `${i?.firstName || ""} ${i?.lastName || ""}`.trim() ||
-                        i?.username,
-                    )
-                    .join(", ");
-
-                  return (
-                    <List.Item
-                      style={{
-                        padding: "14px 18px",
-                        borderRadius: 14,
-                        marginBottom: 8,
-                        border: isSelected
-                          ? "1.5px solid #6366f1"
-                          : "1px solid #e8efff",
-                        background: isSelected ? "#f0f4ff" : "#f8faff",
-                        transition: "all 0.2s",
-                        cursor: "pointer",
-                        boxShadow: isSelected
-                          ? "0 2px 8px rgba(99,102,241,0.12)"
-                          : undefined,
-                      }}
-                      className={
-                        isSelected
-                          ? ""
-                          : "hover:!border-blue-300 hover:!bg-white hover:shadow-sm"
-                      }
-                      onClick={() => handleSelectCourse(course.courseId)}
-                    >
-                      <div className="flex w-full items-center gap-4">
-                        <Badge status={status.dot}>
-                          <Avatar
-                            size={46}
-                            shape="square"
-                            style={{
-                              background: course.isActive
-                                ? "linear-gradient(135deg, #3b82f6, #6366f1)"
-                                : "#94a3b8",
-                              borderRadius: 12,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                            icon={
-                              <GraduationCap
-                                className="text-white"
-                                style={{ width: 20, height: 20 }}
-                              />
-                            }
-                          />
-                        </Badge>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <Text
-                              strong
-                              className="truncate text-sm text-slate-800 sm:text-base"
-                            >
-                              {course.courseName}
-                            </Text>
-                            <Tag
-                              color={status.color}
-                              style={{
-                                borderRadius: 6,
-                                fontSize: 11,
-                                padding: "1px 8px",
-                                border: 0,
-                              }}
-                            >
-                              {status.label}
-                            </Tag>
-                            {course.semester && (
-                              <Tag
-                                style={{
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  padding: "1px 8px",
-                                }}
-                              >
-                                {course.semester}
-                              </Tag>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                            {instructorNames ? (
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5 shrink-0" />
-                                {instructorNames}
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-amber-600">
-                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                                Chưa có giảng viên
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5 shrink-0" />
-                              {formatDate(new Date(course.startDate))}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
-                          {course.isActive && activeClassCount > 0 && (
-                            <Tooltip
-                              title={`Có ${activeClassCount} lớp đang mở — bấm để xem`}
-                              placement="left"
-                            >
-                              <div
-                                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-indigo-600"
-                                style={{
-                                  background: isSelected
-                                    ? "rgba(99,102,241,0.1)"
-                                    : "#eff6ff",
-                                  border: "1px solid #c7d2fe",
-                                }}
-                              >
-                                <BookOpen className="h-3.5 w-3.5" />
-                                <span>{activeClassCount} lớp</span>
-                              </div>
-                            </Tooltip>
-                          )}
-                          <ChevronRight
-                            className={`h-4 w-4 transition-transform ${isSelected ? "rotate-90 text-indigo-400" : "text-slate-300"}`}
-                          />
-                        </div>
-                      </div>
-                    </List.Item>
-                  );
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 16px",
+                background: "white",
+                borderRadius: 12,
+                border: "1px solid #E5E7EB",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: 3,
+                  background: BRAND_GRADIENT,
                 }}
               />
+              <Text style={{ fontSize: 14, fontWeight: 700, color: "#1F2937" }}>
+                Bộ môn
+              </Text>
+              <Tag
+                style={{
+                  borderRadius: 20,
+                  fontSize: 11,
+                  padding: "1px 10px",
+                  background: "#EEF2FF",
+                  border: "1px solid #C7D2FE",
+                  color: "#4F46E5",
+                  fontWeight: 600,
+                }}
+              >
+                {filteredDepts.length} bộ môn
+              </Tag>
+            </div>
+
+            {/* Department + Course + Class tree */}
+            {deptLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: 56,
+                      background: "#F9FAFB",
+                      borderRadius: 12,
+                      border: "1px solid #E5E7EB",
+                    }}
+                  />
+                ))}
+              </div>
+            ) : filteredDepts.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "48px 20px",
+                  background: "white",
+                  borderRadius: 14,
+                  border: "1px solid #E5E7EB",
+                }}
+              >
+                <BookText
+                  style={{
+                    width: 40,
+                    height: 40,
+                    color: "#D1D5DB",
+                    margin: "0 auto 10px",
+                  }}
+                />
+                <Text
+                  style={{ fontSize: 14, color: "#9CA3AF", display: "block" }}
+                >
+                  Không tìm thấy bộ môn nào
+                </Text>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {filteredDepts.map((dept) => {
+                  const deptCourses = coursesByDept[dept.departmentId] || [];
+                  const isDeptExpanded = expandedDeptIds.has(dept.departmentId);
+                  const q = searchText.toLowerCase();
+                  const filteredCourses = q
+                    ? deptCourses.filter(
+                        (c) =>
+                          c.courseName.toLowerCase().includes(q) ||
+                          c.courseCode.toLowerCase().includes(q),
+                      )
+                    : deptCourses;
+
+                  if (q && filteredCourses.length === 0) return null;
+
+                  return (
+                    <div key={dept.departmentId}>
+                      {/* Department row */}
+                      <div
+                        style={{
+                          background: "white",
+                          borderRadius: 12,
+                          border: `1px solid ${isDeptExpanded ? "#1da9e6" : "#E5E7EB"}`,
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          overflow: "hidden",
+                        }}
+                        className="hover:shadow-sm"
+                        onClick={() => toggleDept(dept.departmentId)}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "14px 18px",
+                            borderLeft: `5px solid #1da9e6`,
+                          }}
+                        >
+                          <div className="flex items-center gap-4">
+                            {/* Dept code badge */}
+                            <div
+                              style={{
+                                background: BRAND_GRADIENT,
+                                color: "white",
+                                borderRadius: 8,
+                                padding: "5px 12px",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                letterSpacing: 0.5,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {dept.departmentCode}
+                            </div>
+                            <Text
+                              strong
+                              style={{
+                                fontSize: 15,
+                                color: "#1F2937",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {dept.departmentName}
+                            </Text>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Tag
+                              style={{
+                                borderRadius: 20,
+                                fontSize: 11,
+                                padding: "2px 10px",
+                                background: "#EEF2FF",
+                                border: "1px solid #C7D2FE",
+                                color: "#6366F1",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {deptCourses.length} khóa học
+                            </Tag>
+                            {isDeptExpanded ? (
+                              <ChevronDown
+                                style={{
+                                  width: 18,
+                                  height: 18,
+                                  color: "#1da9e6",
+                                }}
+                              />
+                            ) : (
+                              <ChevronRight
+                                style={{
+                                  width: 18,
+                                  height: 18,
+                                  color: "#9CA3AF",
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Courses under department */}
+                      {isDeptExpanded && (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            paddingLeft: 24,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 6,
+                            animation: "fadeSlideDown 0.2s ease-out",
+                          }}
+                        >
+                          {courseLoading && filteredCourses.length === 0 ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 6,
+                              }}
+                            >
+                              {[1, 2].map((i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    height: 48,
+                                    background: "#F9FAFB",
+                                    borderRadius: 10,
+                                    border: "1px solid #E5E7EB",
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          ) : filteredCourses.length === 0 ? (
+                            <div
+                              style={{ textAlign: "center", padding: "20px 0" }}
+                            >
+                              <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
+                                Không có khóa học trong bộ môn này
+                              </Text>
+                            </div>
+                          ) : (
+                            filteredCourses.map((course) => {
+                              const isCourseExpanded = expandedCourseIds.has(
+                                course.courseId,
+                              );
+                              const courseClasses =
+                                allClassesMap[course.courseId] || [];
+                              const isLoadingClasses =
+                                isCourseExpanded &&
+                                classLoading &&
+                                courseClasses.length === 0;
+
+                              return (
+                                <div key={course.courseId}>
+                                  {/* Course row */}
+                                  <div
+                                    style={{
+                                      background: "#FAFBFF",
+                                      borderRadius: 10,
+                                      border: `1px solid ${isCourseExpanded ? "#C7D2FE" : "#E5E7EB"}`,
+                                      cursor: "pointer",
+                                      transition: "all 0.2s",
+                                      overflow: "hidden",
+                                    }}
+                                    className="hover:shadow-sm"
+                                    onClick={() =>
+                                      toggleCourse(course.courseId)
+                                    }
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "11px 16px",
+                                        borderLeft: `4px solid #6366F1`,
+                                      }}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        {/* Course code badge */}
+                                        <div
+                                          style={{
+                                            background: "#6366F1",
+                                            color: "white",
+                                            borderRadius: 6,
+                                            padding: "3px 10px",
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            letterSpacing: 0.3,
+                                            flexShrink: 0,
+                                          }}
+                                        >
+                                          {course.courseCode}
+                                        </div>
+                                        <Text
+                                          style={{
+                                            fontSize: 14,
+                                            color: "#374151",
+                                            fontWeight: 500,
+                                          }}
+                                        >
+                                          {course.courseName}
+                                        </Text>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <Tag
+                                          style={{
+                                            borderRadius: 20,
+                                            fontSize: 10,
+                                            padding: "1px 8px",
+                                            background: course.isActive
+                                              ? "#D1FAE5"
+                                              : "#F3F4F6",
+                                            border: course.isActive
+                                              ? "1px solid #A7F3D0"
+                                              : "1px solid #E5E7EB",
+                                            color: course.isActive
+                                              ? "#059669"
+                                              : "#9CA3AF",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          {course.isActive
+                                            ? "Đang mở"
+                                            : "Đã đóng"}
+                                        </Tag>
+                                        <Tag
+                                          style={{
+                                            borderRadius: 20,
+                                            fontSize: 10,
+                                            padding: "1px 8px",
+                                            background: "#F3F4F6",
+                                            border: "1px solid #E5E7EB",
+                                            color: "#6B7280",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          {courseClasses.length} lớp
+                                        </Tag>
+                                        {isCourseExpanded ? (
+                                          <ChevronDown
+                                            style={{
+                                              width: 16,
+                                              height: 16,
+                                              color: "#6366F1",
+                                            }}
+                                          />
+                                        ) : (
+                                          <ChevronRight
+                                            style={{
+                                              width: 16,
+                                              height: 16,
+                                              color: "#9CA3AF",
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Classes under course */}
+                                  {isCourseExpanded && (
+                                    <div
+                                      style={{
+                                        marginTop: 6,
+                                        paddingLeft: 20,
+                                        animation:
+                                          "fadeSlideDown 0.2s ease-out",
+                                      }}
+                                    >
+                                      {/* Class table header */}
+                                      <div
+                                        style={{
+                                          background: "white",
+                                          borderRadius: 10,
+                                          border: "1px solid #E5E7EB",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        {/* Table header row */}
+                                        <div
+                                          style={{
+                                            display: "grid",
+                                            gridTemplateColumns:
+                                              "160px 1fr 180px 120px 140px",
+                                            gap: 0,
+                                            padding: "10px 16px",
+                                            background: "#F9FAFB",
+                                            borderBottom: "1px solid #E5E7EB",
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: "#6B7280",
+                                            textTransform: "uppercase",
+                                            letterSpacing: 0.5,
+                                          }}
+                                        >
+                                          <span>Mã lớp</span>
+                                          <span>Giảng viên</span>
+                                          <span>Ngày khai giảng</span>
+                                          <span>Trạng thái</span>
+                                          <span style={{ textAlign: "right" }}>
+                                            Hành động
+                                          </span>
+                                        </div>
+
+                                        {/* Table body */}
+                                        {isLoadingClasses ? (
+                                          <div
+                                            style={{
+                                              padding: "20px 16px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 13,
+                                                color: "#9CA3AF",
+                                              }}
+                                            >
+                                              Đang tải lớp học...
+                                            </Text>
+                                          </div>
+                                        ) : courseClasses.length === 0 ? (
+                                          <div
+                                            style={{
+                                              padding: "20px 16px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 13,
+                                                color: "#9CA3AF",
+                                              }}
+                                            >
+                                              Chưa có lớp học nào
+                                            </Text>
+                                          </div>
+                                        ) : (
+                                          courseClasses.map((c, idx) => {
+                                            const enrolled = isEnrolled(
+                                              c.classId,
+                                            );
+                                            const isActive =
+                                              c.status === "active";
+
+                                            return (
+                                              <div
+                                                key={c.classId}
+                                                style={{
+                                                  display: "grid",
+                                                  gridTemplateColumns:
+                                                    "160px 1fr 180px 120px 140px",
+                                                  gap: 0,
+                                                  padding: "14px 16px",
+                                                  alignItems: "center",
+                                                  borderBottom:
+                                                    idx <
+                                                    courseClasses.length - 1
+                                                      ? "1px solid #F3F4F6"
+                                                      : "none",
+                                                  background: enrolled
+                                                    ? "#F0FDF4"
+                                                    : "white",
+                                                  cursor: "pointer",
+                                                  transition:
+                                                    "background 0.15s",
+                                                }}
+                                                className="hover:bg-slate-50"
+                                                onClick={() => {
+                                                  if (enrolled)
+                                                    navigate(
+                                                      `/student/class/${c.classId}`,
+                                                    );
+                                                  else if (isActive)
+                                                    openEnroll(c);
+                                                }}
+                                              >
+                                                {/* Class code — hero */}
+                                                <div>
+                                                  <div
+                                                    style={{
+                                                      display: "inline-flex",
+                                                      alignItems: "center",
+                                                      gap: 6,
+                                                      background: enrolled
+                                                        ? "rgba(16,185,129,0.1)"
+                                                        : "rgba(99,102,241,0.08)",
+                                                      border: `1px solid ${enrolled ? "rgba(16,185,129,0.2)" : "rgba(99,102,241,0.15)"}`,
+                                                      borderRadius: 8,
+                                                      padding: "4px 12px",
+                                                    }}
+                                                  >
+                                                    <span
+                                                      style={{
+                                                        fontSize: 16,
+                                                        fontWeight: 800,
+                                                        color: enrolled
+                                                          ? "#10B981"
+                                                          : "#6366F1",
+                                                        letterSpacing: 0.5,
+                                                      }}
+                                                    >
+                                                      {c.classCode}
+                                                    </span>
+                                                    {enrolled && (
+                                                      <ShieldCheck
+                                                        style={{
+                                                          width: 14,
+                                                          height: 14,
+                                                          color: "#10B981",
+                                                        }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </div>
+
+                                                {/* Instructor full name */}
+                                                <div className="flex items-center gap-2">
+                                                  {c.instructorName !==
+                                                  "Chưa có giảng viên" ? (
+                                                    <>
+                                                      <Avatar
+                                                        size={30}
+                                                        style={{
+                                                          background: enrolled
+                                                            ? "#D1FAE5"
+                                                            : "#EEF2FF",
+                                                          color: enrolled
+                                                            ? "#10B981"
+                                                            : "#6366F1",
+                                                          fontSize: 11,
+                                                          fontWeight: 700,
+                                                          border: `2px solid ${enrolled ? "#A7F3D0" : "#C7D2FE"}`,
+                                                          flexShrink: 0,
+                                                        }}
+                                                      >
+                                                        {c.instructorName
+                                                          .split(" ")
+                                                          .slice(0, 2)
+                                                          .map((n) => n[0])
+                                                          .join("")
+                                                          .toUpperCase()}
+                                                      </Avatar>
+                                                      <span
+                                                        style={{
+                                                          fontSize: 13,
+                                                          fontWeight: 500,
+                                                          color: "#374151",
+                                                          overflow: "hidden",
+                                                          textOverflow:
+                                                            "ellipsis",
+                                                          whiteSpace: "nowrap",
+                                                        }}
+                                                      >
+                                                        {c.instructorName}
+                                                      </span>
+                                                    </>
+                                                  ) : (
+                                                    <span
+                                                      style={{
+                                                        fontSize: 12,
+                                                        color: "#9CA3AF",
+                                                        fontStyle: "italic",
+                                                      }}
+                                                    >
+                                                      Chưa có giảng viên
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                {/* Start date */}
+                                                <div>
+                                                  <span
+                                                    style={{
+                                                      fontSize: 12,
+                                                      color: "#6B7280",
+                                                    }}
+                                                  >
+                                                    {new Date(
+                                                      c.endDate,
+                                                    ).toLocaleDateString(
+                                                      "vi-VN",
+                                                      {
+                                                        day: "2-digit",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                      },
+                                                    )}
+                                                  </span>
+                                                </div>
+
+                                                {/* Status */}
+                                                <div>
+                                                  <Tag
+                                                    style={{
+                                                      borderRadius: 20,
+                                                      fontSize: 10,
+                                                      padding: "2px 10px",
+                                                      border: 0,
+                                                      fontWeight: 600,
+                                                      background: enrolled
+                                                        ? "#D1FAE5"
+                                                        : isActive
+                                                          ? "#DBEAFE"
+                                                          : "#F3F4F6",
+                                                      color: enrolled
+                                                        ? "#059669"
+                                                        : isActive
+                                                          ? "#2563EB"
+                                                          : "#9CA3AF",
+                                                    }}
+                                                  >
+                                                    {enrolled
+                                                      ? "Đã ghi danh"
+                                                      : isActive
+                                                        ? "Đang mở"
+                                                        : "Đã đóng"}
+                                                  </Tag>
+                                                </div>
+
+                                                {/* Action */}
+                                                <div
+                                                  style={{ textAlign: "right" }}
+                                                >
+                                                  {enrolled ? (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(
+                                                          `/student/class/${c.classId}`,
+                                                        );
+                                                      }}
+                                                      style={{
+                                                        padding: "6px 14px",
+                                                        borderRadius: 8,
+                                                        border:
+                                                          "1px solid #10B981",
+                                                        background: "#10B981",
+                                                        color: "white",
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        cursor: "pointer",
+                                                        fontFamily:
+                                                          "'Poppins', sans-serif",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 4,
+                                                      }}
+                                                    >
+                                                      <CheckCircle2
+                                                        style={{
+                                                          width: 13,
+                                                          height: 13,
+                                                        }}
+                                                      />
+                                                      Vào lớp
+                                                    </button>
+                                                  ) : isActive ? (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openEnroll(c);
+                                                      }}
+                                                      style={{
+                                                        padding: "6px 14px",
+                                                        borderRadius: 8,
+                                                        border: "none",
+                                                        background:
+                                                          BRAND_GRADIENT,
+                                                        color: "white",
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        cursor: "pointer",
+                                                        fontFamily:
+                                                          "'Poppins', sans-serif",
+                                                        boxShadow:
+                                                          "0 2px 6px rgba(29,169,230,0.3)",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 4,
+                                                      }}
+                                                    >
+                                                      <KeyRound
+                                                        style={{
+                                                          width: 13,
+                                                          height: 13,
+                                                        }}
+                                                      />
+                                                      Ghi danh
+                                                    </button>
+                                                  ) : (
+                                                    <Tag
+                                                      style={{
+                                                        borderRadius: 8,
+                                                        fontSize: 11,
+                                                        padding: "4px 10px",
+                                                        background: "#F3F4F6",
+                                                        border:
+                                                          "1px solid #E5E7EB",
+                                                        color: "#9CA3AF",
+                                                        fontWeight: 600,
+                                                      }}
+                                                    >
+                                                      Đã đóng
+                                                    </Tag>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          {/* Lớp học (inline, xuất hiện khi chọn khóa) */}
-          {selectedCourseId && (
-            <div
-              ref={classesRef}
-              className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm space-y-4"
-              style={{ border: "1.5px solid #e0e7ff" }}
-            >
-              {/* Header lớp */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-                    <GraduationCap className="h-4 w-4 text-indigo-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <Title
-                      level={5}
-                      className="!mb-0 !text-slate-800 !font-bold truncate"
-                    >
-                      {selectedCourse?.courseName}
-                    </Title>
-                    {selectedCourse?.semester && (
-                      <Text type="secondary" className="text-xs">
-                        {selectedCourse.semester}
-                      </Text>
-                    )}
-                  </div>
+          {/* Modal Ghi danh */}
+          <Modal
+            open={enrollModal.open}
+            onCancel={closeEnroll}
+            footer={null}
+            centered
+            width={440}
+            destroyOnClose
+            styles={{
+              content: {
+                borderRadius: 16,
+                padding: "24px 20px 20px",
+                fontFamily: "'Poppins', sans-serif",
+              },
+              header: { display: "none" },
+            }}
+          >
+            <div className="space-y-5">
+              <div
+                className="flex items-center gap-3 rounded-xl p-4"
+                style={{ background: BRAND_GRADIENT, color: "white" }}
+              >
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <KeyRound style={{ width: 24, height: 24, color: "white" }} />
                 </div>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<X className="h-4 w-4" />}
-                  onClick={handleDeselectCourse}
-                  className="shrink-0 !text-slate-400 hover:!text-slate-600"
-                />
-              </div>
-
-              {/* Tìm kiếm lớp */}
-              <Input
-                placeholder="Tìm lớp, mã lớp, giảng viên..."
-                prefix={<Search className="h-4 w-4 text-slate-400" />}
-                value={classSearch}
-                onChange={(e) => setClassSearch(e.target.value)}
-                allowClear
-                style={{ borderRadius: 10, maxWidth: 340 }}
-              />
-
-              {/* Danh sách lớp */}
-              {classLoading ? (
-                <Row gutter={[16, 16]}>
-                  {[1, 2, 3].map((i) => (
-                    <Col xs={24} md={12} xl={8} key={i}>
-                      <Card
-                        style={{ borderRadius: 14 }}
-                        styles={{ body: { padding: "18px 16px" } }}
-                      >
-                        <Skeleton active paragraph={{ rows: 3 }} />
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              ) : filteredClasses.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    classSearch
-                      ? "Không tìm thấy lớp phù hợp"
-                      : "Khóa học này chưa có lớp học"
-                  }
-                />
-              ) : (
-                <Row gutter={[16, 16]}>
-                  {filteredClasses.map((c) => {
-                    const enrolled = isEnrolled(c.classId);
-                    const isActive = c.status === "active";
-                    const GRADIENTS = [
-                      "linear-gradient(145deg, #3b82f6 0%, #6366f1 55%, #8b5cf6 100%)",
-                      "linear-gradient(145deg, #10b981 0%, #059669 100%)",
-                      "linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%)",
-                      "linear-gradient(145deg, #f59e0b 0%, #ea580c 100%)",
-                      "linear-gradient(145deg, #ec4899 0%, #db2777 100%)",
-                      "linear-gradient(145deg, #06b6d4 0%, #2563eb 100%)",
-                    ];
-                    const getGradient = (code: string) => {
-                      let hash = 0;
-                      for (let i = 0; i < code.length; i++)
-                        hash = code.charCodeAt(i) + ((hash << 5) - hash);
-                      return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
-                    };
-                    const cardGradient = getGradient(
-                      c.classCode || c.className,
-                    );
-
-                    return (
-                      <Col xs={24} sm={12} lg={8} key={c.classId}>
-                        <Card
-                          hoverable
-                          bordered={false}
-                          style={{
-                            borderRadius: 22,
-                            overflow: "hidden",
-                            boxShadow: "0 4px 14px rgba(15, 23, 42, 0.08)",
-                          }}
-                          styles={{ body: { padding: 0 } }}
-                          className="group cursor-pointer"
-                          onClick={() =>
-                            enrolled
-                              ? navigate(`/student/class/${c.classId}`)
-                              : !isActive
-                                ? null
-                                : openEnroll(c)
-                          }
-                        >
-                          {/* Header với gradient */}
-                          <div
-                            className="relative px-5 pt-5 pb-4 text-white overflow-hidden"
-                            style={{ background: cardGradient }}
-                          >
-                            {/* Hiệu ứng blob */}
-                            <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-                            <div className="pointer-events-none absolute -left-4 bottom-0 h-20 w-20 rounded-full bg-white/10" />
-
-                            <div className="relative">
-                              {/* Top row: course badge + status */}
-                              <div className="flex items-center justify-between mb-3">
-                                <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-white border border-white/25">
-                                  {selectedCourse?.courseName || "—"}
-                                </span>
-                                {enrolled && (
-                                  <div className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-semibold text-white">
-                                    <ShieldCheck className="h-3 w-3" />
-                                    Đã ghi danh
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Mã lớp nổi bật */}
-                              <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-4 py-2.5 border border-white/25 mb-3">
-                                <Text className="!block !text-[10px] !font-semibold !uppercase !tracking-widest !text-white/70 !mb-0.5">
-                                  Mã lớp
-                                </Text>
-                                <div className="flex items-center gap-2">
-                                  <span className="!text-white !text-lg sm:!text-xl !font-black !tracking-tight">
-                                    {c.classCode}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Tên lớp */}
-                              <Title
-                                level={4}
-                                className="!mb-2 !text-white !text-base sm:!text-lg !font-bold !leading-snug"
-                              >
-                                {c.className}
-                              </Title>
-
-                              {/* Giảng viên */}
-                              {c.instructorName !== "Chưa có giảng viên" && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Avatar
-                                    size={30}
-                                    className="bg-white/25 text-white text-xs font-bold border-2 border-white/30"
-                                  >
-                                    {c.instructorName
-                                      .split(" ")
-                                      .slice(0, 2)
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
-                                  </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <Text className="!block !text-[10px] !text-white/60 !uppercase !tracking-wide">
-                                      Giảng viên
-                                    </Text>
-                                    <Text className="!text-white !text-xs !font-semibold truncate block">
-                                      {c.instructorName}
-                                    </Text>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Footer */}
-                          <div className="px-5 py-4 bg-gradient-to-b from-slate-50/80 to-white">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 text-xs text-slate-500">
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3.5 w-3.5" />
-                                  {c.enrollmentCount}
-                                  {c.maxStudents ? `/${c.maxStudents}` : ""}
-                                </span>
-                                <Tag
-                                  color={isActive ? "success" : "default"}
-                                  className="!m-0 !text-[10px] !font-semibold"
-                                  style={{ borderRadius: 20 }}
-                                >
-                                  {isActive ? "Đang mở" : "Đã đóng"}
-                                </Tag>
-                              </div>
-                              <Button
-                                type={enrolled ? "default" : "primary"}
-                                size="small"
-                                icon={
-                                  enrolled ? (
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <KeyRound className="h-3.5 w-3.5" />
-                                  )
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (enrolled)
-                                    navigate(`/student/class/${c.classId}`);
-                                  else if (isActive) openEnroll(c);
-                                }}
-                                disabled={!isActive && !enrolled}
-                                className={
-                                  enrolled
-                                    ? "!border-emerald-200 !text-emerald-600 !bg-emerald-50 !rounded-xl !text-xs !font-semibold"
-                                    : "!rounded-xl !text-xs !font-semibold"
-                                }
-                              >
-                                {enrolled ? "Vào lớp" : "Ghi danh"}
-                              </Button>
-                            </div>
-                          </div>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Modal Ghi danh */}
-        <Modal
-          open={enrollModal.open}
-          onCancel={closeEnroll}
-          footer={null}
-          centered
-          width={440}
-          destroyOnClose
-          styles={{
-            content: { borderRadius: 16, padding: "24px 20px 20px" },
-            header: { display: "none" },
-          }}
-        >
-          <div className="space-y-5">
-            <div
-              className="flex items-center gap-3 rounded-xl p-4"
-              style={{
-                background: "linear-gradient(135deg, #3b82f6, #6366f1)",
-              }}
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                <KeyRound className="h-6 w-6 text-white" />
+                <div>
+                  <Title
+                    level={4}
+                    style={{
+                      color: "white",
+                      margin: 0,
+                      fontSize: 17,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Ghi danh lớp học
+                  </Title>
+                  <Text
+                    style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}
+                  >
+                    {enrollModal.data?.className}
+                  </Text>
+                </div>
               </div>
               <div>
-                <Title
-                  level={4}
-                  className="!mb-0.5 !text-white !text-lg !font-bold"
+                <label
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 8,
+                  }}
                 >
-                  Ghi danh lớp học
-                </Title>
-                <Text className="text-white/80 text-sm">
-                  {enrollModal.data?.className}
-                </Text>
+                  Mã ghi danh
+                </label>
+                <Input
+                  placeholder="Nhập mã ghi danh do giáo viên cung cấp"
+                  prefix={
+                    <KeyRound
+                      style={{ width: 16, height: 16, color: "#9CA3AF" }}
+                    />
+                  }
+                  value={enrollKey}
+                  onChange={(e) => {
+                    setEnrollKey(e.target.value);
+                    if (enrollError) setEnrollError("");
+                  }}
+                  status={enrollError ? "error" : undefined}
+                  style={{
+                    borderRadius: 12,
+                    height: 46,
+                    fontSize: 14,
+                    border: "1.5px solid #E5E7EB",
+                  }}
+                />
+                {enrollError && (
+                  <Text
+                    type="danger"
+                    style={{ fontSize: 13, marginTop: 6, display: "block" }}
+                  >
+                    {enrollError}
+                  </Text>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={closeEnroll}
+                  disabled={enrolling}
+                  style={{
+                    padding: "0 20px",
+                    height: 40,
+                    borderRadius: 10,
+                    border: "1.5px solid #E5E7EB",
+                    background: "white",
+                    color: "#6B7280",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: enrolling ? "not-allowed" : "pointer",
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={submitEnroll}
+                  disabled={enrolling}
+                  style={{
+                    padding: "0 20px",
+                    height: 40,
+                    borderRadius: 10,
+                    border: "none",
+                    background: BRAND_GRADIENT,
+                    color: "white",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: enrolling ? "not-allowed" : "pointer",
+                    fontFamily: "'Poppins', sans-serif",
+                    boxShadow: "0 2px 8px rgba(29,169,230,0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {enrolling ? "Đang ghi danh..." : "Xác nhận"}
+                </button>
               </div>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">
-                Mã ghi danh
-              </label>
-              <Input
-                placeholder="Nhập mã ghi danh do giáo viên cung cấp"
-                prefix={<KeyRound className="h-4 w-4 text-slate-400" />}
-                value={enrollKey}
-                onChange={(e) => {
-                  setEnrollKey(e.target.value);
-                  if (enrollError) setEnrollError("");
-                }}
-                status={enrollError ? "error" : undefined}
-                style={{ borderRadius: 12, height: 44 }}
-              />
-              {enrollError && (
-                <Text type="danger" className="mt-1.5 block text-sm">
-                  {enrollError}
-                </Text>
-              )}
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                onClick={closeEnroll}
-                disabled={enrolling}
-                style={{ borderRadius: 10, height: 40 }}
-                className="!text-sm !font-semibold min-w-[90px]"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                onClick={submitEnroll}
-                loading={enrolling}
-                style={{ borderRadius: 10, height: 40 }}
-                className="!text-sm !font-semibold min-w-[130px]"
-              >
-                {enrolling ? "Đang ghi danh..." : "Xác nhận"}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          </Modal>
+        </div>
       </ConfigProvider>
     </StudentLayout>
   );

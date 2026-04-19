@@ -30,6 +30,7 @@ export interface GradeDistributionMember {
     firstName?: string;
     lastName?: string;
     email?: string;
+    avatar?: string | null;
   };
 }
 
@@ -55,6 +56,7 @@ export interface GradeDistribution {
     firstName?: string;
     lastName?: string;
     email?: string;
+    avatar?: string | null;
   };
   members?: GradeDistributionMember[];
 }
