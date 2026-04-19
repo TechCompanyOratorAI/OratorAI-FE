@@ -115,6 +115,12 @@ export interface ClassState {
     limit: number;
     totalPages: number;
   };
+  coursePagination: Record<number, {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>;
 }
 
 const initialState: ClassState = {
@@ -128,6 +134,7 @@ const initialState: ClassState = {
     limit: 20,
     totalPages: 0,
   },
+  coursePagination: {},
 };
 //Fetch classes by instructor
 export const fetchClassesByInstructor = createAsyncThunk(
@@ -175,10 +182,14 @@ export const createEnrollKey = createAsyncThunk(
 // Fetch classes by course (for students viewing classes of a selected course)
 export const fetchClassesByCourse = createAsyncThunk(
   "class/fetchClassesByCourse",
-  async (courseId: number, { rejectWithValue }) => {
+  async (
+    { courseId, page = 1, limit = 10 }: { courseId: number; page?: number; limit?: number },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.get<ClassResponse>(
         GET_CLASSES_BY_COURSE_ENDPOINT(courseId.toString()),
+        { params: { page, limit } },
       );
       return response.data;
     } catch (error: any) {
@@ -407,23 +418,26 @@ const classSlice = createSlice({
       })
       .addCase(
         fetchClassesByCourse.fulfilled,
-        (state, action: PayloadAction<ClassResponse>) => {
+        (state, action) => {
           state.loading = false;
           const newData = Array.isArray(action.payload.data)
             ? action.payload.data
             : [action.payload.data];
-          // Merge: only add classes not already in state (dedup by classId)
-          const existingIds = new Set(state.classes.map((c) => c.classId));
-          const toAdd = newData.filter((c) => !existingIds.has(c.classId));
-          if (toAdd.length > 0) {
-            state.classes.push(...toAdd);
+
+          const cid = newData[0]?.courseId;
+          if (cid) {
+            // Replace classes for this course only
+            state.classes = [
+              ...state.classes.filter((c) => c.courseId !== cid),
+              ...newData,
+            ];
+          } else {
+            state.classes = newData;
           }
-          state.pagination = {
-            total: state.classes.length,
-            page: 1,
-            limit: state.classes.length || 1,
-            totalPages: 1,
-          };
+
+          if (action.payload.pagination && cid) {
+            state.coursePagination[cid] = action.payload.pagination;
+          }
         },
       )
       .addCase(fetchClassesByCourse.rejected, (state, action) => {

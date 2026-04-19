@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Input, Tag, Typography, Avatar, Modal, ConfigProvider } from "antd";
+import { Input, Tag, Typography, Avatar, Modal, ConfigProvider, Pagination } from "antd";
 import {
   Search,
   ChevronRight,
@@ -49,19 +49,22 @@ const StudentDashboardPage: React.FC = () => {
     courses,
     loading: courseLoading,
     error: courseError,
+    pagination: coursePagination,
   } = useAppSelector((state) => state.course);
-  const { classes: apiClasses, loading: classLoading } = useAppSelector(
+  const { classes: apiClasses, loading: classLoading, coursePagination: classPagination } = useAppSelector(
     (state) => state.class,
   );
   const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
 
   const [searchText, setSearchText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [expandedDeptIds, setExpandedDeptIds] = useState<Set<number>>(
     new Set(),
   );
   const [expandedCourseIds, setExpandedCourseIds] = useState<Set<number>>(
     new Set(),
   );
+  const [coursePageMap, setCoursePageMap] = useState<Record<number, number>>({});
 
   const [enrollModal, setEnrollModal] = useState<{
     open: boolean;
@@ -73,9 +76,9 @@ const StudentDashboardPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchDepartments());
-    dispatch(fetchCourses({ page: 1, limit: 100 }));
+    dispatch(fetchCourses({ page: currentPage, limit: 10 }));
     dispatch(fetchEnrolledClasses());
-  }, [dispatch]);
+  }, [dispatch, currentPage]);
 
   useEffect(() => {
     if (courseError) toast.error(courseError);
@@ -86,7 +89,7 @@ const StudentDashboardPage: React.FC = () => {
       const deptCourses = coursesByDept[id] || [];
       deptCourses.forEach((c) => {
         if (!allClassesMap[c.courseId]) {
-          dispatch(fetchClassesByCourse(c.courseId));
+          dispatch(fetchClassesByCourse({ courseId: c.courseId, page: coursePageMap[c.courseId] || 1, limit: 10 }));
         }
       });
     });
@@ -95,14 +98,14 @@ const StudentDashboardPage: React.FC = () => {
   useEffect(() => {
     expandedCourseIds.forEach((id) => {
       if (!allClassesMap[id]) {
-        dispatch(fetchClassesByCourse(id));
+        dispatch(fetchClassesByCourse({ courseId: id, page: coursePageMap[id] || 1, limit: 10 }));
       }
     });
   }, [dispatch, expandedCourseIds]);
 
   const allClassesMap = useMemo(() => {
     const map: Record<number, ClassItem[]> = {};
-    apiClasses.forEach((c) => {
+    apiClasses.forEach((c: any) => {
       const cid = c.course?.courseId;
       if (!cid) return;
       const item: ClassItem = {
@@ -112,7 +115,7 @@ const StudentDashboardPage: React.FC = () => {
         courseCode: c.course?.courseCode || "",
         instructorName: c.instructors?.length
           ? c.instructors
-              .map((i) => `${i.firstName || ""} ${i.lastName || ""}`.trim())
+              .map((i: any) => `${i.firstName || ""} ${i.lastName || ""}`.trim())
               .filter(Boolean)
               .join(", ")
           : "Chưa có giảng viên",
@@ -199,6 +202,15 @@ const StudentDashboardPage: React.FC = () => {
     });
   }, [departments, searchText, coursesByDept]);
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleClassPageChange = (courseId: number, page: number) => {
+    setCoursePageMap((prev) => ({ ...prev, [courseId]: page }));
+    dispatch(fetchClassesByCourse({ courseId, page, limit: 10 }));
+  };
+
   const toggleDept = (deptId: number) => {
     setExpandedDeptIds((prev) => {
       const next = new Set(prev);
@@ -218,7 +230,7 @@ const StudentDashboardPage: React.FC = () => {
         next.add(courseId);
         // fetch classes if not already loaded
         if (!allClassesMap[courseId]) {
-          dispatch(fetchClassesByCourse(courseId));
+          dispatch(fetchClassesByCourse({ courseId, page: coursePageMap[courseId] || 1, limit: 10 }));
         }
       }
       return next;
@@ -334,8 +346,9 @@ const StudentDashboardPage: React.FC = () => {
                 </Text>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {filteredDepts.map((dept) => {
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {filteredDepts.map((dept) => {
                   const deptCourses = coursesByDept[dept.departmentId] || [];
                   const isDeptExpanded = expandedDeptIds.has(dept.departmentId);
                   const q = searchText.toLowerCase();
@@ -949,6 +962,19 @@ const StudentDashboardPage: React.FC = () => {
                                           })
                                         )}
                                       </div>
+                                      {(classPagination[course.courseId]?.totalPages || 0) > 1 && (
+                                        <div style={{ padding: "10px 16px", textAlign: "center" }}>
+                                          <Pagination
+                                            size="small"
+                                            current={coursePageMap[course.courseId] || 1}
+                                            pageSize={10}
+                                            total={classPagination[course.courseId]?.total || 0}
+                                            onChange={(page) => handleClassPageChange(course.courseId, page)}
+                                            showSizeChanger={false}
+                                            showTotal={(total) => `Tổng ${total} lớp`}
+                                          />
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -961,7 +987,17 @@ const StudentDashboardPage: React.FC = () => {
                   );
                 })}
               </div>
-            )}
+              <Pagination
+                current={currentPage}
+                pageSize={10}
+                total={coursePagination.total}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+                showTotal={(total) => `Tổng ${total} khóa học`}
+                style={{ textAlign: "center", marginTop: 12 }}
+              />
+            </>
+          )}
           </div>
 
           {/* Modal Ghi danh */}
