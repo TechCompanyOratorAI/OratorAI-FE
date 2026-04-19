@@ -144,10 +144,12 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const getSelectedKey = () => {
     const path = location.pathname;
     if (
+      path === "/student/my-presentations" ||
       path.startsWith("/student/presentation/") ||
       path.startsWith("/student/presentation-detail/")
     ) return "/student/my-presentations";
     if (
+      path === "/student/my-class" ||
       path.startsWith("/student/class/") ||
       path.startsWith("/student/my-class/")
     ) return "/student/my-class";
