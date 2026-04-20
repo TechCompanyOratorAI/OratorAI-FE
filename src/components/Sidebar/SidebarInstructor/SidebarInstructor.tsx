@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Badge, Popover, Divider, Empty } from "antd";
+import { Popover, Divider, Empty } from "antd";
 import { useAppSelector, useAppDispatch } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
 import {
