@@ -1228,8 +1228,6 @@ const PresentationDetailPage: React.FC = () => {
               status={presentation.status}
               studentName={studentName}
               createdAt={presentation.createdAt}
-              onResultClick={handleViewReport}
-              resultLoading={reportLoading}
               showHeader={false}
             />
           </motion.div>
