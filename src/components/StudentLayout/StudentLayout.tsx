@@ -9,6 +9,10 @@ import {
   Button,
   Typography,
   Drawer,
+  Popover,
+  Empty,
+  Divider,
+  Tag,
 } from "antd";
 import type { MenuProps } from "antd";
 import {
@@ -20,10 +24,17 @@ import {
   Settings,
   X,
   Home,
+  CheckCheck,
+  FileText,
+  Star,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
-import { addNotification } from "@/services/features/notification/notificationSlice";
+import { addNotification, markAllRead } from "@/services/features/notification/notificationSlice";
+import type { Notification } from "@/services/features/notification/notificationSlice";
 import { useSocket } from "@/hooks/useSocket";
 import AppLogo from "@/components/AppLogo/AppLogo";
 
@@ -32,6 +43,85 @@ const { Text } = Typography;
 
 interface StudentLayoutProps {
   children: React.ReactNode;
+}
+
+const notifMeta: Record<string, { color: string; icon: React.ReactNode; tag: string }> = {
+  "report:generated":               { color: "blue",    icon: <FileText className="h-4 w-4" />,      tag: "Báo cáo" },
+  "report:confirmed":               { color: "green",   icon: <Star className="h-4 w-4" />,           tag: "Xác nhận" },
+  "report:rejected":                { color: "red",     icon: <AlertTriangle className="h-4 w-4" />,  tag: "Từ chối" },
+  "report:criterion-feedback-changed": { color: "cyan", icon: <Info className="h-4 w-4" />,           tag: "Phản hồi" },
+  "grade:distributed":              { color: "purple",  icon: <Info className="h-4 w-4" />,           tag: "Điểm" },
+  "grade:finalized":                { color: "green",   icon: <Star className="h-4 w-4" />,           tag: "Điểm" },
+  "grade:reopened":                 { color: "orange",  icon: <AlertTriangle className="h-4 w-4" />,  tag: "Điểm" },
+  "grade:feedback-updated":         { color: "cyan",    icon: <Info className="h-4 w-4" />,           tag: "Phản hồi" },
+  "class:upload-permission-changed":{ color: "gold",    icon: <Info className="h-4 w-4" />,           tag: "Lớp học" },
+};
+
+function formatRelativeTime(isoDate: string) {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "Vừa xong";
+  if (m < 60) return `${m} phút trước`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} giờ trước`;
+  return `${Math.floor(h / 24)} ngày trước`;
+}
+
+function NotificationPanel({
+  items,
+  onMarkAllRead,
+}: {
+  items: Notification[];
+  onMarkAllRead: () => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="w-[340px] py-6">
+        <Empty description="Không có thông báo nào" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-[340px] max-h-[480px] flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="font-semibold text-slate-800 text-sm">Thông báo</span>
+        <button
+          onClick={onMarkAllRead}
+          className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
+        >
+          <CheckCheck className="h-3.5 w-3.5" />
+          Đánh dấu đã đọc
+        </button>
+      </div>
+      <Divider className="!my-0" />
+      <ul className="overflow-y-auto flex-1 divide-y divide-slate-100">
+        {items.map((notif) => {
+          const meta = notifMeta[notif.type] ?? { color: "default", icon: <Info className="h-4 w-4" />, tag: "Thông báo" };
+          return (
+            <li
+              key={notif.id}
+              className={[
+                "flex gap-3 px-4 py-3 transition-colors",
+                !notif.read ? "bg-blue-50/60" : "bg-white hover:bg-slate-50",
+              ].join(" ")}
+            >
+              <div className={`mt-0.5 shrink-0 text-${meta.color}-500`}>{meta.icon}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-medium text-slate-800 truncate">{notif.title}</span>
+                  <Tag color={meta.color} className="!text-[10px] !px-1.5 !py-0 shrink-0">{meta.tag}</Tag>
+                  {!notif.read && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+                </div>
+                <p className="text-xs text-slate-500 leading-snug">{notif.message}</p>
+                <span className="text-[11px] text-slate-400 mt-1 block">{formatRelativeTime(notif.createdAt)}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 const navItems = [
@@ -45,70 +135,113 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
-  const { unreadCount } = useAppSelector((state) => state.notification);
+  const { unreadCount, items: notifications } = useAppSelector((state) => state.notification);
   const { on } = useSocket();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // ── Global socket listeners for notifications ──────────────────────────────────
   useEffect(() => {
+    const notify = (type: string, title: string, message: string, toastType: "success" | "info" | "warning" | "error" = "info", presentationId = 0) => {
+      dispatch(addNotification({ type, presentationId, title, message }));
+      toast[toastType](`${title}\n${message}`, { toastId: `${type}-${Date.now()}` });
+    };
+
     const unwatchReportGenerated = on<{ presentationId: number; message?: string }>(
       "report:generated",
-      () => {
-        dispatch(addNotification({
-          type: "report:generated",
-          presentationId: 0,
-          title: "Báo cáo AI sẵn sàng",
-          message: "Báo cáo đánh giá mới đã được tạo xong!",
-        }));
-      }
+      (payload) => notify(
+        "report:generated",
+        "Báo cáo AI sẵn sàng",
+        "Báo cáo đánh giá mới đã được tạo xong!",
+        "success",
+        payload?.presentationId,
+      )
     );
 
     const unwatchReportConfirmed = on<{ presentationId: number }>(
       "report:confirmed",
-      () => {
-        dispatch(addNotification({
-          type: "report:confirmed",
-          presentationId: 0,
-          title: "Báo cáo được xác nhận",
-          message: "Giảng viên đã xác nhận báo cáo AI của bạn!",
-        }));
-      }
+      (payload) => notify(
+        "report:confirmed",
+        "Báo cáo được xác nhận",
+        "Giảng viên đã xác nhận báo cáo AI của bạn!",
+        "success",
+        payload?.presentationId,
+      )
     );
 
     const unwatchReportRejected = on<{ presentationId: number; message?: string }>(
       "report:rejected",
-      () => {
-        dispatch(addNotification({
-          type: "report:rejected",
-          presentationId: 0,
-          title: "Báo cáo bị từ chối",
-          message: "Giảng viên đã từ chối báo cáo AI của bạn.",
-        }));
-      }
+      (payload) => notify(
+        "report:rejected",
+        "Báo cáo bị từ chối",
+        payload?.message || "Giảng viên đã từ chối báo cáo AI của bạn.",
+        "error",
+        payload?.presentationId,
+      )
+    );
+
+    const unwatchReportCriterionFeedbackChanged = on<{ presentationId: number; criterionId: number }>(
+      "report:criterion-feedback-changed",
+      (payload) => notify(
+        "report:criterion-feedback-changed",
+        "Phản hồi tiêu chí cập nhật",
+        "Giảng viên đã cập nhật phản hồi cho một tiêu chí đánh giá.",
+        "info",
+        payload?.presentationId,
+      )
     );
 
     const unwatchGradeDistributed = on<{ groupId: number; reportId: number }>(
       "grade:distributed",
-      () => {
-        dispatch(addNotification({
-          type: "grade:distributed",
-          presentationId: 0,
-          title: "Điểm đã được phân chia",
-          message: "Trưởng nhóm đã phân chia điểm cho các thành viên.",
-        }));
-      }
+      () => notify(
+        "grade:distributed",
+        "Điểm đã được phân chia",
+        "Trưởng nhóm đã phân chia điểm cho các thành viên.",
+        "info",
+      )
     );
 
     const unwatchGradeFinalized = on<{ groupId: number; reportId: number }>(
       "grade:finalized",
-      () => {
-        dispatch(addNotification({
-          type: "grade:finalized",
-          presentationId: 0,
-          title: "Điểm đã được chốt",
-          message: "Điểm đã được chốt bởi giảng viên.",
-        }));
+      () => notify(
+        "grade:finalized",
+        "Điểm đã được chốt",
+        "Điểm đã được chốt bởi giảng viên.",
+        "success",
+      )
+    );
+
+    const unwatchGradeReopened = on<{ groupId: number; reportId: number }>(
+      "grade:reopened",
+      () => notify(
+        "grade:reopened",
+        "Điểm được mở lại",
+        "Giảng viên đã mở lại việc phân chia điểm.",
+        "warning",
+      )
+    );
+
+    const unwatchGradeFeedbackUpdated = on<{ groupId: number; memberId: number }>(
+      "grade:feedback-updated",
+      () => notify(
+        "grade:feedback-updated",
+        "Phản hồi điểm cập nhật",
+        "Phản hồi về điểm số của bạn đã được cập nhật.",
+        "info",
+      )
+    );
+
+    const unwatchUploadPermission = on<{ classId: number; isUploadEnabled: boolean }>(
+      "class:upload-permission-changed",
+      (payload) => {
+        const enabled = payload?.isUploadEnabled;
+        notify(
+          "class:upload-permission-changed",
+          "Quyền nộp bài thay đổi",
+          enabled ? "Giảng viên đã mở quyền nộp bài cho lớp." : "Giảng viên đã đóng quyền nộp bài.",
+          enabled ? "success" : "warning",
+        );
       }
     );
 
@@ -116,8 +249,12 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
       unwatchReportGenerated?.();
       unwatchReportConfirmed?.();
       unwatchReportRejected?.();
+      unwatchReportCriterionFeedbackChanged?.();
       unwatchGradeDistributed?.();
       unwatchGradeFinalized?.();
+      unwatchGradeReopened?.();
+      unwatchGradeFeedbackUpdated?.();
+      unwatchUploadPermission?.();
     };
   }, [on, dispatch]);
 
@@ -223,15 +360,32 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
             {/* Right */}
             <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-              <Badge count={unreadCount} size="small" offset={[-2, 2]} overflowCount={99}>
-                <Button
-                  type="text"
-                  icon={<Bell className="h-5 w-5" />}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
-                  aria-label="Thông báo"
-                  onClick={() => dispatch({ type: "notification/markAllRead" })}
-                />
-              </Badge>
+              <Popover
+                open={notifOpen}
+                onOpenChange={(open) => {
+                  setNotifOpen(open);
+                  if (!open) dispatch(markAllRead());
+                }}
+                trigger="click"
+                placement="bottomRight"
+                arrow={false}
+                overlayInnerStyle={{ padding: 0, borderRadius: 12, overflow: "hidden" }}
+                content={
+                  <NotificationPanel
+                    items={notifications}
+                    onMarkAllRead={() => { dispatch(markAllRead()); setNotifOpen(false); }}
+                  />
+                }
+              >
+                <Badge count={unreadCount} size="small" offset={[-2, 2]} overflowCount={99}>
+                  <Button
+                    type="text"
+                    icon={<Bell className="h-5 w-5" />}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
+                    aria-label="Thông báo"
+                  />
+                </Badge>
+              </Popover>
 
               <Dropdown menu={{ items: userMenuItems }} trigger={["click"]} placement="bottomRight">
                 <Button

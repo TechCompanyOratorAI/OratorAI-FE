@@ -3,7 +3,7 @@ import axiosInstance from "../../constant/axiosInstance";
 
 export interface Notification {
   id: string;
-  type: "report:generated" | "report:confirmed" | "report:rejected" | "grade:distributed" | "grade:finalized";
+  type: "report:generated" | "report:confirmed" | "report:rejected" | "report:criterion-feedback-changed" | "grade:distributed" | "grade:finalized" | "grade:reopened" | "grade:feedback-updated" | "class:upload-permission-changed";
   presentationId: number;
   title: string;
   message: string;
