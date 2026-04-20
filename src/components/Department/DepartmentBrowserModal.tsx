@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
-  Pagination,
   Tag,
   Typography,
   Avatar,
+  Button,
+  Drawer,
 } from "antd";
 import {
   BookText,
@@ -66,7 +67,7 @@ const BRAND_GRADIENT = "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)";
 const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
   open,
   department,
-  courses,
+  courses: _courses,
   coursesByDept,
   apiClasses,
   enrolledClassIds,
@@ -79,13 +80,17 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
   const navigate = useNavigate();
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [coursePageMap, setCoursePageMap] = useState<Record<number, number>>({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const deptCourses = department
     ? coursesByDept[department.departmentId] || []
     : [];
-  const selectedCourse = selectedCourseId
-    ? courses.find((c) => c.courseId === selectedCourseId)
-    : null;
 
   useEffect(() => {
     if (!open) {
@@ -105,9 +110,11 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
         className: c.className || "",
         instructorName: c.instructors?.length
           ? c.instructors
-            .map((i: any) => `${i.firstName || ""} ${i.lastName || ""}`.trim())
-            .filter(Boolean)
-            .join(", ")
+              .map((i: any) =>
+                `${i.firstName || ""} ${i.lastName || ""}`.trim(),
+              )
+              .filter(Boolean)
+              .join(", ")
           : "Chưa có giảng viên",
         enrollmentCount: c.enrollmentCount ?? 0,
         maxStudents: c.maxStudents,
@@ -146,558 +153,780 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
   };
 
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      centered
-      width={920}
-      destroyOnHidden
-      styles={{
-        content: {
-          borderRadius: 16,
-          padding: 0,
-          overflow: "hidden",
-          fontFamily: "'Poppins', sans-serif",
-        },
-        header: { display: "none" },
-      }}
-    >
-      {department && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div
-            style={{
-              background: BRAND_GRADIENT,
-              padding: "16px 24px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <GraduationCap style={{ width: 18, height: 18, color: "white" }} />
-            </div>
-            <div>
-              <Text
-                strong
-                style={{ color: "white", fontSize: 16 }}
-              >
-                {department.departmentName}
-              </Text>
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.8)",
-                  fontSize: 12,
-                  display: "block",
-                }}
-              >
-                {department.departmentCode} · {deptCourses.length} khóa học
-              </Text>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", height: "64vh" }}>
-            <div
-              style={{
-                width: 168,
-                flexShrink: 0,
-                borderRight: "1px solid #E5E7EB",
-                background: "#fff",
-                padding: "16px 12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-              }}
-            >
+    <>
+      {/* Mobile: Drawer slides from right */}
+      {isMobile ? (
+        <Drawer
+          title={null}
+          placement="right"
+          width="100%"
+          onClose={onClose}
+          open={open}
+          styles={{
+            body: { padding: 0, overflow: "hidden" },
+            wrapper: { maxWidth: "100vw" },
+          }}
+        >
+          {department && (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+              {/* Header */}
               <div
-                onClick={() => setSelectedCourseId(null)}
                 style={{
+                  background: BRAND_GRADIENT,
+                  padding: "20px 20px 20px 24px",
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  background: !selectedCourseId
-                    ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
-                    : "transparent",
-                  color: !selectedCourseId ? "#6966fe" : "#6B7280",
-                  transition: "all 0.15s",
-                  borderLeft: !selectedCourseId
-                    ? "3px solid #6966fe"
-                    : "3px solid transparent",
+                  gap: 12,
                 }}
               >
-                <BookText style={{ width: 15, height: 15, flexShrink: 0 }} />
-                Khóa học
-              </div>
-
-              {selectedCourseId && (
                 <div
                   style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <GraduationCap style={{ width: 20, height: 20, color: "white" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Text strong style={{ color: "white", fontSize: 16, display: "block" }}>
+                    {department.departmentName}
+                  </Text>
+                  <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
+                    {department.departmentCode} · {deptCourses.length} khóa học
+                  </Text>
+                </div>
+              </div>
+
+              {/* Body: stacked layout */}
+              <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+                {/* Course sidebar as horizontal scroll */}
+                <div
+                  style={{
+                    borderBottom: "1px solid #E5E7EB",
+                    background: "#fff",
+                    padding: "12px 16px",
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    fontWeight: 600,
-                    fontSize: 13,
-                    background:
-                      "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)",
-                    color: "#6966fe",
-                    borderLeft: "3px solid #6966fe",
+                    overflowX: "auto",
+                    flexShrink: 0,
                   }}
                 >
-                  <GraduationCap
-                    style={{ width: 15, height: 15, flexShrink: 0 }}
-                  />
-                  <span
+                  <div
+                    onClick={() => setSelectedCourseId(null)}
                     style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 16px",
+                      borderRadius: 20,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: 13,
                       whiteSpace: "nowrap",
+                      background: !selectedCourseId
+                        ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
+                        : "#F3F4F6",
+                      color: !selectedCourseId ? "#6966fe" : "#6B7280",
+                      border: !selectedCourseId ? "2px solid #6966fe" : "2px solid transparent",
+                      transition: "all 0.15s",
                     }}
                   >
-                    {selectedCourse?.courseCode ?? "Lớp học"}
-                  </span>
+                    <BookText style={{ width: 14, height: 14 }} />
+                    Tất cả
+                  </div>
+                  {deptCourses.map((course) => (
+                    <div
+                      key={course.courseId}
+                      onClick={() => handleSelectCourse(course.courseId)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 16px",
+                        borderRadius: 20,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        whiteSpace: "nowrap",
+                        background:
+                          selectedCourseId === course.courseId
+                            ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
+                            : "#F3F4F6",
+                        color: selectedCourseId === course.courseId ? "#6966fe" : "#6B7280",
+                        border: selectedCourseId === course.courseId
+                          ? "2px solid #6966fe"
+                          : "2px solid transparent",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <GraduationCap style={{ width: 14, height: 14 }} />
+                      {course.courseCode}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
 
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "20px 24px",
-                background: "#F9FAFB",
-              }}
-            >
-              {!selectedCourseId ? (
-                classLoading ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 14,
-                    }}
-                  >
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          height: 160,
-                          background: "#F3F4F6",
-                          borderRadius: 10,
-                          border: "1px solid #E5E7EB",
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : deptCourses.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "40px 0" }}>
-                    <Text style={{ color: "#9CA3AF" }}>
-                      Không có khóa học trong bộ môn này
-                    </Text>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 14,
-                    }}
-                  >
-                    {deptCourses.map((course) => (
-                      <div
-                        key={course.courseId}
-                        onClick={() => handleSelectCourse(course.courseId)}
-                        style={{
-                          background: "white",
-                          borderRadius: 10,
-                          border: "1px solid #E5E7EB",
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                        }}
-                        className="hover:shadow-md hover:-translate-y-0.5"
-                      >
-                        <div
-                          style={{
-                            background: BRAND_GRADIENT,
-                            height: 80,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 700,
-                              color: "white",
-                              letterSpacing: 0.5,
-                            }}
-                          >
-                            {course.courseCode}
-                          </span>
-                        </div>
-                        <div style={{ padding: "12px 14px" }}>
-                          <Text
-                            strong
-                            style={{
-                              fontSize: 13,
-                              color: "#1F2937",
-                              display: "block",
-                              lineHeight: 1.4,
-                              marginBottom: 10,
-                              minHeight: 38,
-                            }}
-                          >
-                            {course.courseName}
-                          </Text>
+                {/* Class list — scrollable */}
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+                  {!selectedCourseId ? (
+                    deptCourses.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px 0" }}>
+                        <Text style={{ color: "#9CA3AF" }}>Không có khóa học</Text>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {deptCourses.map((course) => (
                           <div
+                            key={course.courseId}
+                            onClick={() => handleSelectCourse(course.courseId)}
                             style={{
+                              background: "white",
+                              borderRadius: 12,
+                              border: "1px solid #E5E7EB",
+                              padding: "14px 16px",
+                              cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "space-between",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                             }}
                           >
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: "#1F2937", display: "block" }}>
+                                {course.courseName}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: "#9CA3AF" }}>{course.courseCode}</Text>
+                            </div>
                             <Tag
                               style={{
                                 borderRadius: 20,
-                                fontSize: 10,
-                                padding: "1px 8px",
+                                fontSize: 11,
+                                padding: "2px 10px",
                                 background: course.isActive ? "#D1FAE5" : "#F3F4F6",
-                                border: course.isActive
-                                  ? "1px solid #A7F3D0"
-                                  : "1px solid #E5E7EB",
+                                border: course.isActive ? "1px solid #A7F3D0" : "1px solid #E5E7EB",
                                 color: course.isActive ? "#059669" : "#9CA3AF",
                                 fontWeight: 600,
                               }}
                             >
                               {course.isActive ? "Đang mở" : "Đã đóng"}
                             </Tag>
-                            <Text style={{ fontSize: 10, color: "#9CA3AF" }}>
-                              Khóa học
-                            </Text>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )
-              ) : (
-                <div>
-                  {isLoadingClasses ? (
-                    <div style={{ textAlign: "center", padding: "32px 0" }}>
-                      <Text style={{ color: "#9CA3AF" }}>
-                        Đang tải lớp học...
-                      </Text>
-                    </div>
-                  ) : courseClasses.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "32px 0" }}>
-                      <Text style={{ color: "#9CA3AF" }}>
-                        Chưa có lớp học nào
-                      </Text>
-                    </div>
+                    )
                   ) : (
+                    <MobileClassList
+                      courseClasses={courseClasses}
+                      isLoadingClasses={isLoadingClasses}
+                      isEnrolled={isEnrolled}
+                      onEnroll={onEnroll}
+                      onNavigate={navigate}
+                      selectedCourseId={selectedCourseId}
+                      classPagination={classPagination}
+                      coursePageMap={coursePageMap}
+                      handleClassPageChange={handleClassPageChange}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </Drawer>
+      ) : (
+        /* Desktop: Large modal with side-by-side layout */
+        <Modal
+          open={open}
+          onCancel={onClose}
+          footer={null}
+          centered
+          width={1100}
+          destroyOnHidden
+          styles={{
+            content: {
+              borderRadius: 16,
+              padding: 0,
+              overflow: "hidden",
+              fontFamily: "'Poppins', sans-serif",
+            },
+            header: { display: "none" },
+            mask: { backdropFilter: "blur(2px)" },
+          }}
+        >
+          {department && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {/* Header */}
+              <div
+                style={{
+                  background: BRAND_GRADIENT,
+                  padding: "18px 28px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <GraduationCap style={{ width: 22, height: 22, color: "white" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Text strong style={{ color: "white", fontSize: 18 }}>
+                    {department.departmentName}
+                  </Text>
+                  <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, display: "block" }}>
+                    {department.departmentCode} · {deptCourses.length} khóa học
+                  </Text>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ display: "flex", height: "72vh" }}>
+                {/* Left sidebar */}
+                <div
+                  style={{
+                    width: 200,
+                    flexShrink: 0,
+                    borderRight: "1px solid #E5E7EB",
+                    background: "#fff",
+                    padding: "16px 12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  <div
+                    onClick={() => setSelectedCourseId(null)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      background: !selectedCourseId
+                        ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
+                        : "transparent",
+                      color: !selectedCourseId ? "#6966fe" : "#6B7280",
+                      transition: "all 0.15s",
+                      borderLeft: !selectedCourseId ? "3px solid #6966fe" : "3px solid transparent",
+                    }}
+                  >
+                    <BookText style={{ width: 15, height: 15, flexShrink: 0 }} />
+                    Khóa học
+                  </div>
+
+                  {deptCourses.map((course) => (
                     <div
+                      key={course.courseId}
+                      onClick={() => handleSelectCourse(course.courseId)}
                       style={{
-                        background: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "10px 14px",
                         borderRadius: 10,
-                        border: "1px solid #E5E7EB",
-                        overflow: "hidden",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        background:
+                          selectedCourseId === course.courseId
+                            ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
+                            : "transparent",
+                        color: selectedCourseId === course.courseId ? "#6966fe" : "#6B7280",
+                        transition: "all 0.15s",
+                        borderLeft:
+                          selectedCourseId === course.courseId
+                            ? "3px solid #6966fe"
+                            : "3px solid transparent",
                       }}
                     >
+                      <GraduationCap style={{ width: 15, height: 15, flexShrink: 0 }} />
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {course.courseCode}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right content */}
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "20px 24px",
+                    background: "#F9FAFB",
+                  }}
+                >
+                  {!selectedCourseId ? (
+                    deptCourses.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px 0" }}>
+                        <Text style={{ color: "#9CA3AF" }}>Không có khóa học</Text>
+                      </div>
+                    ) : (
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns:
-                            "160px 1fr 180px 120px 140px",
-                          padding: "10px 16px",
-                          background: "#F9FAFB",
-                          borderBottom: "1px solid #E5E7EB",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "#6B7280",
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: 14,
                         }}
                       >
-                        <span>Mã lớp</span>
-                        <span>Giảng viên</span>
-                        <span>Ngày kết thúc</span>
-                        <span>Trạng thái</span>
-                        <span style={{ textAlign: "right" }}>Hành động</span>
-                      </div>
-
-                      {courseClasses.map((c, idx) => {
-                        const enrolled = isEnrolled(c.classId);
-                        const isActive = c.status === "active";
-                        return (
+                        {deptCourses.map((course) => (
                           <div
-                            key={c.classId}
+                            key={course.courseId}
+                            onClick={() => handleSelectCourse(course.courseId)}
                             style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "160px 1fr 180px 120px 140px",
-                              padding: "14px 16px",
-                              alignItems: "center",
-                              borderBottom:
-                                idx < courseClasses.length - 1
-                                  ? "1px solid #F3F4F6"
-                                  : "none",
-                              background: enrolled ? "#F0FDF4" : "white",
+                              background: "white",
+                              borderRadius: 10,
+                              border: "1px solid #E5E7EB",
+                              overflow: "hidden",
                               cursor: "pointer",
-                              transition: "background 0.15s",
+                              transition: "all 0.2s",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                             }}
-                            className="hover:bg-slate-50"
-                            onClick={() => {
-                              if (enrolled)
-                                navigate(`/student/class/${c.classId}`);
-                            }}
+                            className="hover:shadow-md hover:-translate-y-0.5"
                           >
-                            <div>
-                              <div
+                            <div
+                              style={{
+                                background: BRAND_GRADIENT,
+                                height: 80,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <span
                                 style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 6,
-                                  background: enrolled
-                                    ? "rgba(16,185,129,0.1)"
-                                    : "rgba(99,102,241,0.08)",
-                                  border: `1px solid ${
-                                    enrolled
-                                      ? "rgba(16,185,129,0.2)"
-                                      : "rgba(99,102,241,0.15)"
-                                  }`,
-                                  borderRadius: 8,
-                                  padding: "4px 12px",
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  color: "white",
+                                  letterSpacing: 0.5,
                                 }}
                               >
-                                <span
-                                  style={{
-                                    fontSize: 14,
-                                    fontWeight: 800,
-                                    color: enrolled ? "#10B981" : "#6366F1",
-                                    letterSpacing: 0.5,
-                                  }}
-                                >
-                                  {c.classCode}
-                                </span>
-                                {enrolled && (
-                                  <ShieldCheck
-                                    style={{
-                                      width: 14,
-                                      height: 14,
-                                      color: "#10B981",
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {c.instructorName !== "Chưa có giảng viên" ? (
-                                <>
-                                  <Avatar
-                                    size={30}
-                                    style={{
-                                      background: enrolled
-                                        ? "#D1FAE5"
-                                        : "#EEF2FF",
-                                      color: enrolled ? "#10B981" : "#6366F1",
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                      border: `2px solid ${
-                                        enrolled ? "#A7F3D0" : "#C7D2FE"
-                                      }`,
-                                      flexShrink: 0,
-                                    }}
-                                  >
-                                    {c.instructorName
-                                      .split(" ")
-                                      .slice(0, 2)
-                                      .map((n: string) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
-                                  </Avatar>
-                                  <span
-                                    style={{
-                                      fontSize: 13,
-                                      fontWeight: 500,
-                                      color: "#374151",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {c.instructorName}
-                                  </span>
-                                </>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    color: "#9CA3AF",
-                                    fontStyle: "italic",
-                                  }}
-                                >
-                                  Chưa có giảng viên
-                                </span>
-                              )}
-                            </div>
-
-                            <div>
-                              <span style={{ fontSize: 12, color: "#6B7280" }}>
-                                {new Date(c.endDate).toLocaleDateString("vi-VN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
+                                {course.courseCode}
                               </span>
                             </div>
-
-                            <div>
-                              <Tag
+                            <div style={{ padding: "12px 14px" }}>
+                              <Text
+                                strong
                                 style={{
-                                  borderRadius: 20,
-                                  fontSize: 10,
-                                  padding: "2px 10px",
-                                  border: 0,
-                                  fontWeight: 600,
-                                  background: enrolled
-                                    ? "#D1FAE5"
-                                    : isActive
-                                      ? "#DBEAFE"
-                                      : "#F3F4F6",
-                                  color: enrolled
-                                    ? "#059669"
-                                    : isActive
-                                      ? "#2563EB"
-                                      : "#9CA3AF",
+                                  fontSize: 13,
+                                  color: "#1F2937",
+                                  display: "block",
+                                  lineHeight: 1.4,
+                                  marginBottom: 10,
+                                  minHeight: 38,
                                 }}
                               >
-                                {enrolled
-                                  ? "Đã ghi danh"
-                                  : isActive
-                                    ? "Đang mở"
-                                    : "Đã đóng"}
-                              </Tag>
-                            </div>
-
-                            <div style={{ textAlign: "right" }}>
-                              {enrolled ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/student/class/${c.classId}`);
-                                  }}
-                                  style={{
-                                    padding: "6px 14px",
-                                    borderRadius: 8,
-                                    border: "1px solid #10B981",
-                                    background: "#10B981",
-                                    color: "white",
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                    fontFamily: "'Poppins', sans-serif",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                  }}
-                                >
-                                  <CheckCircle2
-                                    style={{ width: 13, height: 13 }}
-                                  />
-                                  Vào lớp
-                                </button>
-                              ) : isActive ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEnroll(c);
-                                  }}
-                                  style={{
-                                    padding: "6px 14px",
-                                    borderRadius: 8,
-                                    border: "none",
-                                    background: BRAND_GRADIENT,
-                                    color: "white",
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                    fontFamily: "'Poppins', sans-serif",
-                                    boxShadow:
-                                      "0 2px 6px rgba(29,169,230,0.3)",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                  }}
-                                >
-                                  <KeyRound style={{ width: 13, height: 13 }} />
-                                  Ghi danh
-                                </button>
-                              ) : (
+                                {course.courseName}
+                              </Text>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                }}
+                              >
                                 <Tag
                                   style={{
-                                    borderRadius: 8,
-                                    fontSize: 11,
-                                    padding: "4px 10px",
-                                    background: "#F3F4F6",
-                                    border: "1px solid #E5E7EB",
-                                    color: "#9CA3AF",
+                                    borderRadius: 20,
+                                    fontSize: 10,
+                                    padding: "1px 8px",
+                                    background: course.isActive ? "#D1FAE5" : "#F3F4F6",
+                                    border: course.isActive ? "1px solid #A7F3D0" : "1px solid #E5E7EB",
+                                    color: course.isActive ? "#059669" : "#9CA3AF",
                                     fontWeight: 600,
                                   }}
                                 >
-                                  Đã đóng
+                                  {course.isActive ? "Đang mở" : "Đã đóng"}
                                 </Tag>
-                              )}
+                                <Text style={{ fontSize: 10, color: "#9CA3AF" }}>Khóa học</Text>
+                              </div>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {(classPagination[selectedCourseId!]?.totalPages || 0) >
-                    1 && (
-                    <div style={{ padding: "12px 0", textAlign: "center" }}>
-                      <Pagination
-                        size="small"
-                        current={coursePageMap[selectedCourseId!] || 1}
-                        pageSize={10}
-                        total={classPagination[selectedCourseId!]?.total || 0}
-                        onChange={(page) =>
-                          handleClassPageChange(selectedCourseId!, page)
-                        }
-                        showSizeChanger={false}
-                        showTotal={(total) => `Tổng ${total} lớp`}
-                      />
-                    </div>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <DesktopClassTable
+                      courseClasses={courseClasses}
+                      isLoadingClasses={isLoadingClasses}
+                      isEnrolled={isEnrolled}
+                      onEnroll={onEnroll}
+                      onNavigate={navigate}
+                      selectedCourseId={selectedCourseId}
+                      classPagination={classPagination}
+                      coursePageMap={coursePageMap}
+                      handleClassPageChange={handleClassPageChange}
+                    />
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </>
+  );
+};
+
+// ─── Desktop Class Table ───────────────────────────────────────────────────────
+const DesktopClassTable: React.FC<{
+  courseClasses: ClassItem[];
+  isLoadingClasses: boolean;
+  isEnrolled: (id: number) => boolean;
+  onEnroll: (c: ClassItem) => void;
+  onNavigate: ReturnType<typeof useNavigate>;
+  selectedCourseId: number;
+  classPagination: Record<number, { total?: number; totalPages?: number }>;
+  coursePageMap: Record<number, number>;
+  handleClassPageChange: (courseId: number, page: number) => void;
+}> = ({ courseClasses, isLoadingClasses, isEnrolled, onEnroll, onNavigate }) => {
+  if (isLoadingClasses) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} style={{ height: 64, background: "#F3F4F6", borderRadius: 10 }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (courseClasses.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "48px 0" }}>
+        <Text style={{ color: "#9CA3AF", fontSize: 14 }}>Chưa có lớp học nào</Text>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          border: "1px solid #E5E7EB",
+          overflow: "hidden",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "140px 1fr 140px 120px 130px",
+            padding: "12px 20px",
+            background: "#F4F5F7",
+            borderBottom: "1px solid #E5E7EB",
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#6B7280",
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+          }}
+        >
+          <span>Mã lớp</span>
+          <span>Giảng viên</span>
+          <span>Kết thúc</span>
+          <span>Trạng thái</span>
+          <span style={{ textAlign: "right" }}>Hành động</span>
+        </div>
+
+        {courseClasses.map((c, idx) => {
+          const enrolled = isEnrolled(c.classId);
+          const isActive = c.status === "active";
+          return (
+            <div
+              key={c.classId}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "140px 1fr 140px 120px 130px",
+                padding: "14px 20px",
+                alignItems: "center",
+                borderBottom: idx < courseClasses.length - 1 ? "1px solid #F3F4F6" : "none",
+                background: enrolled ? "#F0FDF4" : "white",
+                cursor: enrolled ? "pointer" : "default",
+                transition: "background 0.15s",
+              }}
+              className="hover:bg-slate-50"
+              onClick={() => { if (enrolled) onNavigate(`/student/class/${c.classId}`); }}
+            >
+              {/* Class code badge */}
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: enrolled ? "rgba(16,185,129,0.1)" : "rgba(99,102,241,0.08)",
+                    border: `1px solid ${enrolled ? "rgba(16,185,129,0.2)" : "rgba(99,102,241,0.15)"}`,
+                    borderRadius: 8,
+                    padding: "4px 12px",
+                  }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 800, color: enrolled ? "#10B981" : "#6366F1", letterSpacing: 0.5 }}>
+                    {c.classCode}
+                  </span>
+                  {enrolled && <ShieldCheck style={{ width: 14, height: 14, color: "#10B981" }} />}
+                </div>
+              </div>
+
+              {/* Instructor */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                {c.instructorName !== "Chưa có giảng viên" ? (
+                  <>
+                    <Avatar
+                      size={34}
+                      style={{
+                        background: enrolled ? "#D1FAE5" : "#EEF2FF",
+                        color: enrolled ? "#10B981" : "#6366F1",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: `2px solid ${enrolled ? "#A7F3D0" : "#C7D2FE"}`,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
+                    </Avatar>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#374151",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {c.instructorName}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>
+                    Chưa có giảng viên
+                  </span>
+                )}
+              </div>
+
+              {/* End date */}
+              <div>
+                <span style={{ fontSize: 12, color: "#6B7280" }}>
+                  {new Date(c.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </div>
+
+              {/* Status tag */}
+              <div>
+                <Tag
+                  style={{
+                    borderRadius: 20,
+                    fontSize: 11,
+                    padding: "2px 10px",
+                    border: 0,
+                    fontWeight: 600,
+                    background: enrolled ? "#D1FAE5" : isActive ? "#DBEAFE" : "#F3F4F6",
+                    color: enrolled ? "#059669" : isActive ? "#2563EB" : "#9CA3AF",
+                  }}
+                >
+                  {enrolled ? "Đã ghi danh" : isActive ? "Đang mở" : "Đã đóng"}
+                </Tag>
+              </div>
+
+              {/* Action button */}
+              <div style={{ textAlign: "right" }}>
+                {enrolled ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onNavigate(`/student/class/${c.classId}`); }}
+                    style={{
+                      padding: "7px 16px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "#10B981",
+                      color: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "'Poppins', sans-serif",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <CheckCircle2 style={{ width: 14, height: 14 }} />
+                    Vào lớp
+                  </button>
+                ) : isActive ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEnroll(c); }}
+                    style={{
+                      padding: "7px 16px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)",
+                      color: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "'Poppins', sans-serif",
+                      boxShadow: "0 2px 6px rgba(29,169,230,0.3)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <KeyRound style={{ width: 14, height: 14 }} />
+                    Ghi danh
+                  </button>
+                ) : (
+                  <Tag style={{ borderRadius: 8, fontSize: 11, padding: "4px 12px", background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#9CA3AF", fontWeight: 600 }}>
+                    Đã đóng
+                  </Tag>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
+// ─── Mobile Class List ────────────────────────────────────────────────────────
+const MobileClassList: React.FC<{
+  courseClasses: ClassItem[];
+  isLoadingClasses: boolean;
+  isEnrolled: (id: number) => boolean;
+  onEnroll: (c: ClassItem) => void;
+  onNavigate: ReturnType<typeof useNavigate>;
+  selectedCourseId: number;
+  classPagination: Record<number, { total?: number; totalPages?: number }>;
+  coursePageMap: Record<number, number>;
+  handleClassPageChange: (courseId: number, page: number) => void;
+}> = ({ courseClasses, isLoadingClasses, isEnrolled, onEnroll, onNavigate }) => {
+  if (isLoadingClasses) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ height: 80, background: "#F3F4F6", borderRadius: 10 }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (courseClasses.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        <Text style={{ color: "#9CA3AF", fontSize: 14 }}>Chưa có lớp học nào</Text>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {courseClasses.map((c) => {
+        const enrolled = isEnrolled(c.classId);
+        const isActive = c.status === "active";
+        return (
+          <div
+            key={c.classId}
+            style={{
+              background: "white",
+              borderRadius: 12,
+              border: `1px solid ${enrolled ? "#A7F3D0" : "#E5E7EB"}`,
+              padding: "16px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: enrolled ? "#10B981" : "#6366F1" }}>
+                    {c.classCode}
+                  </span>
+                  {enrolled && <ShieldCheck style={{ width: 14, height: 14, color: "#10B981" }} />}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {c.instructorName !== "Chưa có giảng viên" ? (
+                    <Avatar size={22} style={{ background: enrolled ? "#D1FAE5" : "#EEF2FF", color: enrolled ? "#10B981" : "#6366F1", fontSize: 10, fontWeight: 700 }}>
+                      {c.instructorName.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
+                    </Avatar>
+                  ) : null}
+                  <span style={{ fontSize: 12, color: "#6B7280" }}>
+                    {c.instructorName !== "Chưa có giảng viên" ? c.instructorName : "Chưa có giảng viên"}
+                  </span>
+                </div>
+              </div>
+              <Tag
+                style={{
+                  borderRadius: 20,
+                  fontSize: 10,
+                  padding: "2px 10px",
+                  border: 0,
+                  fontWeight: 600,
+                  background: enrolled ? "#D1FAE5" : isActive ? "#DBEAFE" : "#F3F4F6",
+                  color: enrolled ? "#059669" : isActive ? "#2563EB" : "#9CA3AF",
+                }}
+              >
+                {enrolled ? "Đã ghi danh" : isActive ? "Đang mở" : "Đã đóng"}
+              </Tag>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                Kết thúc: {new Date(c.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+              {enrolled ? (
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckCircle2 style={{ width: 13, height: 13 }} />}
+                  onClick={() => onNavigate(`/student/class/${c.classId}`)}
+                  style={{ background: "#10B981", borderColor: "#10B981", fontSize: 12 }}
+                >
+                  Vào lớp
+                </Button>
+              ) : isActive ? (
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<KeyRound style={{ width: 13, height: 13 }} />}
+                  onClick={() => onEnroll(c)}
+                  style={{ background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)", border: "none", fontSize: 12 }}
+                >
+                  Ghi danh
+                </Button>
+              ) : (
+                <Tag style={{ borderRadius: 8, fontSize: 11, background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#9CA3AF", fontWeight: 600 }}>
+                  Đã đóng
+                </Tag>
               )}
             </div>
           </div>
-        </div>
-      )}
-    </Modal>
+        );
+      })}
+    </div>
   );
 };
 

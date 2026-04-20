@@ -126,9 +126,9 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
                       </Text>
                       <Tag color={statusCfg.color} icon={statusCfg.icon}>{statusCfg.label}</Tag>
                       {hasPendingFeedback && (
-                        <Badge count={dist.members?.filter((m) => m.memberFeedback).length} className="ml-1">
-                          <Tag color="blue" icon={<MessageOutlined />}>Có phản hồi</Tag>
-                        </Badge>
+                        <Tag color="blue" icon={<MessageOutlined />}>
+                          Có phản hồi ({dist.members?.filter((m) => m.memberFeedback).length})
+                        </Tag>
                       )}
                     </Space>
                     <Text type="secondary" className="block text-xs mt-0.5">
@@ -223,6 +223,7 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
                             <Badge dot={hasFeedback} color="blue" offset={[-2, 2]}>
                               <Avatar
                                 size="small"
+                                src={member.student?.avatar || undefined}
                                 style={{
                                   background: isLeaderMember
                                     ? "linear-gradient(135deg,#f59e0b,#d97706)"

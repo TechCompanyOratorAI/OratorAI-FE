@@ -10,21 +10,29 @@ const { TextArea } = Input;
 interface ConfirmReportModalProps {
   isOpen: boolean;
   reportId: number;
+  initialGrade?: number | null;
   onClose: () => void;
 }
 
 const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
   isOpen,
   reportId,
+  initialGrade,
   onClose,
 }) => {
   const dispatch = useAppDispatch();
-  const [grade, setGrade] = useState<number | null>(null);
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null);
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setGrade(initialGrade ?? null);
+      setFeedback("");
+    }
+  }, [isOpen, initialGrade]);
+
   const handleClose = () => {
-    setGrade(null);
     setFeedback("");
     onClose();
   };
