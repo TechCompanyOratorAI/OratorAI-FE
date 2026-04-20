@@ -33,7 +33,7 @@ import {
 import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
-import { addNotification, markAllRead } from "@/services/features/notification/notificationSlice";
+import { addNotification, markAllRead, markAllReadApi, fetchNotifications } from "@/services/features/notification/notificationSlice";
 import type { Notification } from "@/services/features/notification/notificationSlice";
 import { useSocket } from "@/hooks/useSocket";
 import AppLogo from "@/components/AppLogo/AppLogo";
@@ -140,6 +140,11 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // Fetch persisted notifications from DB on mount (catches missed events while offline)
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
 
   // ── Global socket listeners for notifications ──────────────────────────────────
   useEffect(() => {
@@ -364,7 +369,10 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                 open={notifOpen}
                 onOpenChange={(open) => {
                   setNotifOpen(open);
-                  if (!open) dispatch(markAllRead());
+                  if (!open) {
+                    dispatch(markAllRead());
+                    dispatch(markAllReadApi());
+                  }
                 }}
                 trigger="click"
                 placement="bottomRight"
@@ -373,7 +381,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                 content={
                   <NotificationPanel
                     items={notifications}
-                    onMarkAllRead={() => { dispatch(markAllRead()); setNotifOpen(false); }}
+                    onMarkAllRead={() => { dispatch(markAllRead()); dispatch(markAllReadApi()); setNotifOpen(false); }}
                   />
                 }
               >
