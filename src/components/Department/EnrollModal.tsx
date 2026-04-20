@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Modal, Input, Typography } from "antd";
 import { KeyRound } from "lucide-react";
 import { useAppDispatch } from "@/services/store/store";
-import { enrollClassByKey, fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
+import {
+  enrollClassByKey,
+  fetchEnrolledClasses,
+} from "@/services/features/enrollment/enrollmentSlice";
 import { toast } from "react-toastify";
 
 const { Text } = Typography;
@@ -46,12 +49,17 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
     try {
       setEnrolling(true);
       setEnrollError("");
-      await dispatch(enrollClassByKey({ classId: classData.classId, enrollKey: trimmed })).unwrap();
+      await dispatch(
+        enrollClassByKey({ classId: classData.classId, enrollKey: trimmed }),
+      ).unwrap();
       await dispatch(fetchEnrolledClasses());
       toast.success(`Đã ghi danh thành công lớp "${classData.className}"!`);
       handleClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Ghi danh thất bại. Vui lòng thử lại.";
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Ghi danh thất bại. Vui lòng thử lại.";
       setEnrollError(message);
     } finally {
       setEnrolling(false);
@@ -95,10 +103,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
             <KeyRound style={{ width: 24, height: 24, color: "white" }} />
           </div>
           <div>
-            <Text
-              strong
-              style={{ color: "white", fontSize: 17 }}
-            >
+            <Text strong style={{ color: "white", fontSize: 17 }}>
               Ghi danh lớp học
             </Text>
             <Text
@@ -127,7 +132,9 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
           </label>
           <Input
             placeholder="Nhập mã ghi danh do giáo viên cung cấp"
-            prefix={<KeyRound style={{ width: 16, height: 16, color: "#9CA3AF" }} />}
+            prefix={
+              <KeyRound style={{ width: 16, height: 16, color: "#9CA3AF" }} />
+            }
             value={enrollKey}
             onChange={(e) => {
               setEnrollKey(e.target.value);

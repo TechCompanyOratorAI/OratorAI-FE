@@ -46,9 +46,20 @@ const { TextArea } = Input;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
-const statusConfig: Record<DistributionStatus, { label: string; color: string; antColor: string }> = {
-  submitted: { label: "Đã nộp — chờ phản hồi", color: "#d97706", antColor: "orange" },
-  reopened:  { label: "Đã mở lại — leader chỉnh sửa", color: "#0284c7", antColor: "blue" },
+const statusConfig: Record<
+  DistributionStatus,
+  { label: string; color: string; antColor: string }
+> = {
+  submitted: {
+    label: "Đã nộp — chờ phản hồi",
+    color: "#d97706",
+    antColor: "orange",
+  },
+  reopened: {
+    label: "Đã mở lại — leader chỉnh sửa",
+    color: "#0284c7",
+    antColor: "blue",
+  },
   finalized: { label: "Đã chốt điểm", color: "#059669", antColor: "green" },
 };
 
@@ -124,7 +135,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
             (m) => m.studentId === (gm.userId ?? gm.id),
           );
           const role = gm.GroupStudent?.role;
-          const name = [gm.firstName, gm.lastName].filter(Boolean).join(" ") || gm.username || "Thành viên";
+          const name =
+            [gm.firstName, gm.lastName].filter(Boolean).join(" ") ||
+            gm.username ||
+            "Thành viên";
           return {
             studentId: Number(gm.userId ?? gm.id),
             studentName: name,
@@ -140,7 +154,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
       } else {
         const entries: MemberGradeEntry[] = groupMembers.map((gm) => {
           const role = gm.GroupStudent?.role;
-          const name = [gm.firstName, gm.lastName].filter(Boolean).join(" ") || gm.username || "Thành viên";
+          const name =
+            [gm.firstName, gm.lastName].filter(Boolean).join(" ") ||
+            gm.username ||
+            "Thành viên";
           return {
             studentId: Number(gm.userId ?? gm.id),
             studentName: name,
@@ -157,7 +174,9 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
       setHasChanges(false);
 
       // Init my feedback state
-      const me = currentDistribution?.members?.find((m) => m.studentId === currentUserId);
+      const me = currentDistribution?.members?.find(
+        (m) => m.studentId === currentUserId,
+      );
       setMyFeedback(me?.memberFeedback || "");
       setFeedbackSent(!!me?.memberFeedback);
     }
@@ -169,7 +188,9 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
     if (isOpen && reportId) {
       void dispatch(fetchGradeDistributionByReport(reportId));
     }
-    return () => { void dispatch(clearCurrentDistribution()); };
+    return () => {
+      void dispatch(clearCurrentDistribution());
+    };
   }, [isOpen, reportId, dispatch]);
 
   // ── Error display ────────────────────────────────────────────────────────
@@ -181,56 +202,88 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handlePercentageChange = (studentId: number, val: number) => {
-    setMembers((prev) => prev.map((m) => m.studentId === studentId ? { ...m, percentage: val } : m));
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.studentId === studentId ? { ...m, percentage: val } : m,
+      ),
+    );
     setHasChanges(true);
   };
 
   const handleReasonChange = (studentId: number, val: string) => {
-    setMembers((prev) => prev.map((m) => m.studentId === studentId ? { ...m, reason: val } : m));
+    setMembers((prev) =>
+      prev.map((m) => (m.studentId === studentId ? { ...m, reason: val } : m)),
+    );
     setHasChanges(true);
   };
 
-  const gradePreview = useMemo(() =>
-    members.map((m) => ({
-      ...m,
-      receivedGrade: parseFloat(((instructorGrade * m.percentage) / 100).toFixed(2)),
-    })),
+  const gradePreview = useMemo(
+    () =>
+      members.map((m) => ({
+        ...m,
+        receivedGrade: parseFloat(
+          ((instructorGrade * m.percentage) / 100).toFixed(2),
+        ),
+      })),
     [members, instructorGrade],
   );
 
   const handleSave = async () => {
-    if (members.length === 0) { void message.warning("Không có thành viên nào để phân chia điểm."); return; }
+    if (members.length === 0) {
+      void message.warning("Không có thành viên nào để phân chia điểm.");
+      return;
+    }
     const bad = members.find((m) => m.percentage < 0 || m.percentage > 100);
-    if (bad) { void message.warning(`Phần trăm của "${bad.studentName}" phải từ 0 đến 100.`); return; }
+    if (bad) {
+      void message.warning(
+        `Phần trăm của "${bad.studentName}" phải từ 0 đến 100.`,
+      );
+      return;
+    }
 
     try {
-      const result = await dispatch(distributeGrade({
-        reportId,
-        reason: overallReason || undefined,
-        members: members.map((m) => ({ studentId: m.studentId, percentage: m.percentage, reason: m.reason || undefined })),
-      })).unwrap();
+      const result = await dispatch(
+        distributeGrade({
+          reportId,
+          reason: overallReason || undefined,
+          members: members.map((m) => ({
+            studentId: m.studentId,
+            percentage: m.percentage,
+            reason: m.reason || undefined,
+          })),
+        }),
+      ).unwrap();
       void message.success("Đã nộp phân chia điểm thành công!");
       setHasChanges(false);
       // Refresh data first, then close modal
       await dispatch(fetchGradeDistributionByReport(reportId));
       onSuccess?.(result.id);
       onClose();
-    } catch { /* handled by error effect */ }
+    } catch {
+      /* handled by error effect */
+    }
   };
 
   const handleSendFeedback = async () => {
     if (!currentDistribution?.id || !groupId) return;
-    if (!myFeedback.trim()) { void message.warning("Vui lòng nhập nội dung phản hồi."); return; }
+    if (!myFeedback.trim()) {
+      void message.warning("Vui lòng nhập nội dung phản hồi.");
+      return;
+    }
     try {
-      await dispatch(submitMemberFeedback({
-        groupId,
-        distributionId: currentDistribution.id,
-        feedback: myFeedback,
-      })).unwrap();
+      await dispatch(
+        submitMemberFeedback({
+          groupId,
+          distributionId: currentDistribution.id,
+          feedback: myFeedback,
+        }),
+      ).unwrap();
       void message.success("Đã gửi phản hồi thành công!");
       setFeedbackSent(true);
       void dispatch(fetchGradeDistributionByReport(reportId));
-    } catch { /* handled */ }
+    } catch {
+      /* handled */
+    }
   };
 
   const handleClose = () => {
@@ -240,7 +293,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
         content: "Bạn có chắc muốn đóng mà không lưu không?",
         okText: "Đóng",
         cancelText: "Hủy",
-        onOk: () => { setHasChanges(false); onClose(); },
+        onOk: () => {
+          setHasChanges(false);
+          onClose();
+        },
       });
     } else {
       onClose();
@@ -249,13 +305,22 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
 
   // ── Status step indicator ────────────────────────────────────────────────
 
-  const stepCurrent = status === "submitted" ? 1 : status === "reopened" ? 2 : status === "finalized" ? 3 : 0;
+  const stepCurrent =
+    status === "submitted"
+      ? 1
+      : status === "reopened"
+        ? 2
+        : status === "finalized"
+          ? 3
+          : 0;
 
   // ── Footer ───────────────────────────────────────────────────────────────
 
   const renderFooter = () => (
     <Space wrap>
-      <Button onClick={handleClose} disabled={actionLoading}>Đóng</Button>
+      <Button onClick={handleClose} disabled={actionLoading}>
+        Đóng
+      </Button>
 
       {/* Leader submit button */}
       {leaderCanEdit && (
@@ -264,7 +329,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
           icon={<SaveOutlined />}
           loading={actionLoading}
           onClick={handleSave}
-          style={{ background: "linear-gradient(135deg,#d97706,#ea580c)", borderColor: "#d97706" }}
+          style={{
+            background: "linear-gradient(135deg,#d97706,#ea580c)",
+            borderColor: "#d97706",
+          }}
         >
           {isReopened ? "Nộp lại điểm" : "Nộp phân chia điểm"}
         </Button>
@@ -272,8 +340,14 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
 
       {/* Leader locked info */}
       {leaderIsLocked && (
-        <Tag icon={<LockOutlined />} color={isFinalized ? "green" : "orange"} className="!py-1 !px-3 !text-sm">
-          {isFinalized ? "Đã chốt — không thể sửa" : "Đã nộp — chờ phản hồi hoặc instructor mở lại"}
+        <Tag
+          icon={<LockOutlined />}
+          color={isFinalized ? "green" : "orange"}
+          className="!py-1 !px-3 !text-sm"
+        >
+          {isFinalized
+            ? "Đã chốt — không thể sửa"
+            : "Đã nộp — chờ phản hồi hoặc instructor mở lại"}
         </Tag>
       )}
     </Space>
@@ -299,10 +373,15 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
       destroyOnClose
       maskClosable={!actionLoading}
       footer={renderFooter()}
-      styles={{ body: { maxHeight: "min(78vh, 660px)", overflowY: "auto", padding: "12px 24px" } }}
+      styles={{
+        body: {
+          maxHeight: "min(78vh, 660px)",
+          overflowY: "auto",
+          padding: "12px 24px",
+        },
+      }}
     >
       <Spin spinning={loading}>
-
         {/* ── State machine steps ── */}
         {hasDistribution && (
           <Steps
@@ -312,25 +391,47 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
             items={[
               { title: "Leader nộp điểm", icon: <SendOutlined /> },
               { title: "Thành viên phản hồi", icon: <MessageOutlined /> },
-              { title: "Instructor mở lại (nếu cần)", icon: <InfoCircleOutlined /> },
+              {
+                title: "Instructor mở lại (nếu cần)",
+                icon: <InfoCircleOutlined />,
+              },
               { title: "Chốt điểm", icon: <CheckCircleOutlined /> },
             ]}
           />
         )}
 
         {/* ── Header stats ── */}
-        <Card size="small" className="mb-4" style={{ background: "linear-gradient(135deg,#f0f9ff,#e0f2fe)", border: "1px solid #bae6fd" }}>
+        <Card
+          size="small"
+          className="mb-4"
+          style={{
+            background: "linear-gradient(135deg,#f0f9ff,#e0f2fe)",
+            border: "1px solid #bae6fd",
+          }}
+        >
           <Row gutter={24} align="middle">
             <Col span={12}>
               <Statistic
                 title="Điểm giảng viên"
                 value={instructorGrade}
                 suffix="/ 10"
-                valueStyle={{ fontSize: "1.5rem", color: "#0284c7", fontWeight: 700 }}
+                valueStyle={{
+                  fontSize: "1.5rem",
+                  color: "#0284c7",
+                  fontWeight: 700,
+                }}
               />
             </Col>
             <Col span={12}>
-              <Statistic title="Số thành viên" value={members.length} valueStyle={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }} />
+              <Statistic
+                title="Số thành viên"
+                value={members.length}
+                valueStyle={{
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              />
             </Col>
           </Row>
         </Card>
@@ -346,13 +447,29 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
           />
         )}
         {isSubmitted && !isLeader && (
-          <Alert type="info" message="Leader đã nộp điểm. Bạn có thể xem điểm cá nhân và gửi phản hồi bên dưới." className="mb-4" showIcon />
+          <Alert
+            type="info"
+            message="Leader đã nộp điểm. Bạn có thể xem điểm cá nhân và gửi phản hồi bên dưới."
+            className="mb-4"
+            showIcon
+          />
         )}
         {isReopened && isLeader && (
-          <Alert type="warning" message="Instructor đã mở lại. Hãy điều chỉnh và nộp lại điểm (lần cuối)." className="mb-4" showIcon />
+          <Alert
+            type="warning"
+            message="Instructor đã mở lại. Hãy điều chỉnh và nộp lại điểm (lần cuối)."
+            className="mb-4"
+            showIcon
+          />
         )}
         {!isLeader && !hasDistribution && (
-          <Alert type="info" message="Chỉ trưởng nhóm mới có quyền phân chia điểm." className="mb-4" showIcon icon={<InfoCircleOutlined />} />
+          <Alert
+            type="info"
+            message="Chỉ trưởng nhóm mới có quyền phân chia điểm."
+            className="mb-4"
+            showIcon
+            icon={<InfoCircleOutlined />}
+          />
         )}
 
         {hasDistribution && currentDistribution && (
@@ -366,12 +483,17 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
 
         {/* ── Overall reason (editable by leader when allowed) ── */}
         <div className="mb-4">
-          <Text strong className="block mb-1">Lý do phân chia điểm (tổng quát)</Text>
+          <Text strong className="block mb-1">
+            Lý do phân chia điểm (tổng quát)
+          </Text>
           <TextArea
             rows={2}
             placeholder="VD: Chia điểm theo mức độ đóng góp của từng thành viên..."
             value={overallReason}
-            onChange={(e) => { setOverallReason(e.target.value); setHasChanges(true); }}
+            onChange={(e) => {
+              setOverallReason(e.target.value);
+              setHasChanges(true);
+            }}
             disabled={!leaderCanEdit}
             maxLength={500}
             showCount
@@ -386,7 +508,9 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
         ) : (
           <Space direction="vertical" size="middle" className="w-full">
             {gradePreview.map((member) => {
-              const distMember = currentDistribution?.members?.find((m) => m.studentId === member.studentId);
+              const distMember = currentDistribution?.members?.find(
+                (m) => m.studentId === member.studentId,
+              );
               const isMe = member.studentId === currentUserId;
 
               return (
@@ -401,24 +525,51 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                       <Badge dot={!!distMember?.memberFeedback} color="blue">
                         <Avatar
                           src={member.studentAvatar || undefined}
-                          style={{ background: member.isLeader ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#0ea5e9,#06b6d4)" }}
+                          style={{
+                            background: member.isLeader
+                              ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                              : "linear-gradient(135deg,#0ea5e9,#06b6d4)",
+                          }}
                         >
-                          {!member.studentAvatar && member.studentName.charAt(0).toUpperCase()}
+                          {!member.studentAvatar &&
+                            member.studentName.charAt(0).toUpperCase()}
                         </Avatar>
                       </Badge>
                       <div>
                         <Space size={4}>
-                          <Text strong className="text-sm">{member.studentName}</Text>
-                          {member.isLeader && <Tag color="gold" icon={<CrownOutlined />} className="text-xs">Trưởng nhóm</Tag>}
-                          {isMe && <Tag color="blue" className="text-xs">Bạn</Tag>}
+                          <Text strong className="text-sm">
+                            {member.studentName}
+                          </Text>
+                          {member.isLeader && (
+                            <Tag
+                              color="gold"
+                              icon={<CrownOutlined />}
+                              className="text-xs"
+                            >
+                              Trưởng nhóm
+                            </Tag>
+                          )}
+                          {isMe && (
+                            <Tag color="blue" className="text-xs">
+                              Bạn
+                            </Tag>
+                          )}
                         </Space>
-                        {member.studentEmail && <Text type="secondary" className="text-xs block">{member.studentEmail}</Text>}
+                        {member.studentEmail && (
+                          <Text type="secondary" className="text-xs block">
+                            {member.studentEmail}
+                          </Text>
+                        )}
                       </div>
                     </Space>
 
                     <div className="text-right">
-                      <Text strong className="text-lg text-sky-700">{member.receivedGrade.toFixed(2)}</Text>
-                      <Text type="secondary" className="text-xs block">/ {Number(instructorGrade).toFixed(2)} điểm</Text>
+                      <Text strong className="text-lg text-sky-700">
+                        {member.receivedGrade.toFixed(2)}
+                      </Text>
+                      <Text type="secondary" className="text-xs block">
+                        / {Number(instructorGrade).toFixed(2)} điểm
+                      </Text>
                     </div>
                   </div>
 
@@ -426,13 +577,20 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                   {leaderCanEdit && (
                     <div className="mb-2">
                       <div className="flex items-center justify-between mb-1">
-                        <Text type="secondary" className="text-xs">Phần trăm đóng góp</Text>
-                        <Text strong className="text-sm">{member.percentage}%</Text>
+                        <Text type="secondary" className="text-xs">
+                          Phần trăm đóng góp
+                        </Text>
+                        <Text strong className="text-sm">
+                          {member.percentage}%
+                        </Text>
                       </div>
                       <Slider
-                        min={0} max={100}
+                        min={0}
+                        max={100}
                         value={member.percentage}
-                        onChange={(val) => handlePercentageChange(member.studentId, val)}
+                        onChange={(val) =>
+                          handlePercentageChange(member.studentId, val)
+                        }
                         tooltip={{ formatter: (val) => `${val}%` }}
                         marks={{ 0: "0%", 50: "50%", 100: "100%" }}
                       />
@@ -462,12 +620,16 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                   {/* Leader's reason for this member */}
                   {leaderCanEdit ? (
                     <div>
-                      <Text type="secondary" className="text-xs mb-1 block">Lý do (tùy chọn)</Text>
+                      <Text type="secondary" className="text-xs mb-1 block">
+                        Lý do (tùy chọn)
+                      </Text>
                       <TextArea
                         rows={1}
                         placeholder="Nhập lý do..."
                         value={member.reason}
-                        onChange={(e) => handleReasonChange(member.studentId, e.target.value)}
+                        onChange={(e) =>
+                          handleReasonChange(member.studentId, e.target.value)
+                        }
                         maxLength={300}
                         showCount
                         style={{ fontSize: "13px" }}
@@ -475,7 +637,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                     </div>
                   ) : (
                     distMember?.reason && (
-                      <Text type="secondary" className="text-xs italic block mt-1">
+                      <Text
+                        type="secondary"
+                        className="text-xs italic block mt-1"
+                      >
                         Lý do: {distMember.reason}
                       </Text>
                     )
@@ -490,7 +655,11 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                       </Text>
                       <TextArea
                         rows={2}
-                        placeholder={feedbackSent ? "Đã gửi phản hồi. Bạn có thể cập nhật lại." : "Nếu không đồng ý với điểm này, hãy nhập phản hồi..."}
+                        placeholder={
+                          feedbackSent
+                            ? "Đã gửi phản hồi. Bạn có thể cập nhật lại."
+                            : "Nếu không đồng ý với điểm này, hãy nhập phản hồi..."
+                        }
                         value={myFeedback}
                         onChange={(e) => setMyFeedback(e.target.value)}
                         maxLength={500}
@@ -511,14 +680,17 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                   )}
 
                   {/* Show member feedback to leader/instructor */}
-                  {hasDistribution && distMember?.memberFeedback && (isLeader || isFinalized) && (
-                    <div className="mt-2 pt-2 border-t border-slate-100">
-                      <Text type="secondary" className="text-xs">
-                        <MessageOutlined className="mr-1 text-blue-400" />
-                        <strong>Phản hồi của thành viên:</strong> {distMember.memberFeedback}
-                      </Text>
-                    </div>
-                  )}
+                  {hasDistribution &&
+                    distMember?.memberFeedback &&
+                    (isLeader || isFinalized) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100">
+                        <Text type="secondary" className="text-xs">
+                          <MessageOutlined className="mr-1 text-blue-400" />
+                          <strong>Phản hồi của thành viên:</strong>{" "}
+                          {distMember.memberFeedback}
+                        </Text>
+                      </div>
+                    )}
                 </Card>
               );
             })}

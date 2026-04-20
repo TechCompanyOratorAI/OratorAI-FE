@@ -11,13 +11,11 @@ import {
   XCircle,
   Cpu,
   Star,
-  ArrowUp,
-  ArrowDown,
 } from "lucide-react";
 import {
   ThunderboltOutlined,
   CommentOutlined,
-  CheckCircleOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
@@ -34,7 +32,6 @@ import {
   Tag,
   Typography,
   Empty,
-  Progress,
   Space,
   Row,
   Col,
@@ -150,6 +147,13 @@ const IntructorPresentationDetailPage: React.FC = () => {
     );
   }, [currentReport]);
 
+  // Auto-fetch report on mount so the floating button can appear
+  useEffect(() => {
+    if (isValidPresentationId && presentationIdNumber) {
+      dispatch(fetchPresentationReport(presentationIdNumber));
+    }
+  }, [isValidPresentationId, presentationIdNumber, dispatch]);
+
   const scrollToReportSection = () => {
     window.requestAnimationFrame(() => {
       if (!reportSectionRef.current) return;
@@ -245,6 +249,16 @@ const IntructorPresentationDetailPage: React.FC = () => {
     }
     return criterionFeedbacks;
   }, [currentReport?.criterionFeedbacks, criterionFeedbacks]);
+
+  /** Điểm TB tự động từ feedback GV (thang 10) */
+  const instructorAvgGrade = useMemo(() => {
+    const validFeedbacks = syncedFeedbacks.filter(
+      (f) => f.score !== null && f.score !== "",
+    );
+    if (validFeedbacks.length === 0) return null;
+    const sum = validFeedbacks.reduce((s, f) => s + (Number(f.score) || 0), 0);
+    return (sum / validFeedbacks.length / 10).toFixed(1);
+  }, [syncedFeedbacks]);
 
   /** Đủ feedback GV cho mọi tiêu chí AI → mới cho phép Xác nhận / Từ chối báo cáo */
   const instructorFeedbackComplete = useMemo(() => {
@@ -603,11 +617,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                               className="w-full"
                             >
                               {criteriaScores.map((criterion) => {
-                                const hasFb = syncedFeedbacks.some(
-                                  (f) =>
-                                    f.classRubricCriteriaId ===
-                                    criterion.criteriaId,
-                                );
                                 const existingFb =
                                   syncedFeedbacks.find(
                                     (f) =>
@@ -621,18 +630,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                     title={
                                       <Space wrap>
                                         <span>{criterion.criteriaName}</span>
-                                        {hasFb ? (
-                                          <Tag
-                                            color="success"
-                                            icon={<CheckCircleOutlined />}
-                                          >
-                                            Đã có phản hồi GV
-                                          </Tag>
-                                        ) : (
-                                          <Tag color="default">
-                                            Chưa có phản hồi GV
-                                          </Tag>
-                                        )}
                                       </Space>
                                     }
                                     extra={
@@ -709,17 +706,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                             size="large"
                             className="w-full"
                           >
-                            <div>
-                              <Typography.Title level={5} className="!mb-1">
-                                Phản hồi đã gửi
-                              </Typography.Title>
-                              <Typography.Text type="secondary">
-                                Chỉ xem — chỉnh sửa phản hồi tại tab &quot;AI
-                                đánh giá&quot;, trong form ngay dưới từng tiêu
-                                chí.
-                              </Typography.Text>
-                            </div>
-
                             {syncedFeedbacks.length === 0 ? (
                               <Empty
                                 description={
@@ -732,87 +718,34 @@ const IntructorPresentationDetailPage: React.FC = () => {
                               />
                             ) : (
                               <>
-                                <Row gutter={[16, 16]}>
-                                  <Col xs={24} sm={8}>
-                                    <Card
-                                      size="small"
-                                      className="h-full border-indigo-100 bg-indigo-50/50"
-                                    >
-                                      <Statistic
-                                        title="Đã feedback"
-                                        value={syncedFeedbacks.length}
-                                        suffix={`/ ${criteriaScores.length}`}
-                                        valueStyle={{ color: "#4f46e5" }}
-                                      />
-                                    </Card>
-                                  </Col>
-                                  <Col xs={24} sm={8}>
-                                    <Card
-                                      size="small"
-                                      className="h-full border-emerald-100 bg-emerald-50/50"
-                                    >
-                                      <Statistic
-                                        title="Điểm TB (GV)"
-                                        value={(
-                                          syncedFeedbacks.reduce(
-                                            (sum, f) =>
-                                              sum + (Number(f.score) || 0),
-                                            0,
-                                          ) /
-                                          Math.max(
-                                            syncedFeedbacks.filter(
-                                              (f) =>
-                                                f.score !== null &&
-                                                f.score !== "",
-                                            ).length,
-                                            1,
-                                          )
-                                        ).toFixed(1)}
-                                        suffix="/ 100"
-                                        valueStyle={{ color: "#059669" }}
-                                      />
-                                    </Card>
-                                  </Col>
-                                  <Col xs={24} sm={8}>
-                                    <Card
-                                      size="small"
-                                      className="h-full border-amber-100 bg-amber-50/50"
-                                    >
-                                      <Statistic
-                                        title="Chưa feedback"
-                                        value={Math.max(
-                                          criteriaScores.length -
-                                            syncedFeedbacks.length,
-                                          0,
-                                        )}
-                                        valueStyle={{ color: "#d97706" }}
-                                      />
-                                    </Card>
-                                  </Col>
-                                </Row>
-
-                                <div>
-                                  <Space className="mb-2 w-full justify-between">
-                                    <Typography.Text type="secondary">
-                                      Tiến độ theo tiêu chí
-                                    </Typography.Text>
-                                    <Typography.Text type="secondary">
-                                      {syncedFeedbacks.length}/
-                                      {criteriaScores.length}
-                                    </Typography.Text>
-                                  </Space>
-                                  <Progress
-                                    percent={Math.round(
-                                      (syncedFeedbacks.length /
-                                        Math.max(criteriaScores.length, 1)) *
-                                        100,
-                                    )}
-                                    strokeColor={{
-                                      from: "#6366f1",
-                                      to: "#8b5cf6",
+                                <Card
+                                  size="small"
+                                  className="bg-sky-50/90 border-sky-100"
+                                >
+                                  <Statistic
+                                    title="Điểm TB (GV)"
+                                    value={(
+                                      syncedFeedbacks.reduce(
+                                        (sum, f) =>
+                                          sum + (Number(f.score) || 0),
+                                        0,
+                                      ) /
+                                      Math.max(
+                                        syncedFeedbacks.filter(
+                                          (f) =>
+                                            f.score !== null && f.score !== "",
+                                        ).length,
+                                        1,
+                                      ) /
+                                      10
+                                    ).toFixed(1)}
+                                    suffix="/ 10"
+                                    valueStyle={{
+                                      color: "#0369a1",
+                                      fontSize: 28,
                                     }}
                                   />
-                                </div>
+                                </Card>
 
                                 <Space
                                   direction="vertical"
@@ -845,17 +778,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                           fb.classRubricCriteriaId,
                                       );
                                       const hasAiData = !!aiCriterion;
-                                      const scoreDiff =
-                                        aiCriterion &&
-                                        fb.score !== null &&
-                                        fb.score !== ""
-                                          ? (
-                                              Number(fb.score) -
-                                              (aiCriterion.score /
-                                                aiCriterion.maxScore) *
-                                                100
-                                            ).toFixed(1)
-                                          : null;
 
                                       return (
                                         <Card
@@ -878,10 +800,12 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                                   strong
                                                   className="text-lg text-indigo-700"
                                                 >
-                                                  {Number(fb.score).toFixed(1)}
+                                                  {(
+                                                    Number(fb.score) / 10
+                                                  ).toFixed(1)}
                                                 </Typography.Text>
                                                 <Typography.Text type="secondary">
-                                                  / 100
+                                                  / 10
                                                 </Typography.Text>
                                               </Space>
                                             ) : null
@@ -961,37 +885,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                                     </Typography.Text>
                                                   </Typography.Text>
                                                 </Col>
-                                                {scoreDiff !== null && (
-                                                  <Col span={12}>
-                                                    <Typography.Text
-                                                      type="secondary"
-                                                      className="text-xs block"
-                                                    >
-                                                      Chênh lệch (điểm 100)
-                                                    </Typography.Text>
-                                                    <Space>
-                                                      {Number(scoreDiff) >=
-                                                      0 ? (
-                                                        <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
-                                                      ) : (
-                                                        <ArrowDown className="w-3.5 h-3.5 text-red-500" />
-                                                      )}
-                                                      <Typography.Text
-                                                        strong
-                                                        className={
-                                                          Number(scoreDiff) >= 0
-                                                            ? "text-emerald-600"
-                                                            : "text-red-600"
-                                                        }
-                                                      >
-                                                        {Number(scoreDiff) >= 0
-                                                          ? "+"
-                                                          : ""}
-                                                        {scoreDiff}%
-                                                      </Typography.Text>
-                                                    </Space>
-                                                  </Col>
-                                                )}
                                               </Row>
                                               {aiCriterion!.comment && (
                                                 <>
@@ -1031,9 +924,48 @@ const IntructorPresentationDetailPage: React.FC = () => {
         </div>
       </main>
 
+      {/* Floating "Xem kết quả AI" button */}
+      {!showReport && currentReport && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          style={{ position: "fixed", bottom: 24, right: 24, zIndex: 100 }}
+        >
+          <Button
+            type="primary"
+            size="large"
+            icon={<BarChartOutlined />}
+            onClick={() => {
+              setShowReport(true);
+              dispatch(fetchPresentationReport(presentationIdNumber ?? 0));
+              setTimeout(() => {
+                reportSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }, 100);
+            }}
+            style={{
+              background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)",
+              border: "none",
+              borderRadius: 14,
+              height: 52,
+              paddingInline: 24,
+              fontWeight: 700,
+              fontSize: 15,
+              boxShadow: "0 8px 24px rgba(29,169,230,0.35)",
+            }}
+          >
+            Xem kết quả AI
+          </Button>
+        </motion.div>
+      )}
+
       <ConfirmReportModal
         isOpen={reportDecisionModal === "confirm"}
         reportId={currentReport?.reportId ?? 0}
+        initialGrade={instructorAvgGrade ? Number(instructorAvgGrade) : null}
         onClose={() => setReportDecisionModal(null)}
       />
 

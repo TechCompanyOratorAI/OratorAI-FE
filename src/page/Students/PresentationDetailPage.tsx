@@ -10,8 +10,6 @@ import {
   BookOpen,
   MessageSquare,
   Cpu,
-  Star,
-  Award,
   CheckCircle2,
   FileText,
   Target,
@@ -53,7 +51,6 @@ import {
   Rate,
   Spin,
   Alert,
-  Empty,
   Typography,
   Skeleton,
   ConfigProvider,
@@ -2368,543 +2365,177 @@ const PresentationDetailPage: React.FC = () => {
                         exit={{ opacity: 0, x: -10 }}
                         transition={{ duration: 0.25 }}
                       >
-                        {syncedFeedbacks.length === 0 ? (
-                          <Empty
-                            image={
-                              <div
-                                style={{
-                                  width: 80,
-                                  height: 80,
-                                  borderRadius: "50%",
-                                  background: PALETTE.slateLight,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  margin: "0 auto",
-                                }}
-                              >
-                                <MessageSquare
-                                  size={36}
-                                  color={PALETTE.slate}
-                                  style={{ opacity: 0.5 }}
-                                />
-                              </div>
-                            }
-                            description={
-                              <div>
-                                <Text
-                                  strong
-                                  style={{
-                                    fontSize: 16,
-                                    display: "block",
-                                    marginBottom: 4,
-                                  }}
-                                >
-                                  Chưa có phản hồi từ giảng viên
-                                </Text>
-                                <Text
-                                  style={{ color: PALETTE.slate, fontSize: 13 }}
-                                >
-                                  Giảng viên sẽ gửi phản hồi chi tiết cho từng
-                                  tiêu chí đánh giá sau khi xem xét bài thuyết
-                                  trình của bạn.
-                                </Text>
-                              </div>
-                            }
-                            style={{ padding: "40px 0" }}
-                          />
-                        ) : (
-                          <div>
-                            {/* Feedback Stats */}
-                            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-                              <Col xs={8}>
-                                <Card
-                                  style={{
-                                    borderRadius: 14,
-                                    background: PALETTE.successLight,
-                                    border: `1px solid ${PALETTE.successLight}`,
-                                    textAlign: "center",
-                                  }}
-                                  styles={{ body: { padding: "14px 12px" } }}
-                                >
-                                  <CheckCircle2
-                                    size={18}
-                                    color={PALETTE.success}
-                                    style={{ marginBottom: 6 }}
-                                  />
-                                  <div
-                                    style={{
-                                      fontSize: 22,
-                                      fontWeight: 800,
-                                      color: PALETTE.success,
-                                    }}
-                                  >
-                                    {syncedFeedbacks.length}
-                                  </div>
-                                  <Text
-                                    style={{
-                                      fontSize: 11,
-                                      color: PALETTE.success,
-                                    }}
-                                  >
-                                    Đã feedback
-                                  </Text>
-                                  <div
-                                    style={{ fontSize: 11, color: "#6B7280" }}
-                                  >
-                                    / {criteriaScores.length} tiêu chí
-                                  </div>
-                                </Card>
-                              </Col>
-                              <Col xs={8}>
-                                <Card
-                                  style={{
-                                    borderRadius: 14,
-                                    background: PALETTE.purpleLight,
-                                    border: `1px solid ${PALETTE.purpleLight}`,
-                                    textAlign: "center",
-                                  }}
-                                  styles={{ body: { padding: "14px 12px" } }}
-                                >
-                                  <Star
-                                    size={18}
-                                    color={PALETTE.purple}
-                                    style={{ marginBottom: 6 }}
-                                  />
-                                  <div
-                                    style={{
-                                      fontSize: 22,
-                                      fontWeight: 800,
-                                      color: PALETTE.purple,
-                                    }}
-                                  >
-                                    {(
-                                      syncedFeedbacks.reduce(
-                                        (sum, f) =>
-                                          sum + (Number(f.score) || 0),
-                                        0,
-                                      ) /
-                                      Math.max(
-                                        syncedFeedbacks.filter(
-                                          (f) =>
-                                            f.score !== null && f.score !== "",
-                                        ).length,
-                                        1,
-                                      )
-                                    ).toFixed(1)}
-                                  </div>
-                                  <Text
-                                    style={{
-                                      fontSize: 11,
-                                      color: PALETTE.purple,
-                                    }}
-                                  >
-                                    Điểm TB
-                                  </Text>
-                                  <div
-                                    style={{ fontSize: 11, color: "#6B7280" }}
-                                  >
-                                    trên 100
-                                  </div>
-                                </Card>
-                              </Col>
-                              <Col xs={8}>
-                                <Card
-                                  style={{
-                                    borderRadius: 14,
-                                    background: PALETTE.warningLight,
-                                    border: `1px solid ${PALETTE.warningLight}`,
-                                    textAlign: "center",
-                                  }}
-                                  styles={{ body: { padding: "14px 12px" } }}
-                                >
-                                  <Award
-                                    size={18}
-                                    color={PALETTE.warning}
-                                    style={{ marginBottom: 6 }}
-                                  />
-                                  <div
-                                    style={{
-                                      fontSize: 22,
-                                      fontWeight: 800,
-                                      color: PALETTE.warning,
-                                    }}
-                                  >
-                                    {criteriaScores.length -
-                                      syncedFeedbacks.length}
-                                  </div>
-                                  <Text
-                                    style={{
-                                      fontSize: 11,
-                                      color: PALETTE.warning,
-                                    }}
-                                  >
-                                    Chưa feedback
-                                  </Text>
-                                  <div
-                                    style={{ fontSize: 11, color: "#6B7280" }}
-                                  >
-                                    tiêu chí
-                                  </div>
-                                </Card>
-                              </Col>
-                            </Row>
-
-                            {/* Progress */}
-                            <div
+                        {/* Criteria Scores */}
+                        {reportTab === "instructor" && (
+                          <div style={{ marginTop: 8 }}>
+                            <Title
+                              level={5}
                               style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 12,
-                                marginBottom: 20,
+                                fontWeight: 700,
+                                marginBottom: 12,
+                                fontSize: 15,
                               }}
                             >
-                              <Progress
-                                percent={
-                                  (syncedFeedbacks.length /
-                                    Math.max(criteriaScores.length, 1)) *
-                                  100
-                                }
-                                showInfo={false}
-                                strokeColor={PALETTE.success}
-                                trailColor="#E2E8F0"
-                                style={{ flex: 1 }}
-                              />
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: PALETTE.slate,
-                                  whiteSpace: "nowrap",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {syncedFeedbacks.length}/{criteriaScores.length}{" "}
-                                tiêu chí
-                              </Text>
-                            </div>
-
-                            {/* Feedback Cards */}
-                            {[...syncedFeedbacks]
-                              .sort(
-                                (a, b) =>
-                                  a.criterionFeedbackId - b.criterionFeedbackId,
-                              )
-                              .map((fb) => {
-                                const criteriaLabel =
-                                  fb.classRubricCriteria?.criteriaName ||
-                                  criteriaScores.find(
-                                    (c) =>
-                                      c.criteriaId === fb.classRubricCriteriaId,
-                                  )?.criteriaName ||
-                                  `Tiêu chí #${fb.classRubricCriteriaId}`;
-                                const instructorLabel = fb.instructor
-                                  ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
-                                    fb.instructor.email ||
-                                    "Giảng viên"
-                                  : "Giảng viên";
-                                const aiCriterion = criteriaScores.find(
-                                  (c) =>
-                                    c.criteriaId === fb.classRubricCriteriaId,
+                              <CommentOutlined style={{ marginRight: 8 }} />
+                              Phản hồi giảng viên
+                            </Title>
+                            <Collapse
+                              ghost
+                              expandIconPosition="end"
+                              style={{ background: "transparent" }}
+                            >
+                              {criteriaScores.map((criterion) => {
+                                const fb = syncedFeedbacks.find(
+                                  (f) =>
+                                    f.classRubricCriteriaId ===
+                                    criterion.criteriaId,
                                 );
-                                const hasAiData = !!aiCriterion;
-                                const scoreDiff =
-                                  aiCriterion &&
-                                  fb.score !== null &&
-                                  fb.score !== ""
-                                    ? (
-                                        Number(fb.score) -
-                                        (aiCriterion.score /
-                                          aiCriterion.maxScore) *
-                                          100
-                                      ).toFixed(1)
-                                    : null;
-
                                 return (
-                                  <motion.div
-                                    key={fb.criterionFeedbackId}
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                  >
-                                    <Card
-                                      style={{
-                                        borderRadius: 16,
-                                        border: `1px solid ${PALETTE.successLight}`,
-                                        background: `linear-gradient(135deg, ${PALETTE.successLight}30 0%, #fff 100%)`,
-                                        marginBottom: 12,
-                                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                                      }}
-                                      styles={{ body: { padding: "20px" } }}
-                                    >
-                                      {/* Header */}
+                                  <Panel
+                                    key={criterion.criteriaId}
+                                    header={
                                       <div
                                         style={{
                                           display: "flex",
-                                          alignItems: "flex-start",
+                                          alignItems: "center",
                                           justifyContent: "space-between",
-                                          marginBottom: 14,
-                                          flexWrap: "wrap",
-                                          gap: 12,
+                                          width: "100%",
+                                          paddingRight: 8,
                                         }}
                                       >
                                         <div
                                           style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: 12,
+                                            gap: 8,
                                           }}
                                         >
-                                          <Avatar
-                                            size={44}
-                                            style={{
-                                              background: `linear-gradient(135deg, ${PALETTE.success}, ${PALETTE.info})`,
-                                              fontWeight: 700,
-                                              fontSize: 18,
-                                            }}
-                                          >
-                                            {criteriaLabel
-                                              .charAt(0)
-                                              .toUpperCase()}
-                                          </Avatar>
-                                          <div>
-                                            <Text
-                                              strong
+                                          <MessageSquare
+                                            size={14}
+                                            color={PALETTE.success}
+                                          />
+                                          <Text strong style={{ fontSize: 14 }}>
+                                            {criterion.criteriaName}
+                                          </Text>
+                                          {fb && (
+                                            <Tag
+                                              color="success"
                                               style={{
-                                                fontSize: 16,
-                                                display: "block",
+                                                fontSize: 10,
+                                                padding: "0 6px",
+                                                borderRadius: 10,
+                                                border: "none",
                                               }}
                                             >
-                                              {criteriaLabel}
+                                              Có phản hồi
+                                            </Tag>
+                                          )}
+                                          {!fb && (
+                                            <Tag
+                                              style={{
+                                                fontSize: 10,
+                                                padding: "0 6px",
+                                                borderRadius: 10,
+                                                background: PALETTE.slateLight,
+                                                color: "#94A3B8",
+                                                border: "none",
+                                              }}
+                                            >
+                                              Chưa có phản hồi
+                                            </Tag>
+                                          )}
+                                        </div>
+                                        {fb &&
+                                          fb.score !== null &&
+                                          fb.score !== "" && (
+                                            <ScoreBadge
+                                              score={Number(fb.score)}
+                                              max={100}
+                                              size="small"
+                                            />
+                                          )}
+                                      </div>
+                                    }
+                                    style={{
+                                      background: PALETTE.white,
+                                      borderRadius: 12,
+                                      marginBottom: 8,
+                                      border: "1px solid #F1F5F9",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {fb ? (
+                                      <>
+                                        {fb.comment ? (
+                                          <Paragraph
+                                            style={{
+                                              fontSize: 13,
+                                              color: PALETTE.slate,
+                                              marginBottom: 8,
+                                            }}
+                                          >
+                                            {fb.comment}
+                                          </Paragraph>
+                                        ) : (
+                                          <div
+                                            style={{
+                                              textAlign: "center",
+                                              padding: "14px",
+                                              borderRadius: 12,
+                                              background: PALETTE.slateLight,
+                                              border: "1px dashed #CBD5E1",
+                                              marginBottom: 12,
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 13,
+                                                color: "#94A3B8",
+                                                fontStyle: "italic",
+                                              }}
+                                            >
+                                              Chưa có nhận xét
                                             </Text>
+                                          </div>
+                                        )}
+                                        {/* AI Comparison */}
+                                        {criterion.score !== undefined && (
+                                          <Card
+                                            size="small"
+                                            style={{
+                                              borderRadius: 12,
+                                              background: PALETTE.infoLight,
+                                              border: `1px solid ${PALETTE.infoLight}`,
+                                            }}
+                                            styles={{
+                                              body: { padding: "12px" },
+                                            }}
+                                          >
                                             <div
                                               style={{
                                                 display: "flex",
                                                 alignItems: "center",
                                                 gap: 6,
-                                                marginTop: 2,
+                                                marginBottom: 8,
                                               }}
                                             >
-                                              <User
-                                                size={12}
-                                                color={PALETTE.success}
+                                              <Cpu
+                                                size={13}
+                                                color={PALETTE.info}
                                               />
                                               <Text
-                                                style={{
-                                                  fontSize: 12,
-                                                  color: PALETTE.slate,
-                                                }}
-                                              >
-                                                {instructorLabel}
-                                              </Text>
-                                              {fb.updatedAt && (
-                                                <Text
-                                                  style={{
-                                                    fontSize: 11,
-                                                    color: "#94A3B8",
-                                                  }}
-                                                >
-                                                  ·{" "}
-                                                  {new Date(
-                                                    fb.updatedAt,
-                                                  ).toLocaleString("vi-VN", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                  })}
-                                                </Text>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {fb.score !== null &&
-                                          fb.score !== "" && (
-                                            <div style={{ textAlign: "right" }}>
-                                              <div
-                                                style={{
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  gap: 4,
-                                                  justifyContent: "flex-end",
-                                                }}
-                                              >
-                                                <Star
-                                                  size={16}
-                                                  color={PALETTE.warning}
-                                                />
-                                                <span
-                                                  style={{
-                                                    fontSize: 24,
-                                                    fontWeight: 800,
-                                                    color: PALETTE.success,
-                                                  }}
-                                                >
-                                                  {Number(fb.score).toFixed(1)}
-                                                </span>
-                                              </div>
-                                              <Text
+                                                strong
                                                 style={{
                                                   fontSize: 11,
-                                                  color: "#94A3B8",
+                                                  color: PALETTE.info,
+                                                  textTransform: "uppercase",
+                                                  letterSpacing: 0.5,
                                                 }}
                                               >
-                                                / 100 điểm
+                                                So sánh với đánh giá AI
                                               </Text>
                                             </div>
-                                          )}
-                                      </div>
-
-                                      {/* Comment */}
-                                      {fb.comment ? (
-                                        <Card
-                                          size="small"
-                                          style={{
-                                            borderRadius: 12,
-                                            background: PALETTE.white,
-                                            border: `1px solid ${PALETTE.successLight}`,
-                                            marginBottom: 12,
-                                          }}
-                                          styles={{
-                                            body: { padding: "14px 16px" },
-                                          }}
-                                        >
-                                          <Paragraph
-                                            style={{
-                                              fontSize: 14,
-                                              color: PALETTE.slate,
-                                              margin: 0,
-                                              lineHeight: 1.7,
-                                              whiteSpace: "pre-wrap",
-                                            }}
-                                          >
-                                            {fb.comment}
-                                          </Paragraph>
-                                        </Card>
-                                      ) : (
-                                        <div
-                                          style={{
-                                            textAlign: "center",
-                                            padding: "14px",
-                                            borderRadius: 12,
-                                            background: PALETTE.slateLight,
-                                            border: "1px dashed #CBD5E1",
-                                            marginBottom: 12,
-                                          }}
-                                        >
-                                          <Text
-                                            style={{
-                                              fontSize: 13,
-                                              color: "#94A3B8",
-                                              fontStyle: "italic",
-                                            }}
-                                          >
-                                            Chưa có nhận xét
-                                          </Text>
-                                        </div>
-                                      )}
-
-                                      {/* AI Comparison */}
-                                      {hasAiData && (
-                                        <Card
-                                          size="small"
-                                          style={{
-                                            borderRadius: 12,
-                                            background: PALETTE.slateLight,
-                                            border: "1px solid #F1F5F9",
-                                          }}
-                                          styles={{
-                                            body: { padding: "14px 16px" },
-                                          }}
-                                        >
-                                          <div
-                                            style={{
-                                              display: "flex",
-                                              alignItems: "center",
-                                              gap: 6,
-                                              marginBottom: 10,
-                                            }}
-                                          >
-                                            <Cpu
-                                              size={13}
-                                              color={PALETTE.info}
-                                            />
-                                            <Text
-                                              strong
-                                              style={{
-                                                fontSize: 11,
-                                                color: PALETTE.info,
-                                                textTransform: "uppercase",
-                                                letterSpacing: 0.5,
-                                              }}
-                                            >
-                                              So sánh với đánh giá AI
-                                            </Text>
-                                          </div>
-                                          <Row gutter={[12, 8]}>
-                                            <Col span={12}>
-                                              <Card
-                                                size="small"
-                                                style={{
-                                                  borderRadius: 10,
-                                                  background: PALETTE.white,
-                                                  border: `1px solid ${PALETTE.infoLight}`,
-                                                }}
-                                                styles={{
-                                                  body: {
-                                                    padding: "10px 12px",
-                                                  },
-                                                }}
-                                              >
-                                                <Text
-                                                  style={{
-                                                    fontSize: 11,
-                                                    color: PALETTE.slate,
-                                                    display: "block",
-                                                    marginBottom: 4,
-                                                  }}
-                                                >
-                                                  Điểm AI
-                                                </Text>
-                                                <div
-                                                  style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 4,
-                                                  }}
-                                                >
-                                                  <Cpu
-                                                    size={12}
-                                                    color={PALETTE.info}
-                                                  />
-                                                  <Text
-                                                    strong
-                                                    style={{
-                                                      fontSize: 13,
-                                                      color: PALETTE.info,
-                                                    }}
-                                                  >
-                                                    {aiCriterion.score}/
-                                                    {aiCriterion.maxScore}
-                                                  </Text>
-                                                  <Text
-                                                    style={{
-                                                      fontSize: 11,
-                                                      color: "#94A3B8",
-                                                    }}
-                                                  >
-                                                    (
-                                                    {(
-                                                      (aiCriterion.score /
-                                                        aiCriterion.maxScore) *
-                                                      100
-                                                    ).toFixed(0)}
-                                                    %)
-                                                  </Text>
-                                                </div>
-                                              </Card>
-                                            </Col>
-                                            {scoreDiff !== null && (
+                                            <Row gutter={[12, 8]}>
                                               <Col span={12}>
                                                 <Card
                                                   size="small"
@@ -2927,7 +2558,7 @@ const PresentationDetailPage: React.FC = () => {
                                                       marginBottom: 4,
                                                     }}
                                                   >
-                                                    Chênh lệch
+                                                    Điểm AI
                                                   </Text>
                                                   <div
                                                     style={{
@@ -2936,79 +2567,147 @@ const PresentationDetailPage: React.FC = () => {
                                                       gap: 4,
                                                     }}
                                                   >
-                                                    {Number(scoreDiff) >= 0 ? (
-                                                      <span
-                                                        style={{
-                                                          color:
-                                                            PALETTE.success,
-                                                          fontWeight: 700,
-                                                          fontSize: 14,
-                                                        }}
-                                                      >
-                                                        ▲
-                                                      </span>
-                                                    ) : (
-                                                      <span
-                                                        style={{
-                                                          color: PALETTE.danger,
-                                                          fontWeight: 700,
-                                                          fontSize: 14,
-                                                        }}
-                                                      >
-                                                        ▼
-                                                      </span>
-                                                    )}
+                                                    <Cpu
+                                                      size={12}
+                                                      color={PALETTE.info}
+                                                    />
                                                     <Text
                                                       strong
                                                       style={{
                                                         fontSize: 13,
-                                                        color:
-                                                          Number(scoreDiff) >= 0
-                                                            ? PALETTE.success
-                                                            : PALETTE.danger,
+                                                        color: PALETTE.info,
                                                       }}
                                                     >
-                                                      {Number(scoreDiff) >= 0
-                                                        ? "+"
-                                                        : ""}
-                                                      {scoreDiff}%
+                                                      {criterion.score}/
+                                                      {criterion.maxScore}
+                                                    </Text>
+                                                    <Text
+                                                      style={{
+                                                        fontSize: 11,
+                                                        color: "#94A3B8",
+                                                      }}
+                                                    >
+                                                      (
+                                                      {(
+                                                        (criterion.score /
+                                                          criterion.maxScore) *
+                                                        100
+                                                      ).toFixed(0)}
+                                                      %)
                                                     </Text>
                                                   </div>
                                                 </Card>
                                               </Col>
-                                            )}
-                                          </Row>
-                                          {aiCriterion.comment && (
-                                            <div
-                                              style={{
-                                                marginTop: 8,
-                                                paddingTop: 8,
-                                                borderTop: "1px solid #E2E8F0",
-                                              }}
-                                            >
-                                              <Text
-                                                style={{
-                                                  fontSize: 12,
-                                                  color: "#6B7280",
-                                                }}
-                                              >
-                                                <strong
+                                              <Col span={12}>
+                                                <Card
+                                                  size="small"
                                                   style={{
-                                                    color: PALETTE.info,
+                                                    borderRadius: 10,
+                                                    background: PALETTE.white,
+                                                    border: `1px solid ${PALETTE.successLight}`,
+                                                  }}
+                                                  styles={{
+                                                    body: {
+                                                      padding: "10px 12px",
+                                                    },
                                                   }}
                                                 >
-                                                  Nhận xét AI:
-                                                </strong>{" "}
-                                                {aiCriterion.comment}
-                                              </Text>
-                                            </div>
-                                          )}
-                                        </Card>
-                                      )}
-                                    </Card>
-                                  </motion.div>
+                                                  <Text
+                                                    style={{
+                                                      fontSize: 11,
+                                                      color: PALETTE.slate,
+                                                      display: "block",
+                                                      marginBottom: 4,
+                                                    }}
+                                                  >
+                                                    Điểm GV
+                                                  </Text>
+                                                  <div
+                                                    style={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 4,
+                                                    }}
+                                                  >
+                                                    <User
+                                                      size={12}
+                                                      color={PALETTE.success}
+                                                    />
+                                                    <Text
+                                                      strong
+                                                      style={{
+                                                        fontSize: 13,
+                                                        color: PALETTE.success,
+                                                      }}
+                                                    >
+                                                      {Number(fb.score).toFixed(
+                                                        1,
+                                                      )}
+                                                    </Text>
+                                                    <Text
+                                                      style={{
+                                                        fontSize: 11,
+                                                        color: "#94A3B8",
+                                                      }}
+                                                    >
+                                                      / 100
+                                                    </Text>
+                                                  </div>
+                                                </Card>
+                                              </Col>
+                                            </Row>
+                                            {criterion.comment && (
+                                              <div
+                                                style={{
+                                                  marginTop: 8,
+                                                  paddingTop: 8,
+                                                  borderTop:
+                                                    "1px solid #E2E8F0",
+                                                }}
+                                              >
+                                                <Text
+                                                  style={{
+                                                    fontSize: 12,
+                                                    color: "#6B7280",
+                                                  }}
+                                                >
+                                                  <strong
+                                                    style={{
+                                                      color: PALETTE.info,
+                                                    }}
+                                                  >
+                                                    Nhận xét AI:
+                                                  </strong>{" "}
+                                                  {criterion.comment}
+                                                </Text>
+                                              </div>
+                                            )}
+                                          </Card>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <div
+                                        style={{
+                                          textAlign: "center",
+                                          padding: "20px",
+                                        }}
+                                      >
+                                        <Text
+                                          style={{
+                                            fontSize: 13,
+                                            color: "#94A3B8",
+                                            fontStyle: "italic",
+                                          }}
+                                        >
+                                          Giảng viên chưa có phản hồi cho tiêu
+                                          chí này
+                                        </Text>
+                                      </div>
+                                    )}
+                                  </Panel>
                                 );
                               })}
+                            </Collapse>
                           </div>
                         )}
                       </motion.div>

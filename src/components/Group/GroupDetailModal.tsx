@@ -144,7 +144,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ── Custom Header ─────────────────────────────────────── */}
         <div className="relative overflow-hidden">
           {/* Gradient background */}
