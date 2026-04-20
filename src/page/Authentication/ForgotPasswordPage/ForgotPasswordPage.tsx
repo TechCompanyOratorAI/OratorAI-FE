@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
 import AppLogo from "@/components/AppLogo/AppLogo";
@@ -9,7 +9,7 @@ import ForgotPasswordForm from "@/components/Authentication/ForgotPasswordForm/F
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const headerVariants = {
+  const headerVariants: Variants = {
     hidden: { y: -20, opacity: 0 },
     visible: {
       y: 0,
@@ -33,7 +33,7 @@ const ForgotPasswordPage: React.FC = () => {
         className="px-4 py-4"
         initial="hidden"
         animate="visible"
-        variants={headerVariants as any}
+        variants={headerVariants}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <motion.div

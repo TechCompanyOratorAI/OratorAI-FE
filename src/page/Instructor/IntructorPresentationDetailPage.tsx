@@ -23,13 +23,10 @@ import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
 import {
   clearCurrentReport,
-  confirmPresentationReport,
-  rejectPresentationReport,
   fetchPresentationReport,
   fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
 import {
-  Modal,
   Button,
   Tabs,
   Card,
@@ -42,12 +39,12 @@ import {
   Row,
   Col,
   Divider,
-  InputNumber,
-  Input,
 } from "antd";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import CriterionFeedbackRubricForm from "@/components/CriterionFeedback/CriterionFeedbackRubricForm";
+import ConfirmReportModal from "@/components/Report/ConfirmReportModal";
+import RejectReportModal from "@/components/Report/RejectReportModal";
 import { useSocket } from "@/hooks/useSocket";
 
 const statusConfig: Record<
@@ -112,8 +109,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
   const [reportDecisionModal, setReportDecisionModal] = useState<
     null | "confirm" | "reject"
   >(null);
-  const [confirmGrade, setConfirmGrade] = useState<number | null>(null);
-  const [confirmFeedback, setConfirmFeedback] = useState("");
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
   const currentReportRef = useRef(currentReport);
   currentReportRef.current = currentReport;
@@ -207,29 +202,32 @@ const IntructorPresentationDetailPage: React.FC = () => {
   useEffect(() => {
     if (!presentationIdNumber) return;
 
-    const unwatchReportGenerated = on<{ presentationId: number; reportId: number; message?: string }>(
-      "report:generated",
-      (payload) => {
-        if (payload.presentationId === presentationIdNumber) {
-          void dispatch(fetchPresentationReport(presentationIdNumber));
-          setShowReport(true);
-          setReportTab("ai");
-          toast.info(payload.message || "Báo cáo AI đã sẵn sàng.");
-        }
-      },
-    );
+    const unwatchReportGenerated = on<{
+      presentationId: number;
+      reportId: number;
+      message?: string;
+    }>("report:generated", (payload) => {
+      if (payload.presentationId === presentationIdNumber) {
+        void dispatch(fetchPresentationReport(presentationIdNumber));
+        setShowReport(true);
+        setReportTab("ai");
+        toast.info(payload.message || "Báo cáo AI đã sẵn sàng.");
+      }
+    });
 
-    const unwatchCriterionFeedbackChanged = on<{ presentationId: number; reportId: number }>(
-      "report:criterion-feedback-changed",
-      (payload) => {
-        if (payload.presentationId === presentationIdNumber) {
-          void dispatch(fetchPresentationReport(presentationIdNumber));
-          if (currentReportRef.current?.reportId) {
-            void dispatch(fetchCriterionFeedbacks(currentReportRef.current.reportId));
-          }
+    const unwatchCriterionFeedbackChanged = on<{
+      presentationId: number;
+      reportId: number;
+    }>("report:criterion-feedback-changed", (payload) => {
+      if (payload.presentationId === presentationIdNumber) {
+        void dispatch(fetchPresentationReport(presentationIdNumber));
+        if (currentReportRef.current?.reportId) {
+          void dispatch(
+            fetchCriterionFeedbacks(currentReportRef.current.reportId),
+          );
         }
-      },
-    );
+      }
+    });
 
     return () => {
       unwatchReportGenerated?.();
@@ -237,23 +235,12 @@ const IntructorPresentationDetailPage: React.FC = () => {
     };
   }, [presentationIdNumber, on, socket, dispatch]);
 
-  useEffect(() => {
-    if (reportDecisionModal === "confirm" && currentReport) {
-      // 初始化：默认取 syncedFeedbacks 的平均分（100 分制），四舍五入到 0.5
-      if (syncedFeedbacks.length > 0) {
-        const avg = syncedFeedbacks.reduce((sum, f) => sum + (Number(f.score) || 0), 0)
-          / Math.max(syncedFeedbacks.filter((f) => f.score !== null && f.score !== "").length, 1);
-        setConfirmGrade(Math.round(avg * 2) / 2);
-      } else {
-        setConfirmGrade(null);
-      }
-      setConfirmFeedback("");
-    }
-  }, [reportDecisionModal, currentReport?.reportId]);
-
   // Sync criterionFeedbacks from currentReport when it arrives
   const syncedFeedbacks = useMemo(() => {
-    if (currentReport?.criterionFeedbacks && currentReport.criterionFeedbacks.length > 0) {
+    if (
+      currentReport?.criterionFeedbacks &&
+      currentReport.criterionFeedbacks.length > 0
+    ) {
       return currentReport.criterionFeedbacks;
     }
     return criterionFeedbacks;
@@ -319,60 +306,11 @@ const IntructorPresentationDetailPage: React.FC = () => {
 
   const studentName = presentation.student
     ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
-    "Student"
+      "Student"
     : "Unknown";
 
   const sc =
     statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
-
-  const runConfirmReport = async () => {
-    if (!currentReport?.reportId || !presentationIdNumber) return;
-    if (confirmGrade === null) {
-      toast.error("Vui lòng nhập điểm cuối cùng");
-      return;
-    }
-    try {
-      await dispatch(
-        confirmPresentationReport({
-          reportId: currentReport.reportId,
-          gradeForInstructor: confirmGrade,
-          feedbackOfInstructor: confirmFeedback.trim() || undefined,
-        }),
-      ).unwrap();
-      setReportDecisionModal(null);
-      setConfirmGrade(null);
-      setConfirmFeedback("");
-      toast.success("Đã xác nhận AI report");
-    } catch (error: unknown) {
-      const msg =
-        typeof error === "string"
-          ? error
-          : (error as { message?: string })?.message ||
-            "Không thể xác nhận AI report";
-      toast.error(msg);
-      throw error;
-    }
-  };
-
-  const runRejectReport = async () => {
-    if (!currentReport?.reportId || !presentationIdNumber) return;
-    try {
-      await dispatch(
-        rejectPresentationReport(currentReport.reportId),
-      ).unwrap();
-      await dispatch(fetchPresentationReport(presentationIdNumber)).unwrap();
-      setReportDecisionModal(null);
-      toast.success("Đã từ chối AI report");
-    } catch (error: unknown) {
-      const msg =
-        typeof error === "string"
-          ? error
-          : (error as { message?: string })?.message ||
-            "Không thể từ chối AI report";
-      toast.error(msg);
-      throw error;
-    }
-  };
 
   const statCards = [
     {
@@ -494,14 +432,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   </h2>
                   {currentReport && (
                     <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${currentReport.reportStatus === "confirmed"
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        currentReport.reportStatus === "confirmed"
                           ? "bg-emerald-100 text-emerald-700"
                           : currentReport.reportStatus === "rejected"
                             ? "bg-red-100 text-red-700"
                             : currentReport.reportStatus === "pending_review"
                               ? "bg-amber-100 text-amber-700"
                               : "bg-slate-100 text-slate-600"
-                        }`}
+                      }`}
                     >
                       {currentReport.reportStatus === "confirmed"
                         ? "Đã xác nhận"
@@ -516,14 +455,18 @@ const IntructorPresentationDetailPage: React.FC = () => {
                     currentReport.gradeForInstructor !== null && (
                       <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
                         <div>
-                          <p className="text-xs text-emerald-600 font-medium">Điểm cuối cùng (GV)</p>
+                          <p className="text-xs text-emerald-600 font-medium">
+                            Điểm cuối cùng (GV)
+                          </p>
                           <p className="text-2xl font-bold text-emerald-700 leading-none">
                             {currentReport.gradeForInstructor}
                           </p>
                         </div>
                         {currentReport.feedbackOfInstructor && (
                           <div className="border-l border-emerald-200 pl-3 max-w-xs">
-                            <p className="text-xs text-emerald-600 font-medium">Nhận xét GV</p>
+                            <p className="text-xs text-emerald-600 font-medium">
+                              Nhận xét GV
+                            </p>
                             <p className="text-xs text-slate-600 line-clamp-2">
                               {currentReport.feedbackOfInstructor}
                             </p>
@@ -535,20 +478,23 @@ const IntructorPresentationDetailPage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto">
                   {currentReport?.generatedAt && (
                     <span className="text-sm text-slate-500 hidden sm:inline mr-2">
-                      {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                      {new Date(currentReport.generatedAt).toLocaleString(
+                        "vi-VN",
+                      )}
                     </span>
                   )}
-                  {currentReport && currentReport.reportStatus === "confirmed" && (
-                    <Button
-                      danger
-                      type="default"
-                      icon={<XCircle className="w-4 h-4" />}
-                      loading={rejectLoading}
-                      onClick={() => setReportDecisionModal("reject")}
-                    >
-                      Từ chối
-                    </Button>
-                  )}
+                  {currentReport &&
+                    currentReport.reportStatus === "confirmed" && (
+                      <Button
+                        danger
+                        type="default"
+                        icon={<XCircle className="w-4 h-4" />}
+                        loading={rejectLoading}
+                        onClick={() => setReportDecisionModal("reject")}
+                      >
+                        Từ chối
+                      </Button>
+                    )}
                   {currentReport &&
                     currentReport.reportStatus !== "confirmed" &&
                     currentReport.reportStatus !== "rejected" &&
@@ -565,7 +511,10 @@ const IntructorPresentationDetailPage: React.FC = () => {
                         </Button>
                         <Button
                           type="primary"
-                          style={{ background: "#059669", borderColor: "#059669" }}
+                          style={{
+                            background: "#059669",
+                            borderColor: "#059669",
+                          }}
                           loading={confirmLoading}
                           onClick={() => setReportDecisionModal("confirm")}
                         >
@@ -584,9 +533,11 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     <span className="font-semibold">Lưu ý: </span>
                     Vui lòng hoàn thành phản hồi giảng viên cho{" "}
-                    <strong>tất cả {criteriaScores.length} tiêu chí</strong> (tab
-                    &quot;Feedback giảng viên&quot;) trước khi có thể xác nhận hoặc từ chối báo
-                    cáo AI.
+                    <strong>
+                      tất cả {criteriaScores.length} tiêu chí
+                    </strong>{" "}
+                    (tab &quot;Feedback giảng viên&quot;) trước khi có thể xác
+                    nhận hoặc từ chối báo cáo AI.
                   </div>
                 )}
 
@@ -613,35 +564,55 @@ const IntructorPresentationDetailPage: React.FC = () => {
                           </Space>
                         ),
                         children: (
-                          <Space direction="vertical" size="large" className="w-full">
+                          <Space
+                            direction="vertical"
+                            size="large"
+                            className="w-full"
+                          >
                             <div>
                               <Typography.Title level={5} className="!mb-0">
                                 Đánh giá tự động
                               </Typography.Title>
-                              <Typography.Text type="secondary" className="text-sm">
-                                Mỗi tiêu chí đánh giá có form phản hồi riêng bên dưới phần nhận xét AI — lưu từng tiêu chí độc lập.
+                              <Typography.Text
+                                type="secondary"
+                                className="text-sm"
+                              >
+                                Mỗi tiêu chí đánh giá có form phản hồi riêng bên
+                                dưới phần nhận xét AI — lưu từng tiêu chí độc
+                                lập.
                               </Typography.Text>
                             </div>
 
-                            <Card size="small" className="bg-sky-50/90 border-sky-100">
+                            <Card
+                              size="small"
+                              className="bg-sky-50/90 border-sky-100"
+                            >
                               <Statistic
                                 title="Điểm tổng (AI)"
                                 value={aiOverallOutOf10 ?? "—"}
-                                suffix={aiOverallOutOf10 !== null ? "/ 10" : undefined}
+                                suffix={
+                                  aiOverallOutOf10 !== null ? "/ 10" : undefined
+                                }
                                 valueStyle={{ color: "#0369a1", fontSize: 28 }}
                               />
                             </Card>
 
-                            <Space direction="vertical" size="middle" className="w-full">
+                            <Space
+                              direction="vertical"
+                              size="middle"
+                              className="w-full"
+                            >
                               {criteriaScores.map((criterion) => {
                                 const hasFb = syncedFeedbacks.some(
                                   (f) =>
-                                    f.classRubricCriteriaId === criterion.criteriaId,
+                                    f.classRubricCriteriaId ===
+                                    criterion.criteriaId,
                                 );
                                 const existingFb =
                                   syncedFeedbacks.find(
                                     (f) =>
-                                      f.classRubricCriteriaId === criterion.criteriaId,
+                                      f.classRubricCriteriaId ===
+                                      criterion.criteriaId,
                                   ) ?? null;
                                 return (
                                   <Card
@@ -651,18 +622,29 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                       <Space wrap>
                                         <span>{criterion.criteriaName}</span>
                                         {hasFb ? (
-                                          <Tag color="success" icon={<CheckCircleOutlined />}>
+                                          <Tag
+                                            color="success"
+                                            icon={<CheckCircleOutlined />}
+                                          >
                                             Đã có phản hồi GV
                                           </Tag>
                                         ) : (
-                                          <Tag color="default">Chưa có phản hồi GV</Tag>
+                                          <Tag color="default">
+                                            Chưa có phản hồi GV
+                                          </Tag>
                                         )}
                                       </Space>
                                     }
                                     extra={
-                                      <Typography.Text strong className="text-sky-700">
+                                      <Typography.Text
+                                        strong
+                                        className="text-sky-700"
+                                      >
                                         {criterion.score}/{criterion.maxScore}{" "}
-                                        <Typography.Text type="secondary" className="text-xs">
+                                        <Typography.Text
+                                          type="secondary"
+                                          className="text-xs"
+                                        >
                                           (w: {criterion.weight}%)
                                         </Typography.Text>
                                       </Typography.Text>
@@ -673,11 +655,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                     </Typography.Paragraph>
                                     {criterion.suggestions?.length > 0 && (
                                       <ul className="list-disc list-inside text-sm text-slate-700 space-y-1 pl-0">
-                                        {criterion.suggestions.map((suggestion, idx) => (
-                                          <li key={`${criterion.criteriaId}-${idx}`}>
-                                            {suggestion}
-                                          </li>
-                                        ))}
+                                        {criterion.suggestions.map(
+                                          (suggestion, idx) => (
+                                            <li
+                                              key={`${criterion.criteriaId}-${idx}`}
+                                            >
+                                              {suggestion}
+                                            </li>
+                                          ),
+                                        )}
                                       </ul>
                                     )}
                                     {currentReport && (
@@ -689,7 +675,9 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                         onFeedbackChanged={() => {
                                           if (presentationIdNumber) {
                                             void dispatch(
-                                              fetchPresentationReport(presentationIdNumber),
+                                              fetchPresentationReport(
+                                                presentationIdNumber,
+                                              ),
                                             );
                                           }
                                         }}
@@ -709,18 +697,26 @@ const IntructorPresentationDetailPage: React.FC = () => {
                             <CommentOutlined />
                             Feedback giảng viên
                             {syncedFeedbacks.length > 0 ? (
-                              <Tag color="processing">{syncedFeedbacks.length}</Tag>
+                              <Tag color="processing">
+                                {syncedFeedbacks.length}
+                              </Tag>
                             ) : null}
                           </Space>
                         ),
                         children: (
-                          <Space direction="vertical" size="large" className="w-full">
+                          <Space
+                            direction="vertical"
+                            size="large"
+                            className="w-full"
+                          >
                             <div>
                               <Typography.Title level={5} className="!mb-1">
                                 Phản hồi đã gửi
                               </Typography.Title>
                               <Typography.Text type="secondary">
-                                Chỉ xem — chỉnh sửa phản hồi tại tab &quot;AI đánh giá&quot;, trong form ngay dưới từng tiêu chí.
+                                Chỉ xem — chỉnh sửa phản hồi tại tab &quot;AI
+                                đánh giá&quot;, trong form ngay dưới từng tiêu
+                                chí.
                               </Typography.Text>
                             </div>
 
@@ -729,7 +725,8 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                 description={
                                   <span>
                                     Chưa có phản hồi giảng viên. Hãy mở tab{" "}
-                                    <strong>AI đánh giá</strong> và điền form dưới mỗi tiêu chí rubric.
+                                    <strong>AI đánh giá</strong> và điền form
+                                    dưới mỗi tiêu chí rubric.
                                   </span>
                                 }
                               />
@@ -737,7 +734,10 @@ const IntructorPresentationDetailPage: React.FC = () => {
                               <>
                                 <Row gutter={[16, 16]}>
                                   <Col xs={24} sm={8}>
-                                    <Card size="small" className="h-full border-indigo-100 bg-indigo-50/50">
+                                    <Card
+                                      size="small"
+                                      className="h-full border-indigo-100 bg-indigo-50/50"
+                                    >
                                       <Statistic
                                         title="Đã feedback"
                                         value={syncedFeedbacks.length}
@@ -747,17 +747,23 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                     </Card>
                                   </Col>
                                   <Col xs={24} sm={8}>
-                                    <Card size="small" className="h-full border-emerald-100 bg-emerald-50/50">
+                                    <Card
+                                      size="small"
+                                      className="h-full border-emerald-100 bg-emerald-50/50"
+                                    >
                                       <Statistic
                                         title="Điểm TB (GV)"
                                         value={(
                                           syncedFeedbacks.reduce(
-                                            (sum, f) => sum + (Number(f.score) || 0),
+                                            (sum, f) =>
+                                              sum + (Number(f.score) || 0),
                                             0,
                                           ) /
                                           Math.max(
                                             syncedFeedbacks.filter(
-                                              (f) => f.score !== null && f.score !== "",
+                                              (f) =>
+                                                f.score !== null &&
+                                                f.score !== "",
                                             ).length,
                                             1,
                                           )
@@ -768,11 +774,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                     </Card>
                                   </Col>
                                   <Col xs={24} sm={8}>
-                                    <Card size="small" className="h-full border-amber-100 bg-amber-50/50">
+                                    <Card
+                                      size="small"
+                                      className="h-full border-amber-100 bg-amber-50/50"
+                                    >
                                       <Statistic
                                         title="Chưa feedback"
                                         value={Math.max(
-                                          criteriaScores.length - syncedFeedbacks.length,
+                                          criteriaScores.length -
+                                            syncedFeedbacks.length,
                                           0,
                                         )}
                                         valueStyle={{ color: "#d97706" }}
@@ -787,7 +797,8 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                       Tiến độ theo tiêu chí
                                     </Typography.Text>
                                     <Typography.Text type="secondary">
-                                      {syncedFeedbacks.length}/{criteriaScores.length}
+                                      {syncedFeedbacks.length}/
+                                      {criteriaScores.length}
                                     </Typography.Text>
                                   </Space>
                                   <Progress
@@ -796,22 +807,31 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                         Math.max(criteriaScores.length, 1)) *
                                         100,
                                     )}
-                                    strokeColor={{ from: "#6366f1", to: "#8b5cf6" }}
+                                    strokeColor={{
+                                      from: "#6366f1",
+                                      to: "#8b5cf6",
+                                    }}
                                   />
                                 </div>
 
-                                <Space direction="vertical" size="middle" className="w-full">
+                                <Space
+                                  direction="vertical"
+                                  size="middle"
+                                  className="w-full"
+                                >
                                   {[...syncedFeedbacks]
                                     .sort(
                                       (a, b) =>
-                                        a.criterionFeedbackId - b.criterionFeedbackId,
+                                        a.criterionFeedbackId -
+                                        b.criterionFeedbackId,
                                     )
                                     .map((fb) => {
                                       const criteriaLabel =
                                         fb.classRubricCriteria?.criteriaName ||
                                         criteriaScores.find(
                                           (c) =>
-                                            c.criteriaId === fb.classRubricCriteriaId,
+                                            c.criteriaId ===
+                                            fb.classRubricCriteriaId,
                                         )?.criteriaName ||
                                         `Tiêu chí #${fb.classRubricCriteriaId}`;
                                       const instructorLabel = fb.instructor
@@ -820,7 +840,9 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                           "Giảng viên"
                                         : "Giảng viên";
                                       const aiCriterion = criteriaScores.find(
-                                        (c) => c.criteriaId === fb.classRubricCriteriaId,
+                                        (c) =>
+                                          c.criteriaId ===
+                                          fb.classRubricCriteriaId,
                                       );
                                       const hasAiData = !!aiCriterion;
                                       const scoreDiff =
@@ -829,7 +851,8 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                         fb.score !== ""
                                           ? (
                                               Number(fb.score) -
-                                              (aiCriterion.score / aiCriterion.maxScore) *
+                                              (aiCriterion.score /
+                                                aiCriterion.maxScore) *
                                                 100
                                             ).toFixed(1)
                                           : null;
@@ -841,26 +864,39 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                           className="border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-white"
                                           title={
                                             <Space>
-                                              <span className="font-semibold">{criteriaLabel}</span>
+                                              <span className="font-semibold">
+                                                {criteriaLabel}
+                                              </span>
                                             </Space>
                                           }
                                           extra={
-                                            fb.score !== null && fb.score !== "" ? (
+                                            fb.score !== null &&
+                                            fb.score !== "" ? (
                                               <Space>
                                                 <Star className="w-4 h-4 text-amber-500" />
-                                                <Typography.Text strong className="text-lg text-indigo-700">
+                                                <Typography.Text
+                                                  strong
+                                                  className="text-lg text-indigo-700"
+                                                >
                                                   {Number(fb.score).toFixed(1)}
                                                 </Typography.Text>
-                                                <Typography.Text type="secondary">/ 100</Typography.Text>
+                                                <Typography.Text type="secondary">
+                                                  / 100
+                                                </Typography.Text>
                                               </Space>
                                             ) : null
                                           }
                                         >
-                                          <Typography.Text type="secondary" className="text-xs block mb-3">
+                                          <Typography.Text
+                                            type="secondary"
+                                            className="text-xs block mb-3"
+                                          >
                                             <User className="inline w-3 h-3 mr-1" />
                                             {instructorLabel}
                                             {fb.updatedAt
-                                              ? ` · ${new Date(fb.updatedAt).toLocaleString("vi-VN", {
+                                              ? ` · ${new Date(
+                                                  fb.updatedAt,
+                                                ).toLocaleString("vi-VN", {
                                                   day: "2-digit",
                                                   month: "2-digit",
                                                   year: "numeric",
@@ -875,29 +911,50 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                               {fb.comment}
                                             </Typography.Paragraph>
                                           ) : (
-                                            <Typography.Text type="secondary" italic>
+                                            <Typography.Text
+                                              type="secondary"
+                                              italic
+                                            >
                                               Chưa có nhận xét
                                             </Typography.Text>
                                           )}
 
                                           {hasAiData && (
-                                            <Card size="small" type="inner" className="bg-sky-50/80 border-sky-100">
-                                              <Typography.Text strong className="text-sky-700 text-xs uppercase block mb-2">
+                                            <Card
+                                              size="small"
+                                              type="inner"
+                                              className="bg-sky-50/80 border-sky-100"
+                                            >
+                                              <Typography.Text
+                                                strong
+                                                className="text-sky-700 text-xs uppercase block mb-2"
+                                              >
                                                 <Cpu className="inline w-3.5 h-3.5 mr-1" />
                                                 So sánh với AI
                                               </Typography.Text>
                                               <Row gutter={[12, 12]}>
                                                 <Col span={12}>
-                                                  <Typography.Text type="secondary" className="text-xs block">
+                                                  <Typography.Text
+                                                    type="secondary"
+                                                    className="text-xs block"
+                                                  >
                                                     Điểm AI
                                                   </Typography.Text>
-                                                  <Typography.Text strong className="text-sky-700">
-                                                    {aiCriterion!.score}/{aiCriterion!.maxScore}{" "}
-                                                    <Typography.Text type="secondary" className="text-xs">
+                                                  <Typography.Text
+                                                    strong
+                                                    className="text-sky-700"
+                                                  >
+                                                    {aiCriterion!.score}/
+                                                    {aiCriterion!.maxScore}{" "}
+                                                    <Typography.Text
+                                                      type="secondary"
+                                                      className="text-xs"
+                                                    >
                                                       (
                                                       {(
                                                         (aiCriterion!.score /
-                                                          aiCriterion!.maxScore) *
+                                                          aiCriterion!
+                                                            .maxScore) *
                                                         100
                                                       ).toFixed(0)}
                                                       %)
@@ -906,11 +963,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                                 </Col>
                                                 {scoreDiff !== null && (
                                                   <Col span={12}>
-                                                    <Typography.Text type="secondary" className="text-xs block">
+                                                    <Typography.Text
+                                                      type="secondary"
+                                                      className="text-xs block"
+                                                    >
                                                       Chênh lệch (điểm 100)
                                                     </Typography.Text>
                                                     <Space>
-                                                      {Number(scoreDiff) >= 0 ? (
+                                                      {Number(scoreDiff) >=
+                                                      0 ? (
                                                         <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
                                                       ) : (
                                                         <ArrowDown className="w-3.5 h-3.5 text-red-500" />
@@ -923,7 +984,9 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                                             : "text-red-600"
                                                         }
                                                       >
-                                                        {Number(scoreDiff) >= 0 ? "+" : ""}
+                                                        {Number(scoreDiff) >= 0
+                                                          ? "+"
+                                                          : ""}
                                                         {scoreDiff}%
                                                       </Typography.Text>
                                                     </Space>
@@ -933,8 +996,14 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                               {aiCriterion!.comment && (
                                                 <>
                                                   <Divider className="my-2" />
-                                                  <Typography.Text type="secondary" className="text-xs">
-                                                    <strong>Nhận xét AI:</strong> {aiCriterion!.comment}
+                                                  <Typography.Text
+                                                    type="secondary"
+                                                    className="text-xs"
+                                                  >
+                                                    <strong>
+                                                      Nhận xét AI:
+                                                    </strong>{" "}
+                                                    {aiCriterion!.comment}
                                                   </Typography.Text>
                                                 </>
                                               )}
@@ -962,85 +1031,18 @@ const IntructorPresentationDetailPage: React.FC = () => {
         </div>
       </main>
 
-      <Modal
-        open={reportDecisionModal === "confirm"}
-        title="Xác nhận báo cáo AI"
-        centered
-        width={520}
-        okText="Xác nhận"
-        cancelText="Hủy"
-        onCancel={() =>
-          !confirmLoading && setReportDecisionModal(null)
-        }
-        onOk={() => runConfirmReport()}
-        confirmLoading={confirmLoading}
-        maskClosable={!confirmLoading}
-        destroyOnClose
-        okButtonProps={{ style: { background: "#059669", borderColor: "#059669" } }}
-      >
-        <Space direction="vertical" size="middle" className="w-full">
-          <p className="text-slate-600 leading-relaxed">
-            Nhập <strong>điểm cuối cùng</strong> và <strong>nhận xét tổng kết</strong> để
-            xác nhận báo cáo đánh giá AI này.
-          </p>
+      <ConfirmReportModal
+        isOpen={reportDecisionModal === "confirm"}
+        reportId={currentReport?.reportId ?? 0}
+        onClose={() => setReportDecisionModal(null)}
+      />
 
-          <div>
-            <Typography.Text strong className="text-sm block mb-1">
-              Điểm cuối cùng (thang 10) <span className="text-red-500">*</span>
-            </Typography.Text>
-            <InputNumber
-              className="w-full"
-              min={0}
-              max={10}
-              step={0.5}
-              value={confirmGrade}
-              onChange={(v) => setConfirmGrade(v)}
-              placeholder="VD: 8.5"
-              disabled={confirmLoading}
-            />
-          </div>
-
-          <div>
-            <Typography.Text strong className="text-sm block mb-1">
-              Nhận xét tổng kết của giảng viên
-            </Typography.Text>
-            <Input.TextArea
-              rows={3}
-              value={confirmFeedback}
-              onChange={(e) => setConfirmFeedback(e.target.value)}
-              placeholder="Nhập nhận xét tổng kết cho bài thuyết trình này..."
-              maxLength={2000}
-              showCount
-              disabled={confirmLoading}
-            />
-          </div>
-        </Space>
-      </Modal>
-
-      <Modal
-        open={reportDecisionModal === "reject"}
-        title="Từ chối báo cáo AI"
-        centered
-        width={480}
-        okText="Từ chối"
-        cancelText="Hủy"
-        onCancel={() =>
-          !confirmLoading && setReportDecisionModal(null)
-        }
-        onOk={() => runRejectReport()}
-        confirmLoading={rejectLoading}
-        maskClosable={!rejectLoading}
-        destroyOnClose
-        okButtonProps={{ danger: true }}
-      >
-        <p className="text-slate-600 leading-relaxed">
-          Bạn có chắc chắn muốn <strong className="text-red-600">từ chối</strong> báo cáo
-          này? Hành động này đánh dấu báo cáo không được chấp nhận theo quy trình hiện
-          tại.
-        </p>
-      </Modal>
-
-
+      <RejectReportModal
+        isOpen={reportDecisionModal === "reject"}
+        reportId={currentReport?.reportId ?? 0}
+        presentationId={presentationIdNumber ?? 0}
+        onClose={() => setReportDecisionModal(null)}
+      />
     </div>
   );
 };

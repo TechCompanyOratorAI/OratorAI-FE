@@ -44,10 +44,12 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
 
   // Fetch classes + their report stats for the notification badge
   useEffect(() => {
-    dispatch(fetchTeachingClasses()).then((action: any) => {
-      const classes = action.payload as any[];
-      if (Array.isArray(classes)) {
-        classes.forEach((cls) => dispatch(fetchClassAIRReports(cls.classId)));
+    dispatch(fetchTeachingClasses()).then((action) => {
+      if (fetchTeachingClasses.fulfilled.match(action)) {
+        const classes = action.payload;
+        if (Array.isArray(classes)) {
+          classes.forEach((cls) => dispatch(fetchClassAIRReports(cls.classId)));
+        }
       }
     });
   }, [dispatch]);

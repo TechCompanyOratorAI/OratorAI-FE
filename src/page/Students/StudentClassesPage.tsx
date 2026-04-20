@@ -7,12 +7,11 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   RightOutlined,
-  KeyOutlined,
   SafetyOutlined,
   ReadOutlined,
   FilterOutlined,
   BookOutlined,
-  ArrowRightOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
 import {
   Card,
@@ -24,7 +23,6 @@ import {
   Select,
   Skeleton,
   Empty,
-  Modal,
   Typography,
   ConfigProvider,
   Avatar,
@@ -33,8 +31,11 @@ import {
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassesByCourse } from "@/services/features/admin/classSlice";
 import { fetchCourses } from "@/services/features/course/courseSlice";
-import { enrollClassByKey, fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
+import {
+  fetchEnrolledClasses,
+} from "@/services/features/enrollment/enrollmentSlice";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
+import EnrollModal from "@/components/Department/EnrollModal";
 
 const { Title, Text } = Typography;
 
@@ -59,22 +60,28 @@ const StudentClassesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { classes: apiClasses, loading, error } = useAppSelector((state) => state.class);
+  const {
+    classes: apiClasses,
+    loading,
+    error,
+  } = useAppSelector((state) => state.class);
   const { courses } = useAppSelector((state) => state.course);
   const { enrolledClassIds } = useAppSelector((state) => state.enrollment);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(
-    searchParams.get("courseId") ? parseInt(searchParams.get("courseId")!, 10) : null
+    searchParams.get("courseId")
+      ? parseInt(searchParams.get("courseId")!, 10)
+      : null,
   );
 
-  const [enrollModal, setEnrollModal] = useState<{ open: boolean; data: ClassItem | null }>({
+  const [enrollModal, setEnrollModal] = useState<{
+    open: boolean;
+    data: ClassItem | null;
+  }>({
     open: false,
     data: null,
   });
-  const [enrollKey, setEnrollKey] = useState("");
-  const [enrollError, setEnrollError] = useState("");
-  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCourses({ page: 1, limit: 100 }));
@@ -105,9 +112,14 @@ const StudentClassesPage: React.FC = () => {
     const instructors = apiClass.instructors;
     const instructorName = instructors?.length
       ? instructors
-        .map((i: any) => `${i.firstName || ""} ${i.lastName || ""}`.trim() || i.username || "")
-        .filter(Boolean)
-        .join(", ")
+          .map(
+            (i: any) =>
+              `${i.firstName || ""} ${i.lastName || ""}`.trim() ||
+              i.username ||
+              "",
+          )
+          .filter(Boolean)
+          .join(", ")
       : "Chưa có giảng viên";
     return {
       classId: apiClass.classId,
@@ -145,33 +157,9 @@ const StudentClassesPage: React.FC = () => {
 
   const openEnroll = (c: ClassItem) => {
     setEnrollModal({ open: true, data: c });
-    setEnrollKey("");
-    setEnrollError("");
   };
   const closeEnroll = () => {
     setEnrollModal({ open: false, data: null });
-    setEnrollKey("");
-    setEnrollError("");
-  };
-
-  const submitEnroll = async () => {
-    if (!enrollModal.data) return;
-    const trimmed = enrollKey.trim();
-    if (!trimmed) {
-      setEnrollError("Vui lòng nhập mã ghi danh");
-      return;
-    }
-    try {
-      setEnrolling(true);
-      await dispatch(enrollClassByKey({ classId: enrollModal.data.classId, enrollKey: trimmed })).unwrap();
-      await dispatch(fetchEnrolledClasses());
-      toast.success(`Đã ghi danh thành công lớp "${enrollModal.data.className}"!`);
-      closeEnroll();
-    } catch (err: any) {
-      setEnrollError(err?.message || "Ghi danh thất bại. Vui lòng thử lại.");
-    } finally {
-      setEnrolling(false);
-    }
   };
 
   const courseOptions = courses.map((c) => ({
@@ -179,22 +167,29 @@ const StudentClassesPage: React.FC = () => {
     label: `${c.courseName}${c.semester ? ` • ${c.semester}` : ""}`,
   }));
 
-  const selectedCourseName = courses.find((c) => c.courseId === selectedCourseId)?.courseName;
-  const enrolledCount = filteredClasses.filter((c) => isEnrolled(c.classId)).length;
+  const selectedCourseName = courses.find(
+    (c) => c.courseId === selectedCourseId,
+  )?.courseName;
+  const enrolledCount = filteredClasses.filter((c) =>
+    isEnrolled(c.classId),
+  ).length;
 
   return (
     <StudentLayout>
       <ConfigProvider componentSize="large">
         <div className="max-w-7xl mx-auto space-y-5">
-
           {/* Page header */}
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Title level={3} className="!mb-0.5 !text-gray-900 !font-semibold !text-xl sm:!text-2xl">
+              <Title
+                level={3}
+                className="!mb-0.5 !text-gray-900 !font-semibold !text-xl sm:!text-2xl"
+              >
                 Khám phá lớp học
               </Title>
               <Text className="text-sm text-gray-400">
-                Chọn khóa học, tìm lớp và ghi danh bằng mã do giảng viên cung cấp
+                Chọn khóa học, tìm lớp và ghi danh bằng mã do giảng viên cung
+                cấp
               </Text>
             </div>
             {selectedCourseId && filteredClasses.length > 0 && (
@@ -210,7 +205,9 @@ const StudentClassesPage: React.FC = () => {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <FilterOutlined className="text-gray-400 text-sm" />
-                <Text className="text-xs font-medium text-gray-500 whitespace-nowrap">Bộ lọc</Text>
+                <Text className="text-xs font-medium text-gray-500 whitespace-nowrap">
+                  Bộ lọc
+                </Text>
               </div>
               <Divider type="vertical" className="!h-4 !mx-1 hidden sm:block" />
               <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -222,7 +219,9 @@ const StudentClassesPage: React.FC = () => {
                   onChange={(val) => handleCourseChange(val ?? null)}
                   options={courseOptions}
                   filterOption={(input, option) =>
-                    String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   className="w-full sm:w-80"
                   suffixIcon={<BookOutlined className="text-gray-400" />}
@@ -258,7 +257,10 @@ const StudentClassesPage: React.FC = () => {
             <Row gutter={[16, 16]}>
               {[1, 2, 3, 4].map((i) => (
                 <Col xs={24} sm={12} xl={8} xxl={6} key={i}>
-                  <Card className="rounded-xl border-gray-100" styles={{ body: { padding: "20px" } }}>
+                  <Card
+                    className="rounded-xl border-gray-100"
+                    styles={{ body: { padding: "20px" } }}
+                  >
                     <Skeleton active paragraph={{ rows: 3 }} />
                   </Card>
                 </Col>
@@ -270,12 +272,18 @@ const StudentClassesPage: React.FC = () => {
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <span className="text-sm text-gray-400">
-                    {searchQuery ? "Không tìm thấy lớp nào phù hợp" : "Khóa học này chưa có lớp học nào"}
+                    {searchQuery
+                      ? "Không tìm thấy lớp nào phù hợp"
+                      : "Khóa học này chưa có lớp học nào"}
                   </span>
                 }
               />
               {searchQuery && (
-                <Button type="link" size="small" onClick={() => setSearchQuery("")}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => setSearchQuery("")}
+                >
                   Xóa tìm kiếm
                 </Button>
               )}
@@ -284,7 +292,9 @@ const StudentClassesPage: React.FC = () => {
             <>
               {selectedCourseName && (
                 <div className="flex items-center gap-2">
-                  <Text type="secondary" className="text-xs">Khóa học:</Text>
+                  <Text type="secondary" className="text-xs">
+                    Khóa học:
+                  </Text>
                   <Tag className="!rounded-full !text-xs !m-0 !border-gray-200 !text-gray-600 !bg-gray-50">
                     {selectedCourseName}
                   </Tag>
@@ -306,7 +316,11 @@ const StudentClassesPage: React.FC = () => {
                         <div
                           className="h-0.5 w-full"
                           style={{
-                            background: enrolled ? "#52c41a" : isActive ? "#1677ff" : "#d9d9d9",
+                            background: enrolled
+                              ? "#52c41a"
+                              : isActive
+                                ? "#1677ff"
+                                : "#d9d9d9",
                           }}
                         />
 
@@ -314,7 +328,9 @@ const StudentClassesPage: React.FC = () => {
                           {/* Class identity */}
                           <div className="flex items-start gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100">
-                              <ReadOutlined className={`text-base ${isActive ? "text-blue-500" : "text-gray-300"}`} />
+                              <ReadOutlined
+                                className={`text-base ${isActive ? "text-blue-500" : "text-gray-300"}`}
+                              />
                             </div>
                             <div className="min-w-0 flex-1">
                               <Title
@@ -338,7 +354,9 @@ const StudentClassesPage: React.FC = () => {
                               {enrolled && (
                                 <div className="flex items-center gap-1 text-green-600">
                                   <SafetyOutlined className="text-[11px]" />
-                                  <span className="text-[10px] font-semibold">Đã ghi danh</span>
+                                  <span className="text-[10px] font-semibold">
+                                    Đã ghi danh
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -346,29 +364,39 @@ const StudentClassesPage: React.FC = () => {
 
                           {/* Details */}
                           <div className="space-y-2.5 rounded-lg bg-gray-50 px-3.5 py-3 border border-gray-100">
-                            {c.instructorName && c.instructorName !== "Chưa có giảng viên" && (
-                              <div className="flex items-center gap-2.5">
-                                <Avatar
-                                  size={24}
-                                  className="shrink-0 !bg-gray-200 !text-gray-600 !text-[10px] !font-bold flex items-center justify-center"
-                                >
-                                  {c.instructorName.split(" ").slice(-2).map((n) => n[0]).join("").toUpperCase()}
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <Text className="text-[10px] text-gray-400 block">Giảng viên</Text>
-                                  <Text className="text-xs font-medium text-gray-700 truncate block">
-                                    {c.instructorName}
-                                  </Text>
+                            {c.instructorName &&
+                              c.instructorName !== "Chưa có giảng viên" && (
+                                <div className="flex items-center gap-2.5">
+                                  <Avatar
+                                    size={24}
+                                    className="shrink-0 !bg-gray-200 !text-gray-600 !text-[10px] !font-bold flex items-center justify-center"
+                                  >
+                                    {c.instructorName
+                                      .split(" ")
+                                      .slice(-2)
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .toUpperCase()}
+                                  </Avatar>
+                                  <div className="min-w-0">
+                                    <Text className="text-[10px] text-gray-400 block">
+                                      Giảng viên
+                                    </Text>
+                                    <Text className="text-xs font-medium text-gray-700 truncate block">
+                                      {c.instructorName}
+                                    </Text>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-6 w-6 shrink-0 items-center justify-center">
                                 <TeamOutlined className="text-gray-400 text-sm" />
                               </div>
                               <div>
-                                <Text className="text-[10px] text-gray-400 block">Học sinh</Text>
+                                <Text className="text-[10px] text-gray-400 block">
+                                  Học sinh
+                                </Text>
                                 <Text className="text-xs font-medium text-gray-700">
                                   {c.enrollmentCount}
                                   {c.maxStudents ? ` / ${c.maxStudents}` : ""}
@@ -382,7 +410,9 @@ const StudentClassesPage: React.FC = () => {
                                   <CalendarOutlined className="text-gray-400 text-sm" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <Text className="text-[10px] text-gray-400 block">Thời gian</Text>
+                                  <Text className="text-[10px] text-gray-400 block">
+                                    Thời gian
+                                  </Text>
                                   <Text className="text-xs font-medium text-gray-700 truncate block">
                                     {c.schedule}
                                   </Text>
@@ -392,7 +422,10 @@ const StudentClassesPage: React.FC = () => {
                           </div>
 
                           {c.description && (
-                            <Text type="secondary" className="text-xs line-clamp-2 block leading-relaxed">
+                            <Text
+                              type="secondary"
+                              className="text-xs line-clamp-2 block leading-relaxed"
+                            >
                               {c.description}
                             </Text>
                           )}
@@ -402,10 +435,14 @@ const StudentClassesPage: React.FC = () => {
                             {enrolled ? (
                               <Button
                                 type="default"
-                                icon={<CheckCircleOutlined className="text-green-600" />}
+                                icon={
+                                  <CheckCircleOutlined className="text-green-600" />
+                                }
                                 size="middle"
                                 className="rounded-lg !text-xs !font-medium !border-gray-200 !text-gray-700 flex items-center gap-1"
-                                onClick={() => navigate(`/student/class/${c.classId}`)}
+                                onClick={() =>
+                                  navigate(`/student/class/${c.classId}`)
+                                }
                                 iconPosition="start"
                               >
                                 Vào lớp
@@ -434,86 +471,11 @@ const StudentClassesPage: React.FC = () => {
           )}
         </div>
 
-        {/* Enroll Modal */}
-        <Modal
+        <EnrollModal
           open={enrollModal.open}
-          onCancel={closeEnroll}
-          footer={null}
-          centered
-          width={400}
-          destroyOnHidden
-          styles={{
-            content: { borderRadius: 16, padding: "24px" },
-            header: { display: "none" },
-          }}
-        >
-          <div className="space-y-5">
-            {/* Modal header */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 border border-gray-100">
-                <KeyOutlined className="text-gray-500 text-base" />
-              </div>
-              <div>
-                <Title level={5} className="!mb-0 !text-gray-800 !font-semibold">
-                  Ghi danh lớp học
-                </Title>
-                <Text type="secondary" className="text-xs">
-                  {enrollModal.data?.className}
-                </Text>
-              </div>
-            </div>
-
-            <Divider className="!my-0" />
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                Mã ghi danh
-              </label>
-              <Input
-                placeholder="Nhập mã do giảng viên cung cấp..."
-                prefix={<KeyOutlined className="text-gray-400" />}
-                value={enrollKey}
-                onChange={(e) => {
-                  setEnrollKey(e.target.value);
-                  if (enrollError) setEnrollError("");
-                }}
-                onPressEnter={submitEnroll}
-                status={enrollError ? "error" : undefined}
-                style={{ borderRadius: 10, height: 42 }}
-                className="text-sm"
-                autoFocus
-              />
-              {enrollError && (
-                <Text type="danger" className="mt-1.5 block text-xs">
-                  {enrollError}
-                </Text>
-              )}
-              <Text type="secondary" className="mt-1.5 block text-xs">
-                Mã ghi danh được cung cấp bởi giảng viên phụ trách lớp
-              </Text>
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                onClick={closeEnroll}
-                disabled={enrolling}
-                className="rounded-lg !font-medium min-w-[72px]"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                onClick={submitEnroll}
-                loading={enrolling}
-                icon={!enrolling && <ArrowRightOutlined />}
-                iconPosition="end"
-                className="rounded-lg !font-medium min-w-[110px]"
-              >
-                {enrolling ? "Đang ghi danh..." : "Xác nhận"}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          classData={enrollModal.data ?? null}
+          onClose={closeEnroll}
+        />
       </ConfigProvider>
     </StudentLayout>
   );

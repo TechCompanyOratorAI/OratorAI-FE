@@ -112,7 +112,11 @@ const MyPresentationsPage: React.FC = () => {
     if (!seconds || seconds <= 0) return "—";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return mins === 0 ? `${secs} giây` : secs === 0 ? `${mins} phút` : `${mins} phút ${secs} giây`;
+    return mins === 0
+      ? `${secs} giây`
+      : secs === 0
+        ? `${mins} phút`
+        : `${mins} phút ${secs} giây`;
   };
 
   const filtered = presentations.filter((p) => {
@@ -166,17 +170,22 @@ const MyPresentationsPage: React.FC = () => {
             },
             Input: { borderRadius: 14 },
           },
-        }}>
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
           {/* Header */}
           <div
             className="rounded-2xl px-6 py-5 sm:px-8 sm:py-6"
-            style={{ background: "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)", border: "1px solid #e0e7ff" }}
+            style={{
+              background:
+                "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)",
+              border: "1px solid #e0e7ff",
+            }}
           >
             <Title
               level={2}
-              className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold">
+              className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold"
+            >
               Bài thuyết trình của tôi
             </Title>
             <Text className="text-sm sm:text-base text-indigo-500/80">
@@ -190,204 +199,293 @@ const MyPresentationsPage: React.FC = () => {
             className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm space-y-5"
             style={{ border: "1px solid #f1f5f9" }}
           >
-
-          {/* Stats */}
-          {!loading && presentations.length > 0 && (
-            <Row gutter={[10, 10]}>
-              {[
-                { label: "Tổng cộng", value: presentations.length, icon: <FileTextOutlined className="text-base text-blue-500" />, bg: "bg-blue-50", text: "text-slate-800" },
-                { label: "Hoàn thành", value: doneCount, icon: <CheckCircleOutlined className="text-base text-emerald-500" />, bg: "bg-emerald-50", text: "text-emerald-600" },
-                { label: "Đang xử lý", value: processingCount, icon: <SyncOutlined className="text-base text-amber-500" />, bg: "bg-amber-50", text: "text-amber-500" },
-                { label: "Đã nộp", value: submittedCount, icon: <FileDoneOutlined className="text-base text-blue-500" />, bg: "bg-blue-50", text: "text-blue-500" },
-              ].map((s) => (
-                <Col xs={12} sm={6} key={s.label}>
-                  <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ border: "1px solid #e8efff", background: "#f8faff" }}>
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
-                      {s.icon}
-                    </div>
-                    <div>
-                      <Text type="secondary" className="!text-[11px] !block">{s.label}</Text>
-                      <span className={`text-xl font-bold ${s.text}`}>{s.value}</span>
-                    </div>
-                  </div>
-                </Col>
-              ))}
-            </Row>
-          )}
-
-          {/* Search + Filter */}
-          <div className="rounded-xl px-4 py-3" style={{ border: "1px solid #e8efff", background: "#f8faff" }}>
-            <Flex gap={12} wrap align="center">
-              <Input
-                size="large"
-                variant="filled"
-                prefix={
-                  <SearchOutlined className="text-slate-400" />
-                }
-                placeholder="Tìm theo tên, chủ đề, lớp..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                allowClear
-                className="!rounded-xl sm:!w-72"
-              />
-              <Segmented
-                shape="round"
-                size="large"
-                value={filterStatus}
-                onChange={(val) => setFilterStatus(val as string)}
-                options={segmentedOptions}
-                className="max-w-full overflow-x-auto [&_.ant-segmented-item-label]:!px-2.5 sm:!px-3.5"
-              />
-            </Flex>
-          </div>
-
-          {/* Loading */}
-          {loading && (
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <Card
-                  key={i}
-                  bordered={false}
-                  className="!rounded-2xl !shadow-sm"
-                  styles={{ body: { padding: "16px 20px" } }}>
-                  <Skeleton active avatar={{ shape: "square", size: 44 }} paragraph={{ rows: 1 }} />
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Empty */}
-          {!loading && filtered.length === 0 && (
-            <Card
-              bordered={false}
-              className="!rounded-2xl !shadow-sm"
-              styles={{ body: { padding: "48px 24px", textAlign: "center" } }}>
-              <Space direction="vertical" size="middle" align="center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50">
-                  <FileTextOutlined className="text-2xl text-blue-300" />
-                </div>
-                <Title level={4} className="!mb-0 !text-slate-700">
-                  {search || filterStatus !== "all"
-                    ? "Không tìm thấy bài nào"
-                    : "Chưa có bài thuyết trình"}
-                </Title>
-                <Text type="secondary" className="text-sm max-w-xs">
-                  {search || filterStatus !== "all"
-                    ? "Thử thay đổi từ khóa hoặc bộ lọc trạng thái."
-                    : "Vào lớp học và nộp bài để bắt đầu thuyết trình."}
-                </Text>
-                {search || filterStatus !== "all" ? (
-                  <Button
-                    onClick={() => { setSearch(""); setFilterStatus("all"); }}
-                    className="!rounded-xl !px-5 !h-10">
-                    Xóa bộ lọc
-                  </Button>
-                ) : (
-                  <Button
-                    type="primary"
-                    onClick={() => navigate("/student/dashboard")}
-                    className="!rounded-xl !px-5 !h-10 !font-semibold">
-                    Quay lại trang chủ
-                  </Button>
-                )}
-              </Space>
-            </Card>
-          )}
-
-          {/* List */}
-          {!loading && filtered.length > 0 && (
-            <div className="space-y-2.5">
-              {filtered.map((p) => {
-                const sc = STATUS_CONFIG[p.status] || STATUS_CONFIG["draft"];
-                const isGroupPresentation = p.studentId !== user?.userId;
-                const ownerName = p.student
-                  ? `${p.student.firstName} ${p.student.lastName}`.trim()
-                  : "Trưởng nhóm";
-                return (
-                  <div
-                    key={p.presentationId}
-                    onClick={() => navigate(`/student/presentation/${p.presentationId}`)}
-                    className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer transition-all hover:shadow-sm hover:bg-slate-50/80"
-                    style={{ border: isGroupPresentation ? "1px solid #dbeafe" : "1px solid #e8efff", background: isGroupPresentation ? "#f0f7ff" : "#f8faff" }}
-                  >
+            {/* Stats */}
+            {!loading && presentations.length > 0 && (
+              <Row gutter={[10, 10]}>
+                {[
+                  {
+                    label: "Tổng cộng",
+                    value: presentations.length,
+                    icon: (
+                      <FileTextOutlined className="text-base text-blue-500" />
+                    ),
+                    bg: "bg-blue-50",
+                    text: "text-slate-800",
+                  },
+                  {
+                    label: "Hoàn thành",
+                    value: doneCount,
+                    icon: (
+                      <CheckCircleOutlined className="text-base text-emerald-500" />
+                    ),
+                    bg: "bg-emerald-50",
+                    text: "text-emerald-600",
+                  },
+                  {
+                    label: "Đang xử lý",
+                    value: processingCount,
+                    icon: <SyncOutlined className="text-base text-amber-500" />,
+                    bg: "bg-amber-50",
+                    text: "text-amber-500",
+                  },
+                  {
+                    label: "Đã nộp",
+                    value: submittedCount,
+                    icon: (
+                      <FileDoneOutlined className="text-base text-blue-500" />
+                    ),
+                    bg: "bg-blue-50",
+                    text: "text-blue-500",
+                  },
+                ].map((s) => (
+                  <Col xs={12} sm={6} key={s.label}>
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${sc.bg}`}>
-                      <span className={`text-lg ${sc.color}`}>
-                        {p.status === "processing" ? (
-                          <SyncOutlined spin />
-                        ) : (
-                          sc.icon
-                        )}
-                      </span>
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{
+                        border: "1px solid #e8efff",
+                        background: "#f8faff",
+                      }}
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}
+                      >
+                        {s.icon}
+                      </div>
+                      <div>
+                        <Text type="secondary" className="!text-[11px] !block">
+                          {s.label}
+                        </Text>
+                        <span className={`text-xl font-bold ${s.text}`}>
+                          {s.value}
+                        </span>
+                      </div>
                     </div>
+                  </Col>
+                ))}
+              </Row>
+            )}
 
-                    <Flex vertical className="min-w-0 flex-1" gap={6}>
-                      <Flex align="center" justify="space-between" gap={12} className="w-full min-w-0">
-                        <Text strong className="!text-slate-900 !text-sm sm:!text-base !min-w-0 !flex-1 !truncate">
-                          {p.title}
-                        </Text>
-                        <Flex gap={6} align="center" className="shrink-0">
-                          {isGroupPresentation && (
-                            <Tag color="blue" className="!m-0 !rounded-full !text-xs !border-0 !px-2 !py-0.5 !leading-5">
-                              Nhóm
-                            </Tag>
-                          )}
-                          <Tag
-                            className={`!m-0 !rounded-full !text-xs !font-medium !border-0 !px-2.5 !py-0.5 !leading-5 !whitespace-nowrap ${sc.bg} ${sc.color}`}
-                            icon={p.status === "processing" ? <SyncOutlined className="!text-[10px]" spin /> : null}>
-                            {sc.label}
-                          </Tag>
-                        </Flex>
-                      </Flex>
-                      <Flex gap={12} wrap align="center">
-                        {isGroupPresentation && (
-                          <>
-                            <Text className="!text-xs !text-blue-500 !font-medium">
-                              👑 {ownerName}
-                            </Text>
-                            <span className="text-slate-300 text-xs">·</span>
-                          </>
-                        )}
-                        <Text type="secondary" className="!text-xs sm:!text-sm">
-                          {p.topic?.topicName || "Không có chủ đề"}
-                        </Text>
-                        {p.class?.classCode && (
-                          <>
-                            <span className="text-slate-300 text-xs">·</span>
-                            <Text type="secondary" className="!text-xs sm:!text-sm">
-                              {p.class.classCode}
-                            </Text>
-                          </>
-                        )}
-                        <span className="text-slate-300 text-xs">·</span>
-                        <Flex align="center" gap={4}>
-                          <CalendarOutlined className="!text-[10px] text-slate-400" />
-                          <Text type="secondary" className="!text-xs sm:!text-sm">
-                            {formatDate(p.submissionDate ?? p.createdAt)}
-                          </Text>
-                        </Flex>
-                        {p.durationSeconds && (
-                          <>
-                            <span className="text-slate-300 text-xs">·</span>
-                            <Flex align="center" gap={4}>
-                              <FieldTimeOutlined className="!text-[10px] text-slate-400" />
-                              <Text type="secondary" className="!text-xs sm:!text-sm">
-                                {formatDuration(p.durationSeconds)}
-                              </Text>
-                            </Flex>
-                          </>
-                        )}
-                      </Flex>
-                    </Flex>
-
-                    <RightOutlined className="text-slate-300 text-sm shrink-0 hover:text-blue-500 transition-colors" />
-                  </div>
-                );
-              })}
+            {/* Search + Filter */}
+            <div
+              className="rounded-xl px-4 py-3"
+              style={{ border: "1px solid #e8efff", background: "#f8faff" }}
+            >
+              <Flex gap={12} wrap align="center">
+                <Input
+                  size="large"
+                  variant="filled"
+                  prefix={<SearchOutlined className="text-slate-400" />}
+                  placeholder="Tìm theo tên, chủ đề, lớp..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  allowClear
+                  className="!rounded-xl sm:!w-72"
+                />
+                <Segmented
+                  shape="round"
+                  size="large"
+                  value={filterStatus}
+                  onChange={(val) => setFilterStatus(val as string)}
+                  options={segmentedOptions}
+                  className="max-w-full overflow-x-auto [&_.ant-segmented-item-label]:!px-2.5 sm:!px-3.5"
+                />
+              </Flex>
             </div>
-          )}
 
-          </div>{/* end white card */}
+            {/* Loading */}
+            {loading && (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <Card
+                    key={i}
+                    bordered={false}
+                    className="!rounded-2xl !shadow-sm"
+                    styles={{ body: { padding: "16px 20px" } }}
+                  >
+                    <Skeleton
+                      active
+                      avatar={{ shape: "square", size: 44 }}
+                      paragraph={{ rows: 1 }}
+                    />
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Empty */}
+            {!loading && filtered.length === 0 && (
+              <Card
+                bordered={false}
+                className="!rounded-2xl !shadow-sm"
+                styles={{ body: { padding: "48px 24px", textAlign: "center" } }}
+              >
+                <Space direction="vertical" size="middle" align="center">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50">
+                    <FileTextOutlined className="text-2xl text-blue-300" />
+                  </div>
+                  <Title level={4} className="!mb-0 !text-slate-700">
+                    {search || filterStatus !== "all"
+                      ? "Không tìm thấy bài nào"
+                      : "Chưa có bài thuyết trình"}
+                  </Title>
+                  <Text type="secondary" className="text-sm max-w-xs">
+                    {search || filterStatus !== "all"
+                      ? "Thử thay đổi từ khóa hoặc bộ lọc trạng thái."
+                      : "Vào lớp học và nộp bài để bắt đầu thuyết trình."}
+                  </Text>
+                  {search || filterStatus !== "all" ? (
+                    <Button
+                      onClick={() => {
+                        setSearch("");
+                        setFilterStatus("all");
+                      }}
+                      className="!rounded-xl !px-5 !h-10"
+                    >
+                      Xóa bộ lọc
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      onClick={() => navigate("/student/dashboard")}
+                      className="!rounded-xl !px-5 !h-10 !font-semibold"
+                    >
+                      Quay lại trang chủ
+                    </Button>
+                  )}
+                </Space>
+              </Card>
+            )}
+
+            {/* List */}
+            {!loading && filtered.length > 0 && (
+              <div className="space-y-2.5">
+                {filtered.map((p) => {
+                  const sc = STATUS_CONFIG[p.status] || STATUS_CONFIG["draft"];
+                  const isGroupPresentation = p.studentId !== user?.userId;
+                  const ownerName = p.student
+                    ? `${p.student.firstName} ${p.student.lastName}`.trim()
+                    : "Trưởng nhóm";
+                  return (
+                    <div
+                      key={p.presentationId}
+                      onClick={() =>
+                        navigate(`/student/presentation/${p.presentationId}`)
+                      }
+                      className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer transition-all hover:shadow-sm hover:bg-slate-50/80"
+                      style={{
+                        border: isGroupPresentation
+                          ? "1px solid #dbeafe"
+                          : "1px solid #e8efff",
+                        background: isGroupPresentation ? "#f0f7ff" : "#f8faff",
+                      }}
+                    >
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${sc.bg}`}
+                      >
+                        <span className={`text-lg ${sc.color}`}>
+                          {p.status === "processing" ? (
+                            <SyncOutlined spin />
+                          ) : (
+                            sc.icon
+                          )}
+                        </span>
+                      </div>
+
+                      <Flex vertical className="min-w-0 flex-1" gap={6}>
+                        <Flex
+                          align="center"
+                          justify="space-between"
+                          gap={12}
+                          className="w-full min-w-0"
+                        >
+                          <Text
+                            strong
+                            className="!text-slate-900 !text-sm sm:!text-base !min-w-0 !flex-1 !truncate"
+                          >
+                            {p.title}
+                          </Text>
+                          <Flex gap={6} align="center" className="shrink-0">
+                            {isGroupPresentation && (
+                              <Tag
+                                color="blue"
+                                className="!m-0 !rounded-full !text-xs !border-0 !px-2 !py-0.5 !leading-5"
+                              >
+                                Nhóm
+                              </Tag>
+                            )}
+                            <Tag
+                              className={`!m-0 !rounded-full !text-xs !font-medium !border-0 !px-2.5 !py-0.5 !leading-5 !whitespace-nowrap ${sc.bg} ${sc.color}`}
+                              icon={
+                                p.status === "processing" ? (
+                                  <SyncOutlined className="!text-[10px]" spin />
+                                ) : null
+                              }
+                            >
+                              {sc.label}
+                            </Tag>
+                          </Flex>
+                        </Flex>
+                        <Flex gap={12} wrap align="center">
+                          {isGroupPresentation && (
+                            <>
+                              <Text className="!text-xs !text-blue-500 !font-medium">
+                                👑 {ownerName}
+                              </Text>
+                              <span className="text-slate-300 text-xs">·</span>
+                            </>
+                          )}
+                          <Text
+                            type="secondary"
+                            className="!text-xs sm:!text-sm"
+                          >
+                            {p.topic?.topicName || "Không có chủ đề"}
+                          </Text>
+                          {p.class?.classCode && (
+                            <>
+                              <span className="text-slate-300 text-xs">·</span>
+                              <Text
+                                type="secondary"
+                                className="!text-xs sm:!text-sm"
+                              >
+                                {p.class.classCode}
+                              </Text>
+                            </>
+                          )}
+                          <span className="text-slate-300 text-xs">·</span>
+                          <Flex align="center" gap={4}>
+                            <CalendarOutlined className="!text-[10px] text-slate-400" />
+                            <Text
+                              type="secondary"
+                              className="!text-xs sm:!text-sm"
+                            >
+                              {formatDate(p.submissionDate ?? p.createdAt)}
+                            </Text>
+                          </Flex>
+                          {p.durationSeconds && (
+                            <>
+                              <span className="text-slate-300 text-xs">·</span>
+                              <Flex align="center" gap={4}>
+                                <FieldTimeOutlined className="!text-[10px] text-slate-400" />
+                                <Text
+                                  type="secondary"
+                                  className="!text-xs sm:!text-sm"
+                                >
+                                  {formatDuration(p.durationSeconds)}
+                                </Text>
+                              </Flex>
+                            </>
+                          )}
+                        </Flex>
+                      </Flex>
+
+                      <RightOutlined className="text-slate-300 text-sm shrink-0 hover:text-blue-500 transition-colors" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {/* end white card */}
         </div>
       </ConfigProvider>
     </StudentLayout>

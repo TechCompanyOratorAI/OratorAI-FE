@@ -5,9 +5,6 @@ import { toast } from "react-toastify";
 import {
   Card,
   Button,
-  Modal,
-  Form,
-  Input,
   Typography,
   Tag,
   Space,
@@ -43,22 +40,19 @@ import {
   clearGroupTopic,
 } from "@/services/features/group/groupSlice";
 import PresentationUploadModal from "@/components/Presentation/PresentationUploadModal";
+import CreatePresentationModal from "@/components/Presentation/CreatePresentationModal";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 import { fetchUploadPermissionByClass } from "@/services/features/uploadPermission/uploadPermissionSlice";
 import { useClassUploadPermission } from "@/hooks/useSocket";
 
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
 
 interface TopicStudentDetailPageProps {
   isModalMode?: boolean;
   onCloseModal?: () => void;
 }
 
-const statusConfig: Record<
-  string,
-  { label: string; color: string }
-> = {
+const statusConfig: Record<string, { label: string; color: string }> = {
   draft: { label: "Nháp", color: "default" },
   submitted: { label: "Đã nộp", color: "processing" },
   processing: { label: "Đang xử lý", color: "processing" },
@@ -92,11 +86,9 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
     actionLoading: groupActionLoading,
   } = useAppSelector((state) => state.group);
 
-  const [form] = Form.useForm();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isUploadResubmit, setIsUploadResubmit] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [selectedPresentationId, setSelectedPresentationId] = useState<
     number | null
   >(null);
@@ -106,9 +98,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const topicIdNumber = topicId ? parseInt(topicId) : null;
   const classIdNumber = classId ? parseInt(classId) : null;
   const myGroupId =
-    myGroupForClass?.groupId != null
-      ? Number(myGroupForClass.groupId)
-      : null;
+    myGroupForClass?.groupId != null ? Number(myGroupForClass.groupId) : null;
   const isGroupTopicThis =
     topicIdNumber != null && groupTopic?.topicId === topicIdNumber;
   const isEnrolled = Boolean(myGroupForClass && isGroupTopicThis);
@@ -156,9 +146,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       toast.success("Đã chọn chủ đề cho nhóm.");
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "Chọn chủ đề thất bại",
-      );
+      toast.error(err instanceof Error ? err.message : "Chọn chủ đề thất bại");
     }
   };
 
@@ -169,46 +157,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
       toast.success("Đã hủy chọn chủ đề cho nhóm.");
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "Hủy chủ đề thất bại",
-      );
-    }
-  };
-
-  const handleCreatePresentation = async () => {
-    if (!topicIdNumber || !classIdNumber) return;
-    if (!isCurrentUserLeader) {
-      toast.info("Chỉ nhóm trưởng mới có thể tạo bài thuyết trình");
-      return;
-    }
-    try {
-      const values = await form.validateFields();
-      setIsCreating(true);
-      const groupCode =
-        myGroupForClass?.groupName || myGroupForClass?.name || undefined;
-      await dispatch(
-        createPresentation({
-          classId: classIdNumber,
-          topicId: topicIdNumber,
-          title: values.title.trim(),
-          description: values.description?.trim() || undefined,
-          groupCode,
-        }),
-      ).unwrap();
-      toast.success("Tạo bài thuyết trình thành công!");
-      setIsCreateModalOpen(false);
-      form.resetFields();
-      dispatch(
-        fetchPresentationsByClassAndTopic({
-          classId: classIdNumber,
-          topicId: topicIdNumber,
-        }),
-      );
-    } catch (err: unknown) {
-      if (err instanceof Error)
-        toast.error(err.message || "Tạo bài thuyết trình thất bại");
-    } finally {
-      setIsCreating(false);
+      toast.error(err instanceof Error ? err.message : "Hủy chủ đề thất bại");
     }
   };
 
@@ -248,7 +197,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             icon={<ArrowLeftOutlined />}
             type="link"
             className="mb-6 pl-0"
-            onClick={goBack}>
+            onClick={goBack}
+          >
             Quay lại
           </Button>
           <Alert
@@ -271,7 +221,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             icon={<ArrowLeftOutlined />}
             type="link"
             className="pl-0 font-medium"
-            onClick={goBack}>
+            onClick={goBack}
+          >
             Quay lại
           </Button>
           <Text type="secondary">/</Text>
@@ -284,7 +235,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8">
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8"
+        >
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
           <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
           <div className="relative space-y-3">
@@ -295,7 +247,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
               {isEnrolled && (
                 <Tag
                   icon={<CheckCircleOutlined />}
-                  className="!bg-emerald-400/30 !border-white/30 !text-white !font-semibold">
+                  className="!bg-emerald-400/30 !border-white/30 !text-white !font-semibold"
+                >
                   Đã ghi danh (nhóm)
                 </Tag>
               )}
@@ -403,7 +356,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     return (
                       <div
                         key={presentation.presentationId}
-                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200">
+                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200"
+                      >
                         <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
                           <FileTextOutlined className="text-indigo-600" />
                         </div>
@@ -411,12 +365,14 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Text
                               strong
-                              className="text-sm truncate max-w-[200px]">
+                              className="text-sm truncate max-w-[200px]"
+                            >
                               {presentation.title}
                             </Text>
                             <Tag
                               color={sc.color}
-                              className="!rounded-full !text-xs !font-medium">
+                              className="!rounded-full !text-xs !font-medium"
+                            >
                               {sc.label}
                             </Tag>
                           </div>
@@ -439,7 +395,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         </div>
                         <Space className="shrink-0">
                           <Link
-                            to={`/student/presentation/${presentation.presentationId}`}>
+                            to={`/student/presentation/${presentation.presentationId}`}
+                          >
                             <Button type="primary" size="small">
                               Xem
                             </Button>
@@ -455,7 +412,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                                   presentation.presentationId,
                                   presentation.title,
                                 )
-                              }>
+                              }
+                            >
                               Gửi lại
                             </Button>
                           )}
@@ -483,7 +441,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-center py-4 space-y-4">
+                    className="text-center py-4 space-y-4"
+                  >
                     {myGroupForClass && !isCurrentUserLeader ? (
                       <>
                         <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
@@ -515,11 +474,13 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         </Text>
                         {classId && groupTopic.topicId !== topicIdNumber && (
                           <Link
-                            to={`/student/class/${classId}/topic/${groupTopic.topicId}`}>
+                            to={`/student/class/${classId}/topic/${groupTopic.topicId}`}
+                          >
                             <Button
                               type="primary"
                               icon={<BookOutlined />}
-                              block>
+                              block
+                            >
                               Đi tới chủ đề của nhóm
                             </Button>
                           </Link>
@@ -534,8 +495,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           Chọn chủ đề cho nhóm
                         </Title>
                         <Text type="secondary" className="text-sm block">
-                          Chọn chủ đề này cho cả nhóm — các thành viên sẽ
-                          được ghi danh cùng lúc.
+                          Chọn chủ đề này cho cả nhóm — các thành viên sẽ được
+                          ghi danh cùng lúc.
                         </Text>
                         <Button
                           type="primary"
@@ -548,7 +509,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                             )
                           }
                           loading={groupActionLoading}
-                          onClick={handlePickTopicForGroup}>
+                          onClick={handlePickTopicForGroup}
+                        >
                           Chọn chủ đề này cho nhóm
                         </Button>
                       </>
@@ -561,14 +523,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           Tham gia nhóm trước
                         </Title>
                         <Text type="secondary" className="text-sm block">
-                          Bạn cần ở trong một nhóm để nhóm trưởng chọn chủ
-                          đề.
+                          Bạn cần ở trong một nhóm để nhóm trưởng chọn chủ đề.
                         </Text>
                         <Link to={`/student/class/${classId}`}>
-                          <Button
-                            type="primary"
-                            block
-                            icon={<TeamOutlined />}>
+                          <Button type="primary" block icon={<TeamOutlined />}>
                             Đến quản lý nhóm
                           </Button>
                         </Link>
@@ -581,14 +539,16 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="space-y-4">
+                    className="space-y-4"
+                  >
                     {isCurrentUserLeader && isGroupTopicThis && myGroupId && (
                       <Button
                         type="text"
                         danger
                         block
                         loading={groupActionLoading}
-                        onClick={handleClearGroupTopic}>
+                        onClick={handleClearGroupTopic}
+                      >
                         Hủy chọn chủ đề cho nhóm
                       </Button>
                     )}
@@ -613,7 +573,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                             {myPresentation.status === "draft"
                               ? "Đã tạo bài thuyết trình. Tải lên file để bắt đầu xử lý."
                               : myPresentation.status === "submitted" ||
-                                myPresentation.status === "processing"
+                                  myPresentation.status === "processing"
                                 ? "Bài đã được nộp và đang xử lý AI."
                                 : myPresentation.status === "done"
                                   ? "Xử lý hoàn tất! Xem kết quả trong chi tiết bài."
@@ -626,16 +586,19 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                             color={
                               (
                                 statusConfig[
-                                myPresentation.status?.toLowerCase()
+                                  myPresentation.status?.toLowerCase()
                                 ] || statusConfig.draft
                               ).color
                             }
-                            className="!rounded-full !px-3 !py-1 !text-sm">
-                            {(
-                              statusConfig[
-                              myPresentation.status?.toLowerCase()
-                              ] || statusConfig.draft
-                            ).label}
+                            className="!rounded-full !px-3 !py-1 !text-sm"
+                          >
+                            {
+                              (
+                                statusConfig[
+                                  myPresentation.status?.toLowerCase()
+                                ] || statusConfig.draft
+                              ).label
+                            }
                           </Tag>
 
                           {myPresentation.status === "draft" && (
@@ -645,7 +608,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                                   type="primary"
                                   block
                                   icon={<UploadOutlined />}
-                                  disabled>
+                                  disabled
+                                >
                                   Giảng viên chưa mở upload
                                 </Button>
                               ) : (
@@ -658,7 +622,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                                       myPresentation.presentationId,
                                       myPresentation.title,
                                     )
-                                  }>
+                                  }
+                                >
                                   Tải lên file
                                 </Button>
                               )}
@@ -675,7 +640,8 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                                   myPresentation.presentationId,
                                   myPresentation.title,
                                 )
-                              }>
+                              }
+                            >
                               Gửi lại bài (upload file mới)
                             </Button>
                           )}
@@ -690,14 +656,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           Tạo bài thuyết trình
                         </Title>
                         <Text type="secondary" className="text-sm block">
-                          Là nhóm trưởng, bạn có thể tạo bài thuyết trình
-                          cho chủ đề này.
+                          Là nhóm trưởng, bạn có thể tạo bài thuyết trình cho
+                          chủ đề này.
                         </Text>
                         <Button
                           type="primary"
                           block
                           icon={<PlusOutlined />}
-                          onClick={() => setIsCreateModalOpen(true)}>
+                          onClick={() => setIsCreateModalOpen(true)}
+                        >
                           Tạo bài thuyết trình
                         </Button>
                       </div>
@@ -729,10 +696,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                           Bạn cần ở trong một nhóm để tạo bài thuyết trình.
                         </Text>
                         <Link to={`/student/class/${classId}`}>
-                          <Button
-                            type="primary"
-                            block
-                            icon={<TeamOutlined />}>
+                          <Button type="primary" block icon={<TeamOutlined />}>
                             Đến quản lý nhóm
                           </Button>
                         </Link>
@@ -746,88 +710,34 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
         </div>
       </div>
 
-      {/* Create Presentation Modal */}
-      <Modal
-        title={
-          <div>
-            <Space className="mb-1">
-              <CrownOutlined className="text-amber-500" />
-              <Text className="text-xs text-amber-600 font-semibold uppercase tracking-wide">
-                Chỉ nhóm trưởng
-              </Text>
-            </Space>
-            <Title level={4} className="!mb-0">
-              Tạo bài thuyết trình
-            </Title>
-          </div>
-        }
-        open={isCreateModalOpen}
-        onCancel={() => {
-          setIsCreateModalOpen(false);
-          form.resetFields();
-        }}
-        footer={
-          <Space className="w-full justify-end">
-            <Button
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                form.resetFields();
-              }}>
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              loading={isCreating}
-              onClick={handleCreatePresentation}>
-              Tạo bài thuyết trình
-            </Button>
-          </Space>
-        }
-        className="!rounded-2xl"
-        centered>
-        <Form form={form} layout="vertical" className="mt-4">
-          <Form.Item
-            name="title"
-            label={<Text strong>Tiêu đề</Text>}
-            rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}>
-            <Input
-              placeholder="Nhập tiêu đề bài thuyết trình"
-              size="large"
-              className="!rounded-xl"
-            />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label={
-              <span>
-                <Text strong>Mô tả</Text>{" "}
-                <Text type="secondary">(tùy chọn)</Text>
-              </span>
-            }>
-            <TextArea
-              placeholder="Mô tả bài thuyết trình"
-              rows={3}
-              className="!rounded-xl"
-            />
-          </Form.Item>
-          {myGroupForClass && (
-            <Alert
-              type="info"
-              icon={<TeamOutlined />}
-              showIcon
-              message={
-                <span>
-                  Bài thuyết trình sẽ được tạo cho nhóm:{" "}
-                  <Text strong>
-                    {myGroupForClass.groupName || myGroupForClass.name}
-                  </Text>
-                </span>
-              }
-              className="!rounded-xl"
-            />
-          )}
-        </Form>
-      </Modal>
+      {isCreateModalOpen && (
+        <CreatePresentationModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={async (title, description) => {
+            if (!topicIdNumber || !classIdNumber) return;
+            const groupCode =
+              myGroupForClass?.groupName || myGroupForClass?.name || undefined;
+            await dispatch(
+              createPresentation({
+                classId: classIdNumber,
+                topicId: topicIdNumber,
+                title,
+                description,
+                groupCode,
+              }),
+            ).unwrap();
+            toast.success("Tạo bài thuyết trình thành công!");
+            dispatch(
+              fetchPresentationsByClassAndTopic({
+                classId: classIdNumber,
+                topicId: topicIdNumber,
+              }),
+            );
+          }}
+          groupName={myGroupForClass?.groupName || myGroupForClass?.name}
+        />
+      )}
 
       {isUploadModalOpen && selectedPresentationId && (
         <PresentationUploadModal
