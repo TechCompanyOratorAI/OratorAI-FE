@@ -325,15 +325,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
   const sc =
     statusConfig[presentation.status?.toLowerCase()] || statusConfig.draft;
 
-  const handleViewReport = () => {
-    if (!presentationIdNumber) return;
-    if (showReport) {
-      scrollToReportSection();
-    }
-    setShowReport(true);
-    dispatch(fetchPresentationReport(presentationIdNumber));
-  };
-
   const runConfirmReport = async () => {
     if (!currentReport?.reportId || !presentationIdNumber) return;
     if (confirmGrade === null) {
@@ -486,8 +477,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
               status={presentation.status}
               studentName={studentName}
               createdAt={presentation.createdAt}
-              onResultClick={handleViewReport}
-              resultLoading={reportLoading}
             />
           </motion.div>
 

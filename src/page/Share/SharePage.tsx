@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Button } from "antd";
 import {
   ArrowLeft,
   FileText,
@@ -11,6 +12,7 @@ import {
   AlertCircle,
   ShieldCheck,
 } from "lucide-react";
+import { BarChartOutlined } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchSharedPresentation } from "@/services/features/share/shareSlice";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
@@ -31,6 +33,7 @@ const SharePage: React.FC = () => {
     useAppSelector((s) => s.share);
 
   const [showReport, setShowReport] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (token) {
@@ -207,14 +210,14 @@ const SharePage: React.FC = () => {
             status={presentation.presentation.status}
             studentName={studentName}
             createdAt={presentation.presentation.createdAt}
-            onResultClick={() => setShowReport(true)}
-            resultLoading={false}
           />
         </motion.div>
 
         {/* AI Report */}
         {presentation.aiReport && (
           <motion.div
+            ref={reportRef}
+            id="ai-report-section"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -280,6 +283,40 @@ const SharePage: React.FC = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <p className="text-slate-500">Bài thuyết trình này chưa có kết quả đánh giá AI.</p>
           </div>
+        )}
+
+        {/* Floating "View Report" button */}
+        {!showReport && presentation.aiReport && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{ position: "fixed", bottom: 24, right: 24, zIndex: 100 }}
+          >
+            <Button
+              type="primary"
+              size="large"
+              icon={<BarChartOutlined />}
+              onClick={() => {
+                setShowReport(true);
+                setTimeout(() => {
+                  reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+              style={{
+                background: "linear-gradient(135deg, #4f46e5, #3730a3)",
+                border: "none",
+                borderRadius: 14,
+                height: 52,
+                paddingInline: 24,
+                fontWeight: 700,
+                fontSize: 15,
+                boxShadow: "0 8px 24px rgba(79, 70, 229, 0.314)",
+              }}
+            >
+              Xem kết quả AI
+            </Button>
+          </motion.div>
         )}
       </div>
     </div>
