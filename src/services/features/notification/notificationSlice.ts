@@ -3,12 +3,12 @@ import axiosInstance from "../../constant/axiosInstance";
 
 export interface Notification {
   id: string;
-  type: "report:generated" | "report:confirmed" | "report:rejected" | "report:criterion-feedback-changed" | "grade:distributed" | "grade:finalized" | "grade:reopened" | "grade:feedback-updated" | "class:upload-permission-changed";
-  presentationId: number;
+  type: string;
   title: string;
   message: string;
   read: boolean;
   createdAt: string;
+  data?: Record<string, unknown>;
 }
 
 interface NotificationState {
@@ -23,21 +23,33 @@ const initialState: NotificationState = {
   unreadCount: 0,
 };
 
-export const fetchNotifications = createAsyncThunk<
-  Notification[],
-  void,
-  { rejectValue: string }
->(
+// Map BE row → FE Notification
+const mapRow = (row: any): Notification => ({
+  id: String(row.notificationId ?? row.id ?? `${Date.now()}-${Math.random()}`),
+  type: row.type,
+  title: row.title,
+  message: row.message,
+  read: !!row.read,
+  createdAt: row.createdAt,
+  data: row.data ?? undefined,
+});
+
+export const fetchNotifications = createAsyncThunk<Notification[], void, { rejectValue: string }>(
   "notification/fetchNotifications",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<{ success: boolean; data: Notification[] }>(
-        "/notifications",
-      );
-      return response.data.data ?? [];
+      const response = await axiosInstance.get<{ success: boolean; data: any[] }>("/api/v1/notifications");
+      return (response.data.data ?? []).map(mapRow);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Không thể tải thông báo");
     }
+  }
+);
+
+export const markAllReadApi = createAsyncThunk<void, void>(
+  "notification/markAllReadApi",
+  async () => {
+    await axiosInstance.patch("/api/v1/notifications/read-all").catch(() => {});
   }
 );
 
@@ -65,11 +77,10 @@ const notificationSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(fetchNotifications.fulfilled, (state, action) => {
-        state.items = action.payload;
-        state.unreadCount = action.payload.filter((n) => !n.read).length;
-      });
+    builder.addCase(fetchNotifications.fulfilled, (state, action) => {
+      state.items = action.payload;
+      state.unreadCount = action.payload.filter((n) => !n.read).length;
+    });
   },
 });
 
