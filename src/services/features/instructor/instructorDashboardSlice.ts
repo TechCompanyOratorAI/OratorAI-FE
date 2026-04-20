@@ -84,6 +84,7 @@ export interface TeachingClassStats {
   classCode: string;
   totalStudents: number;
   pendingReports: number;
+  needsFeedback: number;   // reports with status "pending" — AI done, instructor must review
   reviewedReports: number;
   totalReports: number;
   averageScore: number | null;
@@ -215,6 +216,7 @@ const instructorDashboardSlice = createSlice({
               classCode: cls.classCode,
               totalStudents: cls.enrollmentCount || 0,
               pendingReports: 0,
+              needsFeedback: 0,
               reviewedReports: 0,
               totalReports: 0,
               averageScore: null,
@@ -246,6 +248,9 @@ const instructorDashboardSlice = createSlice({
         state.classStats[classId].totalReports = reports.length;
         state.classStats[classId].pendingReports = reports.filter(
           (r) => r.reportStatus === "pending" || r.reportStatus === "processing",
+        ).length;
+        state.classStats[classId].needsFeedback = reports.filter(
+          (r) => r.reportStatus === "pending",
         ).length;
         state.classStats[classId].reviewedReports = reports.filter(
           (r) => r.reportStatus === "confirmed",

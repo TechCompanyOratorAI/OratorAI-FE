@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Layout,
@@ -37,6 +37,14 @@ import { addNotification, markAllRead, markAllReadApi, fetchNotifications } from
 import type { Notification } from "@/services/features/notification/notificationSlice";
 import { useSocket } from "@/hooks/useSocket";
 import AppLogo from "@/components/AppLogo/AppLogo";
+
+// ── Rich toast body ───────────────────────────────────────────────────────────
+const ToastBody = ({ title, message }: { title: string; message: string }) => (
+  <div>
+    <p className="font-semibold text-sm leading-tight">{title}</p>
+    <p className="text-xs opacity-80 mt-0.5 leading-snug">{message}</p>
+  </div>
+);
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -138,6 +146,40 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const { unreadCount, items: notifications } = useAppSelector((state) => state.notification);
   const { on } = useSocket();
 
+  // ── Data for enriched notifications ──────────────────────────────────────────
+  const { enrolledClasses } = useAppSelector((state) => state.enrollment);
+  const { presentations, currentPresentation } = useAppSelector((state) => state.presentation);
+  const { distributions } = useAppSelector((state) => state.groupGrade);
+
+  // Refs keep latest Redux values accessible inside stable socket-listener closure
+  const enrolledClassesRef = useRef(enrolledClasses);
+  const presentationsRef = useRef(presentations);
+  const currentPresentationRef = useRef(currentPresentation);
+  const distributionsRef = useRef(distributions);
+  useEffect(() => { enrolledClassesRef.current = enrolledClasses; }, [enrolledClasses]);
+  useEffect(() => { presentationsRef.current = presentations; }, [presentations]);
+  useEffect(() => { currentPresentationRef.current = currentPresentation; }, [currentPresentation]);
+  useEffect(() => { distributionsRef.current = distributions; }, [distributions]);
+
+  // ── Lookup helpers ────────────────────────────────────────────────────────────
+  const getClass = useCallback((classId: number) =>
+    enrolledClassesRef.current.find((e) => e.class?.classId === classId)?.class,
+  []);
+
+  const getPresentation = useCallback((presentationId: number) => {
+    const fromList = presentationsRef.current.find((p) => p.presentationId === presentationId);
+    if (fromList) return fromList;
+    const cur = currentPresentationRef.current;
+    return cur?.presentationId === presentationId ? cur : null;
+  }, []);
+
+  const getGroupName = useCallback((groupId: number): string | null => {
+    const dist = distributionsRef.current.find(
+      (d) => d.groupId === groupId || (d.group as any)?.groupId === groupId,
+    );
+    return (dist?.group as any)?.groupName ?? null;
+  }, []);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -148,105 +190,127 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
   // ── Global socket listeners for notifications ──────────────────────────────────
   useEffect(() => {
-    const notify = (type: string, title: string, message: string, toastType: "success" | "info" | "warning" | "error" = "info", presentationId = 0) => {
+    const notify = (
+      type: string,
+      title: string,
+      message: string,
+      toastType: "success" | "info" | "warning" | "error" = "info",
+      presentationId = 0,
+    ) => {
       dispatch(addNotification({ type, presentationId, title, message }));
-      toast[toastType](`${title}\n${message}`, { toastId: `${type}-${Date.now()}` });
+      toast[toastType](<ToastBody title={title} message={message} />, {
+        toastId: `${type}-${Date.now()}`,
+      });
     };
 
     const unwatchReportGenerated = on<{ presentationId: number; message?: string }>(
       "report:generated",
-      (payload) => notify(
-        "report:generated",
-        "Báo cáo AI sẵn sàng",
-        "Báo cáo đánh giá mới đã được tạo xong!",
-        "success",
-        payload?.presentationId,
-      )
+      (payload) => {
+        const pres = getPresentation(payload?.presentationId);
+        const presTitle = pres?.title ? `"${pres.title}"` : null;
+        const classCode = pres?.class?.classCode ?? null;
+        const message = presTitle
+          ? `Báo cáo bài ${presTitle}${classCode ? ` (${classCode})` : ""} đã sẵn sàng.`
+          : "Báo cáo đánh giá mới đã được tạo xong!";
+        notify("report:generated", "Báo cáo AI sẵn sàng", message, "success", payload?.presentationId);
+      }
     );
 
     const unwatchReportConfirmed = on<{ presentationId: number }>(
       "report:confirmed",
-      (payload) => notify(
-        "report:confirmed",
-        "Báo cáo được xác nhận",
-        "Giảng viên đã xác nhận báo cáo AI của bạn!",
-        "success",
-        payload?.presentationId,
-      )
+      (payload) => {
+        const pres = getPresentation(payload?.presentationId);
+        const presTitle = pres?.title ? `"${pres.title}"` : null;
+        const classCode = pres?.class?.classCode ?? null;
+        const message = presTitle
+          ? `Giảng viên đã xác nhận báo cáo bài ${presTitle}${classCode ? ` (${classCode})` : ""}.`
+          : "Giảng viên đã xác nhận báo cáo AI của bạn!";
+        notify("report:confirmed", "Báo cáo được xác nhận", message, "success", payload?.presentationId);
+      }
     );
 
     const unwatchReportRejected = on<{ presentationId: number; message?: string }>(
       "report:rejected",
-      (payload) => notify(
-        "report:rejected",
-        "Báo cáo bị từ chối",
-        payload?.message || "Giảng viên đã từ chối báo cáo AI của bạn.",
-        "error",
-        payload?.presentationId,
-      )
+      (payload) => {
+        const pres = getPresentation(payload?.presentationId);
+        const presTitle = pres?.title ? `"${pres.title}"` : null;
+        const classCode = pres?.class?.classCode ?? null;
+        const message = payload?.message
+          ?? (presTitle
+            ? `Giảng viên đã từ chối báo cáo bài ${presTitle}${classCode ? ` (${classCode})` : ""}.`
+            : "Giảng viên đã từ chối báo cáo AI của bạn.");
+        notify("report:rejected", "Báo cáo bị từ chối", message, "error", payload?.presentationId);
+      }
     );
 
     const unwatchReportCriterionFeedbackChanged = on<{ presentationId: number; criterionId: number }>(
       "report:criterion-feedback-changed",
-      (payload) => notify(
-        "report:criterion-feedback-changed",
-        "Phản hồi tiêu chí cập nhật",
-        "Giảng viên đã cập nhật phản hồi cho một tiêu chí đánh giá.",
-        "info",
-        payload?.presentationId,
-      )
+      (payload) => {
+        const pres = getPresentation(payload?.presentationId);
+        const presTitle = pres?.title ? `"${pres.title}"` : null;
+        const message = presTitle
+          ? `Giảng viên đã cập nhật phản hồi tiêu chí cho bài ${presTitle}.`
+          : "Giảng viên đã cập nhật phản hồi cho một tiêu chí đánh giá.";
+        notify("report:criterion-feedback-changed", "Phản hồi tiêu chí cập nhật", message, "info", payload?.presentationId);
+      }
     );
 
     const unwatchGradeDistributed = on<{ groupId: number; reportId: number }>(
       "grade:distributed",
-      () => notify(
-        "grade:distributed",
-        "Điểm đã được phân chia",
-        "Trưởng nhóm đã phân chia điểm cho các thành viên.",
-        "info",
-      )
+      (payload) => {
+        const groupName = getGroupName(payload?.groupId);
+        const message = groupName
+          ? `Trưởng nhóm ${groupName} đã phân chia điểm cho các thành viên.`
+          : "Trưởng nhóm đã phân chia điểm cho các thành viên.";
+        notify("grade:distributed", "Điểm đã được phân chia", message, "info");
+      }
     );
 
     const unwatchGradeFinalized = on<{ groupId: number; reportId: number }>(
       "grade:finalized",
-      () => notify(
-        "grade:finalized",
-        "Điểm đã được chốt",
-        "Điểm đã được chốt bởi giảng viên.",
-        "success",
-      )
+      (payload) => {
+        const groupName = getGroupName(payload?.groupId);
+        const message = groupName
+          ? `Điểm nhóm ${groupName} đã được giảng viên chốt chính thức.`
+          : "Điểm đã được chốt bởi giảng viên.";
+        notify("grade:finalized", "Điểm đã được chốt", message, "success");
+      }
     );
 
     const unwatchGradeReopened = on<{ groupId: number; reportId: number }>(
       "grade:reopened",
-      () => notify(
-        "grade:reopened",
-        "Điểm được mở lại",
-        "Giảng viên đã mở lại việc phân chia điểm.",
-        "warning",
-      )
+      (payload) => {
+        const groupName = getGroupName(payload?.groupId);
+        const message = groupName
+          ? `Giảng viên đã mở lại việc phân chia điểm cho nhóm ${groupName}.`
+          : "Giảng viên đã mở lại việc phân chia điểm.";
+        notify("grade:reopened", "Điểm được mở lại", message, "warning");
+      }
     );
 
     const unwatchGradeFeedbackUpdated = on<{ groupId: number; memberId: number }>(
       "grade:feedback-updated",
-      () => notify(
-        "grade:feedback-updated",
-        "Phản hồi điểm cập nhật",
-        "Phản hồi về điểm số của bạn đã được cập nhật.",
-        "info",
-      )
+      (payload) => {
+        const groupName = getGroupName(payload?.groupId);
+        const message = groupName
+          ? `Phản hồi điểm của nhóm ${groupName} đã được cập nhật.`
+          : "Phản hồi về điểm số của bạn đã được cập nhật.";
+        notify("grade:feedback-updated", "Phản hồi điểm cập nhật", message, "info");
+      }
     );
 
     const unwatchUploadPermission = on<{ classId: number; isUploadEnabled: boolean }>(
       "class:upload-permission-changed",
       (payload) => {
         const enabled = payload?.isUploadEnabled;
-        notify(
-          "class:upload-permission-changed",
-          "Quyền nộp bài thay đổi",
-          enabled ? "Giảng viên đã mở quyền nộp bài cho lớp." : "Giảng viên đã đóng quyền nộp bài.",
-          enabled ? "success" : "warning",
-        );
+        const cls = getClass(payload?.classId);
+        const classLabel = cls?.classCode
+          ? `Lớp ${cls.classCode}`
+          : `Lớp #${payload?.classId}`;
+        const message = enabled
+          ? `${classLabel} đã được mở quyền nộp bài thuyết trình.`
+          : `${classLabel} đã đóng quyền nộp bài thuyết trình.`;
+        notify("class:upload-permission-changed", "Quyền nộp bài thay đổi", message, enabled ? "success" : "warning");
       }
     );
 
@@ -261,7 +325,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
       unwatchGradeFeedbackUpdated?.();
       unwatchUploadPermission?.();
     };
-  }, [on, dispatch]);
+  }, [on, dispatch, getClass, getPresentation, getGroupName]);
 
   const fullName = user
     ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
