@@ -30,7 +30,8 @@ import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
 const { Title, Text } = Typography;
 
-const CARD_HEADER_BG = "linear-gradient(160deg, #1d4ed8 0%, #2563eb 60%, #3b82f6 100%)";
+const CARD_HEADER_BG =
+  "linear-gradient(160deg, #1d4ed8 0%, #2563eb 60%, #3b82f6 100%)";
 
 type FilterType = "all" | "active" | "inactive";
 
@@ -128,14 +129,15 @@ const StudentMyClassesPage: React.FC = () => {
               textFontSize: 11,
             },
           },
-        }}>
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
           <Row gutter={[16, 8]} align="bottom">
             <Col flex="1">
               <Title
                 level={2}
-                className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold">
+                className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl !font-bold"
+              >
                 Lớp của tôi
               </Title>
               <Text type="secondary" className="text-sm sm:text-base">
@@ -148,7 +150,8 @@ const StudentMyClassesPage: React.FC = () => {
                 size="large"
                 icon={<ReadOutlined />}
                 onClick={() => navigate("/student/dashboard")}
-                className="!rounded-2xl !font-semibold !px-6 !h-11 !shadow-md">
+                className="!rounded-2xl !font-semibold !px-6 !h-11 !shadow-md"
+              >
                 Khám phá lớp học
               </Button>
             </Col>
@@ -157,7 +160,8 @@ const StudentMyClassesPage: React.FC = () => {
           <Card
             bordered={false}
             className="!rounded-[26px] !shadow-sm"
-            styles={{ body: { padding: "18px 22px" } }}>
+            styles={{ body: { padding: "18px 22px" } }}
+          >
             <Row gutter={[16, 14]} align="middle">
               <Col xs={24} sm={12} md={9} lg={8}>
                 <Input
@@ -174,7 +178,11 @@ const StudentMyClassesPage: React.FC = () => {
                 />
               </Col>
               <Col xs={24} sm={12} md={15} lg={16}>
-                <Flex justify="flex-start" wrap="wrap" className="sm:justify-end">
+                <Flex
+                  justify="flex-start"
+                  wrap="wrap"
+                  className="sm:justify-end"
+                >
                   <Segmented
                     size="large"
                     value={filter}
@@ -194,7 +202,8 @@ const StudentMyClassesPage: React.FC = () => {
                   <Card
                     bordered={false}
                     className="!rounded-[26px] !shadow-sm overflow-hidden"
-                    styles={{ body: { padding: 0 } }}>
+                    styles={{ body: { padding: 0 } }}
+                  >
                     <Skeleton active paragraph={{ rows: 6 }} className="p-5" />
                   </Card>
                 </Col>
@@ -206,7 +215,8 @@ const StudentMyClassesPage: React.FC = () => {
             <Card
               bordered={false}
               className="!rounded-[26px] !shadow-sm"
-              styles={{ body: { padding: "48px 24px", textAlign: "center" } }}>
+              styles={{ body: { padding: "48px 24px", textAlign: "center" } }}
+            >
               <Space direction="vertical" size="middle" className="w-full">
                 <div className="w-16 h-16 rounded-3xl flex items-center justify-center bg-blue-50 mx-auto">
                   <ReadOutlined className="text-3xl text-blue-300" />
@@ -216,7 +226,10 @@ const StudentMyClassesPage: React.FC = () => {
                     ? "Không tìm thấy lớp phù hợp"
                     : "Bạn chưa ghi danh lớp nào"}
                 </Title>
-                <Text type="secondary" className="text-sm max-w-xs block mx-auto">
+                <Text
+                  type="secondary"
+                  className="text-sm max-w-xs block mx-auto"
+                >
                   {searchQuery
                     ? "Thử thay đổi từ khóa tìm kiếm để xem kết quả khác."
                     : "Vào mục Khám phá lớp học để tìm và ghi danh các lớp phù hợp với bạn."}
@@ -226,7 +239,8 @@ const StudentMyClassesPage: React.FC = () => {
                     <Button
                       size="large"
                       onClick={() => setSearchQuery("")}
-                      className="!rounded-2xl !px-6">
+                      className="!rounded-2xl !px-6"
+                    >
                       Xóa tìm kiếm
                     </Button>
                   ) : (
@@ -235,7 +249,8 @@ const StudentMyClassesPage: React.FC = () => {
                       size="large"
                       icon={<ReadOutlined />}
                       onClick={() => navigate("/student/dashboard")}
-                      className="!rounded-2xl !px-6 !font-semibold">
+                      className="!rounded-2xl !px-6 !font-semibold"
+                    >
                       Khám phá lớp học
                     </Button>
                   )}
@@ -259,7 +274,8 @@ const StudentMyClassesPage: React.FC = () => {
                         </span>
                       }
                       color="rgba(16, 185, 129, 0.92)"
-                      className="!text-xs !font-semibold [&_.ant-ribbon-text]:!px-1">
+                      className="!text-xs !font-semibold [&_.ant-ribbon-text]:!px-1"
+                    >
                       <Card
                         hoverable
                         bordered={false}
@@ -269,17 +285,15 @@ const StudentMyClassesPage: React.FC = () => {
                         }}
                         onClick={() =>
                           navigate(`/student/class/${cls.classId}`)
-                        }>
+                        }
+                      >
                         <div
                           className="relative px-5 pt-6 pb-5 text-white overflow-hidden"
-                          style={{ background: CARD_HEADER_BG }}>
+                          style={{ background: CARD_HEADER_BG }}
+                        >
                           <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
                           <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-white/10" />
-                          <Flex
-                            vertical
-                            gap={10}
-                            className="relative">
-
+                          <Flex vertical gap={10} className="relative">
                             <div className="flex items-center justify-between w-full">
                               <Badge
                                 status={isActive ? "processing" : "default"}
@@ -298,36 +312,43 @@ const StudentMyClassesPage: React.FC = () => {
                                   Mã lớp
                                 </Text>
                                 <div className="flex items-center gap-2">
-                                <span className="!text-white !text-lg sm:!text-xl !font-black !tracking-tight">
-                                  {cls.class.classCode}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopyCode(cls.class.classCode);
-                                  }}
-                                  className="bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-1"
-                                  title="Sao chép mã lớp">
-                                  {copiedCode === cls.class.classCode ? (
-                                    <CheckCircleOutlined className="!text-emerald-300 !text-xs" />
-                                  ) : (
-                                    <CopyOutlined className="!text-white/50 !text-xs" />
-                                  )}
-                                </button>
+                                  <span className="!text-white !text-lg sm:!text-xl !font-black !tracking-tight">
+                                    {cls.class.classCode}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyCode(cls.class.classCode);
+                                    }}
+                                    className="bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-1"
+                                    title="Sao chép mã lớp"
+                                  >
+                                    {copiedCode === cls.class.classCode ? (
+                                      <CheckCircleOutlined className="!text-emerald-300 !text-xs" />
+                                    ) : (
+                                      <CopyOutlined className="!text-white/50 !text-xs" />
+                                    )}
+                                  </button>
                                 </div>
                               </div>
 
                               <Title
                                 level={3}
-                                className="!mb-2 !text-white !text-xl sm:!text-2xl !font-bold !leading-snug">
+                                className="!mb-2 !text-white !text-xl sm:!text-2xl !font-bold !leading-snug"
+                              >
                                 {cls.class.className}
                               </Title>
-                              <Flex align="center" gap={6} className="flex-wrap">
+                              <Flex
+                                align="center"
+                                gap={6}
+                                className="flex-wrap"
+                              >
                                 <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-white border border-white/20">
                                   {cls.class.course?.courseCode || "—"}
                                 </span>
                                 <span className="text-white/80 text-sm font-medium truncate">
-                                  {cls.class.course?.courseName || "Chưa có khóa học"}
+                                  {cls.class.course?.courseName ||
+                                    "Chưa có khóa học"}
                                 </span>
                               </Flex>
                             </div>
@@ -338,7 +359,8 @@ const StudentMyClassesPage: React.FC = () => {
                           <Space
                             direction="vertical"
                             size={14}
-                            className="w-full">
+                            className="w-full"
+                          >
                             {cls.enrolledAt && (
                               <div className="flex items-center gap-3 bg-blue-50 rounded-xl px-3 py-2.5 border border-blue-100">
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
@@ -347,14 +369,18 @@ const StudentMyClassesPage: React.FC = () => {
                                 <div>
                                   <Text
                                     type="secondary"
-                                    className="!text-[11px] !block !uppercase !tracking-wide">
+                                    className="!text-[11px] !block !uppercase !tracking-wide"
+                                  >
                                     Ngày ghi danh
                                   </Text>
                                   <Text className="!text-sm !font-bold !text-blue-700">
-                                    {new Date(cls.enrolledAt).toLocaleDateString(
-                                      "vi-VN",
-                                      { year: "numeric", month: "long", day: "numeric" },
-                                    )}
+                                    {new Date(
+                                      cls.enrolledAt,
+                                    ).toLocaleDateString("vi-VN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
                                   </Text>
                                 </div>
                               </div>
@@ -373,7 +399,8 @@ const StudentMyClassesPage: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/student/class/${cls.classId}`);
-                              }}>
+                              }}
+                            >
                               Vào lớp
                             </Button>
                           </Flex>

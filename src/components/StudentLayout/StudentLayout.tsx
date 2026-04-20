@@ -35,6 +35,7 @@ import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
 import { addNotification, markAllRead, markAllReadApi, fetchNotifications } from "@/services/features/notification/notificationSlice";
 import type { Notification } from "@/services/features/notification/notificationSlice";
+import type { GradeDistribution } from "@/services/features/groupGrade/groupGradeSlice";
 import { useSocket } from "@/hooks/useSocket";
 import AppLogo from "@/components/AppLogo/AppLogo";
 
@@ -155,7 +156,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const enrolledClassesRef = useRef(enrolledClasses);
   const presentationsRef = useRef(presentations);
   const currentPresentationRef = useRef(currentPresentation);
-  const distributionsRef = useRef(distributions);
+  const distributionsRef = useRef<GradeDistribution[]>(distributions);
   useEffect(() => { enrolledClassesRef.current = enrolledClasses; }, [enrolledClasses]);
   useEffect(() => { presentationsRef.current = presentations; }, [presentations]);
   useEffect(() => { currentPresentationRef.current = currentPresentation; }, [currentPresentation]);
@@ -175,9 +176,9 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
   const getGroupName = useCallback((groupId: number): string | null => {
     const dist = distributionsRef.current.find(
-      (d) => d.groupId === groupId || (d.group as any)?.groupId === groupId,
+      (d) => d.groupId === groupId || d.group?.groupId === groupId,
     );
-    return (dist?.group as any)?.groupName ?? null;
+    return dist?.group?.groupName ?? null;
   }, []);
 
   const [mobileOpen, setMobileOpen] = useState(false);

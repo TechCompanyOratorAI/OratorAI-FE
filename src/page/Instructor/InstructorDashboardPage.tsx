@@ -321,7 +321,7 @@ const InstructorDashboardPage: React.FC = () => {
                     { label: "Đã duyệt", value: "reviewed" },
                   ]}
                   value={activeTab}
-                  onChange={(val) => setActiveTab(val as any)}
+                  onChange={(val) => setActiveTab(val as typeof activeTab)}
                 />
               }
             >

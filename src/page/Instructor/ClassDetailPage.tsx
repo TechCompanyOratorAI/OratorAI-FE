@@ -8,10 +8,8 @@ import {
   Empty,
   Avatar,
   Badge,
-  Modal,
   Button as AntButton,
   Select,
-  Checkbox,
   Tooltip,
   Switch,
 } from "antd";
@@ -61,14 +59,18 @@ import {
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import TopicModal from "@/components/Topic/TopicModal";
 import TopicUpdateModal from "@/components/Topic/TopicUpdateModal";
+import TopicDeleteModal from "@/components/Topic/TopicDeleteModal";
 import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import RubricModal from "@/components/Rubric/RubricModal";
+import RubricTemplateConfigModal from "@/components/Rubric/RubricTemplateConfigModal";
+import DeleteConfirmModal from "@/components/common/DeleteConfirmModal";
 import Toast from "@/components/Toast/Toast";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
 import {
   fetchGroupsByClass,
   fetchGroupDetail,
   Group,
+  GroupStudent,
 } from "@/services/features/group/groupSlice";
 import {
   createTopic,
@@ -214,7 +216,6 @@ const ClassDetailPage: React.FC = () => {
   const [selectedTemplateOptionId, setSelectedTemplateOptionId] = useState<
     number | null
   >(null);
-  const [confirmApplyPick, setConfirmApplyPick] = useState(false);
   const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
     rubricTemplateId: 0,
     enableAiReport: true,
@@ -325,12 +326,12 @@ const ClassDetailPage: React.FC = () => {
       // Refresh details to get latest topics
       dispatch(fetchCourseDetail(selectedClass.courseId));
       dispatch(fetchClassDetail(selectedClass.classId));
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể tạo chủ đề.",
+            : (error as { message?: string })?.message || "Không thể tạo chủ đề.",
         type: "error",
       });
     }
@@ -366,12 +367,12 @@ const ClassDetailPage: React.FC = () => {
       if (selectedClass?.classId) {
         dispatch(fetchClassDetail(selectedClass.classId));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể cập nhật chủ đề.",
+            : (error as { message?: string })?.message || "Không thể cập nhật chủ đề.",
         type: "error",
       });
     }
@@ -388,6 +389,27 @@ const ClassDetailPage: React.FC = () => {
       requirements: prev?.requirements,
     }));
     setIsDeleteTopicModalOpen(true);
+  };
+
+  const handleConfirmDeleteTopic = async () => {
+    if (!editingTopic) return;
+    try {
+      await dispatch(deleteTopic(editingTopic.topicId)).unwrap();
+      setToast({ message: "Xóa chủ đề thành công.", type: "success" });
+      if (selectedClass?.courseId)
+        dispatch(fetchCourseDetail(selectedClass.courseId));
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Không thể xóa chủ đề.";
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setIsDeleteTopicModalOpen(false);
+      setEditingTopic(null);
+    }
   };
 
   const sortedRubricCriteria = useMemo(
@@ -477,12 +499,12 @@ const ClassDetailPage: React.FC = () => {
       setOriginalCriteria(reorderedCriteria);
       setToast({ message: "Đã cập nhật thứ tự rubric.", type: "success" });
       dispatch(fetchRubricByClass(classIdNumber));
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể cập nhật thứ tự rubric.",
+            : (error as { message?: string })?.message || "Không thể cập nhật thứ tự rubric.",
         type: "error",
       });
     }
@@ -495,7 +517,6 @@ const ClassDetailPage: React.FC = () => {
 
   const handleChooseTemplate = (templateId: number) => {
     setPendingTemplateId(templateId);
-    setConfirmApplyPick(false);
     setPickSettings({
       rubricTemplateId: templateId,
       enableAiReport: true,
@@ -528,7 +549,6 @@ const ClassDetailPage: React.FC = () => {
       ).unwrap();
 
       setPendingTemplateId(null);
-      setConfirmApplyPick(false);
       setIsTemplateConfigModalOpen(false);
 
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
@@ -536,12 +556,12 @@ const ClassDetailPage: React.FC = () => {
         message: "Đã chọn mẫu cho lớp học này.",
         type: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể chọn mẫu rubric.",
+            : (error as { message?: string })?.message || "Không thể chọn mẫu rubric.",
         type: "error",
       });
     }
@@ -605,12 +625,12 @@ const ClassDetailPage: React.FC = () => {
       // Close modal for both create and edit
       setIsRubricModalOpen(false);
       setEditingRubric(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Thao tác tiêu chí đánh giá thất bại.",
+            : (error as { message?: string })?.message || "Thao tác tiêu chí đánh giá thất bại.",
         type: "error",
       });
     }
@@ -632,12 +652,12 @@ const ClassDetailPage: React.FC = () => {
       if (editingRubric?.classRubricCriteriaId === criterionId) {
         setEditingRubric(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể xóa tiêu chí rubric.",
+            : (error as { message?: string })?.message || "Không thể xóa tiêu chí rubric.",
         type: "error",
       });
     }
@@ -687,12 +707,12 @@ const ClassDetailPage: React.FC = () => {
 
       setToast({ message: "Đã cập nhật thứ tự rubric.", type: "success" });
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể cập nhật thứ tự rubric.",
+            : (error as { message?: string })?.message || "Không thể cập nhật thứ tự rubric.",
         type: "error",
       });
     }
@@ -711,12 +731,12 @@ const ClassDetailPage: React.FC = () => {
       dispatch(fetchRubricByClass(classIdNumber));
       setIsDeleteRubricModalOpen(false);
       setEditingRubric(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setToast({
         message:
           typeof error === "string"
             ? error
-            : error?.message || "Không thể xóa tiêu chí rubric.",
+            : (error as { message?: string })?.message || "Không thể xóa tiêu chí rubric.",
         type: "error",
       });
     }
@@ -817,7 +837,7 @@ const ClassDetailPage: React.FC = () => {
   const getGroupName = (group: Group) =>
     group.groupName ?? group.name ?? "Nhóm";
   const getGroupId = (group: Group) => group.groupId ?? group.id;
-  const getMemberName = (member: any) => {
+  const getMemberName = (member: GroupStudent) => {
     const fullName = [member?.firstName, member?.lastName]
       .filter(Boolean)
       .join(" ")
@@ -1561,220 +1581,30 @@ const ClassDetailPage: React.FC = () => {
         activeCriteriaId={editingRubric?.classRubricCriteriaId}
       />
 
-      <Modal
-        open={isTemplateConfigModalOpen && !!pendingTemplate}
-        title={
-          <div className="flex items-center gap-2">
-            <CheckCircleOutlined style={{ color: "#0284c7" }} />
-            <span>Cấu hình mẫu rubric</span>
-          </div>
-        }
-        width={640}
-        closable={!rubricPickLoading}
-        maskClosable={!rubricPickLoading}
+      <RubricTemplateConfigModal
+        isOpen={isTemplateConfigModalOpen}
+        pendingTemplate={pendingTemplate}
+        pickSettings={pickSettings}
+        onSettingsChange={setPickSettings}
         onCancel={() => {
-          if (rubricPickLoading) return;
           setIsTemplateConfigModalOpen(false);
           setPendingTemplateId(null);
-          setConfirmApplyPick(false);
         }}
-        footer={[
-          <AntButton
-            key="cancel"
-            shape="round"
-            disabled={rubricPickLoading}
-            onClick={() => {
-              setIsTemplateConfigModalOpen(false);
-              setPendingTemplateId(null);
-              setConfirmApplyPick(false);
-            }}
-          >
-            Hủy
-          </AntButton>,
-          <AntButton
-            key="apply"
-            type="primary"
-            shape="round"
-            loading={rubricPickLoading}
-            disabled={!confirmApplyPick}
-            onClick={handleApplyPickTemplate}
-          >
-            Sử dụng mẫu
-          </AntButton>,
-        ]}
-      >
-        {pendingTemplate && (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
-                Mẫu đã chọn
-              </p>
-              <p className="text-base font-bold text-slate-900 mt-1">
-                {pendingTemplate.templateName}
-              </p>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Loại bài nộp: {pendingTemplate.assignmentType}
-              </p>
-            </div>
+        onConfirm={handleApplyPickTemplate}
+        isLoading={rubricPickLoading}
+      />
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
-              <Checkbox checked disabled>
-                Bật báo cáo AI
-              </Checkbox>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-white p-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-slate-700">
-                    Ngôn ngữ phản hồi
-                  </span>
-                  <Select
-                    value={pickSettings.feedbackLanguage || "en"}
-                    onChange={(val) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        feedbackLanguage: val,
-                      }))
-                    }
-                    options={[
-                      { value: "en", label: "Tiếng Anh" },
-                      { value: "vi", label: "Tiếng Việt" },
-                    ]}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-slate-700">
-                    Định dạng báo cáo
-                  </span>
-                  <Select
-                    value={pickSettings.reportFormat || "detailed"}
-                    onChange={(val) =>
-                      setPickSettings((prev) => ({
-                        ...prev,
-                        reportFormat: val,
-                      }))
-                    }
-                    options={[
-                      { value: "detailed", label: "Chi tiết" },
-                      { value: "summary", label: "Tóm tắt" },
-                    ]}
-                  />
-                </div>
-                <Checkbox
-                  checked={!!pickSettings.requireInstructorConfirmation}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      requireInstructorConfirmation: e.target.checked,
-                    }))
-                  }
-                >
-                  Yêu cầu giảng viên xác nhận
-                </Checkbox>
-                <Checkbox
-                  checked={!!pickSettings.allowInstructorEdit}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      allowInstructorEdit: e.target.checked,
-                    }))
-                  }
-                >
-                  Cho phép giảng viên chỉnh sửa
-                </Checkbox>
-                <Checkbox
-                  checked={!!pickSettings.includeCriterionComments}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      includeCriterionComments: e.target.checked,
-                    }))
-                  }
-                >
-                  Bao gồm nhận xét theo tiêu chí
-                </Checkbox>
-                <Checkbox
-                  checked={!!pickSettings.includeOverallSummary}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      includeOverallSummary: e.target.checked,
-                    }))
-                  }
-                >
-                  Bao gồm tổng kết chung
-                </Checkbox>
-                <Checkbox
-                  className="md:col-span-2"
-                  checked={!!pickSettings.includeSuggestions}
-                  onChange={(e) =>
-                    setPickSettings((prev) => ({
-                      ...prev,
-                      includeSuggestions: e.target.checked,
-                    }))
-                  }
-                >
-                  Bao gồm gợi ý
-                </Checkbox>
-              </div>
-
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                <Checkbox
-                  checked={confirmApplyPick}
-                  onChange={(e) => setConfirmApplyPick(e.target.checked)}
-                >
-                  Xác nhận sử dụng mẫu này và các tiêu chí
-                  đánh giá cho lớp học này. Chỉ được chọn một lần.
-                </Checkbox>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        open={isDeleteRubricModalOpen && !!editingRubric}
-        title={
-          <div className="flex items-center gap-2 text-red-600">
-            <DeleteOutlined />
-            <span>Xóa tiêu chí rubric</span>
-          </div>
-        }
-        closable={!rubricActionLoading}
-        maskClosable={!rubricActionLoading}
-        onCancel={() => {
+      <DeleteConfirmModal
+        isOpen={isDeleteRubricModalOpen}
+        title="Xóa tiêu chí rubric"
+        itemName={editingRubric?.criteriaName}
+        onClose={() => {
           setIsDeleteRubricModalOpen(false);
           setEditingRubric(null);
         }}
-        footer={[
-          <AntButton
-            key="cancel"
-            shape="round"
-            disabled={rubricActionLoading}
-            onClick={() => {
-              setIsDeleteRubricModalOpen(false);
-              setEditingRubric(null);
-            }}
-          >
-            Hủy
-          </AntButton>,
-          <AntButton
-            key="delete"
-            danger
-            type="primary"
-            shape="round"
-            loading={rubricActionLoading}
-            onClick={handleDeleteRubric}
-          >
-            Xóa
-          </AntButton>,
-        ]}
-      >
-        <p className="text-slate-600">
-          Bạn có chắc muốn xóa tiêu chí rubric{" "}
-          <strong>{editingRubric?.criteriaName}</strong>? Hành động này không thể
-          hoàn tác.
-        </p>
-      </Modal>
+        onConfirm={handleDeleteRubric}
+        isLoading={rubricActionLoading}
+      />
 
       {/* Edit Topic Modal */}
       <TopicUpdateModal
@@ -1794,69 +1624,16 @@ const ClassDetailPage: React.FC = () => {
         }}
       />
 
-      {/* Delete Topic Modal */}
-      <Modal
-        open={isDeleteTopicModalOpen && !!editingTopic}
-        title={
-          <div className="flex items-center gap-2 text-red-600">
-            <DeleteOutlined />
-            <span>Xóa chủ đề</span>
-          </div>
-        }
-        onCancel={() => {
+      <TopicDeleteModal
+        isOpen={isDeleteTopicModalOpen}
+        topicName={editingTopic?.topicName}
+        onClose={() => {
           setIsDeleteTopicModalOpen(false);
           setEditingTopic(null);
         }}
-        footer={[
-          <AntButton
-            key="cancel"
-            shape="round"
-            onClick={() => {
-              setIsDeleteTopicModalOpen(false);
-              setEditingTopic(null);
-            }}
-          >
-            Hủy
-          </AntButton>,
-          <AntButton
-            key="delete"
-            danger
-            type="primary"
-            shape="round"
-            onClick={async () => {
-              if (!editingTopic) return;
-              try {
-                await dispatch(deleteTopic(editingTopic.topicId)).unwrap();
-                setToast({
-                  message: "Xóa chủ đề thành công.",
-                  type: "success",
-                });
-                if (selectedClass?.courseId)
-                  dispatch(fetchCourseDetail(selectedClass.courseId));
-              } catch (error: unknown) {
-                const msg =
-                  error instanceof Error
-                    ? error.message
-                    : typeof error === "string"
-                      ? error
-                      : "Không thể xóa chủ đề.";
-                setToast({ message: msg, type: "error" });
-              } finally {
-                setIsDeleteTopicModalOpen(false);
-                setEditingTopic(null);
-              }
-            }}
-          >
-            Xóa
-          </AntButton>,
-        ]}
-      >
-        <p className="text-slate-600">
-          Bạn có chắc muốn xóa chủ đề{" "}
-          <strong>{editingTopic?.topicName}</strong>? Hành động này không thể
-          hoàn tác.
-        </p>
-      </Modal>
+        onConfirm={handleConfirmDeleteTopic}
+        isLoading={false}
+      />
 
       {/* Toast Notification */}
       {toast && (
