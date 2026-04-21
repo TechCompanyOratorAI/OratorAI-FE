@@ -24,6 +24,7 @@ import {
   fetchPresentationReport,
   fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
+import { fetchGradeDistributionByReport } from "@/services/features/groupGrade/groupGradeSlice";
 import {
   Button,
   Tabs,
@@ -100,6 +101,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
     criterionFeedbacks,
     error: reportError,
   } = useAppSelector((state) => state.report);
+  const { currentDistribution } = useAppSelector((state) => state.groupGrade);
 
   const [showReport, setShowReport] = useState(false);
   const [reportTab, setReportTab] = useState<"ai" | "instructor">("ai");
@@ -274,6 +276,13 @@ const IntructorPresentationDetailPage: React.FC = () => {
     if (!Number.isFinite(raw)) return null;
     return (raw * 10).toFixed(1);
   }, [currentReport?.overallScore]);
+  const isGradeFinalized = currentDistribution?.status === "finalized";
+
+  useEffect(() => {
+    if (showReport && currentReport?.reportId) {
+      void dispatch(fetchGradeDistributionByReport(currentReport.reportId));
+    }
+  }, [showReport, currentReport?.reportId, dispatch]);
 
   if (
     isValidPresentationId &&
@@ -498,7 +507,8 @@ const IntructorPresentationDetailPage: React.FC = () => {
                     </span>
                   )}
                   {currentReport &&
-                    currentReport.reportStatus === "confirmed" && (
+                    currentReport.reportStatus === "confirmed" &&
+                    !isGradeFinalized && (
                       <Button
                         danger
                         type="default"
@@ -512,6 +522,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   {currentReport &&
                     currentReport.reportStatus !== "confirmed" &&
                     currentReport.reportStatus !== "rejected" &&
+                    !isGradeFinalized &&
                     instructorFeedbackComplete && (
                       <>
                         <Button

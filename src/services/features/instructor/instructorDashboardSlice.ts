@@ -5,6 +5,7 @@ import {
   CLASS_STUDENTS_ENDPOINT,
   AI_REPORTS_BY_CLASS_ENDPOINT,
   CLASS_SCORES_ENDPOINT,
+  INSTRUCTOR_DASHBOARD_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -91,6 +92,7 @@ export interface TeachingClassStats {
 }
 
 export interface InstructorDashboardState {
+  metrics: any | null;
   teachingClasses: TeachingClassInfo[];
   classStats: Record<number, TeachingClassStats>;
   recentReports: AIRReportSummary[];
@@ -171,9 +173,26 @@ export const fetchClassAverageScore = createAsyncThunk(
   },
 );
 
+export const fetchInstructorDashboard = createAsyncThunk(
+  "instructorDashboard/fetchInstructorDashboard",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<{ success: boolean; data: any }>(
+        INSTRUCTOR_DASHBOARD_ENDPOINT,
+      );
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch instructor dashboard",
+      );
+    }
+  },
+);
+
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 const initialState: InstructorDashboardState = {
+  metrics: null,
   teachingClasses: [],
   classStats: {},
   recentReports: [],
@@ -190,6 +209,7 @@ const instructorDashboardSlice = createSlice({
       state.error = null;
     },
     clearDashboard: (state) => {
+      state.metrics = null;
       state.teachingClasses = [];
       state.classStats = {};
       state.recentReports = [];
@@ -225,6 +245,20 @@ const instructorDashboardSlice = createSlice({
         });
       })
       .addCase(fetchTeachingClasses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(fetchInstructorDashboard.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInstructorDashboard.fulfilled, (state, action) => {
+        state.loading = false;
+        state.metrics = action.payload;
+      })
+      .addCase(fetchInstructorDashboard.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
