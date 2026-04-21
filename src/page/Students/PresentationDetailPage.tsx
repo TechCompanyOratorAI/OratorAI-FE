@@ -650,6 +650,8 @@ const PresentationDetailPage: React.FC = () => {
     ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
       "Student"
     : "Unknown";
+  const presentationGroupName =
+    group?.groupName || group?.name || "Nhóm thuyết trình";
 
   const sc =
     statusConfig[presentation?.status?.toLowerCase() ?? "draft"] ??
@@ -885,120 +887,6 @@ const PresentationDetailPage: React.FC = () => {
               </Space>
             </div>
 
-            {/* Title Section */}
-            <Card
-              style={{
-                borderRadius: 20,
-                border: "none",
-                background: `linear-gradient(135deg, ${PALETTE.primary} 0%, ${PALETTE.primaryDark} 100%)`,
-                color: PALETTE.white,
-                overflow: "hidden",
-                position: "relative",
-              }}
-              styles={{ body: { padding: "28px 28px 24px" } }}
-              className="shadow-lg"
-            >
-              {/* Decorative circles */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: -30,
-                  right: -30,
-                  width: 160,
-                  height: 160,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.06)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: -20,
-                  right: 80,
-                  width: 100,
-                  height: 100,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.04)",
-                }}
-              />
-
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <Title
-                  level={2}
-                  style={{
-                    color: PALETTE.white,
-                    margin: 0,
-                    fontWeight: 800,
-                    fontSize: 24,
-                    lineHeight: 1.3,
-                  }}
-                  ellipsis={{
-                    rows: 2,
-                    expandable: false,
-                    tooltip: presentation.title,
-                  }}
-                >
-                  {presentation.title}
-                </Title>
-                {presentation.description && (
-                  <Paragraph
-                    style={{
-                      color: "rgba(255,255,255,0.75)",
-                      margin: "8px 0 0",
-                      fontSize: 14,
-                    }}
-                  >
-                    {presentation.description}
-                  </Paragraph>
-                )}
-                <div
-                  style={{
-                    marginTop: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <Avatar
-                    size={32}
-                    src={presentation.student?.avatar || undefined}
-                    style={{
-                      background: "rgba(255,255,255,0.2)",
-                      color: PALETTE.white,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {!presentation.student?.avatar &&
-                      studentName.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <div>
-                    <Text
-                      style={{
-                        color: "rgba(255,255,255,0.9)",
-                        fontSize: 13,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {studentName}
-                    </Text>
-                    {presentation.createdAt && (
-                      <Text
-                        style={{
-                          color: "rgba(255,255,255,0.6)",
-                          fontSize: 11,
-                          display: "block",
-                        }}
-                      >
-                        {new Date(presentation.createdAt).toLocaleDateString(
-                          "vi-VN",
-                          { day: "2-digit", month: "short", year: "numeric" },
-                        )}
-                      </Text>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
           </motion.div>
 
           {/* ── Stat Cards ── */}
@@ -1045,14 +933,14 @@ const PresentationDetailPage: React.FC = () => {
                           display: "block",
                         }}
                       >
-                        Người thuyết trình
+                        Nhóm thuyết trình
                       </Text>
                       <Text
                         strong
                         style={{ fontSize: 13, display: "block" }}
-                        ellipsis={{ tooltip: studentName }}
+                        ellipsis={{ tooltip: presentationGroupName }}
                       >
-                        {studentName}
+                        {presentationGroupName}
                       </Text>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import {
   Avatar,
   Button,
   Drawer,
+  Input,
 } from "antd";
 import {
   BookText,
@@ -13,6 +14,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   KeyRound,
+  Search,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch } from "@/services/store/store";
@@ -81,6 +83,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [coursePageMap, setCoursePageMap] = useState<Record<number, number>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -96,6 +99,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
     if (!open) {
       setSelectedCourseId(null);
       setCoursePageMap({});
+      setSearchKeyword("");
     }
   }, [open]);
 
@@ -131,6 +135,24 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
   const courseClasses = selectedCourseId
     ? allClassesMap[selectedCourseId] || []
     : [];
+  const normalizedKeyword = searchKeyword.trim().toLowerCase();
+  const filteredDeptCourses = useMemo(() => {
+    if (!normalizedKeyword) return deptCourses;
+    return deptCourses.filter(
+      (course) =>
+        course.courseCode.toLowerCase().includes(normalizedKeyword) ||
+        course.courseName.toLowerCase().includes(normalizedKeyword),
+    );
+  }, [deptCourses, normalizedKeyword]);
+  const filteredCourseClasses = useMemo(() => {
+    if (!normalizedKeyword) return courseClasses;
+    return courseClasses.filter(
+      (cls) =>
+        cls.classCode.toLowerCase().includes(normalizedKeyword) ||
+        cls.className.toLowerCase().includes(normalizedKeyword) ||
+        cls.instructorName.toLowerCase().includes(normalizedKeyword),
+    );
+  }, [courseClasses, normalizedKeyword]);
 
   const isEnrolled = (classId: number) => enrolledClassIds.includes(classId);
   const isLoadingClasses =
@@ -274,14 +296,28 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
 
                 {/* Class list — scrollable */}
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+                  <Input
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    placeholder={
+                      selectedCourseId
+                        ? "Tìm lớp theo mã, tên lớp hoặc giảng viên..."
+                        : "Tìm khóa học theo mã hoặc tên..."
+                    }
+                    allowClear
+                    prefix={<Search style={{ width: 14, height: 14, color: "#9CA3AF" }} />}
+                    style={{ marginBottom: 12, borderRadius: 10 }}
+                  />
                   {!selectedCourseId ? (
-                    deptCourses.length === 0 ? (
+                    filteredDeptCourses.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "40px 0" }}>
-                        <Text style={{ color: "#9CA3AF" }}>Không có khóa học</Text>
+                        <Text style={{ color: "#9CA3AF" }}>
+                          {normalizedKeyword ? "Không tìm thấy khóa học phù hợp" : "Không có khóa học"}
+                        </Text>
                       </div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {deptCourses.map((course) => (
+                        {filteredDeptCourses.map((course) => (
                           <div
                             key={course.courseId}
                             onClick={() => handleSelectCourse(course.courseId)}
@@ -322,7 +358,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     )
                   ) : (
                     <MobileClassList
-                      courseClasses={courseClasses}
+                      courseClasses={filteredCourseClasses}
                       isLoadingClasses={isLoadingClasses}
                       isEnrolled={isEnrolled}
                       onEnroll={onEnroll}
@@ -432,43 +468,27 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     Khóa học
                   </div>
 
-                  {deptCourses.map((course) => (
+                  {selectedCourseId && (
                     <div
-                      key={course.courseId}
-                      onClick={() => handleSelectCourse(course.courseId)}
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
                         padding: "10px 14px",
                         borderRadius: 10,
-                        cursor: "pointer",
                         fontWeight: 600,
                         fontSize: 13,
                         background:
-                          selectedCourseId === course.courseId
-                            ? "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)"
-                            : "transparent",
-                        color: selectedCourseId === course.courseId ? "#6966fe" : "#6B7280",
+                          "linear-gradient(135deg,rgba(29,169,230,0.12) 0%,rgba(105,102,254,0.12) 100%)",
+                        color: "#6966fe",
                         transition: "all 0.15s",
-                        borderLeft:
-                          selectedCourseId === course.courseId
-                            ? "3px solid #6966fe"
-                            : "3px solid transparent",
+                        borderLeft: "3px solid #6966fe",
                       }}
                     >
                       <GraduationCap style={{ width: 15, height: 15, flexShrink: 0 }} />
-                      <span
-                        style={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {course.courseCode}
-                      </span>
+                      Lớp
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Right content */}
@@ -480,10 +500,24 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     background: "#F9FAFB",
                   }}
                 >
+                  <Input
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    placeholder={
+                      selectedCourseId
+                        ? "Tìm lớp theo mã, tên lớp hoặc giảng viên..."
+                        : "Tìm khóa học theo mã hoặc tên..."
+                    }
+                    allowClear
+                    prefix={<Search style={{ width: 14, height: 14, color: "#9CA3AF" }} />}
+                    style={{ marginBottom: 14, borderRadius: 10 }}
+                  />
                   {!selectedCourseId ? (
-                    deptCourses.length === 0 ? (
+                    filteredDeptCourses.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "40px 0" }}>
-                        <Text style={{ color: "#9CA3AF" }}>Không có khóa học</Text>
+                        <Text style={{ color: "#9CA3AF" }}>
+                          {normalizedKeyword ? "Không tìm thấy khóa học phù hợp" : "Không có khóa học"}
+                        </Text>
                       </div>
                     ) : (
                       <div
@@ -493,7 +527,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                           gap: 14,
                         }}
                       >
-                        {deptCourses.map((course) => (
+                        {filteredDeptCourses.map((course) => (
                           <div
                             key={course.courseId}
                             onClick={() => handleSelectCourse(course.courseId)}
@@ -571,7 +605,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     )
                   ) : (
                     <DesktopClassTable
-                      courseClasses={courseClasses}
+                      courseClasses={filteredCourseClasses}
                       isLoadingClasses={isLoadingClasses}
                       isEnrolled={isEnrolled}
                       onEnroll={onEnroll}

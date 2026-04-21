@@ -235,64 +235,64 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 text-white shadow-xl p-6 sm:p-8"
+          className="rounded-3xl bg-white border border-slate-200 shadow-sm p-6 sm:p-7"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-          <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-white/5 rounded-full" />
-          <div className="relative space-y-3">
-            <Space wrap>
-              <Tag className="!bg-white/20 !border-white/30 !text-white !font-semibold">
-                Chủ đề #{topic.sequenceNumber}
-              </Tag>
-              {isEnrolled && (
-                <Tag
-                  icon={<CheckCircleOutlined />}
-                  className="!bg-emerald-400/30 !border-white/30 !text-white !font-semibold"
-                >
-                  Đã ghi danh (nhóm)
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
+            <div className="space-y-3">
+              <Space wrap>
+                <Tag className="!bg-slate-100 !border-slate-200 !text-slate-700 !font-semibold">
+                  Chủ đề #{topic.sequenceNumber}
                 </Tag>
+                {isEnrolled && (
+                  <Tag
+                    icon={<CheckCircleOutlined />}
+                    className="!bg-emerald-50 !border-emerald-200 !text-emerald-700 !font-semibold"
+                  >
+                    Đã ghi danh (nhóm)
+                  </Tag>
+                )}
+              </Space>
+
+              <Title level={2} className="!text-slate-900 !mb-0 !leading-tight">
+                {topic.topicName}
+              </Title>
+              {topic.description && (
+                <Paragraph className="!text-slate-600 !mb-0 max-w-2xl">
+                  {topic.description}
+                </Paragraph>
               )}
-            </Space>
+            </div>
 
-            <Title level={2} className="!text-white !mb-0 !leading-tight">
-              {topic.topicName}
-            </Title>
-            {topic.description && (
-              <Paragraph className="!text-white/80 !mb-0 max-w-2xl">
-                {topic.description}
-              </Paragraph>
-            )}
-
-            <div className="flex flex-wrap gap-3 pt-1">
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
               {topic.dueDate && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
-                  <CalendarOutlined className="text-white/80" />
-                  <div>
-                    <div className="text-white/60 text-xs">Hạn nộp</div>
-                    <div className="text-white font-semibold text-xs">
-                      {new Date(topic.dueDate).toLocaleDateString("vi-VN")}
-                    </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <div className="flex items-center gap-2 text-slate-500 text-xs">
+                    <CalendarOutlined />
+                    Hạn nộp
+                  </div>
+                  <div className="text-sm font-semibold text-slate-900 mt-1">
+                    {new Date(topic.dueDate).toLocaleDateString("vi-VN")}
                   </div>
                 </div>
               )}
               {topic.maxDurationMinutes && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
-                  <ClockCircleOutlined className="text-white/80" />
-                  <div>
-                    <div className="text-white/60 text-xs">Thời lượng</div>
-                    <div className="text-white font-semibold text-xs">
-                      {topic.maxDurationMinutes} phút
-                    </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <div className="flex items-center gap-2 text-slate-500 text-xs">
+                    <ClockCircleOutlined />
+                    Thời lượng
+                  </div>
+                  <div className="text-sm font-semibold text-slate-900 mt-1">
+                    {topic.maxDurationMinutes} phút
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
-                <FileTextOutlined className="text-white/80" />
-                <div>
-                  <div className="text-white/60 text-xs">Bài nộp</div>
-                  <div className="text-white font-semibold text-xs">
-                    {presentations.length}
-                  </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div className="flex items-center gap-2 text-slate-500 text-xs">
+                  <FileTextOutlined />
+                  Bài nộp
+                </div>
+                <div className="text-sm font-semibold text-slate-900 mt-1">
+                  {presentations.length}
                 </div>
               </div>
             </div>
@@ -300,7 +300,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
         </motion.div>
 
         {/* Main grid */}
-        <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)]">
           {/* Left column */}
           <div className="space-y-5">
             {/* Requirements */}
@@ -331,10 +331,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             )}
 
             {/* Presentations list */}
-            <Card className="!rounded-2xl !border-slate-200 !shadow-sm">
+            <Card className="!rounded-3xl !border-slate-200 !shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <FileTextOutlined className="text-indigo-600" />
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <FileTextOutlined className="text-slate-600" />
                 </div>
                 <div>
                   <Text strong className="block text-base">
@@ -356,10 +356,10 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     return (
                       <div
                         key={presentation.presentationId}
-                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all duration-200"
+                        className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm bg-slate-50/50 hover:bg-white transition-all duration-200"
                       >
-                        <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                          <FileTextOutlined className="text-indigo-600" />
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                          <FileTextOutlined className="text-slate-600" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -433,7 +433,15 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
 
           {/* Right column: Action zone */}
           <div>
-            <Card className="!rounded-2xl !border-slate-200 !shadow-sm sticky top-24">
+            <Card className="!rounded-3xl !border-slate-200 !shadow-sm sticky top-24">
+              <div className="mb-3">
+                <Text strong className="text-sm text-slate-900">
+                  Trung tâm thao tác
+                </Text>
+                <p className="text-xs text-slate-500 m-0 mt-1">
+                  Hành động theo vai trò và trạng thái hiện tại của bạn.
+                </p>
+              </div>
               <AnimatePresence mode="wait">
                 {!isEnrolled ? (
                   <motion.div

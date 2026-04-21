@@ -254,7 +254,7 @@ const StudentClassDetailPage: React.FC = () => {
   if (loading) {
     return (
       <StudentLayout>
-        <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 py-10 space-y-6">
           <Skeleton active paragraph={{ rows: 2 }} />
           <Skeleton active paragraph={{ rows: 6 }} />
         </div>
@@ -266,7 +266,7 @@ const StudentClassDetailPage: React.FC = () => {
   if (error || !classDetail) {
     return (
       <StudentLayout>
-        <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="max-w-7xl mx-auto px-4 py-10">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-6"
@@ -323,8 +323,7 @@ const StudentClassDetailPage: React.FC = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         <nav className="flex items-center gap-2 text-sm text-slate-400">
           <button
             onClick={() => navigate(-1)}
@@ -333,23 +332,16 @@ const StudentClassDetailPage: React.FC = () => {
             <ArrowLeft size={14} /> Quay lại
           </button>
           <ChevronRight size={13} />
-          <span className="text-slate-600 font-medium truncate">
-            {classTitle}
-          </span>
+          <span className="text-slate-600 font-medium truncate">{classTitle}</span>
         </nav>
 
-        {/* ── Hero Card ── */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm"
+          transition={{ duration: 0.25 }}
+          className="grid gap-4 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]"
         >
-          {/* Top stripe */}
-          <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
-
-          <div className="p-6 sm:p-8">
-            {/* Status badges */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
@@ -377,15 +369,12 @@ const StudentClassDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Title */}
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mb-1">
               {classTitle}
             </h1>
-
-            {/* Course subtitle */}
-            <p className="text-slate-500 text-sm mb-1">
+            <p className="text-sm text-slate-500 mb-1">
               {courseInfo?.courseCode && courseInfo?.courseName
-                ? `${courseInfo.courseCode} — ${courseInfo.courseName}`
+                ? `${courseInfo.courseCode} - ${courseInfo.courseName}`
                 : classDetail.classCode}
               {courseInfo?.semester && courseInfo?.academicYear && (
                 <span className="ml-2 text-slate-400">
@@ -393,26 +382,15 @@ const StudentClassDetailPage: React.FC = () => {
                 </span>
               )}
             </p>
-
-            {/* Instructor */}
-            <p className="flex items-center gap-1.5 text-slate-500 text-sm mb-6">
+            <p className="flex items-center gap-1.5 text-slate-500 text-sm mb-5">
               <GraduationCap size={14} className="text-slate-400" />
-              <span>
-                Giảng viên:{" "}
-                <span className="text-slate-700 font-medium">
-                  {instructorName}
-                </span>
-              </span>
+              Giảng viên:{" "}
+              <span className="font-medium text-slate-700">{instructorName}</span>
             </p>
 
-            {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                {
-                  icon: <Calendar size={14} />,
-                  value: classDuration,
-                  label: "ngày học",
-                },
+                { icon: <Calendar size={14} />, value: classDuration, label: "ngày học" },
                 {
                   icon: <Users size={14} />,
                   value: enrollmentCount,
@@ -420,11 +398,7 @@ const StudentClassDetailPage: React.FC = () => {
                     ? `/ ${classDetail.maxStudents} học viên`
                     : "học viên",
                 },
-                {
-                  icon: <BookMarked size={14} />,
-                  value: topics.length,
-                  label: "chủ đề",
-                },
+                { icon: <BookMarked size={14} />, value: topics.length, label: "chủ đề" },
                 {
                   icon: <Users size={14} />,
                   value: groups.length,
@@ -433,51 +407,110 @@ const StudentClassDetailPage: React.FC = () => {
               ].map((s, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
                 >
-                  <div className="text-slate-400">{s.icon}</div>
-                  <div>
-                    <div className="text-slate-900 font-bold text-lg leading-none">
-                      {s.value}
-                    </div>
-                    <div className="text-slate-400 text-[11px] mt-0.5 truncate">
-                      {s.label}
-                    </div>
+                  <div className="flex items-center gap-2 text-slate-400 text-xs">
+                    {s.icon}
+                    <span>{s.label}</span>
                   </div>
+                  <div className="text-xl font-bold text-slate-900 mt-1">{s.value}</div>
                 </div>
               ))}
             </div>
           </div>
+
+          <aside className="space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm h-full">
+              <h3 className="text-sm font-semibold text-slate-900 m-0">
+                Trung tâm thao tác
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 mb-4">
+                Các thao tác nhanh theo trạng thái lớp học của bạn.
+              </p>
+
+              <div className="space-y-2">
+                <Button
+                  block
+                  type={activeTab === "topics" ? "primary" : "default"}
+                  className="!rounded-xl"
+                  onClick={() => setActiveTab("topics")}
+                >
+                  Mở danh sách chủ đề
+                </Button>
+                <Button
+                  block
+                  type={activeTab === "groups" ? "primary" : "default"}
+                  className="!rounded-xl"
+                  onClick={() => setActiveTab("groups")}
+                >
+                  Mở danh sách nhóm
+                </Button>
+                {myGroupForClass?.groupId && (
+                  <Button
+                    block
+                    className="!rounded-xl"
+                    onClick={() => openGroupDetail(Number(myGroupForClass.groupId))}
+                  >
+                    Xem chi tiết nhóm của bạn
+                  </Button>
+                )}
+                {!myGroupForClass && isGroupEnrolled && (
+                  <Button
+                    block
+                    type="primary"
+                    icon={<Plus size={14} />}
+                    className="!rounded-xl"
+                    onClick={() => setIsCreateModalOpen(true)}
+                  >
+                    Tạo nhóm mới
+                  </Button>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="m-0 text-xs text-slate-500">Nhóm hiện tại</p>
+                  <p className="m-0 mt-0.5 text-sm font-medium text-slate-900">
+                    {myGroupForClass ? getGroupName(myGroupForClass) : "Chưa tham gia nhóm"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="m-0 text-xs text-slate-500">Chủ đề của nhóm</p>
+                  <p className="m-0 mt-0.5 text-sm font-medium text-slate-900 truncate">
+                    {groupTopic?.topicName || "Chưa chọn chủ đề"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
         </motion.div>
 
-        {/* ── Tab bar ── */}
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
-                activeTab === t.key
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-              }`}
-            >
-              {t.icon}
-              {t.label}
-              <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${
+        <div className="rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+          <div className="grid grid-cols-2 gap-1">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   activeTab === t.key
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-100 text-slate-400"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {t.count}
-              </span>
-            </button>
-          ))}
+                {t.icon}
+                {t.label}
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    activeTab === t.key ? "bg-white/20" : "bg-slate-100"
+                  }`}
+                >
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* ── Tab Content ── */}
         <AnimatePresence mode="wait">
           {activeTab === "topics" && (
             <motion.div
@@ -486,51 +519,46 @@ const StudentClassDetailPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
+              className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-                  <div>
-                    <h2 className="text-base font-semibold text-slate-900 m-0">
-                      Chủ đề thuyết trình
-                    </h2>
-                    <p className="text-sm text-slate-400 m-0 mt-0.5">
-                      {topics.length} chủ đề trong lớp này
-                    </p>
-                  </div>
-                </div>
+              <div className="px-6 py-5 border-b border-slate-100">
+                <h2 className="text-base font-semibold text-slate-900 m-0">Chủ đề thuyết trình</h2>
+                <p className="text-sm text-slate-400 m-0 mt-0.5">
+                  Chọn chủ đề phù hợp và theo dõi hạn nộp của từng chủ đề.
+                </p>
+              </div>
 
-                {topics.length > 0 ? (
-                  <ol className="divide-y divide-slate-100 list-none p-0 m-0">
-                    {topics.map((topic, idx) => {
-                      const isTopicSelected = Boolean(
-                        myGroupForClass &&
-                        groupTopic?.topicId === topic.topicId,
-                      );
-                      const urgency = getDeadlineUrgency(topic.dueDate);
-                      return (
-                        <motion.li
-                          key={topic.topicId}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: idx * 0.04 }}
-                          className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-blue-50/40 transition-colors"
-                        >
-                          {/* Number */}
-                          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 font-semibold text-sm shrink-0">
-                            {topic.sequenceNumber}
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-900 text-sm truncate m-0">
-                              {topic.topicName}
-                            </h3>
+              {topics.length > 0 ? (
+                <ol className="list-none p-4 sm:p-5 m-0 grid gap-3">
+                  {topics.map((topic, idx) => {
+                    const isTopicSelected = Boolean(
+                      myGroupForClass && groupTopic?.topicId === topic.topicId,
+                    );
+                    const urgency = getDeadlineUrgency(topic.dueDate);
+                    return (
+                      <motion.li
+                        key={topic.topicId}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: idx * 0.03 }}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-4"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-slate-200 text-xs font-semibold text-slate-700">
+                                {topic.sequenceNumber}
+                              </span>
+                              <h3 className="m-0 text-sm sm:text-base font-semibold text-slate-900 truncate">
+                                {topic.topicName}
+                              </h3>
+                            </div>
                             {topic.description && (
-                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-1 m-0">
+                              <p className="m-0 text-xs text-slate-500 line-clamp-2">
                                 {topic.description}
                               </p>
                             )}
-                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
                               {urgency && (
                                 <span
                                   className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium ${urgency.cls}`}
@@ -539,7 +567,7 @@ const StudentClassDetailPage: React.FC = () => {
                                 </span>
                               )}
                               {topic.maxDurationMinutes && (
-                                <span className="inline-flex items-center gap-1 text-xs text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                                <span className="inline-flex items-center gap-1 text-xs text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
                                   <Clock size={10} />
                                   {topic.maxDurationMinutes} phút
                                 </span>
@@ -552,7 +580,6 @@ const StudentClassDetailPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Actions */}
                           <div className="flex items-center gap-2 shrink-0">
                             {isGroupEnrolled &&
                               myGroupForClass &&
@@ -565,10 +592,7 @@ const StudentClassDetailPage: React.FC = () => {
                                   size="small"
                                   icon={
                                     groupActionLoading ? (
-                                      <Loader2
-                                        size={12}
-                                        className="animate-spin"
-                                      />
+                                      <Loader2 size={12} className="animate-spin" />
                                     ) : (
                                       <Plus size={12} />
                                     )
@@ -599,27 +623,25 @@ const StudentClassDetailPage: React.FC = () => {
                               size="small"
                               className="!rounded-lg"
                               onClick={() =>
-                                navigate(
-                                  `/student/class/${classId}/topic/${topic.topicId}`,
-                                )
+                                navigate(`/student/class/${classId}/topic/${topic.topicId}`)
                               }
                             >
                               Xem chi tiết
                             </Button>
                           </div>
-                        </motion.li>
-                      );
-                    })}
-                  </ol>
-                ) : (
-                  <div className="py-16">
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description="Chưa có chủ đề nào. Giảng viên sẽ thêm khi sẵn sàng."
-                    />
-                  </div>
-                )}
-              </div>
+                        </div>
+                      </motion.li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <div className="py-16">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="Chưa có chủ đề nào. Giảng viên sẽ thêm khi sẵn sàng."
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -630,193 +652,165 @@ const StudentClassDetailPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
+              className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5 border-b border-slate-100">
-                  <div>
-                    <h2 className="text-base font-semibold text-slate-900 m-0">
-                      Nhóm làm việc
-                    </h2>
-                    <p className="text-sm text-slate-400 m-0 mt-0.5">
-                      {groups.length} nhóm
-                      {groupLimit
-                        ? ` · tối đa ${groupLimit} thành viên/nhóm`
-                        : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {myGroupForClass && (
-                      <Button
-                        icon={<Users size={14} />}
-                        className="!rounded-xl"
-                        onClick={() => {
-                          if (myGroupForClass.groupId)
-                            openGroupDetail(Number(myGroupForClass.groupId));
-                        }}
-                      >
-                        Nhóm của bạn
-                      </Button>
-                    )}
-                    {!myGroupForClass && isGroupEnrolled && (
-                      <Button
-                        type="primary"
-                        icon={<Plus size={14} />}
-                        className="!rounded-xl"
-                        onClick={() => setIsCreateModalOpen(true)}
-                      >
-                        Tạo nhóm
-                      </Button>
-                    )}
-                  </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900 m-0">Nhóm làm việc</h2>
+                  <p className="text-sm text-slate-400 m-0 mt-0.5">
+                    Quản lý và tham gia nhóm phù hợp cho lớp học này.
+                  </p>
                 </div>
-
-                {!isGroupEnrolled && (
-                  <div className="px-6 pt-5">
-                    <Alert
-                      type="warning"
-                      icon={<AlertTriangle size={14} />}
-                      showIcon
-                      message="Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm."
+                <div className="flex items-center gap-2">
+                  {myGroupForClass && (
+                    <Button
+                      icon={<Users size={14} />}
                       className="!rounded-xl"
+                      onClick={() => {
+                        if (myGroupForClass.groupId)
+                          openGroupDetail(Number(myGroupForClass.groupId));
+                      }}
+                    >
+                      Nhóm của bạn
+                    </Button>
+                  )}
+                  {!myGroupForClass && isGroupEnrolled && (
+                    <Button
+                      type="primary"
+                      icon={<Plus size={14} />}
+                      className="!rounded-xl"
+                      onClick={() => setIsCreateModalOpen(true)}
+                    >
+                      Tạo nhóm
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {!isGroupEnrolled && (
+                <div className="px-6 pt-5">
+                  <Alert
+                    type="warning"
+                    icon={<AlertTriangle size={14} />}
+                    showIcon
+                    message="Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm."
+                    className="!rounded-xl"
+                  />
+                </div>
+              )}
+
+              <div className="p-6">
+                {groupLoading ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[...Array(6)].map((_, i) => (
+                      <Skeleton key={i} active paragraph={{ rows: 2 }} />
+                    ))}
+                  </div>
+                ) : groups.length ? (
+                  <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 m-0">
+                    {groups.map((group) => {
+                      const groupId = getGroupId(group);
+                      const isMyGroup =
+                        myGroupForClass &&
+                        `${getGroupId(myGroupForClass)}` === `${groupId}`;
+                      const memberCount = group.memberCount ?? group.students?.length ?? 0;
+                      const maxMembers = group.maxGroupMembers || groupLimit || 0;
+                      const isFull = maxMembers > 0 && memberCount >= maxMembers;
+                      const fillPct =
+                        maxMembers > 0 ? Math.min((memberCount / maxMembers) * 100, 100) : 0;
+                      const leaderName = getLeaderName(group);
+                      const groupName = getGroupName(group);
+
+                      return (
+                        <li key={`${groupId ?? group.name}`}>
+                          <article
+                            className={`rounded-2xl border p-4 transition-all duration-200 ${
+                              isMyGroup
+                                ? "border-slate-800 bg-slate-800 cursor-pointer"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                            }`}
+                            onClick={() => {
+                              if (isMyGroup && groupId) openGroupDetail(Number(groupId));
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3
+                                className={`font-semibold text-sm m-0 ${isMyGroup ? "text-white" : "text-slate-900"}`}
+                              >
+                                {groupName}
+                              </h3>
+                              <div onClick={(e) => e.stopPropagation()}>
+                                {!myGroupForClass &&
+                                  (isFull ? (
+                                    <span className="text-xs text-slate-400 font-medium">Đã đủ</span>
+                                  ) : group.isMember ? (
+                                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
+                                      <CheckCircle2 size={12} /> Đã tham gia
+                                    </span>
+                                  ) : (
+                                    <Button
+                                      type="primary"
+                                      size="small"
+                                      loading={groupActionLoading}
+                                      disabled={!groupId || !isGroupEnrolled}
+                                      onClick={() => handleJoinGroup(groupId)}
+                                      className="!rounded-lg"
+                                    >
+                                      Tham gia
+                                    </Button>
+                                  ))}
+                              </div>
+                            </div>
+
+                            {group.description && (
+                              <Paragraph
+                                ellipsis={{ rows: 2 }}
+                                className={`!text-xs !mb-2 ${isMyGroup ? "!text-slate-200" : "!text-slate-500"}`}
+                              >
+                                {group.description}
+                              </Paragraph>
+                            )}
+
+                            <div className="space-y-1.5">
+                              <div
+                                className={`flex items-center justify-between text-xs font-medium ${isMyGroup ? "text-slate-200" : "text-slate-600"}`}
+                              >
+                                <span className="flex items-center gap-1">
+                                  <Users size={11} />
+                                  {memberCount}
+                                  {maxMembers ? `/${maxMembers}` : ""} thành viên
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <User size={11} /> {leaderName}
+                                </span>
+                              </div>
+                              {maxMembers > 0 && (
+                                <Progress
+                                  percent={fillPct}
+                                  showInfo={false}
+                                  size="small"
+                                  strokeColor={
+                                    isMyGroup ? "#ffffff" : isFull ? "#94a3b8" : "#0f172a"
+                                  }
+                                  trailColor={
+                                    isMyGroup ? "rgba(255,255,255,0.15)" : "#e2e8f0"
+                                  }
+                                />
+                              )}
+                            </div>
+                          </article>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="py-12">
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description="Chưa có nhóm nào. Hãy tạo nhóm đầu tiên!"
                     />
                   </div>
                 )}
-
-                <div className="p-6">
-                  {groupLoading ? (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {[...Array(4)].map((_, i) => (
-                        <Skeleton key={i} active paragraph={{ rows: 2 }} />
-                      ))}
-                    </div>
-                  ) : groups.length ? (
-                    <ul className="grid sm:grid-cols-2 gap-3 list-none p-0 m-0">
-                      {groups.map((group) => {
-                        const groupId = getGroupId(group);
-                        const isMyGroup =
-                          myGroupForClass &&
-                          `${getGroupId(myGroupForClass)}` === `${groupId}`;
-                        const memberCount =
-                          group.memberCount ?? group.students?.length ?? 0;
-                        const maxMembers =
-                          group.maxGroupMembers || groupLimit || 0;
-                        const isFull =
-                          maxMembers > 0 && memberCount >= maxMembers;
-                        const fillPct =
-                          maxMembers > 0
-                            ? Math.min((memberCount / maxMembers) * 100, 100)
-                            : 0;
-                        const leaderName = getLeaderName(group);
-                        const groupName = getGroupName(group);
-
-                        return (
-                          <li key={`${groupId ?? group.name}`}>
-                            <article
-                              className={`rounded-xl border p-4 transition-all duration-200 ${
-                                isMyGroup
-                                  ? "border-indigo-600 bg-indigo-600 cursor-pointer"
-                                  : "border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm"
-                              }`}
-                              onClick={() => {
-                                if (isMyGroup && groupId)
-                                  openGroupDetail(Number(groupId));
-                              }}
-                            >
-                              <div className="flex items-start justify-between gap-2 mb-3">
-                                <div className="flex items-center gap-2">
-                                  <h3
-                                    className={`font-semibold text-sm m-0 ${isMyGroup ? "text-white" : "text-slate-900"}`}
-                                  >
-                                    {groupName}
-                                  </h3>
-                                  {isMyGroup && (
-                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/20 text-white/80 border border-white/20">
-                                      Nhóm của bạn
-                                    </span>
-                                  )}
-                                </div>
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  {!myGroupForClass &&
-                                    (isFull ? (
-                                      <span className="text-xs text-slate-400 font-medium">
-                                        Đã đủ
-                                      </span>
-                                    ) : group.isMember ? (
-                                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                                        <CheckCircle2 size={12} /> Đã tham gia
-                                      </span>
-                                    ) : (
-                                      <Button
-                                        type="primary"
-                                        size="small"
-                                        loading={groupActionLoading}
-                                        disabled={!groupId || !isGroupEnrolled}
-                                        onClick={() => handleJoinGroup(groupId)}
-                                        className="!rounded-lg"
-                                      >
-                                        Tham gia
-                                      </Button>
-                                    ))}
-                                </div>
-                              </div>
-
-                              {group.description && (
-                                <Paragraph
-                                  ellipsis={{ rows: 2 }}
-                                  className={`!text-xs !mb-2 ${isMyGroup ? "!text-indigo-100" : "!text-slate-500"}`}
-                                >
-                                  {group.description}
-                                </Paragraph>
-                              )}
-
-                              <div className="space-y-1.5">
-                                <div
-                                  className={`flex items-center justify-between text-xs font-medium ${isMyGroup ? "text-indigo-100" : "text-slate-600"}`}
-                                >
-                                  <span className="flex items-center gap-1">
-                                    <Users size={11} />
-                                    {memberCount}
-                                    {maxMembers ? `/${maxMembers}` : ""} thành
-                                    viên
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <User size={11} /> {leaderName}
-                                  </span>
-                                </div>
-                                {maxMembers > 0 && (
-                                  <Progress
-                                    percent={fillPct}
-                                    showInfo={false}
-                                    size="small"
-                                    strokeColor={
-                                      isMyGroup
-                                        ? "#ffffff"
-                                        : isFull
-                                          ? "#94a3b8"
-                                          : "#4f46e5"
-                                    }
-                                    trailColor={
-                                      isMyGroup
-                                        ? "rgba(255,255,255,0.15)"
-                                        : "#e2e8f0"
-                                    }
-                                  />
-                                )}
-                              </div>
-                            </article>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="py-12">
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="Chưa có nhóm nào. Hãy tạo nhóm đầu tiên!"
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </motion.div>
           )}
