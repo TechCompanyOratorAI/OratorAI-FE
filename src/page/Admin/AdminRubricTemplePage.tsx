@@ -89,6 +89,23 @@ const AdminRubricTemplePage: React.FC = () => {
     });
   };
 
+  const extractMessage = (payload: any, fallback: string) => {
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload && typeof payload === "object") {
+      if (typeof payload.message === "string" && payload.message.trim()) {
+        return payload.message;
+      }
+      if (
+        payload.data &&
+        typeof payload.data.message === "string" &&
+        payload.data.message.trim()
+      ) {
+        return payload.data.message;
+      }
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
   }, [dispatch, currentPage, pageSize]);
@@ -191,8 +208,11 @@ const AdminRubricTemplePage: React.FC = () => {
 
   const handleCreateTemplate = async (payload: RubricTemplatePayload) => {
     try {
-      await dispatch(createRubricTemplate(payload)).unwrap();
-      notifySuccess("Tạo thành công", "Tạo mẫu tiêu chí thành công.");
+      const response = await dispatch(createRubricTemplate(payload)).unwrap();
+      notifySuccess(
+        "Tạo thành công",
+        extractMessage(response, "Tạo mẫu tiêu chí thành công."),
+      );
       setIsCreateModalOpen(false);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (createError: any) {
@@ -208,13 +228,16 @@ const AdminRubricTemplePage: React.FC = () => {
   const handleUpdateTemplate = async (payload: RubricTemplatePayload) => {
     if (!editingTemplate) return;
     try {
-      await dispatch(
+      const response = await dispatch(
         updateRubricTemplate({
           rubricTemplateId: editingTemplate.rubricTemplateId,
           data: payload,
         }),
       ).unwrap();
-      notifySuccess("Cập nhật thành công", "Cập nhật mẫu tiêu chí thành công.");
+      notifySuccess(
+        "Cập nhật thành công",
+        extractMessage(response, "Cập nhật mẫu tiêu chí thành công."),
+      );
       setIsEditModalOpen(false);
       setEditingTemplate(null);
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
@@ -230,8 +253,13 @@ const AdminRubricTemplePage: React.FC = () => {
 
   const handleDeleteTemplate = async (rubricTemplateId: number) => {
     try {
-      await dispatch(deleteRubricTemplate(rubricTemplateId)).unwrap();
-      notifySuccess("Xóa thành công", "Xóa mẫu tiêu chí thành công.");
+      const response = await dispatch(
+        deleteRubricTemplate(rubricTemplateId),
+      ).unwrap();
+      notifySuccess(
+        "Xóa thành công",
+        extractMessage(response, "Xóa mẫu tiêu chí thành công."),
+      );
       dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
     } catch (deleteError: any) {
       notifyError(

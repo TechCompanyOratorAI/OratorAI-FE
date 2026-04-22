@@ -68,6 +68,13 @@ export interface CoursesResponse {
   instructor?: Instructor; // Only present in my-class response
 }
 
+interface CourseMutationResponse {
+  success?: boolean;
+  message?: string;
+  course?: CourseData;
+  data?: CourseData;
+}
+
 export interface CourseState {
   courses: CourseData[];
   selectedCourse: CourseData | null;
@@ -163,9 +170,11 @@ export const createCourse = createAsyncThunk(
   "course/createCourse",
   async (courseData: CreateCourseData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post(COURSES_ENDPOINT, courseData);
-      // API returns { success: true, course: {...} }
-      return response.data.course || response.data;
+      const response = await axiosInstance.post<CourseMutationResponse>(
+        COURSES_ENDPOINT,
+        courseData,
+      );
+      return response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create course",
@@ -188,12 +197,11 @@ export const updateCourse = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await axiosInstance.patch(
+      const response = await axiosInstance.patch<CourseMutationResponse>(
         COURSE_DETAIL_ENDPOINT(courseId.toString()),
         data,
       );
-      // API returns { success: true, course: {...} }
-      return response.data.course || response.data;
+      return response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update course",
@@ -207,8 +215,15 @@ export const deleteCourse = createAsyncThunk(
   "course/deleteCourse",
   async (courseId: number, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(COURSE_DETAIL_ENDPOINT(courseId.toString()));
-      return courseId;
+      const response = await axiosInstance.delete<{
+        success?: boolean;
+        message?: string;
+        data?: { courseId?: number };
+      }>(COURSE_DETAIL_ENDPOINT(courseId.toString()));
+      return {
+        courseId: response.data?.data?.courseId ?? courseId,
+        message: response.data?.message,
+      };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete course",
@@ -284,7 +299,10 @@ const courseSlice = createSlice({
       })
       .addCase(createCourse.fulfilled, (state, action) => {
         state.loading = false;
-        state.courses.unshift(action.payload);
+        const createdCourse = action.payload.course || action.payload.data;
+        if (createdCourse) {
+          state.courses.unshift(createdCourse);
+        }
       })
       .addCase(createCourse.rejected, (state, action) => {
         state.loading = false;
@@ -299,17 +317,21 @@ const courseSlice = createSlice({
       })
       .addCase(updateCourse.fulfilled, (state, action) => {
         state.loading = false;
+        const updatedCourse = action.payload.course || action.payload.data;
+        if (!updatedCourse) {
+          return;
+        }
         const index = state.courses.findIndex(
-          (course) => course.courseId === action.payload.courseId,
+          (course) => course.courseId === updatedCourse.courseId,
         );
         if (index !== -1) {
-          state.courses[index] = action.payload;
+          state.courses[index] = updatedCourse;
         }
         if (
           state.selectedCourse &&
-          state.selectedCourse.courseId === action.payload.courseId
+          state.selectedCourse.courseId === updatedCourse.courseId
         ) {
-          state.selectedCourse = action.payload;
+          state.selectedCourse = updatedCourse;
         }
       })
       .addCase(updateCourse.rejected, (state, action) => {
@@ -326,11 +348,11 @@ const courseSlice = createSlice({
       .addCase(deleteCourse.fulfilled, (state, action) => {
         state.loading = false;
         state.courses = state.courses.filter(
-          (course) => course.courseId !== action.payload,
+          (course) => course.courseId !== action.payload.courseId,
         );
         if (
           state.selectedCourse &&
-          state.selectedCourse.courseId === action.payload
+          state.selectedCourse.courseId === action.payload.courseId
         ) {
           state.selectedCourse = null;
         }

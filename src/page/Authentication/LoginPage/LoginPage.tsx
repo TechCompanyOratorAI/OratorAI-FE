@@ -54,7 +54,7 @@ const LoginPage: React.FC = () => {
     if (primaryRole === "Admin") {
       navigate("/admin/dashboard");
     } else if (primaryRole === "Instructor") {
-      navigate("/instructor/manage-classes");
+      navigate("/instructor/dashboard");
     } else if (primaryRole === "Student") {
       navigate("/student/my-class");
     } else {

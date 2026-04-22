@@ -81,6 +81,23 @@ const AdminClassPage: React.FC = () => {
     });
   };
 
+  const extractMessage = (payload: any, fallback: string) => {
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload && typeof payload === "object") {
+      if (typeof payload.message === "string" && payload.message.trim()) {
+        return payload.message;
+      }
+      if (
+        payload.data &&
+        typeof payload.data.message === "string" &&
+        payload.data.message.trim()
+      ) {
+        return payload.data.message;
+      }
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
   }, [dispatch, currentPage, pageSize]);
@@ -102,11 +119,14 @@ const AdminClassPage: React.FC = () => {
   const handleDeleteClass = async (classId: number) => {
     setActionLoading(true);
     try {
-      await dispatch(deleteClass(classId)).unwrap();
+      const response = await dispatch(deleteClass(classId)).unwrap();
       await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-      notifySuccess("Xóa thành công", "Đã xóa lớp học thành công.");
-    } catch {
-      notifyError("Xóa thất bại", "Không thể xóa lớp học.");
+      notifySuccess(
+        "Xóa thành công",
+        extractMessage(response, "Đã xóa lớp học thành công."),
+      );
+    } catch (error) {
+      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa lớp học."));
     }
     setActionLoading(false);
   };
@@ -115,27 +135,36 @@ const AdminClassPage: React.FC = () => {
     setActionLoading(true);
     try {
       if (selectedClass) {
-        await dispatch(
+        const response = await dispatch(
           updateClass({
             classId: selectedClass.classId,
             classData: formData,
           }),
         ).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        notifySuccess("Cập nhật thành công", "Đã cập nhật lớp học thành công.");
+        notifySuccess(
+          "Cập nhật thành công",
+          extractMessage(response, "Đã cập nhật lớp học thành công."),
+        );
       } else {
-        await dispatch(createClass(formData)).unwrap();
+        const response = await dispatch(createClass(formData)).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
-        notifySuccess("Tạo thành công", "Đã tạo lớp học thành công.");
+        notifySuccess(
+          "Tạo thành công",
+          extractMessage(response, "Đã tạo lớp học thành công."),
+        );
       }
       setIsModalOpen(false);
       setSelectedClass(undefined);
-    } catch {
+    } catch (error) {
       notifyError(
         selectedClass ? "Cập nhật thất bại" : "Tạo thất bại",
-        selectedClass
+        extractMessage(
+          error,
+          selectedClass
           ? "Không thể cập nhật lớp học."
           : "Không thể tạo lớp học.",
+        ),
       );
     }
     setActionLoading(false);
@@ -150,7 +179,7 @@ const AdminClassPage: React.FC = () => {
   const handleAddInstructor = async (userId: number) => {
     if (!selectedClass) return;
     try {
-      await dispatch(
+      const response = await dispatch(
         addInstructorToClass({
           classId: selectedClass.classId,
           userId: userId,
@@ -170,17 +199,20 @@ const AdminClassPage: React.FC = () => {
       }
       notifySuccess(
         "Thêm giảng viên thành công",
-        "Đã thêm giảng viên thành công.",
+        extractMessage(response, "Đã thêm giảng viên thành công."),
       );
-    } catch {
-      notifyError("Thêm giảng viên thất bại", "Không thể thêm giảng viên.");
+    } catch (error) {
+      notifyError(
+        "Thêm giảng viên thất bại",
+        extractMessage(error, "Không thể thêm giảng viên."),
+      );
     }
   };
 
   const handleRemoveInstructor = async (userId: number) => {
     if (!selectedClass) return;
     try {
-      await dispatch(
+      const response = await dispatch(
         removeInstructorFromClass({
           classId: selectedClass.classId,
           userId: userId,
@@ -198,9 +230,15 @@ const AdminClassPage: React.FC = () => {
         );
         if (updated) setSelectedClass(updated);
       }
-      notifySuccess("Gỡ giảng viên thành công", "Đã gỡ giảng viên thành công.");
-    } catch {
-      notifyError("Gỡ giảng viên thất bại", "Không thể gỡ giảng viên.");
+      notifySuccess(
+        "Gỡ giảng viên thành công",
+        extractMessage(response, "Đã gỡ giảng viên thành công."),
+      );
+    } catch (error) {
+      notifyError(
+        "Gỡ giảng viên thất bại",
+        extractMessage(error, "Không thể gỡ giảng viên."),
+      );
     }
   };
 

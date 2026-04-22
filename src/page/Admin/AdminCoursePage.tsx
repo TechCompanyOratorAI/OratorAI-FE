@@ -84,6 +84,23 @@ const AdminCoursePage: React.FC = () => {
     });
   };
 
+  const extractMessage = (payload: any, fallback: string) => {
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload && typeof payload === "object") {
+      if (typeof payload.message === "string" && payload.message.trim()) {
+        return payload.message;
+      }
+      if (
+        payload.data &&
+        typeof payload.data.message === "string" &&
+        payload.data.message.trim()
+      ) {
+        return payload.data.message;
+      }
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     dispatch(fetchCourses({ page: currentPage, limit: pageSize }));
   }, [dispatch, currentPage, pageSize]);
@@ -105,10 +122,13 @@ const AdminCoursePage: React.FC = () => {
   const handleDeleteCourse = async (courseId: number) => {
     setActionLoading(true);
     try {
-      await dispatch(deleteCourse(courseId)).unwrap();
-      notifySuccess("Xóa thành công", "Đã xóa khóa học thành công.");
-    } catch {
-      notifyError("Xóa thất bại", "Không thể xóa khóa học.");
+      const response = await dispatch(deleteCourse(courseId)).unwrap();
+      notifySuccess(
+        "Xóa thành công",
+        extractMessage(response, "Đã xóa khóa học thành công."),
+      );
+    } catch (error) {
+      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa khóa học."));
     }
     setActionLoading(false);
   };
@@ -117,25 +137,34 @@ const AdminCoursePage: React.FC = () => {
     setActionLoading(true);
     try {
       if (selectedCourse) {
-        await dispatch(
+        const response = await dispatch(
           updateCourse({
             courseId: selectedCourse.courseId,
             data: courseData,
           }),
         ).unwrap();
-        notifySuccess("Cập nhật thành công", "Đã cập nhật khóa học thành công.");
+        notifySuccess(
+          "Cập nhật thành công",
+          extractMessage(response, "Đã cập nhật khóa học thành công."),
+        );
       } else {
-        await dispatch(createCourse(courseData)).unwrap();
-        notifySuccess("Tạo thành công", "Đã tạo khóa học thành công.");
+        const response = await dispatch(createCourse(courseData)).unwrap();
+        notifySuccess(
+          "Tạo thành công",
+          extractMessage(response, "Đã tạo khóa học thành công."),
+        );
       }
       setIsCourseModalOpen(false);
       setSelectedCourse(undefined);
-    } catch {
+    } catch (error) {
       notifyError(
         selectedCourse ? "Cập nhật thất bại" : "Tạo thất bại",
-        selectedCourse
+        extractMessage(
+          error,
+          selectedCourse
           ? "Không thể cập nhật khóa học."
           : "Không thể tạo khóa học.",
+        ),
       );
     }
     setActionLoading(false);
@@ -168,14 +197,20 @@ const AdminCoursePage: React.FC = () => {
     const courseId = selectedCourse.courseId;
 
     try {
-      await axiosInstance.post(
+      const response = await axiosInstance.post(
         ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(courseId.toString()),
         { instructorIds: [userId] },
       );
-      notifySuccess("Thêm giảng viên thành công", "Đã thêm giảng viên thành công.");
+      notifySuccess(
+        "Thêm giảng viên thành công",
+        extractMessage(response.data, "Đã thêm giảng viên thành công."),
+      );
       await refreshSelectedCourse(courseId);
-    } catch {
-      notifyError("Thêm giảng viên thất bại", "Không thể thêm giảng viên.");
+    } catch (error: any) {
+      notifyError(
+        "Thêm giảng viên thất bại",
+        extractMessage(error?.response?.data || error, "Không thể thêm giảng viên."),
+      );
     }
   };
 
@@ -184,7 +219,7 @@ const AdminCoursePage: React.FC = () => {
     const courseId = selectedCourse.courseId;
 
     try {
-      await axiosInstance.delete(
+      const response = await axiosInstance.delete(
         REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT(
           courseId.toString(),
           userId.toString(),
@@ -192,11 +227,14 @@ const AdminCoursePage: React.FC = () => {
       );
       notifySuccess(
         "Gỡ giảng viên thành công",
-        "Đã gỡ giảng viên thành công.",
+        extractMessage(response.data, "Đã gỡ giảng viên thành công."),
       );
       await refreshSelectedCourse(courseId);
-    } catch {
-      notifyError("Gỡ giảng viên thất bại", "Không thể gỡ giảng viên.");
+    } catch (error: any) {
+      notifyError(
+        "Gỡ giảng viên thất bại",
+        extractMessage(error?.response?.data || error, "Không thể gỡ giảng viên."),
+      );
     }
   };
 
