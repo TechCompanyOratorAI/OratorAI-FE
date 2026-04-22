@@ -67,6 +67,10 @@ interface RubricTemplateMutationResponse {
   data?: RubricTemplate;
   message?: string;
 }
+interface RubricTemplateMutationPayload {
+  template?: RubricTemplate;
+  message?: string;
+}
 
 export interface RubricTemplatePayload {
   templateName: string;
@@ -126,7 +130,7 @@ export const fetchRubricTemplates = createAsyncThunk<
 });
 
 export const createRubricTemplate = createAsyncThunk<
-  RubricTemplate,
+  RubricTemplateMutationPayload,
   RubricTemplatePayload,
   { rejectValue: string }
 >("rubricTemplate/create", async (payload, { rejectWithValue }) => {
@@ -140,7 +144,7 @@ export const createRubricTemplate = createAsyncThunk<
       throw new Error("Invalid create response");
     }
 
-    return response.data.data;
+    return { template: response.data.data, message: response.data.message };
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || "Failed to create rubric template",
@@ -149,7 +153,7 @@ export const createRubricTemplate = createAsyncThunk<
 });
 
 export const updateRubricTemplate = createAsyncThunk<
-  RubricTemplate,
+  RubricTemplateMutationPayload,
   { rubricTemplateId: number; data: RubricTemplatePayload },
   { rejectValue: string }
 >(
@@ -165,7 +169,7 @@ export const updateRubricTemplate = createAsyncThunk<
         throw new Error("Invalid update response");
       }
 
-      return response.data.data;
+      return { template: response.data.data, message: response.data.message };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update rubric template",
@@ -175,15 +179,15 @@ export const updateRubricTemplate = createAsyncThunk<
 );
 
 export const deleteRubricTemplate = createAsyncThunk<
-  number,
+  { rubricTemplateId: number; message?: string },
   number,
   { rejectValue: string }
 >("rubricTemplate/delete", async (rubricTemplateId, { rejectWithValue }) => {
   try {
-    await axiosInstance.delete(
+    const response = await axiosInstance.delete<RubricTemplateMutationResponse>(
       DELETE_RUBRIC_TEMPLATE_ENDPOINT(rubricTemplateId.toString()),
     );
-    return rubricTemplateId;
+    return { rubricTemplateId, message: response.data?.message };
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || "Failed to delete rubric template",
@@ -303,7 +307,9 @@ const rubricTemplateSlice = createSlice({
       })
       .addCase(createRubricTemplate.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.templates = [action.payload, ...state.templates];
+        if (action.payload.template) {
+          state.templates = [action.payload.template, ...state.templates];
+        }
       })
       .addCase(createRubricTemplate.rejected, (state, action) => {
         state.actionLoading = false;
@@ -315,9 +321,13 @@ const rubricTemplateSlice = createSlice({
       })
       .addCase(updateRubricTemplate.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const updatedTemplate = action.payload.template;
+        if (!updatedTemplate) {
+          return;
+        }
         state.templates = state.templates.map((template) =>
-          template.rubricTemplateId === action.payload.rubricTemplateId
-            ? action.payload
+          template.rubricTemplateId === updatedTemplate.rubricTemplateId
+            ? updatedTemplate
             : template,
         );
       })
@@ -332,7 +342,7 @@ const rubricTemplateSlice = createSlice({
       .addCase(deleteRubricTemplate.fulfilled, (state, action) => {
         state.actionLoading = false;
         state.templates = state.templates.filter(
-          (template) => template.rubricTemplateId !== action.payload,
+          (template) => template.rubricTemplateId !== action.payload.rubricTemplateId,
         );
       })
       .addCase(deleteRubricTemplate.rejected, (state, action) => {

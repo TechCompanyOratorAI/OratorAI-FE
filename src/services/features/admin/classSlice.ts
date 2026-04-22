@@ -87,6 +87,7 @@ export interface ClassData {
 export interface ClassResponse {
   success: boolean;
   data: ClassData | ClassData[];
+  message?: string;
   pagination?: {
     total: number;
     page: number;
@@ -248,9 +249,10 @@ export const createClass = createAsyncThunk(
         requestBody,
       );
       return (
-        (Array.isArray(response.data.data)
-          ? response.data.data[0]
-          : response.data.data) || response.data
+        response.data || {
+          success: true,
+          data: [],
+        }
       );
     } catch (error: any) {
       return rejectWithValue(
@@ -279,9 +281,10 @@ export const updateClass = createAsyncThunk(
         classData,
       );
       return (
-        (Array.isArray(response.data.data)
-          ? response.data.data[0]
-          : response.data.data) || response.data
+        response.data || {
+          success: true,
+          data: [],
+        }
       );
     } catch (error: any) {
       return rejectWithValue(
@@ -296,8 +299,15 @@ export const deleteClass = createAsyncThunk(
   "class/deleteClass",
   async (classId: number, { rejectWithValue }) => {
     try {
-      await api.delete(DELETE_CLASS_ENDPOINT(classId.toString()));
-      return classId;
+      const response = await api.delete<{
+        success?: boolean;
+        message?: string;
+        data?: { classId?: number };
+      }>(DELETE_CLASS_ENDPOINT(classId.toString()));
+      return {
+        classId: response.data?.data?.classId ?? classId,
+        message: response.data?.message,
+      };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete class",
@@ -453,9 +463,14 @@ const classSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(createClass.fulfilled, (state, action: PayloadAction<any>) => {
+      .addCase(createClass.fulfilled, (state, action: PayloadAction<ClassResponse>) => {
         state.loading = false;
-        const newClass = action.payload as ClassData;
+        const newClass = Array.isArray(action.payload.data)
+          ? action.payload.data[0]
+          : action.payload.data;
+        if (!newClass) {
+          return;
+        }
         state.classes.unshift(newClass);
         if (state.pagination.total !== undefined) {
           state.pagination.total += 1;
@@ -472,9 +487,14 @@ const classSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateClass.fulfilled, (state, action: PayloadAction<any>) => {
+      .addCase(updateClass.fulfilled, (state, action: PayloadAction<ClassResponse>) => {
         state.loading = false;
-        const updatedClass = action.payload as ClassData;
+        const updatedClass = Array.isArray(action.payload.data)
+          ? action.payload.data[0]
+          : action.payload.data;
+        if (!updatedClass) {
+          return;
+        }
         const index = state.classes.findIndex(
           (c) => c.classId === updatedClass.classId,
         );
@@ -498,12 +518,12 @@ const classSlice = createSlice({
       })
       .addCase(
         deleteClass.fulfilled,
-        (state, action: PayloadAction<number>) => {
+        (state, action: PayloadAction<{ classId: number; message?: string }>) => {
           state.loading = false;
           state.classes = state.classes.filter(
-            (c) => c.classId !== action.payload,
+            (c) => c.classId !== action.payload.classId,
           );
-          if (state.selectedClass?.classId === action.payload) {
+          if (state.selectedClass?.classId === action.payload.classId) {
             state.selectedClass = null;
           }
           if (state.pagination.total > 0) {

@@ -74,6 +74,23 @@ const AdminDepartmentPage: React.FC = () => {
     });
   };
 
+  const extractMessage = (payload: any, fallback: string) => {
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload && typeof payload === "object") {
+      if (typeof payload.message === "string" && payload.message.trim()) {
+        return payload.message;
+      }
+      if (
+        payload.data &&
+        typeof payload.data.message === "string" &&
+        payload.data.message.trim()
+      ) {
+        return payload.data.message;
+      }
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     dispatch(fetchDepartments());
   }, [dispatch]);
@@ -91,11 +108,16 @@ const AdminDepartmentPage: React.FC = () => {
   const handleDeleteDepartment = async (departmentId: number) => {
     setActionLoading(true);
     try {
-      await dispatch(deleteDepartment(departmentId.toString())).unwrap();
+      const response = await dispatch(
+        deleteDepartment(departmentId.toString()),
+      ).unwrap();
       await dispatch(fetchDepartments());
-      notifySuccess("Xóa thành công", "Đã xóa bộ môn thành công.");
-    } catch {
-      notifyError("Xóa thất bại", "Không thể xóa bộ môn.");
+      notifySuccess(
+        "Xóa thành công",
+        extractMessage(response, "Đã xóa bộ môn thành công."),
+      );
+    } catch (error) {
+      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa bộ môn."));
     }
     setActionLoading(false);
   };
@@ -104,7 +126,7 @@ const AdminDepartmentPage: React.FC = () => {
     setActionLoading(true);
     try {
       if (selectedDepartment) {
-        await dispatch(
+        const response = await dispatch(
           updateDepartment({
             departmentId: selectedDepartment.departmentId.toString(),
             departmentName: formData.departmentName,
@@ -113,9 +135,12 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        notifySuccess("Cập nhật thành công", "Đã cập nhật bộ môn thành công.");
+        notifySuccess(
+          "Cập nhật thành công",
+          extractMessage(response, "Đã cập nhật bộ môn thành công."),
+        );
       } else {
-        await dispatch(
+        const response = await dispatch(
           createDepartment({
             departmentCode: formData.departmentCode,
             departmentName: formData.departmentName,
@@ -123,16 +148,22 @@ const AdminDepartmentPage: React.FC = () => {
           }),
         ).unwrap();
         await dispatch(fetchDepartments());
-        notifySuccess("Tạo thành công", "Đã tạo bộ môn thành công.");
+        notifySuccess(
+          "Tạo thành công",
+          extractMessage(response, "Đã tạo bộ môn thành công."),
+        );
       }
       setIsModalOpen(false);
       setSelectedDepartment(undefined);
-    } catch {
+    } catch (error) {
       notifyError(
         selectedDepartment ? "Cập nhật thất bại" : "Tạo thất bại",
-        selectedDepartment
+        extractMessage(
+          error,
+          selectedDepartment
           ? "Không thể cập nhật bộ môn."
           : "Không thể tạo bộ môn.",
+        ),
       );
     }
     setActionLoading(false);

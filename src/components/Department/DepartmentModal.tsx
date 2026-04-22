@@ -77,10 +77,10 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         {!initialData && (
           <Form.Item
             name="departmentCode"
-            label={<Text strong>Mã khoa</Text>}
+            label={<Text strong>Mã khóa</Text>}
             rules={[
-              { required: true, message: "Mã khoa không được để trống" },
-              { min: 2, max: 20, message: "Mã khoa từ 2 – 20 ký tự" },
+              { required: true, message: "Mã khóa không được để trống" },
+              { min: 2, max: 20, message: "Mã khóa từ 2 – 20 ký tự" },
             ]}
           >
             <Input placeholder="VD: SE" />
@@ -88,7 +88,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         )}
 
         {initialData && (
-          <Form.Item name="departmentCode" label={<Text strong>Mã khoa</Text>}>
+          <Form.Item name="departmentCode" label={<Text strong>Mã khóa</Text>}>
             <Input disabled />
           </Form.Item>
         )}
