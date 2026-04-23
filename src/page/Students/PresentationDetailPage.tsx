@@ -69,6 +69,10 @@ import {
   fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
 import {
+  fetchTranscript,
+  clearTranscript,
+} from "@/services/features/transcript/transcriptSlice";
+import {
   fetchGradeDistributionByReport,
   clearCurrentDistribution,
   submitMemberFeedback,
@@ -299,9 +303,16 @@ const PresentationDetailPage: React.FC = () => {
   const { currentDistribution } = useAppSelector((state) => state.groupGrade);
   const { approvingIds } = useAppSelector((state) => state.instructorApproval);
 
+  const { currentTranscript, loading: transcriptLoading } = useAppSelector(
+    (state) => state.transcript,
+  );
+
   const [showReport, setShowReport] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [reportTab, setReportTab] = useState<"ai" | "instructor">("ai");
+  const [reportTab, setReportTab] = useState<"transcript" | "ai" | "instructor">("transcript");
+  const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
+  const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeSegmentRef = useRef<HTMLDivElement | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadResubmit, setUploadResubmit] = useState(false);
   const reportSectionRef = useRef<HTMLDivElement | null>(null);
@@ -473,7 +484,14 @@ const PresentationDetailPage: React.FC = () => {
   useEffect(() => {
     dispatch(clearCurrentReport());
     dispatch(clearCurrentDistribution());
+    dispatch(clearTranscript());
     setShowReport(false);
+  }, [presentationIdNumber, dispatch]);
+
+  useEffect(() => {
+    if (presentationIdNumber) {
+      void dispatch(fetchTranscript(presentationIdNumber));
+    }
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
@@ -645,6 +663,20 @@ const PresentationDetailPage: React.FC = () => {
     if (showReport && !reportLoading) scrollToReportSection();
   }, [showReport, reportLoading, currentReport]);
 
+  // Auto-scroll transcript to active segment
+  useEffect(() => {
+    if (reportTab !== "transcript" || !activeSegmentRef.current || !transcriptContainerRef.current) return;
+    const container = transcriptContainerRef.current;
+    const el = activeSegmentRef.current;
+    const elTop = el.offsetTop;
+    const elBottom = elTop + el.offsetHeight;
+    const viewTop = container.scrollTop;
+    const viewBottom = viewTop + container.clientHeight;
+    if (elTop < viewTop + 60 || elBottom > viewBottom - 60) {
+      container.scrollTo({ top: elTop - container.clientHeight / 2 + el.offsetHeight / 2, behavior: "smooth" });
+    }
+  }, [playerCurrentTime, reportTab]);
+
   // ── Derived values ────────────────────────────────────────────────────────────
   const studentName = presentation?.student
     ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
@@ -712,6 +744,15 @@ const PresentationDetailPage: React.FC = () => {
 
   // ── Segmented options ────────────────────────────────────────────────────────
   const reportSegmentOptions: SegmentedProps["options"] = [
+    {
+      label: (
+        <Space size={4}>
+          <FileText size={13} />
+          <span>Transcript</span>
+        </Space>
+      ),
+      value: "transcript",
+    },
     {
       label: (
         <Space size={4}>
@@ -1114,6 +1155,7 @@ const PresentationDetailPage: React.FC = () => {
               studentName={studentName}
               createdAt={presentation.createdAt}
               showHeader={false}
+              onTimeUpdate={setPlayerCurrentTime}
             />
           </motion.div>
 
@@ -1239,7 +1281,7 @@ const PresentationDetailPage: React.FC = () => {
                 </div>
 
                 {/* Rejected Alert */}
-                {currentReport?.reportStatus === "rejected" && (
+                {currentReport?.reportStatus === "rejected" && reportTab !== "transcript" && (
                   <Alert
                     message="Báo cáo AI bị từ chối"
                     description="Bạn có thể gửi lại bài thuyết trình để được đánh giá lại."
@@ -1264,7 +1306,131 @@ const PresentationDetailPage: React.FC = () => {
                 )}
 
                 {/* Report Content */}
-                {reportLoading ? (
+                {reportTab === "transcript" ? (
+                  transcriptLoading ? (
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>
+                      <Spin size="large" />
+                      <Text style={{ display: "block", marginTop: 12, color: PALETTE.slate }}>
+                        Đang tải bản ghi lời...
+                      </Text>
+                    </div>
+                  ) : currentTranscript?.segments?.length ? (
+                    <div
+                      ref={transcriptContainerRef}
+                      style={{ maxHeight: 520, overflowY: "auto", paddingRight: 4 }}
+                    >
+                      {currentTranscript.segments.map((seg) => {
+                        const speakerColors = [PALETTE.primary, PALETTE.success, PALETTE.warning, PALETTE.danger, PALETTE.purple];
+                        const speakerIndex =
+                          parseInt(seg.speaker.aiSpeakerLabel.replace("SPEAKER_", ""), 10) || 0;
+                        const color = speakerColors[speakerIndex % speakerColors.length];
+                        const mins = Math.floor(seg.startTimestamp / 60);
+                        const secs = Math.floor(seg.startTimestamp % 60);
+                        const timestamp = `${mins}:${String(secs).padStart(2, "0")}`;
+                        const isActive =
+                          playerCurrentTime >= seg.startTimestamp &&
+                          playerCurrentTime < seg.endTimestamp;
+                        return (
+                          <div
+                            key={seg.segmentId}
+                            ref={isActive ? activeSegmentRef : null}
+                            style={{
+                              display: "flex",
+                              gap: 12,
+                              marginBottom: 4,
+                              alignItems: "flex-start",
+                              borderRadius: 10,
+                              padding: "10px 8px",
+                              transition: "background 0.25s",
+                              background: isActive
+                                ? `${color}18`
+                                : "transparent",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => {
+                              const videoEl = document.querySelector<HTMLVideoElement>("video");
+                              const audioEl = document.querySelector<HTMLAudioElement>("audio");
+                              if (videoEl) videoEl.currentTime = seg.startTimestamp;
+                              else if (audioEl) audioEl.currentTime = seg.startTimestamp;
+                            }}
+                          >
+                            <div style={{ flexShrink: 0, width: 36, paddingTop: 2, textAlign: "right" }}>
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  color: isActive ? color : "#94A3B8",
+                                  fontWeight: isActive ? 700 : 400,
+                                  transition: "color 0.25s",
+                                }}
+                              >
+                                {timestamp}
+                              </Text>
+                            </div>
+                            <div
+                              style={{
+                                flexShrink: 0,
+                                width: 3,
+                                borderRadius: 2,
+                                background: isActive ? color : "#E2E8F0",
+                                alignSelf: "stretch",
+                                transition: "background 0.25s",
+                              }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  color,
+                                  fontWeight: 700,
+                                  display: "block",
+                                  marginBottom: 4,
+                                  opacity: isActive ? 1 : 0.6,
+                                  transition: "opacity 0.25s",
+                                }}
+                              >
+                                {seg.speaker.isMapped && seg.speaker.mappedStudent
+                                  ? `${seg.speaker.mappedStudent.firstName} ${seg.speaker.mappedStudent.lastName}`.trim()
+                                  : `Diễn giả ${speakerIndex + 1}`}
+                              </Text>
+                              {(() => {
+                                const words = seg.segmentText.trim().split(/\s+/);
+                                const segDuration = seg.endTimestamp - seg.startTimestamp;
+                                const isPast = playerCurrentTime >= seg.endTimestamp;
+                                const progressRatio = isActive && segDuration > 0
+                                  ? Math.min(1, Math.max(0, (playerCurrentTime - seg.startTimestamp) / segDuration))
+                                  : isPast ? 1 : 0;
+                                const litCount = Math.ceil(progressRatio * words.length);
+                                return (
+                                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75, wordBreak: "break-word" }}>
+                                    {words.map((word, wi) => (
+                                      <span
+                                        key={wi}
+                                        style={{
+                                          color: wi < litCount
+                                            ? (isActive ? color : PALETTE.slate)
+                                            : "#94A3B8",
+                                          fontWeight: wi < litCount && isActive ? 500 : 400,
+                                          transition: "color 0.12s",
+                                        }}
+                                      >{word}{wi < words.length - 1 ? " " : ""}</span>
+                                    ))}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <Alert
+                      message="Chưa có transcript cho bài thuyết trình này."
+                      type="info"
+                      showIcon
+                      style={{ borderRadius: 12 }}
+                    />
+                  )
+                ) : reportLoading ? (
                   <div style={{ textAlign: "center", padding: "40px 0" }}>
                     <Spin size="large" />
                     <Text
@@ -2614,7 +2780,7 @@ const PresentationDetailPage: React.FC = () => {
           )}
 
           {/* Floating "View Report" button */}
-          {!showReport && currentReport && (
+          {!showReport && (currentReport || currentTranscript) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}

@@ -24,6 +24,10 @@ import {
   fetchPresentationReport,
   fetchCriterionFeedbacks,
 } from "@/services/features/report/reportSlice";
+import {
+  fetchTranscript,
+  clearTranscript,
+} from "@/services/features/transcript/transcriptSlice";
 import { fetchGradeDistributionByReport } from "@/services/features/groupGrade/groupGradeSlice";
 import {
   Button,
@@ -103,8 +107,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
   } = useAppSelector((state) => state.report);
   const { currentDistribution } = useAppSelector((state) => state.groupGrade);
 
+  const { currentTranscript, loading: transcriptLoading } = useAppSelector(
+    (state) => state.transcript,
+  );
+
   const [showReport, setShowReport] = useState(false);
-  const [reportTab, setReportTab] = useState<"ai" | "instructor">("ai");
+  const [reportTab, setReportTab] = useState<"transcript" | "ai" | "instructor">("transcript");
+  const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
+  const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeSegmentRef = useRef<HTMLDivElement | null>(null);
   const [reportDecisionModal, setReportDecisionModal] = useState<
     null | "confirm" | "reject"
   >(null);
@@ -130,8 +141,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(clearCurrentReport());
+    dispatch(clearTranscript());
     setShowReport(false);
   }, [presentationIdNumber, dispatch]);
+
+  useEffect(() => {
+    if (isValidPresentationId && presentationIdNumber) {
+      void dispatch(fetchTranscript(presentationIdNumber));
+    }
+  }, [isValidPresentationId, presentationIdNumber, dispatch]);
 
   useEffect(() => {
     if (isValidPresentationId && error) toast.error(error);
@@ -189,6 +207,20 @@ const IntructorPresentationDetailPage: React.FC = () => {
       scrollToReportSection();
     }
   }, [showReport, reportLoading, currentReport]);
+
+  // Auto-scroll transcript to active segment
+  useEffect(() => {
+    if (reportTab !== "transcript" || !activeSegmentRef.current || !transcriptContainerRef.current) return;
+    const container = transcriptContainerRef.current;
+    const el = activeSegmentRef.current;
+    const elTop = el.offsetTop;
+    const elBottom = elTop + el.offsetHeight;
+    const viewTop = container.scrollTop;
+    const viewBottom = viewTop + container.clientHeight;
+    if (elTop < viewTop + 60 || elBottom > viewBottom - 60) {
+      container.scrollTo({ top: elTop - container.clientHeight / 2 + el.offsetHeight / 2, behavior: "smooth" });
+    }
+  }, [playerCurrentTime, reportTab]);
 
   useEffect(() => {
     if (reportError) toast.error(reportError);
@@ -438,6 +470,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
               status={presentation.status}
               studentName={studentName}
               createdAt={presentation.createdAt}
+              onTimeUpdate={setPlayerCurrentTime}
             />
           </motion.div>
 
@@ -575,11 +608,136 @@ const IntructorPresentationDetailPage: React.FC = () => {
                 <>
                   <Tabs
                     activeKey={reportTab}
-                    onChange={(k) => setReportTab(k as "ai" | "instructor")}
+                    onChange={(k) => setReportTab(k as "transcript" | "ai" | "instructor")}
                     size="large"
                     type="line"
                     className="[&_.ant-tabs-nav]:mb-4"
                     items={[
+                      {
+                        key: "transcript",
+                        label: (
+                          <Space size={6}>
+                            <span>📝</span>
+                            Transcript
+                          </Space>
+                        ),
+                        children: transcriptLoading ? (
+                          <div className="flex items-center justify-center py-10 text-slate-500">
+                            <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin mr-3" />
+                            Đang tải bản ghi lời...
+                          </div>
+                        ) : currentTranscript?.segments?.length ? (
+                          <div
+                            ref={transcriptContainerRef}
+                            style={{ maxHeight: 520, overflowY: "auto", paddingRight: 4 }}
+                          >
+                            {currentTranscript.segments.map((seg) => {
+                              const speakerColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+                              const speakerIndex =
+                                parseInt(seg.speaker.aiSpeakerLabel.replace("SPEAKER_", ""), 10) || 0;
+                              const color = speakerColors[speakerIndex % speakerColors.length];
+                              const mins = Math.floor(seg.startTimestamp / 60);
+                              const secs = Math.floor(seg.startTimestamp % 60);
+                              const timestamp = `${mins}:${String(secs).padStart(2, "0")}`;
+                              const isActive =
+                                playerCurrentTime >= seg.startTimestamp &&
+                                playerCurrentTime < seg.endTimestamp;
+                              return (
+                                <div
+                                  key={seg.segmentId}
+                                  ref={isActive ? activeSegmentRef : null}
+                                  style={{
+                                    display: "flex",
+                                    gap: 12,
+                                    marginBottom: 4,
+                                    alignItems: "flex-start",
+                                    borderRadius: 10,
+                                    padding: "10px 8px",
+                                    transition: "background 0.25s",
+                                    background: isActive ? `${color}18` : "transparent",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() => {
+                                    const videoEl = document.querySelector<HTMLVideoElement>("video");
+                                    const audioEl = document.querySelector<HTMLAudioElement>("audio");
+                                    if (videoEl) videoEl.currentTime = seg.startTimestamp;
+                                    else if (audioEl) audioEl.currentTime = seg.startTimestamp;
+                                  }}
+                                >
+                                  <div style={{ flexShrink: 0, width: 36, paddingTop: 2, textAlign: "right" }}>
+                                    <span
+                                      style={{
+                                        fontSize: 11,
+                                        color: isActive ? color : "#94A3B8",
+                                        fontWeight: isActive ? 700 : 400,
+                                        transition: "color 0.25s",
+                                      }}
+                                    >
+                                      {timestamp}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      flexShrink: 0,
+                                      width: 3,
+                                      borderRadius: 2,
+                                      background: isActive ? color : "#E2E8F0",
+                                      alignSelf: "stretch",
+                                      transition: "background 0.25s",
+                                    }}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <span
+                                      style={{
+                                        fontSize: 11,
+                                        color,
+                                        fontWeight: 700,
+                                        display: "block",
+                                        marginBottom: 4,
+                                        opacity: isActive ? 1 : 0.6,
+                                        transition: "opacity 0.25s",
+                                      }}
+                                    >
+                                      {seg.speaker.isMapped && seg.speaker.mappedStudent
+                                        ? `${seg.speaker.mappedStudent.firstName} ${seg.speaker.mappedStudent.lastName}`.trim()
+                                        : `Diễn giả ${speakerIndex + 1}`}
+                                    </span>
+                                    {(() => {
+                                      const words = seg.segmentText.trim().split(/\s+/);
+                                      const segDuration = seg.endTimestamp - seg.startTimestamp;
+                                      const isPast = playerCurrentTime >= seg.endTimestamp;
+                                      const progressRatio = isActive && segDuration > 0
+                                        ? Math.min(1, Math.max(0, (playerCurrentTime - seg.startTimestamp) / segDuration))
+                                        : isPast ? 1 : 0;
+                                      const litCount = Math.ceil(progressRatio * words.length);
+                                      return (
+                                        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75, wordBreak: "break-word" }}>
+                                          {words.map((word, wi) => (
+                                            <span
+                                              key={wi}
+                                              style={{
+                                                color: wi < litCount
+                                                  ? (isActive ? color : "#475569")
+                                                  : "#94A3B8",
+                                                fontWeight: wi < litCount && isActive ? 500 : 400,
+                                                transition: "color 0.12s",
+                                              }}
+                                            >{word}{wi < words.length - 1 ? " " : ""}</span>
+                                          ))}
+                                        </p>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
+                            Chưa có transcript cho bài thuyết trình này.
+                          </div>
+                        ),
+                      },
                       {
                         key: "ai",
                         label: (
@@ -936,7 +1094,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
       </main>
 
       {/* Floating "Xem kết quả AI" button */}
-      {!showReport && currentReport && (
+      {!showReport && (currentReport || currentTranscript) && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}

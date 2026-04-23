@@ -49,6 +49,8 @@ interface PresentationPlayerProps {
   createdAt?: string;
   /** Hide the top header bar (useful when parent already renders a hero/title section). Default: true. */
   showHeader?: boolean;
+  /** Called each animation frame while audio/video is playing, with current playback time in seconds. */
+  onTimeUpdate?: (currentTime: number) => void;
 }
 
 // Helper to check if file is video
@@ -222,6 +224,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
   studentName,
   createdAt,
   showHeader = true,
+  onTimeUpdate,
 }) => {
   const [pageNumber, setPageNumber] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -526,6 +529,7 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
               src={audioRecord.filePath}
               controls
               className="w-full"
+              onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
             />
           </div>
         </div>
@@ -546,7 +550,11 @@ const PresentationPlayer: React.FC<PresentationPlayerProps> = ({
           ref={playerRef}
           src={audioRecord.filePath}
           className="w-full h-full object-contain"
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onTimeUpdate={(e) => {
+            const t = e.currentTarget.currentTime;
+            setCurrentTime(t);
+            onTimeUpdate?.(t);
+          }}
           onLoadedMetadata={(e) => {
             setDuration(e.currentTarget.duration);
             e.currentTarget.volume = volume;

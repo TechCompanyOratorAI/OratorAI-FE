@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { Button, Avatar as AntAvatar, Upload } from "antd";
+import { Button, Avatar as AntAvatar, Upload, DatePicker } from "antd";
 import type { UploadProps } from "antd";
+import dayjs from "dayjs";
 import {
   User,
   Lock,
@@ -22,6 +23,7 @@ import {
   changePassword,
   uploadAvatar,
   getProfile,
+  updateProfile,
 } from "@/services/features/auth/authSlice";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
 
@@ -39,10 +41,26 @@ const StudentSettingsPage: React.FC = () => {
   const [isChangingPwd, setIsChangingPwd] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    dob: "",
+    studyMajor: "",
+  });
 
   useEffect(() => {
     dispatch(getProfile());
   }, [dispatch]);
+
+  useEffect(() => {
+    setProfileForm({
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      dob: user?.dob ? String(user.dob).slice(0, 10) : "",
+      studyMajor: user?.studyMajor || "",
+    });
+  }, [user?.firstName, user?.lastName, user?.dob, user?.studyMajor]);
 
   const avatarUrl = user?.avatar || null;
 
@@ -57,6 +75,12 @@ const StudentSettingsPage: React.FC = () => {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const hasProfileChanges =
+    profileForm.firstName.trim() !== (user?.firstName || "") ||
+    profileForm.lastName.trim() !== (user?.lastName || "") ||
+    profileForm.dob !== (user?.dob ? String(user.dob).slice(0, 10) : "") ||
+    profileForm.studyMajor.trim() !== (user?.studyMajor || "");
 
   const uploadProps: UploadProps = {
     accept: "image/jpeg,image/png,image/gif,image/webp",
@@ -90,6 +114,43 @@ const StudentSettingsPage: React.FC = () => {
         setIsUploadingAvatar(false);
       }
     },
+  };
+
+  const handleProfileChange = (
+    field: "firstName" | "lastName" | "dob" | "studyMajor",
+    value: string,
+  ) => {
+    setProfileForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!profileForm.firstName.trim() || !profileForm.lastName.trim()) {
+      toast.error("Họ và tên không được để trống.");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      await dispatch(
+        updateProfile({
+          firstName: profileForm.firstName.trim(),
+          lastName: profileForm.lastName.trim(),
+          dob: profileForm.dob || null,
+          studyMajor: profileForm.studyMajor.trim() || null,
+        }),
+      ).unwrap();
+      toast.success("Cập nhật hồ sơ thành công!");
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error?.message || "Cập nhật hồ sơ thất bại.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -127,13 +188,6 @@ const StudentSettingsPage: React.FC = () => {
       setIsChangingPwd(false);
     }
   };
-
-  const profileFields = [
-    { icon: User, label: "Tên đầy đủ", value: fullName },
-    { icon: Mail, label: "Email", value: user?.email || "—" },
-    { icon: AtSign, label: "Tên đăng nhập", value: user?.username || "—" },
-    { icon: IdCard, label: "Vai trò", value: "Học viên (Student)" },
-  ];
 
   return (
     <StudentLayout>
@@ -212,35 +266,142 @@ const StudentSettingsPage: React.FC = () => {
               {/* Profile fields */}
               <div className="p-6">
                 <h3 className="text-base font-bold text-slate-900 mb-4">
-                  Thông tin tài khoản
+                  Thông tin hồ sơ
                 </h3>
-                <div className="space-y-3">
-                  {profileFields.map(({ icon: Icon, label, value }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100"
-                    >
+                <form onSubmit={handleSaveProfile} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Tên *
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.firstName}
+                        onChange={(e) =>
+                          handleProfileChange("firstName", e.target.value)
+                        }
+                        placeholder="Nhập tên"
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Họ *
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.lastName}
+                        onChange={(e) =>
+                          handleProfileChange("lastName", e.target.value)
+                        }
+                        placeholder="Nhập họ"
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Ngày sinh
+                      </label>
+                      <DatePicker
+                        value={profileForm.dob ? dayjs(profileForm.dob) : null}
+                        onChange={(date) =>
+                          handleProfileChange(
+                            "dob",
+                            date ? date.format("YYYY-MM-DD") : "",
+                          )
+                        }
+                        format="DD/MM/YYYY"
+                        className="w-full h-[42px]"
+                        placeholder="dd/mm/yyyy"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Chuyên ngành
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.studyMajor}
+                        onChange={(e) =>
+                          handleProfileChange("studyMajor", e.target.value)
+                        }
+                        placeholder="Ví dụ: Công nghệ thông tin"
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
                       <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-blue-600" />
+                        <Mail className="w-4 h-4 text-blue-600" />
                       </div>
                       <div>
                         <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
-                          {label}
+                          Email
                         </p>
                         <p className="text-sm font-semibold text-slate-900 mt-0.5">
-                          {value}
+                          {user?.email || "—"}
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>
-                    Để thay đổi thông tin hồ sơ, vui lòng liên hệ quản trị viên
-                    hoặc giảng viên phụ trách.
-                  </span>
-                </div>
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <AtSign className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+                          Tên đăng nhập
+                        </p>
+                        <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                          {user?.username || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <IdCard className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+                          Vai trò
+                        </p>
+                        <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                          Học viên (Student)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>
+                      Bạn có thể tự cập nhật họ tên, ngày sinh và chuyên ngành.
+                      Email và tên đăng nhập hiện chưa chỉnh sửa tại đây.
+                    </span>
+                  </div>
+
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={
+                      isSavingProfile ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )
+                    }
+                    loading={isSavingProfile}
+                    disabled={!hasProfileChanges}
+                  >
+                    Lưu thay đổi
+                  </Button>
+                </form>
               </div>
             </motion.div>
           </Tabs.Content>

@@ -19,6 +19,7 @@ export interface User {
   roles?: Role[];
   dob?: string | null;
   studyMajor?: string | null;
+  isCensored?: boolean;
 }
 
 export interface LoginCredentials {
@@ -83,6 +84,7 @@ export interface ProfileUser {
   avatar?: string | null;
   dob?: string | null;
   studyMajor?: string | null;
+  isCensored?: boolean;
   isActive: boolean;
   isEmailVerified: boolean;
 }
@@ -149,4 +151,18 @@ export interface UploadAvatarResponse {
   data: {
     avatarUrl: string;
   };
+}
+
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  dob?: string | null;
+  studyMajor?: string | null;
+  isCensored?: boolean;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  data: ProfileUser;
 }
