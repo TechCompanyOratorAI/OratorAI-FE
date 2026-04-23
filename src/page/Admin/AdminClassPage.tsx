@@ -22,7 +22,9 @@ import {
   Card,
   Popconfirm,
   App,
+  ConfigProvider,
 } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import SummaryMetrics, {
   SummaryMetricItem,
@@ -43,6 +45,7 @@ import {
 import { fetchInstructorByClass } from "@/services/features/admin/adminSlice";
 import { fetchCourses } from "@/services/features/course/courseSlice";
 import { RootState, AppDispatch } from "@/services/store/store";
+import { extractLocalizedMessage } from "@/lib/utils";
 
 const AdminClassPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -59,6 +62,9 @@ const AdminClassPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "inactive" | "archived"
   >("all");
+  const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
+    "newest",
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -79,23 +85,6 @@ const AdminClassPage: React.FC = () => {
       description,
       placement: "topRight",
     });
-  };
-
-  const extractMessage = (payload: any, fallback: string) => {
-    if (typeof payload === "string" && payload.trim()) return payload;
-    if (payload && typeof payload === "object") {
-      if (typeof payload.message === "string" && payload.message.trim()) {
-        return payload.message;
-      }
-      if (
-        payload.data &&
-        typeof payload.data.message === "string" &&
-        payload.data.message.trim()
-      ) {
-        return payload.data.message;
-      }
-    }
-    return fallback;
   };
 
   useEffect(() => {
@@ -123,10 +112,13 @@ const AdminClassPage: React.FC = () => {
       await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
       notifySuccess(
         "Xóa thành công",
-        extractMessage(response, "Đã xóa lớp học thành công."),
+        extractLocalizedMessage(response, "Đã xóa lớp học thành công."),
       );
     } catch (error) {
-      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa lớp học."));
+      notifyError(
+        "Xóa thất bại",
+        extractLocalizedMessage(error, "Không thể xóa lớp học."),
+      );
     }
     setActionLoading(false);
   };
@@ -144,14 +136,14 @@ const AdminClassPage: React.FC = () => {
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
         notifySuccess(
           "Cập nhật thành công",
-          extractMessage(response, "Đã cập nhật lớp học thành công."),
+          extractLocalizedMessage(response, "Đã cập nhật lớp học thành công."),
         );
       } else {
         const response = await dispatch(createClass(formData)).unwrap();
         await dispatch(fetchClasses({ page: currentPage, limit: pageSize }));
         notifySuccess(
           "Tạo thành công",
-          extractMessage(response, "Đã tạo lớp học thành công."),
+          extractLocalizedMessage(response, "Đã tạo lớp học thành công."),
         );
       }
       setIsModalOpen(false);
@@ -159,7 +151,7 @@ const AdminClassPage: React.FC = () => {
     } catch (error) {
       notifyError(
         selectedClass ? "Cập nhật thất bại" : "Tạo thất bại",
-        extractMessage(
+        extractLocalizedMessage(
           error,
           selectedClass
           ? "Không thể cập nhật lớp học."
@@ -199,12 +191,12 @@ const AdminClassPage: React.FC = () => {
       }
       notifySuccess(
         "Thêm giảng viên thành công",
-        extractMessage(response, "Đã thêm giảng viên thành công."),
+        extractLocalizedMessage(response, "Đã thêm giảng viên thành công."),
       );
     } catch (error) {
       notifyError(
         "Thêm giảng viên thất bại",
-        extractMessage(error, "Không thể thêm giảng viên."),
+        extractLocalizedMessage(error, "Không thể thêm giảng viên."),
       );
     }
   };
@@ -232,19 +224,20 @@ const AdminClassPage: React.FC = () => {
       }
       notifySuccess(
         "Gỡ giảng viên thành công",
-        extractMessage(response, "Đã gỡ giảng viên thành công."),
+        extractLocalizedMessage(response, "Đã gỡ giảng viên thành công."),
       );
     } catch (error) {
       notifyError(
         "Gỡ giảng viên thất bại",
-        extractMessage(error, "Không thể gỡ giảng viên."),
+        extractLocalizedMessage(error, "Không thể gỡ giảng viên."),
       );
     }
   };
 
   const filteredClasses = useMemo(
     () =>
-      classes.filter((classItem: ClassData) => {
+      classes
+        .filter((classItem: ClassData) => {
         const classCode = (classItem.classCode || "").toLowerCase();
         const className = (classItem.className || "").toLowerCase();
         const courseCode = (classItem.course?.courseCode || "").toLowerCase();
@@ -258,9 +251,14 @@ const AdminClassPage: React.FC = () => {
         const matchesStatus =
           filterStatus === "all" || classItem.status === filterStatus;
 
-        return matchesSearch && matchesStatus;
-      }),
-    [classes, searchTerm, filterStatus],
+          return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => {
+          const aTime = new Date(a.createdAt || 0).getTime();
+          const bTime = new Date(b.createdAt || 0).getTime();
+          return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
+        }),
+    [classes, searchTerm, filterStatus, sortByCreatedAt],
   );
 
   const stats = useMemo(() => {
@@ -515,44 +513,58 @@ const AdminClassPage: React.FC = () => {
                     { value: "archived", label: "Đã lưu trữ" },
                   ]}
                 />
+                <Select
+                  value={sortByCreatedAt}
+                  onChange={(val) => {
+                    setSortByCreatedAt(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 130 }}
+                  options={[
+                    { value: "newest", label: "Mới nhất" },
+                    { value: "oldest", label: "Cũ nhất" },
+                  ]}
+                />
               </Space>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={filteredClasses}
-              rowKey={(record) =>
-                String(
-                  record.classId ??
-                    `${record.courseId}-${record.classCode}-${record.startDate}`,
-                )
-              }
-              loading={loading}
-              pagination={
-                tableTotal > 0
-                  ? {
-                      current: currentPage,
-                      pageSize,
-                      total: tableTotal,
-                      showSizeChanger: true,
-                      showQuickJumper: false,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} trên ${total} lớp`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
-                  : false
-              }
-              locale={{
-                emptyText:
-                  searchTerm || filterStatus !== "all"
-                    ? "Không tìm thấy lớp học phù hợp bộ lọc"
-                    : "Chưa có lớp học nào. Hãy tạo lớp đầu tiên để bắt đầu.",
-              }}
-            />
+            <ConfigProvider locale={viVN}>
+              <Table
+                columns={columns}
+                dataSource={filteredClasses}
+                rowKey={(record) =>
+                  String(
+                    record.classId ??
+                      `${record.courseId}-${record.classCode}-${record.startDate}`,
+                  )
+                }
+                loading={loading}
+                pagination={
+                  tableTotal > 0
+                    ? {
+                        current: currentPage,
+                        pageSize,
+                        total: tableTotal,
+                        showSizeChanger: true,
+                        showQuickJumper: false,
+                        pageSizeOptions: ["10", "20", "50"],
+                        showTotal: (total, range) =>
+                          `${range[0]}-${range[1]} trên ${total} lớp`,
+                        onChange: (p, ps) => {
+                          setCurrentPage(p);
+                          setPageSize(ps);
+                        },
+                      }
+                    : false
+                }
+                locale={{
+                  emptyText:
+                    searchTerm || filterStatus !== "all"
+                      ? "Không tìm thấy lớp học phù hợp bộ lọc"
+                      : "Chưa có lớp học nào. Hãy tạo lớp đầu tiên để bắt đầu.",
+                }}
+              />
+            </ConfigProvider>
           </Card>
         </div>
       </main>

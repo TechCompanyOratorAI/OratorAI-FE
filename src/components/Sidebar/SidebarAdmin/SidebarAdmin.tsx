@@ -40,8 +40,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
     { id: "ai-configuration", label: "Cấu hình AI", icon: Cog, path: "/admin/ai-configuration" },
     { id: "analysis-logs", label: "Nhật ký phân tích", icon: FileText, path: "/admin/analysis-logs" },
     { id: "manage-classes", label: "Quản lý lớp học", icon: Shapes, path: "/admin/manage-classes" },
-    { id: "manage-courses", label: "Quản lý khóa học", icon: Book, path: "/admin/manage-courses" },
-    { id: "manage-departments", label: "Quản lý bộ môn", icon: FolderCog, path: "/admin/manage-departments" },
+    { id: "manage-courses", label: "Quản lý môn học", icon: Book, path: "/admin/manage-courses" },
+    { id: "manage-departments", label: "Quản lý chuyên ngành", icon: FolderCog, path: "/admin/manage-departments" },
     { id: "rubric-templates", label: "Mẫu tiêu chí", icon: ClipboardList, path: "/admin/rubric-templates" },
     { id: "settings", label: "Cài đặt", icon: Settings, path: "/admin/settings" },
   ];
@@ -60,7 +60,13 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
 
   const userRoleLabel =
     user?.roles && user.roles.length > 0
-      ? user.roles[0].roleName
+      ? user.roles[0].roleName === "Student"
+        ? "Sinh viên"
+        : user.roles[0].roleName === "Instructor"
+          ? "Giảng viên"
+          : user.roles[0].roleName === "Admin"
+            ? "Quản trị viên"
+            : user.roles[0].roleName
       : "Super Admin";
 
   const handleLogout = () => {

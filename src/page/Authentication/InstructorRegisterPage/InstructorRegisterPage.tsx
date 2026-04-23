@@ -84,7 +84,7 @@ const InstructorRegisterPage: React.FC = () => {
             <ScrollAnimation type="slide" direction="up" delay={0.4}>
               <ul className="space-y-2 text-sm text-slate-700">
                 {[
-                  "Quản lý khóa học & lớp học",
+                  "Quản lý môn học & lớp học",
                   "Chấm điểm & báo cáo",
                 ].map((item, index) => (
                   <motion.li

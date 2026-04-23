@@ -39,7 +39,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
   return (
     <Modal
-      title={initialData ? "Chỉnh sửa khoa" : "Tạo khoa mới"}
+      title={initialData ? "Chỉnh sửa chuyên ngành" : "Tạo chuyên ngành mới"}
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
@@ -77,10 +77,10 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         {!initialData && (
           <Form.Item
             name="departmentCode"
-            label={<Text strong>Mã khóa</Text>}
+            label={<Text strong>Mã chuyên ngành</Text>}
             rules={[
-              { required: true, message: "Mã khóa không được để trống" },
-              { min: 2, max: 20, message: "Mã khóa từ 2 – 20 ký tự" },
+              { required: true, message: "Mã chuyên ngành không được để trống" },
+              { min: 2, max: 20, message: "Mã chuyên ngành từ 2 – 20 ký tự" },
             ]}
           >
             <Input placeholder="VD: SE" />
@@ -88,24 +88,28 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         )}
 
         {initialData && (
-          <Form.Item name="departmentCode" label={<Text strong>Mã khóa</Text>}>
+          <Form.Item
+            name="departmentCode"
+            label={<Text strong>Mã chuyên ngành</Text>}
+            required
+          >
             <Input disabled />
           </Form.Item>
         )}
 
         <Form.Item
           name="departmentName"
-          label={<Text strong>Tên khoa</Text>}
+          label={<Text strong>Tên chuyên ngành</Text>}
           rules={[
-            { required: true, message: "Tên khoa không được để trống" },
-            { min: 2, max: 100, message: "Tên khoa từ 2 – 100 ký tự" },
+            { required: true, message: "Tên chuyên ngành không được để trống" },
+            { min: 2, max: 100, message: "Tên chuyên ngành từ 2 – 100 ký tự" },
           ]}
         >
           <Input placeholder="VD: Software Engineering" />
         </Form.Item>
 
         <Form.Item name="description" label={<Text strong>Mô tả</Text>}>
-          <Input.TextArea placeholder="Nhập mô tả khoa..." rows={4} />
+          <Input.TextArea placeholder="Nhập mô tả chuyên ngành..." rows={4} />
         </Form.Item>
 
         {initialData && (
@@ -128,7 +132,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 ? "Đang lưu..."
                 : initialData
                   ? "Lưu thay đổi"
-                  : "Tạo khoa"}
+                  : "Tạo chuyên ngành"}
             </Button>
           </Space>
         </Form.Item>
