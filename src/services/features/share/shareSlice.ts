@@ -89,6 +89,37 @@ export interface SharedPresentationData {
       fileName: string;
       durationSeconds: number | null;
     } | null;
+    transcript: {
+      transcriptId: number;
+      presentationId: number;
+      audioId: number;
+      fullTranscript: string;
+      language: string;
+      confidenceScore: number | null;
+      generatedAt: string;
+      segments: Array<{
+        segmentId: number;
+        transcriptId: number;
+        speakerId: number | null;
+        segmentNumber: number;
+        segmentText: string;
+        startTimestamp: number;
+        endTimestamp: number;
+        confidenceScore: number | null;
+        speaker: {
+          speakerId: number;
+          aiSpeakerLabel: string;
+          isMapped: boolean;
+          totalDurationSeconds: number;
+          segmentCount: number;
+          mappedStudent?: {
+            userId: number;
+            firstName: string;
+            lastName: string;
+          };
+        } | null;
+      }>;
+    } | null;
     student: { userId: number; firstName: string; lastName: string; email: string } | null;
     topic: { topicId: number; topicName: string } | null;
     course: { courseId: number; courseName: string } | null;
