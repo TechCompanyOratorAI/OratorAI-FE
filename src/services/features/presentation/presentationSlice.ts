@@ -1,6 +1,7 @@
 import { PRESENTATIONS_ENDPOINT, CREATE_PRESENTATION_ENDPOINT, TOPIC_PRESENTATIONS_ENDPOINT, PRESENTATION_MEDIA_ENDPOINT, PRESENTATION_SLIDES_ENDPOINT, PRESENTATION_SUBMIT_ENDPOINT, PRESENTATIONS_BY_CLASS_TOPIC_ENDPOINT, PRESENTATION_DETAIL_ENDPOINT, PRESENTATION_PROGRESS_ENDPOINT } from "@/services/constant/apiConfig";
 import axiosInstance from "@/services/constant/axiosInstance";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { instructorApi } from "@/services/api/instructorApi";
 
 interface AudioRecord {
   audioId: number;
@@ -91,6 +92,17 @@ interface PresentationResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+interface InstructorPresentationsResponse {
+  success: boolean;
+  data: {
+    presentations: Presentation[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 interface CreatePresentationResponse {
@@ -247,6 +259,30 @@ export const fetchPresentationsByClassAndTopic = createAsyncThunk(
       return rejectWithValue(error instanceof Error ? error.message : "Failed to fetch presentations");
     }
   }
+);
+
+export const fetchInstructorPresentations = createAsyncThunk(
+  "presentation/fetchInstructorPresentations",
+  async (
+    params: {
+      search?: string;
+      status?: string;
+      classId?: string;
+      courseId?: string;
+      page?: number;
+      limit?: number;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await instructorApi.getPresentations(params);
+      return response.data as InstructorPresentationsResponse;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch instructor presentations",
+      );
+    }
+  },
 );
 
 // Thunk to fetch presentation detail
@@ -438,6 +474,20 @@ const presentationSlice = createSlice({
         state.total = action.payload.total;
       })
       .addCase(fetchPresentationsByClassAndTopic.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch instructor presentations
+      .addCase(fetchInstructorPresentations.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInstructorPresentations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.presentations = action.payload.data.presentations;
+        state.total = action.payload.data.total;
+      })
+      .addCase(fetchInstructorPresentations.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

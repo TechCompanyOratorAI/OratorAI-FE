@@ -10,7 +10,6 @@ import InstructorDashboardPage from "@/page/Instructor/InstructorDashboardPage";
 import CourseDetailPage from "@/page/Instructor/CourseDetailPage";
 import IntructorTopicDetailPage from "@/page/Instructor/IntructorTopicDetailPage";
 import ClassDetailPage from "@/page/Instructor/ClassDetailPage";
-import PresentationAnalysisPage from "@/page/Admin/PresentationAnalysisPage";
 import StudentDashboardPage from "@/page/Students/StudentDashboardPage";
 import StudentMyCoursesPage from "@/page/Students/StudentMyClassesPage";
 import StudentCourseDetailPage from "@/page/Students/StudentClassDetailPage";
@@ -32,6 +31,7 @@ import ManageClassesPage from "@/page/Instructor/ManageClassesPage";
 import InstructorStudentsPage from "@/page/Instructor/InstructorStudentsPage";
 import InstructorClassStudentsPage from "@/page/Instructor/InstructorClassStudentsPage";
 import InstructorApprovalPage from "@/page/Instructor/InstructorApprovalPage";
+import InstructorPresentationsPage from "@/page/Instructor/InstructorPresentationsPage";
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
 import SharePage from "@/page/Share/SharePage";
@@ -92,6 +92,10 @@ const AppRouter = () => {
           element={<InstructorApprovalPage />}
         />
         <Route
+          path="/instructor/presentations"
+          element={<InstructorPresentationsPage />}
+        />
+        <Route
           path="/instructor/class/:classId/students"
           element={<InstructorClassStudentsPage />}
         />
@@ -133,14 +137,6 @@ const AppRouter = () => {
       <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin/classes" element={<AdminClassPage />} />
-        <Route
-          path="/admin/presentation-analysis"
-          element={<PresentationAnalysisPage />}
-        />
-        <Route
-          path="/admin/analysis-logs"
-          element={<PresentationAnalysisPage />}
-        />
         <Route path="/admin/user-management" element={<UserManagementPage />} />
         <Route path="/admin/manage-classes" element={<AdminClassPage />} />
         <Route path="/admin/manage-courses" element={<AdminCoursePage />} />

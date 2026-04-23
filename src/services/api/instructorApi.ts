@@ -1,5 +1,6 @@
 import apiClient from "@/services/constant/axiosInstance";
 import {
+  INSTRUCTOR_PRESENTATIONS_ENDPOINT,
   INSTRUCTOR_PENDING_APPROVALS_ENDPOINT,
   INSTRUCTOR_APPROVED_PRESENTATIONS_ENDPOINT,
   INSTRUCTOR_APPROVAL_STATUS_ENDPOINT,
@@ -56,8 +57,34 @@ export interface PendingApprovalsResponse {
   message?: string;
 }
 
+export interface InstructorPresentationListParams {
+  search?: string;
+  status?: string;
+  classId?: string;
+  courseId?: string;
+  page?: number;
+  limit?: number;
+}
+
 // API functions
 export const instructorApi = {
+  getPresentations: (params?: InstructorPresentationListParams) => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.classId) queryParams.append("classId", params.classId);
+    if (params?.courseId) queryParams.append("courseId", params.courseId);
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+    const query = queryParams.toString();
+    const endpoint = query
+      ? `${INSTRUCTOR_PRESENTATIONS_ENDPOINT}?${query}`
+      : INSTRUCTOR_PRESENTATIONS_ENDPOINT;
+
+    return apiClient.get(endpoint);
+  },
+
   // Lấy danh sách presentations chờ duyệt
   getPendingApprovals: (params?: {
     classId?: string;

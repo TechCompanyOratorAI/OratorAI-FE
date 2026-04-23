@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   BookOpen,
   Users,
-  BarChart3,
   Settings,
   Menu,
   X,
@@ -89,7 +88,6 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
     { id: "manage-classes", label: "Lớp học của tôi", icon: BookOpen, path: "/instructor/manage-classes" },
     { id: "students", label: "Sinh viên", icon: Users, path: "/instructor/students" },
     { id: "presentations", label: "Bài thuyết trình", icon: FileText, path: "/instructor/presentations" },
-    { id: "analytics", label: "Phân tích", icon: BarChart3, path: "/instructor/analytics" },
   ];
 
   const isActive = (itemId: string) => {
