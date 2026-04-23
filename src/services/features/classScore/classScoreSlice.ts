@@ -51,6 +51,7 @@ export interface StudentScoreData {
     firstName: string;
     lastName: string;
     email: string;
+    avatar?: string | null;
   };
   overallAverageScore: number | null;
   instructorAverageScore: number | null;
