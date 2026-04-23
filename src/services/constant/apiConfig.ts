@@ -259,6 +259,7 @@ export const ENROLL_KEYS_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys`;
 // Instructor Approval endpoints
 export const INSTRUCTOR_PENDING_APPROVALS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/pending`;
 export const INSTRUCTOR_APPROVED_PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/approved`;
+export const INSTRUCTOR_PRESENTATIONS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations`;
 export const INSTRUCTOR_APPROVAL_STATUS_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/instructor/presentations/${presentationId}/approval-status`;
 export const INSTRUCTOR_APPROVE_ENDPOINT = (presentationId: string) =>

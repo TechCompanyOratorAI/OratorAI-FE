@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   BarChartOutlined,
+  ShareAltOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchPresentationDetail } from "@/services/features/presentation/presentationSlice";
@@ -47,6 +48,7 @@ import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarIns
 import CriterionFeedbackRubricForm from "@/components/CriterionFeedback/CriterionFeedbackRubricForm";
 import ConfirmReportModal from "@/components/Report/ConfirmReportModal";
 import RejectReportModal from "@/components/Report/RejectReportModal";
+import ShareModal from "@/components/Share/ShareModal";
 import { useSocket } from "@/hooks/useSocket";
 
 const statusConfig: Record<
@@ -123,6 +125,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
   );
 
   const [showReport, setShowReport] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [reportTab, setReportTab] = useState<"transcript" | "ai" | "instructor">("transcript");
   const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
@@ -422,14 +425,34 @@ const IntructorPresentationDetailPage: React.FC = () => {
       <SidebarInstructor activeItem="manage-classes" />
       <main className="flex-1 overflow-y-auto lg:ml-0">
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 8px 32px" }}>
-          <Button
-            icon={<ArrowLeft size={14} />}
-            onClick={() => navigate(-1)}
-            type="text"
-            style={{ color: PALETTE.slate, padding: "4px 8px", height: "auto", marginBottom: 16 }}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 16,
+            }}
           >
-            Quay lại
-          </Button>
+            <Button
+              icon={<ArrowLeft size={14} />}
+              onClick={() => navigate(-1)}
+              type="text"
+              style={{ color: PALETTE.slate, padding: "4px 8px", height: "auto" }}
+            >
+              Quay lại
+            </Button>
+
+            {presentationIdNumber && (
+              <Button
+                icon={<ShareAltOutlined />}
+                onClick={() => setShareModalOpen(true)}
+              >
+                Chia sẻ
+              </Button>
+            )}
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -523,6 +546,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
               status={presentation.status}
               studentName={studentName}
               createdAt={presentation.createdAt}
+              showHeader={false}
               onTimeUpdate={setPlayerCurrentTime}
             />
           </motion.div>
@@ -1151,6 +1175,14 @@ const IntructorPresentationDetailPage: React.FC = () => {
         presentationId={presentationIdNumber ?? 0}
         onClose={() => setReportDecisionModal(null)}
       />
+
+      {presentationIdNumber && (
+        <ShareModal
+          open={shareModalOpen}
+          presentationId={presentationIdNumber}
+          onClose={() => setShareModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
