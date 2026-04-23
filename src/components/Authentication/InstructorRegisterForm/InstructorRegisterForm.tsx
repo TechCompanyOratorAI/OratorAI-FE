@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { Select } from "antd";
+import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { registerInstructor } from "@/services/features/auth/authSlice";
 import { fetchDepartments } from "@/services/features/admin/adminSlice";
@@ -68,18 +69,21 @@ const InstructorRegisterForm: React.FC = () => {
     const error = validatePassword(formData.password);
     if (error) {
       setPasswordError(error);
+      toast.error(error);
       return;
     }
 
     // Validate confirm password
     if (formData.password !== confirmPassword) {
       setPasswordError("Mật khẩu xác nhận không khớp");
+      toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
 
     // Validate department selection
     if (!formData.departmentId || formData.departmentId === 0) {
       setPasswordError("Vui lòng chọn bộ môn");
+      toast.error("Vui lòng chọn bộ môn");
       return;
     }
 
@@ -87,12 +91,19 @@ const InstructorRegisterForm: React.FC = () => {
       const resultAction = await dispatch(registerInstructor(formData));
 
       if (registerInstructor.fulfilled.match(resultAction)) {
-        // Redirect to login page after successful registration
-        navigate("/login");
+        toast.success(
+          resultAction.payload.message ||
+            "Đăng ký giảng viên thành công. Vui lòng đăng nhập để tiếp tục.",
+        );
+        window.setTimeout(() => {
+          navigate("/login");
+        }, 1200);
+      } else if (registerInstructor.rejected.match(resultAction)) {
+        toast.error(resultAction.payload?.message || "Đăng ký thất bại");
       }
     } catch (error) {
-      // Error is handled by authSlice with toast
       console.error("Register instructor error:", error);
+      toast.error("Đăng ký thất bại");
     }
   };
 

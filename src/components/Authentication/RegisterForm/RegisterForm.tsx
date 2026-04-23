@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { registerUser } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
@@ -59,12 +60,14 @@ const RegisterForm: React.FC = () => {
     const error = validatePassword(formData.password);
     if (error) {
       setPasswordError(error);
+      toast.error(error);
       return;
     }
 
     // Validate confirm password
     if (formData.password !== confirmPassword) {
       setPasswordError("Mật khẩu xác nhận không khớp");
+      toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
 
@@ -72,12 +75,19 @@ const RegisterForm: React.FC = () => {
       const resultAction = await dispatch(registerUser(formData));
 
       if (registerUser.fulfilled.match(resultAction)) {
-        // Redirect to login page after successful registration
-        navigate("/login");
+        toast.success(
+          resultAction.payload.message ||
+            "Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.",
+        );
+        window.setTimeout(() => {
+          navigate("/login");
+        }, 1200);
+      } else if (registerUser.rejected.match(resultAction)) {
+        toast.error(resultAction.payload?.message || "Đăng ký thất bại");
       }
     } catch (error) {
-      // Error is handled by authSlice with toast
       console.error("Register error:", error);
+      toast.error("Đăng ký thất bại");
     }
   };
 

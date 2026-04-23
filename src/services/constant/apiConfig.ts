@@ -284,3 +284,7 @@ export const SPEAKER_MAP_ENDPOINT = (id: string) =>
 export const SPEAKER_UNMAP_ENDPOINT = (id: string) =>
   `${BASE_URL}/api/v1/speakers/${id}/unmap`;
 export const SPEAKER_BATCH_MAP_ENDPOINT = `${BASE_URL}/api/v1/speakers/batch-map`;
+
+// Transcript endpoints
+export const TRANSCRIPT_BY_PRESENTATION_ENDPOINT = (presentationId: string) =>
+  `${BASE_URL}/api/v1/transcripts/presentation/${presentationId}`;

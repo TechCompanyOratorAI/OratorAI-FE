@@ -33,6 +33,8 @@ import {
   ResetPasswordRequest,
   ResetPasswordResponse,
   UploadAvatarResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
 } from "../../../interfaces/auth";
 
 // Helper function to get user from localStorage
@@ -176,6 +178,32 @@ export const getProfile = createAsyncThunk<
       error.response?.data?.message ||
       error.message ||
       "Lấy thông tin profile thất bại";
+    return rejectWithValue({ message: errorMessage });
+  }
+});
+
+export const updateProfile = createAsyncThunk<
+  UpdateProfileResponse,
+  UpdateProfileRequest,
+  { rejectValue: { message: string } }
+>("auth/updateProfile", async (profileData, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.put(PROFILE_ENDPOINT, profileData);
+    if (response.data && response.data.success === false) {
+      return rejectWithValue({
+        message: response.data.message ?? "Cập nhật hồ sơ thất bại",
+      });
+    }
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as {
+      response?: { data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Cập nhật hồ sơ thất bại";
     return rejectWithValue({ message: errorMessage });
   }
 });
@@ -458,6 +486,9 @@ const authSlice = createSlice({
           state.user.username = action.payload.data.username;
           state.user.isEmailVerified = action.payload.data.isEmailVerified;
           state.user.avatar = action.payload.data.avatar;
+          state.user.dob = action.payload.data.dob;
+          state.user.studyMajor = action.payload.data.studyMajor;
+          state.user.isCensored = action.payload.data.isCensored;
           localStorage.setItem("user", JSON.stringify(state.user));
         }
         state.error = null;
@@ -466,6 +497,31 @@ const authSlice = createSlice({
         state.loading = false;
         state.error =
           action.payload?.message || "Lấy thông tin profile thất bại";
+      })
+      // Update Profile cases
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user.firstName = action.payload.data.firstName;
+          state.user.lastName = action.payload.data.lastName;
+          state.user.email = action.payload.data.email;
+          state.user.username = action.payload.data.username;
+          state.user.avatar = action.payload.data.avatar;
+          state.user.dob = action.payload.data.dob;
+          state.user.studyMajor = action.payload.data.studyMajor;
+          state.user.isEmailVerified = action.payload.data.isEmailVerified;
+          state.user.isCensored = action.payload.data.isCensored;
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
+        state.error = null;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Cập nhật hồ sơ thất bại";
       })
       // Change Password cases
       .addCase(changePassword.pending, (state) => {

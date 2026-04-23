@@ -23,6 +23,7 @@ import socketReducer from "../features/socket/socketSlice";
 import notificationReducer from "../features/notification/notificationSlice";
 import adminDashboardReducer from "../features/admin/adminDashboardSlice";
 import speakerReducer from "../features/speaker/speakerSlice";
+import transcriptReducer from "../features/transcript/transcriptSlice";
 
 const presistConfig = {
   key: "root",
@@ -53,6 +54,7 @@ const rootReducer = combineReducers({
   notification: notificationReducer,
   adminDashboard: adminDashboardReducer,
   speaker: speakerReducer,
+  transcript: transcriptReducer,
 });
 
 const persistedReducer = persistReducer(presistConfig, rootReducer);
