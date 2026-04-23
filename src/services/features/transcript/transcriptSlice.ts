@@ -40,7 +40,7 @@ export interface Transcript {
   };
 }
 
-interface TranscriptState {
+export interface TranscriptState {
   currentTranscript: Transcript | null;
   loading: boolean;
   error: string | null;
