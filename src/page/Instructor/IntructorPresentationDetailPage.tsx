@@ -13,8 +13,6 @@ import {
   Star,
 } from "lucide-react";
 import {
-  ThunderboltOutlined,
-  CommentOutlined,
   BarChartOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -31,7 +29,6 @@ import {
 import { fetchGradeDistributionByReport } from "@/services/features/groupGrade/groupGradeSlice";
 import {
   Button,
-  Tabs,
   Card,
   Statistic,
   Tag,
@@ -41,6 +38,9 @@ import {
   Row,
   Col,
   Divider,
+  Alert,
+  Segmented,
+  Skeleton,
 } from "antd";
 import PresentationPlayer from "@/components/Presentation/PresentationPlayer";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
@@ -86,6 +86,17 @@ const statusConfig: Record<
 };
 
 const REPORT_SCROLL_TOP_GAP = 12;
+const PALETTE = {
+  primary: "#2563EB",
+  primaryDark: "#1D4ED8",
+  success: "#10B981",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  purple: "#8B5CF6",
+  white: "#FFFFFF",
+  slate: "#64748B",
+};
+const { Text, Title } = Typography;
 
 const IntructorPresentationDetailPage: React.FC = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
@@ -372,17 +383,15 @@ const IntructorPresentationDetailPage: React.FC = () => {
       icon: User,
       label: "Người thuyết trình",
       value: studentName,
-      gradient: "from-blue-50 to-indigo-50",
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-100",
+      color: PALETTE.primary,
+      background: "#DBEAFE",
     },
     {
       icon: BookOpen,
       label: "Chủ đề",
       value: presentation.topic?.topicName || "N/A",
-      gradient: "from-emerald-50 to-teal-50",
-      iconColor: "text-emerald-600",
-      iconBg: "bg-emerald-100",
+      color: PALETTE.success,
+      background: "#D1FAE5",
     },
     {
       icon: Clock,
@@ -390,77 +399,121 @@ const IntructorPresentationDetailPage: React.FC = () => {
       value: presentation.durationSeconds
         ? `${Math.floor(presentation.durationSeconds / 60)}m ${presentation.durationSeconds % 60}s`
         : "Chưa có",
-      gradient: "from-amber-50 to-orange-50",
-      iconColor: "text-amber-600",
-      iconBg: "bg-amber-100",
+      color: PALETTE.warning,
+      background: "#FEF3C7",
     },
     {
       icon: Calendar,
       label: "Trạng thái",
       value: sc.label,
-      gradient: `bg-gradient-to-br ${sc.gradient}`,
-      iconColor: "text-slate-600",
-      iconBg: "bg-white",
+      color: PALETTE.purple,
+      background: "#EDE9FE",
     },
+  ];
+
+  const reportSegmentOptions = [
+    { label: "Transcript", value: "transcript" },
+    { label: "AI đánh giá", value: "ai" },
+    { label: `Feedback giảng viên${syncedFeedbacks.length ? ` (${syncedFeedbacks.length})` : ""}`, value: "instructor" },
   ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <SidebarInstructor activeItem="manage-classes" />
       <main className="flex-1 overflow-y-auto lg:ml-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          <button
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 8px 32px" }}>
+          <Button
+            icon={<ArrowLeft size={14} />}
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+            type="text"
+            style={{ color: PALETTE.slate, padding: "4px 8px", height: "auto", marginBottom: 16 }}
           >
-            <ArrowLeft className="w-5 h-5" /> Quay lại
-          </button>
+            Quay lại
+          </Button>
 
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {presentation.title}
-            </h1>
-            {presentation.description && (
-              <p className="text-slate-500 mt-1">{presentation.description}</p>
-            )}
+            <Card
+              style={{
+                borderRadius: 20,
+                border: "none",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+              }}
+              styles={{ body: { padding: "24px" } }}
+            >
+              <Title level={2} style={{ margin: 0, fontWeight: 700, fontSize: 22 }}>
+                {presentation.title}
+              </Title>
+              {presentation.description && (
+                <Text style={{ display: "block", marginTop: 8, color: PALETTE.slate, fontSize: 14 }}>
+                  {presentation.description}
+                </Text>
+              )}
+            </Card>
           </motion.div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {statCards.map(
-              (
-                { icon: Icon, label, value, gradient, iconColor, iconBg },
-                i,
-              ) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className={`bg-gradient-to-br ${gradient} rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4`}
-                >
-                  <div
-                    className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            style={{ marginTop: 16 }}
+          >
+            <Row gutter={[12, 12]}>
+              {statCards.map(({ icon: Icon, label, value, color, background }) => (
+                <Col xs={12} sm={12} md={6} key={label}>
+                  <Card
+                    style={{
+                      borderRadius: 16,
+                      border: "none",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    }}
+                    styles={{ body: { padding: "16px" } }}
                   >
-                    <Icon className={`w-5 h-5 ${iconColor}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-0.5">
-                      {label}
-                    </p>
-                    <p className="font-bold text-slate-900 truncate">{value}</p>
-                  </div>
-                </motion.div>
-              ),
-            )}
-          </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          background,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Icon size={20} color={color} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: PALETTE.slate,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            display: "block",
+                          }}
+                        >
+                          {label}
+                        </Text>
+                        <Text strong style={{ fontSize: 13, display: "block" }} ellipsis={{ tooltip: value }}>
+                          {value}
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            style={{ marginTop: 16 }}
           >
             <PresentationPlayer
               slides={presentation.slides || []}
@@ -479,66 +532,138 @@ const IntructorPresentationDetailPage: React.FC = () => {
               ref={reportSectionRef}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4"
+              style={{ marginTop: 16 }}
             >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                    Kết quả đánh giá AI
-                  </h2>
-                  {currentReport && (
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        currentReport.reportStatus === "confirmed"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : currentReport.reportStatus === "rejected"
-                            ? "bg-red-100 text-red-700"
-                            : currentReport.reportStatus === "pending_review"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-slate-100 text-slate-600"
-                      }`}
+              <Card
+                style={{
+                  borderRadius: 20,
+                  border: "none",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+                }}
+                styles={{ body: { padding: "24px 24px 20px" } }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 20,
+                    flexWrap: "wrap",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: `${PALETTE.primary}15`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
-                      {currentReport.reportStatus === "confirmed"
-                        ? "Đã xác nhận"
-                        : currentReport.reportStatus === "rejected"
-                          ? "Đã từ chối"
-                          : currentReport.reportStatus === "pending_review"
-                            ? "Chờ duyệt"
-                            : currentReport.reportStatus}
-                    </span>
-                  )}
-                  {currentReport?.reportStatus === "confirmed" &&
-                    currentReport.gradeForInstructor !== null && (
-                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+                      <BarChartOutlined style={{ fontSize: 18, color: PALETTE.primary }} />
+                    </div>
+                    <div>
+                      <Title level={4} style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>
+                        Kết quả đánh giá
+                      </Title>
+                      {currentReport?.generatedAt && (
+                        <Text style={{ fontSize: 12, color: PALETTE.slate }}>
+                          {new Date(currentReport.generatedAt).toLocaleString("vi-VN")}
+                        </Text>
+                      )}
+                    </div>
+                    {currentReport && (
+                      <Tag
+                        style={{
+                          borderRadius: 999,
+                          padding: "4px 10px",
+                          fontWeight: 600,
+                          background:
+                            currentReport.reportStatus === "confirmed"
+                              ? "#DCFCE7"
+                              : currentReport.reportStatus === "rejected"
+                                ? "#FEE2E2"
+                                : currentReport.reportStatus === "pending_review"
+                                  ? "#FEF3C7"
+                                  : "#F1F5F9",
+                          color:
+                            currentReport.reportStatus === "confirmed"
+                              ? "#15803D"
+                              : currentReport.reportStatus === "rejected"
+                                ? "#B91C1C"
+                                : currentReport.reportStatus === "pending_review"
+                                  ? "#B45309"
+                                  : "#475569",
+                          border: "none",
+                        }}
+                      >
+                        {currentReport.reportStatus === "confirmed"
+                          ? "Đã xác nhận"
+                          : currentReport.reportStatus === "rejected"
+                            ? "Đã từ chối"
+                            : currentReport.reportStatus === "pending_review"
+                              ? "Chờ duyệt"
+                              : currentReport.reportStatus}
+                      </Tag>
+                    )}
+                  </div>
+                  <Segmented
+                    options={reportSegmentOptions}
+                    value={reportTab}
+                    onChange={(val) =>
+                      setReportTab(val as "transcript" | "ai" | "instructor")
+                    }
+                    size="large"
+                  />
+                </div>
+
+                {currentReport?.reportStatus === "confirmed" &&
+                  currentReport.gradeForInstructor !== null && (
+                    <Card
+                      size="small"
+                      style={{
+                        marginBottom: 16,
+                        background: "#ECFDF5",
+                        borderColor: "#BBF7D0",
+                        borderRadius: 16,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                         <div>
-                          <p className="text-xs text-emerald-600 font-medium">
+                          <Text style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
                             Điểm cuối cùng (GV)
-                          </p>
-                          <p className="text-2xl font-bold text-emerald-700 leading-none">
+                          </Text>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: "#047857", lineHeight: 1.1 }}>
                             {currentReport.gradeForInstructor}
-                          </p>
+                          </div>
                         </div>
                         {currentReport.feedbackOfInstructor && (
-                          <div className="border-l border-emerald-200 pl-3 max-w-xs">
-                            <p className="text-xs text-emerald-600 font-medium">
+                          <div style={{ borderLeft: "1px solid #A7F3D0", paddingLeft: 16, maxWidth: 360 }}>
+                            <Text style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
                               Nhận xét GV
-                            </p>
-                            <p className="text-xs text-slate-600 line-clamp-2">
+                            </Text>
+                            <Text style={{ display: "block", marginTop: 4, color: PALETTE.slate }}>
                               {currentReport.feedbackOfInstructor}
-                            </p>
+                            </Text>
                           </div>
                         )}
                       </div>
-                    )}
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto">
-                  {currentReport?.generatedAt && (
-                    <span className="text-sm text-slate-500 hidden sm:inline mr-2">
-                      {new Date(currentReport.generatedAt).toLocaleString(
-                        "vi-VN",
-                      )}
-                    </span>
+                    </Card>
                   )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    justifyContent: "flex-end",
+                    marginBottom: 16,
+                  }}
+                >
                   {currentReport &&
                     currentReport.reportStatus === "confirmed" &&
                     !isGradeFinalized && (
@@ -569,10 +694,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
                         </Button>
                         <Button
                           type="primary"
-                          style={{
-                            background: "#059669",
-                            borderColor: "#059669",
-                          }}
+                          style={{ background: "#059669", borderColor: "#059669" }}
                           loading={confirmLoading}
                           onClick={() => setReportDecisionModal("confirm")}
                         >
@@ -581,513 +703,398 @@ const IntructorPresentationDetailPage: React.FC = () => {
                       </>
                     )}
                 </div>
-              </div>
 
               {currentReport &&
                 currentReport.reportStatus !== "confirmed" &&
                 currentReport.reportStatus !== "rejected" &&
                 !instructorFeedbackComplete &&
                 criteriaScores.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    <span className="font-semibold">Lưu ý: </span>
-                    Vui lòng hoàn thành phản hồi giảng viên cho{" "}
-                    <strong>
-                      tất cả {criteriaScores.length} tiêu chí
-                    </strong>{" "}
-                    (tab &quot;Feedback giảng viên&quot;) trước khi có thể xác
-                    nhận hoặc từ chối báo cáo AI.
-                  </div>
+                  <Alert
+                    style={{ marginBottom: 16, borderRadius: 12 }}
+                    type="warning"
+                    showIcon
+                    message={
+                      <>
+                        <span style={{ fontWeight: 600 }}>Lưu ý: </span>
+                        Vui lòng hoàn thành phản hồi giảng viên cho{" "}
+                        <strong>tất cả {criteriaScores.length} tiêu chí</strong>{" "}
+                        (tab &quot;Feedback giảng viên&quot;) trước khi có thể xác
+                        nhận hoặc từ chối báo cáo AI.
+                      </>
+                    }
+                  />
                 )}
 
               {reportLoading ? (
-                <div className="flex items-center justify-center py-10 text-slate-500">
-                  <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin mr-3" />
-                  Đang tải kết quả...
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <Skeleton active paragraph={{ rows: 3 }} />
                 </div>
               ) : currentReport ? (
                 <>
-                  <Tabs
-                    activeKey={reportTab}
-                    onChange={(k) => setReportTab(k as "transcript" | "ai" | "instructor")}
-                    size="large"
-                    type="line"
-                    className="[&_.ant-tabs-nav]:mb-4"
-                    items={[
-                      {
-                        key: "transcript",
-                        label: (
-                          <Space size={6}>
-                            <span>📝</span>
-                            Transcript
-                          </Space>
-                        ),
-                        children: transcriptLoading ? (
-                          <div className="flex items-center justify-center py-10 text-slate-500">
-                            <div className="w-6 h-6 border-2 border-sky-200 border-t-sky-600 rounded-full animate-spin mr-3" />
-                            Đang tải bản ghi lời...
-                          </div>
-                        ) : currentTranscript?.segments?.length ? (
-                          <div
-                            ref={transcriptContainerRef}
-                            style={{ maxHeight: 520, overflowY: "auto", paddingRight: 4 }}
-                          >
-                            {currentTranscript.segments.map((seg) => {
-                              const speakerColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
-                              const speakerIndex =
-                                parseInt(seg.speaker.aiSpeakerLabel.replace("SPEAKER_", ""), 10) || 0;
-                              const color = speakerColors[speakerIndex % speakerColors.length];
-                              const mins = Math.floor(seg.startTimestamp / 60);
-                              const secs = Math.floor(seg.startTimestamp % 60);
-                              const timestamp = `${mins}:${String(secs).padStart(2, "0")}`;
-                              const isActive =
-                                playerCurrentTime >= seg.startTimestamp &&
-                                playerCurrentTime < seg.endTimestamp;
-                              return (
-                                <div
-                                  key={seg.segmentId}
-                                  ref={isActive ? activeSegmentRef : null}
+                  {reportTab === "transcript" ? (
+                    transcriptLoading ? (
+                      <div style={{ textAlign: "center", padding: "40px 0" }}>
+                        <Skeleton active paragraph={{ rows: 4 }} />
+                      </div>
+                    ) : currentTranscript?.segments?.length ? (
+                      <div
+                        ref={transcriptContainerRef}
+                        style={{ maxHeight: 520, overflowY: "auto", paddingRight: 4 }}
+                      >
+                        {currentTranscript.segments.map((seg) => {
+                          const speakerColors = [
+                            PALETTE.primary,
+                            PALETTE.success,
+                            PALETTE.warning,
+                            PALETTE.danger,
+                            PALETTE.purple,
+                          ];
+                          const speakerIndex =
+                            parseInt(seg.speaker.aiSpeakerLabel.replace("SPEAKER_", ""), 10) || 0;
+                          const color = speakerColors[speakerIndex % speakerColors.length];
+                          const mins = Math.floor(seg.startTimestamp / 60);
+                          const secs = Math.floor(seg.startTimestamp % 60);
+                          const timestamp = `${mins}:${String(secs).padStart(2, "0")}`;
+                          const isActive =
+                            playerCurrentTime >= seg.startTimestamp &&
+                            playerCurrentTime < seg.endTimestamp;
+                          return (
+                            <div
+                              key={seg.segmentId}
+                              ref={isActive ? activeSegmentRef : null}
+                              style={{
+                                display: "flex",
+                                gap: 12,
+                                marginBottom: 4,
+                                alignItems: "flex-start",
+                                borderRadius: 10,
+                                padding: "10px 8px",
+                                transition: "background 0.25s",
+                                background: isActive ? `${color}18` : "transparent",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => {
+                                const videoEl = document.querySelector<HTMLVideoElement>("video");
+                                const audioEl = document.querySelector<HTMLAudioElement>("audio");
+                                if (videoEl) videoEl.currentTime = seg.startTimestamp;
+                                else if (audioEl) audioEl.currentTime = seg.startTimestamp;
+                              }}
+                            >
+                              <div style={{ flexShrink: 0, width: 36, paddingTop: 2, textAlign: "right" }}>
+                                <Text
                                   style={{
-                                    display: "flex",
-                                    gap: 12,
-                                    marginBottom: 4,
-                                    alignItems: "flex-start",
-                                    borderRadius: 10,
-                                    padding: "10px 8px",
-                                    transition: "background 0.25s",
-                                    background: isActive ? `${color}18` : "transparent",
-                                    cursor: "pointer",
-                                  }}
-                                  onClick={() => {
-                                    const videoEl = document.querySelector<HTMLVideoElement>("video");
-                                    const audioEl = document.querySelector<HTMLAudioElement>("audio");
-                                    if (videoEl) videoEl.currentTime = seg.startTimestamp;
-                                    else if (audioEl) audioEl.currentTime = seg.startTimestamp;
+                                    fontSize: 11,
+                                    color: isActive ? color : "#94A3B8",
+                                    fontWeight: isActive ? 700 : 400,
+                                    transition: "color 0.25s",
                                   }}
                                 >
-                                  <div style={{ flexShrink: 0, width: 36, paddingTop: 2, textAlign: "right" }}>
-                                    <span
-                                      style={{
-                                        fontSize: 11,
-                                        color: isActive ? color : "#94A3B8",
-                                        fontWeight: isActive ? 700 : 400,
-                                        transition: "color 0.25s",
-                                      }}
-                                    >
-                                      {timestamp}
-                                    </span>
-                                  </div>
-                                  <div
-                                    style={{
-                                      flexShrink: 0,
-                                      width: 3,
-                                      borderRadius: 2,
-                                      background: isActive ? color : "#E2E8F0",
-                                      alignSelf: "stretch",
-                                      transition: "background 0.25s",
-                                    }}
-                                  />
-                                  <div style={{ flex: 1 }}>
-                                    <span
-                                      style={{
-                                        fontSize: 11,
-                                        color,
-                                        fontWeight: 700,
-                                        display: "block",
-                                        marginBottom: 4,
-                                        opacity: isActive ? 1 : 0.6,
-                                        transition: "opacity 0.25s",
-                                      }}
-                                    >
-                                      {seg.speaker.isMapped && seg.speaker.mappedStudent
-                                        ? `${seg.speaker.mappedStudent.firstName} ${seg.speaker.mappedStudent.lastName}`.trim()
-                                        : `Diễn giả ${speakerIndex + 1}`}
-                                    </span>
-                                    {(() => {
-                                      const words = seg.segmentText.trim().split(/\s+/);
-                                      const segDuration = seg.endTimestamp - seg.startTimestamp;
-                                      const isPast = playerCurrentTime >= seg.endTimestamp;
-                                      const progressRatio = isActive && segDuration > 0
-                                        ? Math.min(1, Math.max(0, (playerCurrentTime - seg.startTimestamp) / segDuration))
-                                        : isPast ? 1 : 0;
-                                      const litCount = Math.ceil(progressRatio * words.length);
-                                      return (
-                                        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75, wordBreak: "break-word" }}>
-                                          {words.map((word, wi) => (
-                                            <span
-                                              key={wi}
-                                              style={{
-                                                color: wi < litCount
-                                                  ? (isActive ? color : "#475569")
-                                                  : "#94A3B8",
-                                                fontWeight: wi < litCount && isActive ? 500 : 400,
-                                                transition: "color 0.12s",
-                                              }}
-                                            >{word}{wi < words.length - 1 ? " " : ""}</span>
-                                          ))}
-                                        </p>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
-                            Chưa có transcript cho bài thuyết trình này.
-                          </div>
-                        ),
-                      },
-                      {
-                        key: "ai",
-                        label: (
-                          <Space size={6}>
-                            <ThunderboltOutlined />
-                            AI đánh giá
-                          </Space>
-                        ),
-                        children: (
+                                  {timestamp}
+                                </Text>
+                              </div>
+                              <div
+                                style={{
+                                  flexShrink: 0,
+                                  width: 3,
+                                  borderRadius: 2,
+                                  background: isActive ? color : "#E2E8F0",
+                                  alignSelf: "stretch",
+                                  transition: "background 0.25s",
+                                }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    color,
+                                    fontWeight: 700,
+                                    display: "block",
+                                    marginBottom: 4,
+                                    opacity: isActive ? 1 : 0.6,
+                                    transition: "opacity 0.25s",
+                                  }}
+                                >
+                                  {seg.speaker.isMapped && seg.speaker.mappedStudent
+                                    ? `${seg.speaker.mappedStudent.firstName} ${seg.speaker.mappedStudent.lastName}`.trim()
+                                    : `Diễn giả ${speakerIndex + 1}`}
+                                </Text>
+                                {(() => {
+                                  const words = seg.segmentText.trim().split(/\s+/);
+                                  const segDuration = seg.endTimestamp - seg.startTimestamp;
+                                  const isPast = playerCurrentTime >= seg.endTimestamp;
+                                  const progressRatio = isActive && segDuration > 0
+                                    ? Math.min(1, Math.max(0, (playerCurrentTime - seg.startTimestamp) / segDuration))
+                                    : isPast ? 1 : 0;
+                                  const litCount = Math.ceil(progressRatio * words.length);
+                                  return (
+                                    <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75, wordBreak: "break-word" }}>
+                                      {words.map((word, wi) => (
+                                        <span
+                                          key={wi}
+                                          style={{
+                                            color: wi < litCount
+                                              ? (isActive ? color : PALETTE.slate)
+                                              : "#94A3B8",
+                                            fontWeight: wi < litCount && isActive ? 500 : 400,
+                                            transition: "color 0.12s",
+                                          }}
+                                        >{word}{wi < words.length - 1 ? " " : ""}</span>
+                                      ))}
+                                    </p>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <Alert
+                        message="Chưa có transcript cho bài thuyết trình này."
+                        type="info"
+                        showIcon
+                        style={{ borderRadius: 12 }}
+                      />
+                    )
+                  ) : reportTab === "ai" ? (
+                    <Space
+                      direction="vertical"
+                      size="large"
+                      className="w-full"
+                    >
+                      <div>
+                        <Typography.Title level={5} className="!mb-0">
+                          Đánh giá tự động
+                        </Typography.Title>
+                        <Typography.Text
+                          type="secondary"
+                          className="text-sm"
+                        >
+                          Mỗi tiêu chí đánh giá có form phản hồi riêng bên
+                          dưới phần nhận xét AI.
+                        </Typography.Text>
+                      </div>
+
+                      <Card
+                        size="small"
+                        className="bg-sky-50/90 border-sky-100"
+                      >
+                        <Statistic
+                          title="Điểm tổng (AI)"
+                          value={aiOverallOutOf10 ?? "—"}
+                          suffix={
+                            aiOverallOutOf10 !== null ? "/ 10" : undefined
+                          }
+                          valueStyle={{ color: "#0369a1", fontSize: 28 }}
+                        />
+                      </Card>
+
+                      <Space
+                        direction="vertical"
+                        size="middle"
+                        className="w-full"
+                      >
+                        {criteriaScores.map((criterion) => {
+                          const existingFb =
+                            syncedFeedbacks.find(
+                              (f) =>
+                                f.classRubricCriteriaId === criterion.criteriaId,
+                            ) ?? null;
+                          return (
+                            <Card
+                              key={criterion.criteriaId}
+                              size="small"
+                              title={
+                                <Space wrap>
+                                  <span>{criterion.criteriaName}</span>
+                                </Space>
+                              }
+                              extra={
+                                <Typography.Text strong className="text-sky-700">
+                                  {criterion.score}/{criterion.maxScore}{" "}
+                                  <Typography.Text type="secondary" className="text-xs">
+                                    (w: {criterion.weight}%)
+                                  </Typography.Text>
+                                </Typography.Text>
+                              }
+                            >
+                              <Typography.Paragraph className="!mb-2 text-slate-600">
+                                {criterion.comment}
+                              </Typography.Paragraph>
+                              {criterion.suggestions?.length > 0 && (
+                                <ul className="list-disc list-inside text-sm text-slate-700 space-y-1 pl-0">
+                                  {criterion.suggestions.map((suggestion, idx) => (
+                                    <li key={`${criterion.criteriaId}-${idx}`}>{suggestion}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              {currentReport && (
+                                <CriterionFeedbackRubricForm
+                                  key={`${currentReport.reportId}-${criterion.criteriaId}`}
+                                  reportId={currentReport.reportId}
+                                  criterion={criterion}
+                                  existingFeedback={existingFb}
+                                  onFeedbackChanged={() => {
+                                    if (presentationIdNumber) {
+                                      void dispatch(fetchPresentationReport(presentationIdNumber));
+                                    }
+                                  }}
+                                />
+                              )}
+                            </Card>
+                          );
+                        })}
+                      </Space>
+                    </Space>
+                  ) : (
+                    <Space
+                      direction="vertical"
+                      size="large"
+                      className="w-full"
+                    >
+                      {syncedFeedbacks.length === 0 ? (
+                        <Empty
+                          description={
+                            <span>
+                              Chưa có phản hồi giảng viên. Hãy mở tab{" "}
+                              <strong>AI đánh giá</strong> và điền form dưới mỗi tiêu chí rubric.
+                            </span>
+                          }
+                        />
+                      ) : (
+                        <>
+                          <Card
+                            size="small"
+                            className="bg-sky-50/90 border-sky-100"
+                          >
+                            <Statistic
+                              title="Điểm TB (GV)"
+                              value={(
+                                syncedFeedbacks.reduce((sum, f) => sum + (Number(f.score) || 0), 0) /
+                                Math.max(
+                                  syncedFeedbacks.filter((f) => f.score !== null && f.score !== "").length,
+                                  1,
+                                ) /
+                                10
+                              ).toFixed(1)}
+                              suffix="/ 10"
+                              valueStyle={{ color: "#0369a1", fontSize: 28 }}
+                            />
+                          </Card>
+
                           <Space
                             direction="vertical"
-                            size="large"
+                            size="middle"
                             className="w-full"
                           >
-                            <div>
-                              <Typography.Title level={5} className="!mb-0">
-                                Đánh giá tự động
-                              </Typography.Title>
-                              <Typography.Text
-                                type="secondary"
-                                className="text-sm"
-                              >
-                                Mỗi tiêu chí đánh giá có form phản hồi riêng bên
-                                dưới phần nhận xét AI — lưu từng tiêu chí độc
-                                lập.
-                              </Typography.Text>
-                            </div>
+                            {[...syncedFeedbacks]
+                              .sort((a, b) => a.criterionFeedbackId - b.criterionFeedbackId)
+                              .map((fb) => {
+                                const criteriaLabel =
+                                  fb.classRubricCriteria?.criteriaName ||
+                                  criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId)?.criteriaName ||
+                                  `Tiêu chí #${fb.classRubricCriteriaId}`;
+                                const instructorLabel = fb.instructor
+                                  ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
+                                    fb.instructor.email ||
+                                    "Giảng viên"
+                                  : "Giảng viên";
+                                const aiCriterion = criteriaScores.find((c) => c.criteriaId === fb.classRubricCriteriaId);
+                                const hasAiData = !!aiCriterion;
 
-                            <Card
-                              size="small"
-                              className="bg-sky-50/90 border-sky-100"
-                            >
-                              <Statistic
-                                title="Điểm tổng (AI)"
-                                value={aiOverallOutOf10 ?? "—"}
-                                suffix={
-                                  aiOverallOutOf10 !== null ? "/ 10" : undefined
-                                }
-                                valueStyle={{ color: "#0369a1", fontSize: 28 }}
-                              />
-                            </Card>
-
-                            <Space
-                              direction="vertical"
-                              size="middle"
-                              className="w-full"
-                            >
-                              {criteriaScores.map((criterion) => {
-                                const existingFb =
-                                  syncedFeedbacks.find(
-                                    (f) =>
-                                      f.classRubricCriteriaId ===
-                                      criterion.criteriaId,
-                                  ) ?? null;
                                 return (
                                   <Card
-                                    key={criterion.criteriaId}
+                                    key={fb.criterionFeedbackId}
                                     size="small"
-                                    title={
-                                      <Space wrap>
-                                        <span>{criterion.criteriaName}</span>
-                                      </Space>
-                                    }
+                                    className="border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-white"
+                                    title={<Space><span className="font-semibold">{criteriaLabel}</span></Space>}
                                     extra={
-                                      <Typography.Text
-                                        strong
-                                        className="text-sky-700"
-                                      >
-                                        {criterion.score}/{criterion.maxScore}{" "}
-                                        <Typography.Text
-                                          type="secondary"
-                                          className="text-xs"
-                                        >
-                                          (w: {criterion.weight}%)
-                                        </Typography.Text>
-                                      </Typography.Text>
+                                      fb.score !== null && fb.score !== "" ? (
+                                        <Space>
+                                          <Star className="w-4 h-4 text-amber-500" />
+                                          <Typography.Text strong className="text-lg text-indigo-700">
+                                            {(Number(fb.score) / 10).toFixed(1)}
+                                          </Typography.Text>
+                                          <Typography.Text type="secondary">/ 10</Typography.Text>
+                                        </Space>
+                                      ) : null
                                     }
                                   >
-                                    <Typography.Paragraph className="!mb-2 text-slate-600">
-                                      {criterion.comment}
-                                    </Typography.Paragraph>
-                                    {criterion.suggestions?.length > 0 && (
-                                      <ul className="list-disc list-inside text-sm text-slate-700 space-y-1 pl-0">
-                                        {criterion.suggestions.map(
-                                          (suggestion, idx) => (
-                                            <li
-                                              key={`${criterion.criteriaId}-${idx}`}
-                                            >
-                                              {suggestion}
-                                            </li>
-                                          ),
-                                        )}
-                                      </ul>
+                                    <Typography.Text type="secondary" className="text-xs block mb-3">
+                                      <User className="inline w-3 h-3 mr-1" />
+                                      {instructorLabel}
+                                      {fb.updatedAt
+                                        ? ` · ${new Date(fb.updatedAt).toLocaleString("vi-VN", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}`
+                                        : ""}
+                                    </Typography.Text>
+
+                                    {fb.comment ? (
+                                      <Typography.Paragraph className="!mb-3 whitespace-pre-wrap">
+                                        {fb.comment}
+                                      </Typography.Paragraph>
+                                    ) : (
+                                      <Typography.Text type="secondary" italic>
+                                        Chưa có nhận xét
+                                      </Typography.Text>
                                     )}
-                                    {currentReport && (
-                                      <CriterionFeedbackRubricForm
-                                        key={`${currentReport.reportId}-${criterion.criteriaId}`}
-                                        reportId={currentReport.reportId}
-                                        criterion={criterion}
-                                        existingFeedback={existingFb}
-                                        onFeedbackChanged={() => {
-                                          if (presentationIdNumber) {
-                                            void dispatch(
-                                              fetchPresentationReport(
-                                                presentationIdNumber,
-                                              ),
-                                            );
-                                          }
-                                        }}
-                                      />
+
+                                    {hasAiData && (
+                                      <Card
+                                        size="small"
+                                        type="inner"
+                                        className="bg-sky-50/80 border-sky-100"
+                                      >
+                                        <Typography.Text strong className="text-sky-700 text-xs uppercase block mb-2">
+                                          <Cpu className="inline w-3.5 h-3.5 mr-1" />
+                                          So sánh với AI
+                                        </Typography.Text>
+                                        <Row gutter={[12, 12]}>
+                                          <Col span={12}>
+                                            <Typography.Text type="secondary" className="text-xs block">
+                                              Điểm AI
+                                            </Typography.Text>
+                                            <Typography.Text strong className="text-sky-700">
+                                              {aiCriterion!.score}/{aiCriterion!.maxScore}{" "}
+                                              <Typography.Text type="secondary" className="text-xs">
+                                                ({(((aiCriterion!.score / aiCriterion!.maxScore) * 100)).toFixed(0)}%)
+                                              </Typography.Text>
+                                            </Typography.Text>
+                                          </Col>
+                                        </Row>
+                                        {aiCriterion!.comment && (
+                                          <>
+                                            <Divider className="my-2" />
+                                            <Typography.Text type="secondary" className="text-xs">
+                                              <strong>Nhận xét AI:</strong> {aiCriterion!.comment}
+                                            </Typography.Text>
+                                          </>
+                                        )}
+                                      </Card>
                                     )}
                                   </Card>
                                 );
                               })}
-                            </Space>
                           </Space>
-                        ),
-                      },
-                      {
-                        key: "instructor",
-                        label: (
-                          <Space size={6}>
-                            <CommentOutlined />
-                            Feedback giảng viên
-                            {syncedFeedbacks.length > 0 ? (
-                              <Tag color="processing">
-                                {syncedFeedbacks.length}
-                              </Tag>
-                            ) : null}
-                          </Space>
-                        ),
-                        children: (
-                          <Space
-                            direction="vertical"
-                            size="large"
-                            className="w-full"
-                          >
-                            {syncedFeedbacks.length === 0 ? (
-                              <Empty
-                                description={
-                                  <span>
-                                    Chưa có phản hồi giảng viên. Hãy mở tab{" "}
-                                    <strong>AI đánh giá</strong> và điền form
-                                    dưới mỗi tiêu chí rubric.
-                                  </span>
-                                }
-                              />
-                            ) : (
-                              <>
-                                <Card
-                                  size="small"
-                                  className="bg-sky-50/90 border-sky-100"
-                                >
-                                  <Statistic
-                                    title="Điểm TB (GV)"
-                                    value={(
-                                      syncedFeedbacks.reduce(
-                                        (sum, f) =>
-                                          sum + (Number(f.score) || 0),
-                                        0,
-                                      ) /
-                                      Math.max(
-                                        syncedFeedbacks.filter(
-                                          (f) =>
-                                            f.score !== null && f.score !== "",
-                                        ).length,
-                                        1,
-                                      ) /
-                                      10
-                                    ).toFixed(1)}
-                                    suffix="/ 10"
-                                    valueStyle={{
-                                      color: "#0369a1",
-                                      fontSize: 28,
-                                    }}
-                                  />
-                                </Card>
-
-                                <Space
-                                  direction="vertical"
-                                  size="middle"
-                                  className="w-full"
-                                >
-                                  {[...syncedFeedbacks]
-                                    .sort(
-                                      (a, b) =>
-                                        a.criterionFeedbackId -
-                                        b.criterionFeedbackId,
-                                    )
-                                    .map((fb) => {
-                                      const criteriaLabel =
-                                        fb.classRubricCriteria?.criteriaName ||
-                                        criteriaScores.find(
-                                          (c) =>
-                                            c.criteriaId ===
-                                            fb.classRubricCriteriaId,
-                                        )?.criteriaName ||
-                                        `Tiêu chí #${fb.classRubricCriteriaId}`;
-                                      const instructorLabel = fb.instructor
-                                        ? `${fb.instructor.firstName || ""} ${fb.instructor.lastName || ""}`.trim() ||
-                                          fb.instructor.email ||
-                                          "Giảng viên"
-                                        : "Giảng viên";
-                                      const aiCriterion = criteriaScores.find(
-                                        (c) =>
-                                          c.criteriaId ===
-                                          fb.classRubricCriteriaId,
-                                      );
-                                      const hasAiData = !!aiCriterion;
-
-                                      return (
-                                        <Card
-                                          key={fb.criterionFeedbackId}
-                                          size="small"
-                                          className="border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-white"
-                                          title={
-                                            <Space>
-                                              <span className="font-semibold">
-                                                {criteriaLabel}
-                                              </span>
-                                            </Space>
-                                          }
-                                          extra={
-                                            fb.score !== null &&
-                                            fb.score !== "" ? (
-                                              <Space>
-                                                <Star className="w-4 h-4 text-amber-500" />
-                                                <Typography.Text
-                                                  strong
-                                                  className="text-lg text-indigo-700"
-                                                >
-                                                  {(
-                                                    Number(fb.score) / 10
-                                                  ).toFixed(1)}
-                                                </Typography.Text>
-                                                <Typography.Text type="secondary">
-                                                  / 10
-                                                </Typography.Text>
-                                              </Space>
-                                            ) : null
-                                          }
-                                        >
-                                          <Typography.Text
-                                            type="secondary"
-                                            className="text-xs block mb-3"
-                                          >
-                                            <User className="inline w-3 h-3 mr-1" />
-                                            {instructorLabel}
-                                            {fb.updatedAt
-                                              ? ` · ${new Date(
-                                                  fb.updatedAt,
-                                                ).toLocaleString("vi-VN", {
-                                                  day: "2-digit",
-                                                  month: "2-digit",
-                                                  year: "numeric",
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                })}`
-                                              : ""}
-                                          </Typography.Text>
-
-                                          {fb.comment ? (
-                                            <Typography.Paragraph className="!mb-3 whitespace-pre-wrap">
-                                              {fb.comment}
-                                            </Typography.Paragraph>
-                                          ) : (
-                                            <Typography.Text
-                                              type="secondary"
-                                              italic
-                                            >
-                                              Chưa có nhận xét
-                                            </Typography.Text>
-                                          )}
-
-                                          {hasAiData && (
-                                            <Card
-                                              size="small"
-                                              type="inner"
-                                              className="bg-sky-50/80 border-sky-100"
-                                            >
-                                              <Typography.Text
-                                                strong
-                                                className="text-sky-700 text-xs uppercase block mb-2"
-                                              >
-                                                <Cpu className="inline w-3.5 h-3.5 mr-1" />
-                                                So sánh với AI
-                                              </Typography.Text>
-                                              <Row gutter={[12, 12]}>
-                                                <Col span={12}>
-                                                  <Typography.Text
-                                                    type="secondary"
-                                                    className="text-xs block"
-                                                  >
-                                                    Điểm AI
-                                                  </Typography.Text>
-                                                  <Typography.Text
-                                                    strong
-                                                    className="text-sky-700"
-                                                  >
-                                                    {aiCriterion!.score}/
-                                                    {aiCriterion!.maxScore}{" "}
-                                                    <Typography.Text
-                                                      type="secondary"
-                                                      className="text-xs"
-                                                    >
-                                                      (
-                                                      {(
-                                                        (aiCriterion!.score /
-                                                          aiCriterion!
-                                                            .maxScore) *
-                                                        100
-                                                      ).toFixed(0)}
-                                                      %)
-                                                    </Typography.Text>
-                                                  </Typography.Text>
-                                                </Col>
-                                              </Row>
-                                              {aiCriterion!.comment && (
-                                                <>
-                                                  <Divider className="my-2" />
-                                                  <Typography.Text
-                                                    type="secondary"
-                                                    className="text-xs"
-                                                  >
-                                                    <strong>
-                                                      Nhận xét AI:
-                                                    </strong>{" "}
-                                                    {aiCriterion!.comment}
-                                                  </Typography.Text>
-                                                </>
-                                              )}
-                                            </Card>
-                                          )}
-                                        </Card>
-                                      );
-                                    })}
-                                </Space>
-                              </>
-                            )}
-                          </Space>
-                        ),
-                      },
-                    ]}
-                  />
+                        </>
+                      )}
+                    </Space>
+                  )}
                 </>
               ) : (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
-                  Chưa có kết quả đánh giá cho bài thuyết trình này.
-                </div>
+                <Alert
+                  message="Chưa có kết quả đánh giá cho bài thuyết trình này."
+                  type="info"
+                  showIcon
+                  style={{ borderRadius: 12 }}
+                />
               )}
+              </Card>
             </motion.div>
           )}
         </div>
