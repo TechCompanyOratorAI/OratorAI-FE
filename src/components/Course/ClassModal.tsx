@@ -28,8 +28,7 @@ interface ClassModalProps {
 interface ClassFormData {
   courseId: number;
   classCode: string;
-  startDate: Dayjs;
-  endDate: Dayjs;
+  dateRange: [Dayjs, Dayjs];
   maxStudents: number;
   status?: "active" | "inactive" | "archived";
   maxGroupMembers?: number | null;
@@ -83,10 +82,10 @@ const ClassModal: React.FC<ClassModalProps> = ({
       form.setFieldsValue({
         courseId: resolvedCourseId,
         classCode: initialData.classCode,
-        startDate: initialData.startDate
-          ? dayjs(initialData.startDate)
-          : undefined,
-        endDate: initialData.endDate ? dayjs(initialData.endDate) : undefined,
+        dateRange:
+          initialData.startDate && initialData.endDate
+            ? [dayjs(initialData.startDate), dayjs(initialData.endDate)]
+            : undefined,
         maxStudents: initialData.maxStudents,
         maxGroupMembers: initialData.maxGroupMembers ?? undefined,
         enrollKey: keySource?.keyValue,
@@ -113,24 +112,24 @@ const ClassModal: React.FC<ClassModalProps> = ({
           ? {
             classCode: values.classCode,
             courseId: values.courseId,
-            startDate: values.startDate?.format("YYYY-MM-DD"),
-            endDate: values.endDate?.format("YYYY-MM-DD"),
+            startDate: values.dateRange?.[0]?.format("YYYY-MM-DD"),
+            endDate: values.dateRange?.[1]?.format("YYYY-MM-DD"),
             maxStudents: values.maxStudents,
             maxGroupMembers: values.maxGroupMembers ?? null,
           }
           : {
             courseId: values.courseId,
             classCode: values.classCode,
-            startDate: values.startDate.format("YYYY-MM-DD"),
-            endDate: values.endDate.format("YYYY-MM-DD"),
+            startDate: values.dateRange[0].format("YYYY-MM-DD"),
+            endDate: values.dateRange[1].format("YYYY-MM-DD"),
             maxStudents: values.maxStudents,
             maxGroupMembers: values.maxGroupMembers ?? null,
           }
         : {
           courseId: values.courseId,
           classCode: values.classCode,
-          startDate: values.startDate.format("YYYY-MM-DD"),
-          endDate: values.endDate.format("YYYY-MM-DD"),
+          startDate: values.dateRange[0].format("YYYY-MM-DD"),
+          endDate: values.dateRange[1].format("YYYY-MM-DD"),
           maxStudents: values.maxStudents,
           status: "active",
         };
@@ -295,46 +294,18 @@ const ClassModal: React.FC<ClassModalProps> = ({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-          <Form.Item
-            name="startDate"
-            label={<Text strong>Ngày bắt đầu</Text>}
-            rules={[{ required: true, message: "Bắt buộc" }]}
-          >
-            <DatePicker
-              className="w-full"
-              format="YYYY-MM-DD"
-              disabled={isInstructorEditMode}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="endDate"
-            label={<Text strong>Ngày kết thúc</Text>}
-            dependencies={["startDate"]}
-            rules={[
-              { required: true, message: "Bắt buộc" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const start = getFieldValue("startDate");
-                  if (!value) return Promise.resolve();
-                  if (start && value.isBefore(start)) {
-                    return Promise.reject(
-                      new Error("Ngày kết thúc phải sau ngày bắt đầu"),
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <DatePicker
-              className="w-full"
-              format="YYYY-MM-DD"
-              disabled={isInstructorEditMode}
-            />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="dateRange"
+          label={<Text strong>Thời gian lớp học</Text>}
+          rules={[{ required: true, message: "Bắt buộc" }]}
+        >
+          <DatePicker.RangePicker
+            className="w-full"
+            style={{ maxWidth: 420 }}
+            format="YYYY-MM-DD"
+            disabled={isInstructorEditMode}
+          />
+        </Form.Item>
 
         {isEditMode && (
           <>
@@ -363,13 +334,14 @@ const ClassModal: React.FC<ClassModalProps> = ({
               <Form.Item
                 name="keyExpiresAt"
                 label={<Text strong>Thời hạn mã</Text>}
-                dependencies={["startDate"]}
+                dependencies={["dateRange"]}
                 rules={[
                   ({ getFieldValue }) => ({
                     validator(_, value) {
-                      const startDate = getFieldValue("startDate") as
-                        | Dayjs
+                      const dateRange = getFieldValue("dateRange") as
+                        | [Dayjs, Dayjs]
                         | undefined;
+                      const startDate = dateRange?.[0];
 
                       if (!value || !startDate) return Promise.resolve();
 

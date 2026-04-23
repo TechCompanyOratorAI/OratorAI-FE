@@ -32,7 +32,9 @@ import {
   Card,
   Popconfirm,
   App,
+  ConfigProvider,
 } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import SummaryMetrics, {
   SummaryMetricItem,
@@ -40,10 +42,11 @@ import SummaryMetrics, {
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import RubricTemplateModal from "@/components/RubricTemplate/RubricTemplateModal";
 import CriteriaModal from "@/components/RubricTemplate/CriteriaModal";
+import { extractLocalizedMessage } from "@/lib/utils";
 
 const AdminRubricTemplePage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { templates, pagination, loading, actionLoading, error } =
+  const { templates, loading, actionLoading, error } =
     useAppSelector((state) => state.rubricTemplate);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +54,9 @@ const AdminRubricTemplePage: React.FC = () => {
     "all" | "active" | "inactive"
   >("all");
   const [filterAssignmentType, setFilterAssignmentType] = useState("all");
+  const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
+    "newest",
+  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<RubricTemplate | null>(
@@ -70,6 +76,7 @@ const AdminRubricTemplePage: React.FC = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const FETCH_ALL_LIMIT = 1000;
 
   const { notification } = App.useApp();
 
@@ -89,45 +96,34 @@ const AdminRubricTemplePage: React.FC = () => {
     });
   };
 
-  const extractMessage = (payload: any, fallback: string) => {
-    if (typeof payload === "string" && payload.trim()) return payload;
-    if (payload && typeof payload === "object") {
-      if (typeof payload.message === "string" && payload.message.trim()) {
-        return payload.message;
-      }
-      if (
-        payload.data &&
-        typeof payload.data.message === "string" &&
-        payload.data.message.trim()
-      ) {
-        return payload.data.message;
-      }
-    }
-    return fallback;
-  };
-
   useEffect(() => {
-    dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
-  }, [dispatch, currentPage, pageSize]);
+    dispatch(fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }));
+  }, [dispatch]);
 
   useEffect(() => {
     if (error) {
-      notifyError("Lỗi mẫu rubric", error);
+      notifyError("Lỗi mẫu rubric", extractLocalizedMessage(error, error));
       dispatch(clearRubricTemplateError());
     }
   }, [error, dispatch]);
+
+  const getCreatedTimestamp = (template: RubricTemplate) => {
+    const time = template.createdAt ? new Date(template.createdAt).getTime() : 0;
+    return Number.isNaN(time) ? 0 : time;
+  };
 
   const filteredTemplates = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
     return [...templates]
       .sort((left, right) => {
-        const leftTime = left.createdAt
-          ? new Date(left.createdAt).getTime()
-          : 0;
-        const rightTime = right.createdAt
-          ? new Date(right.createdAt).getTime()
-          : 0;
-        return rightTime - leftTime;
+        const createdDelta =
+          sortByCreatedAt === "newest"
+            ? getCreatedTimestamp(right) - getCreatedTimestamp(left)
+            : getCreatedTimestamp(left) - getCreatedTimestamp(right);
+        if (createdDelta !== 0) return createdDelta;
+        return sortByCreatedAt === "newest"
+          ? right.rubricTemplateId - left.rubricTemplateId
+          : left.rubricTemplateId - right.rubricTemplateId;
       })
       .filter((template) => {
         const matchesKeyword =
@@ -147,7 +143,7 @@ const AdminRubricTemplePage: React.FC = () => {
 
         return matchesKeyword && matchesStatus && matchesAssignmentType;
       });
-  }, [templates, searchTerm, filterStatus, filterAssignmentType]);
+  }, [templates, searchTerm, filterStatus, filterAssignmentType, sortByCreatedAt]);
 
   const stats = useMemo(() => {
     const total = templates.length;
@@ -211,15 +207,15 @@ const AdminRubricTemplePage: React.FC = () => {
       const response = await dispatch(createRubricTemplate(payload)).unwrap();
       notifySuccess(
         "Tạo thành công",
-        extractMessage(response, "Tạo mẫu tiêu chí thành công."),
+        extractLocalizedMessage(response, "Tạo mẫu tiêu chí thành công."),
       );
       setIsCreateModalOpen(false);
-      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
+      dispatch(fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }));
     } catch (createError: any) {
       notifyError(
         "Tạo thất bại",
         typeof createError === "string"
-          ? createError
+          ? extractLocalizedMessage(createError, createError)
           : createError?.message || "Không thể tạo mẫu tiêu chí",
       );
     }
@@ -236,16 +232,16 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       notifySuccess(
         "Cập nhật thành công",
-        extractMessage(response, "Cập nhật mẫu tiêu chí thành công."),
+        extractLocalizedMessage(response, "Cập nhật mẫu tiêu chí thành công."),
       );
       setIsEditModalOpen(false);
       setEditingTemplate(null);
-      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
+      dispatch(fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }));
     } catch (updateError: any) {
       notifyError(
         "Cập nhật thất bại",
         typeof updateError === "string"
-          ? updateError
+          ? extractLocalizedMessage(updateError, updateError)
           : updateError?.message || "Không thể cập nhật mẫu tiêu chí",
       );
     }
@@ -258,14 +254,14 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       notifySuccess(
         "Xóa thành công",
-        extractMessage(response, "Xóa mẫu tiêu chí thành công."),
+        extractLocalizedMessage(response, "Xóa mẫu tiêu chí thành công."),
       );
-      dispatch(fetchRubricTemplates({ page: currentPage, limit: pageSize }));
+      dispatch(fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }));
     } catch (deleteError: any) {
       notifyError(
         "Xóa thất bại",
         typeof deleteError === "string"
-          ? deleteError
+          ? extractLocalizedMessage(deleteError, deleteError)
           : deleteError?.message || "Không thể xóa mẫu tiêu chí",
       );
     }
@@ -281,13 +277,13 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       notifySuccess("Tạo thành công", "Tạo tiêu chí thành công.");
       await dispatch(
-        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+        fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }),
       ).unwrap();
     } catch (createCriteriaError: any) {
       notifyError(
         "Tạo thất bại",
         typeof createCriteriaError === "string"
-          ? createCriteriaError
+          ? extractLocalizedMessage(createCriteriaError, createCriteriaError)
           : createCriteriaError?.message || "Không thể tạo tiêu chí",
       );
       throw createCriteriaError;
@@ -304,13 +300,13 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       notifySuccess("Cập nhật thành công", "Cập nhật tiêu chí thành công.");
       await dispatch(
-        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+        fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }),
       ).unwrap();
     } catch (updateCriteriaError: any) {
       notifyError(
         "Cập nhật thất bại",
         typeof updateCriteriaError === "string"
-          ? updateCriteriaError
+          ? extractLocalizedMessage(updateCriteriaError, updateCriteriaError)
           : updateCriteriaError?.message || "Không thể cập nhật tiêu chí",
       );
       throw updateCriteriaError;
@@ -327,13 +323,13 @@ const AdminRubricTemplePage: React.FC = () => {
       ).unwrap();
       notifySuccess("Xóa thành công", "Xóa tiêu chí thành công.");
       await dispatch(
-        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+        fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }),
       ).unwrap();
     } catch (deleteCriteriaError: any) {
       notifyError(
         "Xóa thất bại",
         typeof deleteCriteriaError === "string"
-          ? deleteCriteriaError
+          ? extractLocalizedMessage(deleteCriteriaError, deleteCriteriaError)
           : deleteCriteriaError?.message || "Không thể xóa tiêu chí",
       );
       throw deleteCriteriaError;
@@ -367,13 +363,13 @@ const AdminRubricTemplePage: React.FC = () => {
         "Cập nhật thứ tự tiêu chí thành công.",
       );
       await dispatch(
-        fetchRubricTemplates({ page: currentPage, limit: pageSize }),
+        fetchRubricTemplates({ page: 1, limit: FETCH_ALL_LIMIT }),
       ).unwrap();
     } catch (reorderCriteriaError: any) {
       notifyError(
         "Cập nhật thất bại",
         typeof reorderCriteriaError === "string"
-          ? reorderCriteriaError
+          ? extractLocalizedMessage(reorderCriteriaError, reorderCriteriaError)
           : reorderCriteriaError?.message ||
               "Không thể cập nhật thứ tự tiêu chí",
       );
@@ -470,9 +466,9 @@ const AdminRubricTemplePage: React.FC = () => {
       ),
     },
     {
-      title: "Cập nhật",
-      key: "updated",
-      render: (_, record) => formatDate(record.updatedAt || record.createdAt),
+      title: "Ngày tạo",
+      key: "createdAt",
+      render: (_, record) => formatDate(record.createdAt),
     },
     {
       title: "Thao tác",
@@ -537,8 +533,8 @@ const AdminRubricTemplePage: React.FC = () => {
                 onClick={() =>
                   dispatch(
                     fetchRubricTemplates({
-                      page: currentPage,
-                      limit: pageSize,
+                      page: 1,
+                      limit: FETCH_ALL_LIMIT,
                     }),
                   )
                 }
@@ -607,42 +603,56 @@ const AdminRubricTemplePage: React.FC = () => {
                     ...assignmentTypes.map((t) => ({ value: t, label: t })),
                   ]}
                 />
+                <Select
+                  value={sortByCreatedAt}
+                  onChange={(val) => {
+                    setSortByCreatedAt(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 140 }}
+                  options={[
+                    { value: "newest", label: "Mới nhất" },
+                    { value: "oldest", label: "Cũ nhất" },
+                  ]}
+                />
               </Space>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={filteredTemplates}
-              rowKey="rubricTemplateId"
-              loading={loading}
-              pagination={
-                pagination && pagination.total > 0
-                  ? {
-                      current: currentPage,
-                      pageSize,
-                      total: pagination.total,
-                      showSizeChanger: true,
-                      showQuickJumper: false,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} trên tổng ${total} mẫu`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
-                  : false
-              }
-              locale={{
-                emptyText: error
-                  ? error
-                  : searchTerm ||
-                      filterStatus !== "all" ||
-                      filterAssignmentType !== "all"
-                    ? "Không tìm thấy mẫu tiêu chí phù hợp bộ lọc"
-                    : "Chưa có mẫu tiêu chí nào. Hãy tạo mẫu đầu tiên để bắt đầu.",
-              }}
-            />
+            <ConfigProvider locale={viVN}>
+              <Table
+                columns={columns}
+                dataSource={filteredTemplates}
+                rowKey="rubricTemplateId"
+                loading={loading}
+                pagination={
+                  filteredTemplates.length > 0
+                    ? {
+                        current: currentPage,
+                        pageSize,
+                        total: filteredTemplates.length,
+                        showSizeChanger: true,
+                        showQuickJumper: false,
+                        pageSizeOptions: ["10", "20", "50"],
+                        showTotal: (total, range) =>
+                          `${range[0]}-${range[1]} trên tổng ${total} mẫu`,
+                        onChange: (p, ps) => {
+                          setCurrentPage(p);
+                          setPageSize(ps);
+                        },
+                      }
+                    : false
+                }
+                locale={{
+                  emptyText: error
+                    ? error
+                    : searchTerm ||
+                        filterStatus !== "all" ||
+                        filterAssignmentType !== "all"
+                      ? "Không tìm thấy mẫu tiêu chí phù hợp bộ lọc"
+                      : "Chưa có mẫu tiêu chí nào. Hãy tạo mẫu đầu tiên để bắt đầu.",
+                }}
+              />
+            </ConfigProvider>
           </Card>
         </div>
       </main>

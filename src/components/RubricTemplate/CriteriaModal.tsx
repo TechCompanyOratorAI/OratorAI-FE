@@ -66,6 +66,8 @@ const defaultFormState: CriteriaFormState = {
   isActive: true,
 };
 
+const WEIGHT_SUGGESTIONS = ["10", "20", "50"] as const;
+
 type SortableCriteriaItemProps = {
   criterion: RubricTemplateCriterion;
   isEditing: boolean;
@@ -197,6 +199,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
   const [localCriteria, setLocalCriteria] = useState<RubricTemplateCriterion[]>(
     [],
   );
+  const [showWeightSuggestions, setShowWeightSuggestions] = useState(false);
   const [originalCriteria, setOriginalCriteria] = useState<
     RubricTemplateCriterion[]
   >([]);
@@ -389,7 +392,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     }
 
     if (formState.isActive && potentialTotalPercentage > 100) {
-      nextErrors.weight = `Tổng phần trăm sẽ vượt quá 100% (sẽ là ${potentialTotalPercentage.toFixed(1)}%)`;
+      nextErrors.weight = `Tổng phần trăm sẽ vượt quá 100% `;
     }
 
     setErrors(nextErrors);
@@ -659,21 +662,51 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   <label className="mb-1 block text-sm font-medium text-slate-700">
                     Phần trăm (%)
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formState.weight}
-                    onChange={(e) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        weight: e.target.value,
-                      }))
-                    }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.weight ? "border-rose-300" : "border-slate-300"
-                    }`}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formState.weight}
+                      onFocus={() => setShowWeightSuggestions(true)}
+                      onBlur={() =>
+                        setTimeout(() => setShowWeightSuggestions(false), 120)
+                      }
+                      onChange={(e) =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          weight: e.target.value,
+                        }))
+                      }
+                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
+                        errors.weight ? "border-rose-300" : "border-slate-300"
+                      }`}
+                    />
+                    {showWeightSuggestions && (
+                      <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                        
+                        <div className="flex items-center gap-2">
+                          {WEIGHT_SUGGESTIONS.map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  weight: value,
+                                }));
+                                setShowWeightSuggestions(false);
+                              }}
+                              className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-sky-300 hover:text-sky-700"
+                            >
+                              {value}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {errors.weight && (
                     <p className="mt-1 text-xs text-rose-600">
                       {errors.weight}

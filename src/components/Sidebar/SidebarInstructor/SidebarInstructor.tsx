@@ -82,7 +82,15 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
   const fullName = user
     ? `${user.firstName} ${user.lastName}`.trim()
     : "Giảng viên";
-  const userRole = user?.roles?.[0]?.roleName || "Giảng viên";
+  const userRole = user?.roles?.[0]?.roleName
+    ? user.roles[0].roleName === "Student"
+      ? "Sinh viên"
+      : user.roles[0].roleName === "Instructor"
+        ? "Giảng viên"
+        : user.roles[0].roleName === "Admin"
+          ? "Quản trị viên"
+          : user.roles[0].roleName
+    : "Giảng viên";
 
   const menuItems = [
     { id: "dashboard", label: "Bảng điều khiển", icon: LayoutDashboard, path: "/instructor/dashboard" },

@@ -37,7 +37,9 @@ import {
   Card,
   Popconfirm,
   App,
+  ConfigProvider,
 } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import SummaryMetrics, {
   SummaryMetricItem,
@@ -47,6 +49,7 @@ import {
   ADD_INSTRUCTOR_TO_COURSE_ENDPOINT,
   REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT,
 } from "@/services/constant/apiConfig";
+import { extractLocalizedMessage } from "@/lib/utils";
 
 const AdminCoursePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -61,7 +64,12 @@ const AdminCoursePage: React.FC = () => {
     CourseData | undefined
   >();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterSemester, setFilterSemester] = useState("");
+  const [filterSemester, setFilterSemester] = useState<string | undefined>(
+    undefined,
+  );
+  const [sortByCreatedAt, setSortByCreatedAt] = useState<
+    "newest" | "oldest"
+  >("newest");
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -84,21 +92,19 @@ const AdminCoursePage: React.FC = () => {
     });
   };
 
-  const extractMessage = (payload: any, fallback: string) => {
-    if (typeof payload === "string" && payload.trim()) return payload;
-    if (payload && typeof payload === "object") {
-      if (typeof payload.message === "string" && payload.message.trim()) {
-        return payload.message;
-      }
-      if (
-        payload.data &&
-        typeof payload.data.message === "string" &&
-        payload.data.message.trim()
-      ) {
-        return payload.data.message;
-      }
-    }
-    return fallback;
+  const normalizeCourseMessage = (message: string) => {
+    const replacements: Array<[RegExp, string]> = [
+      [/Instructor removed from course successfully/gi, "Đã gỡ giảng viên khỏi môn học thành công."],
+      [/Instructor added to course successfully/gi, "Đã thêm giảng viên vào môn học thành công."],
+      [/Course updated successfully/gi, "Cập nhật môn học thành công."],
+      [/Course deleted successfully/gi, "Xóa môn học thành công."],
+      [/Course created successfully/gi, "Tạo môn học thành công."],
+    ];
+
+    return replacements.reduce(
+      (result, [pattern, replacement]) => result.replace(pattern, replacement),
+      message,
+    );
   };
 
   useEffect(() => {
@@ -125,10 +131,17 @@ const AdminCoursePage: React.FC = () => {
       const response = await dispatch(deleteCourse(courseId)).unwrap();
       notifySuccess(
         "Xóa thành công",
-        extractMessage(response, "Đã xóa khóa học thành công."),
+        normalizeCourseMessage(
+          extractLocalizedMessage(response, "Đã xóa môn học thành công."),
+        ),
       );
     } catch (error) {
-      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa khóa học."));
+      notifyError(
+        "Xóa thất bại",
+        normalizeCourseMessage(
+          extractLocalizedMessage(error, "Không thể xóa môn học."),
+        ),
+      );
     }
     setActionLoading(false);
   };
@@ -145,13 +158,17 @@ const AdminCoursePage: React.FC = () => {
         ).unwrap();
         notifySuccess(
           "Cập nhật thành công",
-          extractMessage(response, "Đã cập nhật khóa học thành công."),
+          normalizeCourseMessage(
+            extractLocalizedMessage(response, "Đã cập nhật môn học thành công."),
+          ),
         );
       } else {
         const response = await dispatch(createCourse(courseData)).unwrap();
         notifySuccess(
           "Tạo thành công",
-          extractMessage(response, "Đã tạo khóa học thành công."),
+          normalizeCourseMessage(
+            extractLocalizedMessage(response, "Đã tạo môn học thành công."),
+          ),
         );
       }
       setIsCourseModalOpen(false);
@@ -159,11 +176,13 @@ const AdminCoursePage: React.FC = () => {
     } catch (error) {
       notifyError(
         selectedCourse ? "Cập nhật thất bại" : "Tạo thất bại",
-        extractMessage(
-          error,
-          selectedCourse
-          ? "Không thể cập nhật khóa học."
-          : "Không thể tạo khóa học.",
+        normalizeCourseMessage(
+          extractLocalizedMessage(
+            error,
+            selectedCourse
+              ? "Không thể cập nhật môn học."
+              : "Không thể tạo môn học.",
+          ),
         ),
       );
     }
@@ -203,13 +222,20 @@ const AdminCoursePage: React.FC = () => {
       );
       notifySuccess(
         "Thêm giảng viên thành công",
-        extractMessage(response.data, "Đã thêm giảng viên thành công."),
+        normalizeCourseMessage(
+          extractLocalizedMessage(response.data, "Đã thêm giảng viên thành công."),
+        ),
       );
       await refreshSelectedCourse(courseId);
     } catch (error: any) {
       notifyError(
         "Thêm giảng viên thất bại",
-        extractMessage(error?.response?.data || error, "Không thể thêm giảng viên."),
+        normalizeCourseMessage(
+          extractLocalizedMessage(
+            error?.response?.data || error,
+            "Không thể thêm giảng viên.",
+          ),
+        ),
       );
     }
   };
@@ -227,13 +253,20 @@ const AdminCoursePage: React.FC = () => {
       );
       notifySuccess(
         "Gỡ giảng viên thành công",
-        extractMessage(response.data, "Đã gỡ giảng viên thành công."),
+        normalizeCourseMessage(
+          extractLocalizedMessage(response.data, "Đã gỡ giảng viên thành công."),
+        ),
       );
       await refreshSelectedCourse(courseId);
     } catch (error: any) {
       notifyError(
         "Gỡ giảng viên thất bại",
-        extractMessage(error?.response?.data || error, "Không thể gỡ giảng viên."),
+        normalizeCourseMessage(
+          extractLocalizedMessage(
+            error?.response?.data || error,
+            "Không thể gỡ giảng viên.",
+          ),
+        ),
       );
     }
   };
@@ -277,7 +310,7 @@ const AdminCoursePage: React.FC = () => {
   }, [departments]);
 
   const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
+    const filtered = courses.filter((course) => {
       const department = departmentLookup[course.departmentId];
       const departmentText = department
         ? `${department.departmentCode} ${department.departmentName}`
@@ -292,7 +325,13 @@ const AdminCoursePage: React.FC = () => {
         : true;
       return matchesSearch && matchesSemester;
     });
-  }, [courses, searchTerm, filterSemester, departmentLookup]);
+
+    return filtered.sort((a, b) => {
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
+      return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
+    });
+  }, [courses, searchTerm, filterSemester, sortByCreatedAt, departmentLookup]);
 
   const stats = useMemo(() => {
     const total = courses.length;
@@ -307,7 +346,7 @@ const AdminCoursePage: React.FC = () => {
   const summaryItems: SummaryMetricItem[] = [
     {
       key: "total-courses",
-      title: "Tổng khóa học",
+      title: "Tổng môn học",
       value: stats.total,
       icon: <ReadOutlined style={{ fontSize: 20 }} />,
       tone: "blue",
@@ -315,7 +354,7 @@ const AdminCoursePage: React.FC = () => {
     },
     {
       key: "active-courses",
-      title: "Khóa học hoạt động",
+      title: "Môn học hoạt động",
       value: stats.active,
       icon: <CheckCircleOutlined style={{ fontSize: 20 }} />,
       tone: "green",
@@ -335,7 +374,7 @@ const AdminCoursePage: React.FC = () => {
 
   const columns: ColumnsType<CourseData> = [
     {
-      title: "Thông tin khóa học",
+      title: "Thông tin môn học",
       key: "courseInfo",
       render: (_, record) => (
         <div>
@@ -406,12 +445,6 @@ const AdminCoursePage: React.FC = () => {
       ),
     },
     {
-      title: "Số đăng ký",
-      dataIndex: "enrollmentCount",
-      key: "enrollmentCount",
-      render: (val) => val || 0,
-    },
-    {
       title: "Thao tác",
       key: "actions",
       width: 140,
@@ -432,8 +465,8 @@ const AdminCoursePage: React.FC = () => {
             title="Sửa"
           />
           <Popconfirm
-            title="Xác nhận xóa khóa học"
-            description="Bạn có chắc muốn xóa khóa học này? Hành động này không thể hoàn tác."
+            title="Xác nhận xóa môn học"
+            description="Bạn có chắc muốn xóa môn học này? Hành động này không thể hoàn tác."
             onConfirm={() => handleDeleteCourse(record.courseId)}
             okText="Xóa"
             okButtonProps={{ danger: true, loading: actionLoading }}
@@ -462,10 +495,10 @@ const AdminCoursePage: React.FC = () => {
                 Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Quản lý khóa học
+                Quản lý môn học
               </h1>
               <p className="text-sm text-gray-600">
-                Quản lý toàn bộ khóa học, giảng viên và thông tin khóa học
+                Quản lý toàn bộ môn học, giảng viên và thông tin môn học
               </p>
             </div>
             <Space>
@@ -483,7 +516,7 @@ const AdminCoursePage: React.FC = () => {
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateCourse}
               >
-                Khóa học mới
+                Môn học mới
               </Button>
             </Space>
           </div>
@@ -496,7 +529,7 @@ const AdminCoursePage: React.FC = () => {
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                   Danh mục
                 </p>
-                <h2 className="text-lg font-bold text-gray-900">Tất cả khóa học</h2>
+                <h2 className="text-lg font-bold text-gray-900">Tất cả môn học</h2>
               </div>
               <Space wrap>
                 <Input
@@ -518,42 +551,56 @@ const AdminCoursePage: React.FC = () => {
                   }}
                   style={{ width: 160 }}
                   allowClear
-                  placeholder="Tất cả học kỳ"
+                  placeholder="Tất cả kỳ"
                   options={semesters.map((s) => ({ value: s, label: s }))}
+                />
+                <Select
+                  value={sortByCreatedAt}
+                  onChange={(val) => {
+                    setSortByCreatedAt(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 170 }}
+                  options={[
+                    { value: "newest", label: "Mới nhất" },
+                    { value: "oldest", label: "Cũ nhất" },
+                  ]}
                 />
               </Space>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={filteredCourses}
-              rowKey="courseId"
-              loading={loading}
-              pagination={
-                pagination.total > 0
-                  ? {
-                    current: currentPage,
-                    pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showQuickJumper: false,
-                    pageSizeOptions: ["10", "20", "50"],
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} trên tổng ${total} khóa học`,
-                    onChange: (p, ps) => {
-                      setCurrentPage(p);
-                      setPageSize(ps);
-                    },
-                  }
-                  : false
-              }
-              locale={{
-                emptyText:
-                  searchTerm || filterSemester
-                    ? "Không tìm thấy khóa học phù hợp bộ lọc"
-                    : "Chưa có khóa học nào. Hãy tạo khóa học đầu tiên để bắt đầu.",
-              }}
-            />
+            <ConfigProvider locale={viVN}>
+              <Table
+                columns={columns}
+                dataSource={filteredCourses}
+                rowKey="courseId"
+                loading={loading}
+                pagination={
+                  pagination.total > 0
+                    ? {
+                      current: currentPage,
+                      pageSize,
+                      total: pagination.total,
+                      showSizeChanger: true,
+                      showQuickJumper: false,
+                      pageSizeOptions: ["10", "20", "50"],
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} trên tổng ${total} môn học`,
+                      onChange: (p, ps) => {
+                        setCurrentPage(p);
+                        setPageSize(ps);
+                      },
+                    }
+                    : false
+                }
+                locale={{
+                  emptyText:
+                    searchTerm || filterSemester
+                      ? "Không tìm thấy môn học phù hợp bộ lọc"
+                      : "Chưa có môn học nào. Hãy tạo môn học đầu tiên để bắt đầu.",
+                }}
+              />
+            </ConfigProvider>
           </Card>
         </div>
       </main>

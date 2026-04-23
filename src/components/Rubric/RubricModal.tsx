@@ -408,7 +408,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
     // Check if total percentage exceeds 100% when this is marked as active
     if (formData.isActive && potentialTotalPercentage > 100) {
-      newErrors.weight = `Tổng tỷ lệ sẽ vượt quá 100% (sẽ là ${potentialTotalPercentage.toFixed(1)}%)`;
+      newErrors.weight = `Tổng tỷ lệ sẽ vượt quá 100%`;
     }
 
     setErrors(newErrors);

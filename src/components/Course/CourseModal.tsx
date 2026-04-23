@@ -4,7 +4,7 @@ import {
   Form,
   Input,
   Select,
-  InputNumber,
+  AutoComplete,
   DatePicker,
   Button,
   Space,
@@ -34,9 +34,8 @@ interface CourseFormData {
   departmentId: number;
   description: string;
   semester: string;
-  academicYear: number;
-  startDate: Dayjs;
-  endDate: Dayjs;
+  academicYear: string;
+  dateRange: [Dayjs, Dayjs];
 }
 
 const CourseModal: React.FC<CourseModalProps> = ({
@@ -56,9 +55,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
       departmentId: values.departmentId,
       description: values.description,
       semester: values.semester,
-      academicYear: values.academicYear,
-      startDate: values.startDate.format("YYYY-MM-DD"),
-      endDate: values.endDate.format("YYYY-MM-DD"),
+      academicYear: Number(values.academicYear),
+      startDate: values.dateRange[0].format("YYYY-MM-DD"),
+      endDate: values.dateRange[1].format("YYYY-MM-DD"),
     });
   };
 
@@ -80,7 +79,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
 
   return (
     <Modal
-      title={initialData ? "Chỉnh sửa khóa học" : "Tạo khóa học mới"}
+      title={initialData ? "Chỉnh sửa môn học" : "Tạo môn học mới"}
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
@@ -114,44 +113,51 @@ const CourseModal: React.FC<CourseModalProps> = ({
             initialData?.departmentId || departments[0]?.departmentId,
           description: initialData?.description || "",
           semester: initialData?.semester || "",
-          academicYear: initialData?.academicYear || dayjs().year(),
-          startDate: initialData?.startDate
-            ? dayjs(initialData.startDate)
-            : undefined,
-          endDate: initialData?.endDate
-            ? dayjs(initialData.endDate)
-            : undefined,
+          academicYear: String(initialData?.academicYear || dayjs().year()),
+          dateRange:
+            initialData?.startDate && initialData?.endDate
+              ? [dayjs(initialData.startDate), dayjs(initialData.endDate)]
+              : undefined,
         }}
       >
         <Form.Item
           name="courseCode"
-          label={<Text strong>Mã khóa học</Text>}
+          label={<Text strong>Mã môn học</Text>}
           rules={[
-            { required: true, message: "Mã khóa học không được để trống" },
-            { min: 2, max: 20, message: "Mã khóa học từ 2 – 20 ký tự" },
+            { required: true, message: "Mã môn học không được để trống" },
+            { min: 2, max: 20, message: "Mã môn học từ 2 – 20 ký tự" },
           ]}
         >
-          <Input placeholder="VD: SE101" />
+          <Input placeholder="VD: PRJ301" />
         </Form.Item>
 
         <Form.Item
           name="departmentId"
-          label={<Text strong>Khoa</Text>}
-          rules={[{ required: true, message: "Vui lòng chọn khoa" }]}
+          label={<Text strong>Chuyên ngành</Text>}
+          rules={[{ required: true, message: "Vui lòng chọn chuyên ngành" }]}
         >
           <Select
-            placeholder="Chọn khoa..."
+            placeholder="Chọn chuyên ngành..."
             options={departmentOptions}
+            showSearch
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              (option?.label ?? "")
+                .toString()
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+            listHeight={160}
             disabled={departments.length === 0}
           />
         </Form.Item>
 
         <Form.Item
           name="courseName"
-          label={<Text strong>Tên khóa học</Text>}
+          label={<Text strong>Tên môn học</Text>}
           rules={[
-            { required: true, message: "Tên khóa học không được để trống" },
-            { min: 2, max: 200, message: "Tên khóa học từ 2 – 200 ký tự" },
+            { required: true, message: "Tên môn học không được để trống" },
+            { min: 2, max: 200, message: "Tên môn học từ 2 – 200 ký tự" },
           ]}
         >
           <Input placeholder="VD: Software Engineering Fundamentals" />
@@ -162,7 +168,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           label={<Text strong>Mô tả</Text>}
           rules={[{ required: true, message: "Mô tả không được để trống" }]}
         >
-          <Input.TextArea placeholder="Nhập mô tả khóa học..." rows={3} />
+          <Input.TextArea placeholder="Nhập mô tả môn học..." rows={3} />
         </Form.Item>
 
         <div className="grid grid-cols-2 gap-x-4">
@@ -177,23 +183,27 @@ const CourseModal: React.FC<CourseModalProps> = ({
           <Form.Item
             name="academicYear"
             label={<Text strong>Năm học</Text>}
-            dependencies={["startDate"]}
+            dependencies={["dateRange"]}
             rules={[
               { required: true, message: "Năm học không được để trống" },
-              {
-                type: "number",
-                min: 2000,
-                max: 2100,
-                message: "Năm học từ 2000 – 2100",
-              },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  const startDate = getFieldValue("startDate") as
-                    | Dayjs
-                    | undefined;
-                  if (!value || !startDate) return Promise.resolve();
+                  const year = Number(value);
+                  if (!value || Number.isNaN(year)) {
+                    return Promise.reject(
+                      new Error("Năm học phải là số hợp lệ"),
+                    );
+                  }
+                  if (year < 2000 || year > 2100) {
+                    return Promise.reject(new Error("Năm học từ 2000 – 2100"));
+                  }
 
-                  if (Number(value) !== startDate.year()) {
+                  const dateRange = getFieldValue("dateRange") as
+                    | [Dayjs, Dayjs]
+                    | undefined;
+                  if (!value || !dateRange?.[0]) return Promise.resolve();
+
+                  if (year !== dateRange[0].year()) {
                     return Promise.reject(
                       new Error("Năm học phải trùng với năm của ngày bắt đầu"),
                     );
@@ -204,42 +214,34 @@ const CourseModal: React.FC<CourseModalProps> = ({
               }),
             ]}
           >
-            <InputNumber className="w-full" min={2000} max={2100} />
+            <AutoComplete
+              placeholder="Chọn năm học"
+              filterOption={(inputValue, option) =>
+                (option?.value ?? "")
+                  .toString()
+                  .toLowerCase()
+                  .includes(inputValue.toLowerCase())
+              }
+              options={[
+                { value: 2026, label: "2026" },
+                { value: 2027, label: "2027" },
+                { value: 2028, label: "2028" },
+              ]}
+            />
           </Form.Item>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4">
-          <Form.Item
-            name="startDate"
-            label={<Text strong>Ngày bắt đầu</Text>}
-            rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu" }]}
-          >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
-          </Form.Item>
-
-          <Form.Item
-            name="endDate"
-            label={<Text strong>Ngày kết thúc</Text>}
-            dependencies={["startDate"]}
-            rules={[
-              { required: true, message: "Vui lòng chọn ngày kết thúc" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const start = getFieldValue("startDate");
-                  if (!value) return Promise.resolve();
-                  if (start && value.isBefore(start)) {
-                    return Promise.reject(
-                      new Error("Ngày kết thúc phải sau ngày bắt đầu"),
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="dateRange"
+          label={<Text strong>Thời gian môn học</Text>}
+          rules={[{ required: true, message: "Vui lòng chọn khoảng thời gian" }]}
+        >
+          <DatePicker.RangePicker
+            className="w-full"
+            style={{ maxWidth: 420 }}
+            format="YYYY-MM-DD"
+          />
+        </Form.Item>
 
         <Form.Item className="!mb-0">
           <Space className="w-full justify-end pt-2">
@@ -251,7 +253,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 ? "Đang lưu..."
                 : initialData
                   ? "Lưu thay đổi"
-                  : "Tạo khóa học"}
+                  : "Tạo môn học"}
             </Button>
           </Space>
         </Form.Item>

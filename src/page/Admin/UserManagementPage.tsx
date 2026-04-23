@@ -6,7 +6,8 @@ import {
   TeamOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { Table, Button, Input, Select, Tag, Space, Card } from "antd";
+import { Table, Button, Input, Select, Tag, Space, Card, ConfigProvider } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import SummaryMetrics, {
   SummaryMetricItem,
@@ -16,6 +17,11 @@ import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchAllUsers, AdminUser } from "@/services/features/admin/adminSlice";
 
 const roleWhitelist: string[] = ["student", "instructor"];
+const roleLabelMap: Record<string, string> = {
+  student: "Sinh viên",
+  instructor: "Giảng viên",
+  admin: "Quản trị viên",
+};
 
 const UserManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -26,6 +32,9 @@ const UserManagementPage: React.FC = () => {
     "all" | "student" | "instructor"
   >("all");
   const [search, setSearch] = useState<string>("");
+  const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
+    "newest",
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -35,26 +44,32 @@ const UserManagementPage: React.FC = () => {
 
   const filteredUsers = useMemo(
     () =>
-      safeUsers.filter((user) => {
-        const matchesRole = user.userRoles?.some((ur) => {
-          const roleName = ur.role?.roleName?.toLowerCase();
-          if (!roleName) return false;
-          if (roleFilter === "all") return roleWhitelist.includes(roleName);
-          return roleName === roleFilter;
-        });
+      safeUsers
+        .filter((user) => {
+          const matchesRole = user.userRoles?.some((ur) => {
+            const roleName = ur.role?.roleName?.toLowerCase();
+            if (!roleName) return false;
+            if (roleFilter === "all") return roleWhitelist.includes(roleName);
+            return roleName === roleFilter;
+          });
 
-        const query = search.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          `${user.firstName || ""} ${user.lastName || ""}`
-            .toLowerCase()
-            .includes(query) ||
-          user.username.toLowerCase().includes(query) ||
-          (user.email || "").toLowerCase().includes(query);
+          const query = search.trim().toLowerCase();
+          const matchesSearch =
+            !query ||
+            `${user.firstName || ""} ${user.lastName || ""}`
+              .toLowerCase()
+              .includes(query) ||
+            user.username.toLowerCase().includes(query) ||
+            (user.email || "").toLowerCase().includes(query);
 
-        return matchesRole && matchesSearch;
-      }),
-    [safeUsers, roleFilter, search],
+          return matchesRole && matchesSearch;
+        })
+        .sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
+        }),
+    [safeUsers, roleFilter, search, sortByCreatedAt],
   );
 
   const stats = useMemo(() => {
@@ -110,8 +125,8 @@ const UserManagementPage: React.FC = () => {
 
   const columns: ColumnsType<AdminUser> = [
     {
-      title: "User",
-      key: "user",
+      title: "Người dùng",
+      key: "firstName",
       render: (_, record) => (
         <div>
           <div className="font-semibold">
@@ -124,7 +139,7 @@ const UserManagementPage: React.FC = () => {
       ),
     },
     {
-      title: "Role",
+      title: "Vai trò",
       key: "role",
       render: (_, record) => {
         const role = record.userRoles?.find(
@@ -132,7 +147,10 @@ const UserManagementPage: React.FC = () => {
             ur.role?.roleName &&
             roleWhitelist.includes(ur.role.roleName.toLowerCase()),
         )?.role?.roleName;
-        return <Tag>{role || "Không xác định"}</Tag>;
+        const localizedRole = role
+          ? roleLabelMap[role.toLowerCase()] || role
+          : "Không xác định";
+        return <Tag>{localizedRole}</Tag>;
       },
     },
     {
@@ -234,36 +252,50 @@ const UserManagementPage: React.FC = () => {
                     { value: "instructor", label: "Giảng viên" },
                   ]}
                 />
+                <Select
+                  value={sortByCreatedAt}
+                  onChange={(val) => {
+                    setSortByCreatedAt(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 130 }}
+                  options={[
+                    { value: "newest", label: "Mới nhất" },
+                    { value: "oldest", label: "Cũ nhất" },
+                  ]}
+                />
               </Space>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={paginatedUsers}
-              rowKey="userId"
-              loading={loading}
-              pagination={{
-                current: currentPage,
-                pageSize,
-                total: filteredUsers.length,
-                showSizeChanger: true,
-                showQuickJumper: false,
-                pageSizeOptions: ["10", "20", "50"],
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} trên ${total} người dùng`,
-                onChange: (p, ps) => {
-                  setCurrentPage(p);
-                  setPageSize(ps);
-                },
-              }}
-              locale={{
-                emptyText: error
-                  ? error
-                  : search || roleFilter !== "all"
-                    ? "Không tìm thấy người dùng phù hợp bộ lọc"
-                    : "Không có tài khoản sinh viên hoặc giảng viên.",
-              }}
-            />
+            <ConfigProvider locale={viVN}>
+              <Table
+                columns={columns}
+                dataSource={paginatedUsers}
+                rowKey="userId"
+                loading={loading}
+                pagination={{
+                  current: currentPage,
+                  pageSize,
+                  total: filteredUsers.length,
+                  showSizeChanger: true,
+                  showQuickJumper: false,
+                  pageSizeOptions: ["10", "20", "50"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} trên ${total} người dùng`,
+                  onChange: (p, ps) => {
+                    setCurrentPage(p);
+                    setPageSize(ps);
+                  },
+                }}
+                locale={{
+                  emptyText: error
+                    ? error
+                    : search || roleFilter !== "all"
+                      ? "Không tìm thấy người dùng phù hợp bộ lọc"
+                      : "Không có tài khoản sinh viên hoặc giảng viên.",
+                }}
+              />
+            </ConfigProvider>
           </Card>
         </div>
       </main>

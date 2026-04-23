@@ -10,7 +10,9 @@ import {
   Card,
   Popconfirm,
   App,
+  ConfigProvider,
 } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import {
   BookOutlined,
@@ -37,6 +39,7 @@ import {
   Department,
 } from "@/services/features/admin/adminSlice";
 import { AppDispatch, RootState } from "@/services/store/store";
+import { extractLocalizedMessage } from "@/lib/utils";
 
 const AdminDepartmentPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -52,6 +55,7 @@ const AdminDepartmentPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "inactive"
   >("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [actionLoading, setActionLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -74,22 +78,8 @@ const AdminDepartmentPage: React.FC = () => {
     });
   };
 
-  const extractMessage = (payload: any, fallback: string) => {
-    if (typeof payload === "string" && payload.trim()) return payload;
-    if (payload && typeof payload === "object") {
-      if (typeof payload.message === "string" && payload.message.trim()) {
-        return payload.message;
-      }
-      if (
-        payload.data &&
-        typeof payload.data.message === "string" &&
-        payload.data.message.trim()
-      ) {
-        return payload.data.message;
-      }
-    }
-    return fallback;
-  };
+  const normalizeDepartmentMessage = (message: string) =>
+    message.replace(/bộ môn/gi, "chuyên ngành");
 
   useEffect(() => {
     dispatch(fetchDepartments());
@@ -114,10 +104,17 @@ const AdminDepartmentPage: React.FC = () => {
       await dispatch(fetchDepartments());
       notifySuccess(
         "Xóa thành công",
-        extractMessage(response, "Đã xóa bộ môn thành công."),
+        normalizeDepartmentMessage(
+          extractLocalizedMessage(response, "Đã xóa chuyên ngành thành công."),
+        ),
       );
     } catch (error) {
-      notifyError("Xóa thất bại", extractMessage(error, "Không thể xóa bộ môn."));
+      notifyError(
+        "Xóa thất bại",
+        normalizeDepartmentMessage(
+          extractLocalizedMessage(error, "Không thể xóa chuyên ngành."),
+        ),
+      );
     }
     setActionLoading(false);
   };
@@ -137,7 +134,12 @@ const AdminDepartmentPage: React.FC = () => {
         await dispatch(fetchDepartments());
         notifySuccess(
           "Cập nhật thành công",
-          extractMessage(response, "Đã cập nhật bộ môn thành công."),
+          normalizeDepartmentMessage(
+            extractLocalizedMessage(
+              response,
+              "Đã cập nhật chuyên ngành thành công.",
+            ),
+          ),
         );
       } else {
         const response = await dispatch(
@@ -150,7 +152,9 @@ const AdminDepartmentPage: React.FC = () => {
         await dispatch(fetchDepartments());
         notifySuccess(
           "Tạo thành công",
-          extractMessage(response, "Đã tạo bộ môn thành công."),
+          normalizeDepartmentMessage(
+            extractLocalizedMessage(response, "Đã tạo chuyên ngành thành công."),
+          ),
         );
       }
       setIsModalOpen(false);
@@ -158,11 +162,13 @@ const AdminDepartmentPage: React.FC = () => {
     } catch (error) {
       notifyError(
         selectedDepartment ? "Cập nhật thất bại" : "Tạo thất bại",
-        extractMessage(
-          error,
-          selectedDepartment
-          ? "Không thể cập nhật bộ môn."
-          : "Không thể tạo bộ môn.",
+        normalizeDepartmentMessage(
+          extractLocalizedMessage(
+            error,
+            selectedDepartment
+              ? "Không thể cập nhật chuyên ngành."
+              : "Không thể tạo chuyên ngành.",
+          ),
         ),
       );
     }
@@ -178,7 +184,9 @@ const AdminDepartmentPage: React.FC = () => {
         const rightTime = right.createdAt
           ? new Date(right.createdAt).getTime()
           : 0;
-        return rightTime - leftTime;
+        return sortOrder === "newest"
+          ? rightTime - leftTime
+          : leftTime - rightTime;
       })
       .filter((department) => {
         const matchesSearch =
@@ -199,7 +207,7 @@ const AdminDepartmentPage: React.FC = () => {
 
         return matchesSearch && matchesStatus;
       });
-  }, [departments, searchTerm, filterStatus]);
+  }, [departments, searchTerm, filterStatus, sortOrder]);
 
   const stats = useMemo(() => {
     const total = departments.length;
@@ -211,7 +219,7 @@ const AdminDepartmentPage: React.FC = () => {
   const summaryItems: SummaryMetricItem[] = [
     {
       key: "total",
-      title: "Tổng bộ môn",
+      title: "Tổng chuyên ngành",
       value: stats.total,
       icon: <BookOutlined style={{ fontSize: 20 }} />,
       tone: "blue",
@@ -237,7 +245,7 @@ const AdminDepartmentPage: React.FC = () => {
 
   const columns: ColumnsType<Department> = [
     {
-      title: "Bộ môn",
+      title: "Chuyên ngành",
       key: "department",
       render: (_, record) => (
         <div>
@@ -290,8 +298,8 @@ const AdminDepartmentPage: React.FC = () => {
             className="text-blue-500 hover:text-blue-600"
           />
           <Popconfirm
-            title="Xác nhận xóa bộ môn"
-            description="Bạn có chắc muốn xóa bộ môn này? Hành động này không thể hoàn tác."
+            title="Xác nhận xóa chuyên ngành"
+            description="Bạn có chắc muốn xóa chuyên ngành này? Hành động này không thể hoàn tác."
             onConfirm={() => handleDeleteDepartment(record.departmentId)}
             okText="Xóa"
             okButtonProps={{ danger: true, loading: actionLoading }}
@@ -319,10 +327,10 @@ const AdminDepartmentPage: React.FC = () => {
                 Quản trị
               </p>
               <h1 className="text-2xl font-bold text-gray-900">
-                Quản lý bộ môn
+                Quản lý chuyên ngành
               </h1>
               <p className="text-sm text-gray-600">
-                Quản lý bộ môn, trạng thái và thông tin chi tiết.
+                Quản lý chuyên ngành, trạng thái và thông tin chi tiết.
               </p>
             </div>
             <Space>
@@ -338,7 +346,7 @@ const AdminDepartmentPage: React.FC = () => {
                 icon={<PlusOutlined style={{ fontSize: 14 }} />}
                 onClick={handleCreateDepartment}
               >
-                Bộ môn mới
+                Chuyên ngành mới
               </Button>
             </Space>
           </div>
@@ -354,7 +362,7 @@ const AdminDepartmentPage: React.FC = () => {
                 <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
                   Danh mục
                 </p>
-                <h2 className="text-lg font-bold text-gray-900">Bộ môn</h2>
+                <h2 className="text-lg font-bold text-gray-900">Chuyên ngành</h2>
               </div>
               <Space wrap>
                 <Input
@@ -381,35 +389,49 @@ const AdminDepartmentPage: React.FC = () => {
                     { value: "inactive", label: "Không hoạt động" },
                   ]}
                 />
+                <Select
+                  value={sortOrder}
+                  onChange={(val) => {
+                    setSortOrder(val);
+                    setPage(1);
+                  }}
+                  style={{ width: 130 }}
+                  options={[
+                    { value: "newest", label: "Mới nhất" },
+                    { value: "oldest", label: "Cũ nhất" },
+                  ]}
+                />
               </Space>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={filteredDepartments}
-              rowKey="departmentId"
-              loading={loading}
-              pagination={{
-                current: page,
-                pageSize,
-                total: filteredDepartments.length,
-                showSizeChanger: true,
-                showQuickJumper: false,
-                pageSizeOptions: ["10", "20", "50"],
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} trên tổng ${total} bộ môn`,
-                onChange: (p, ps) => {
-                  setPage(p);
-                  setPageSize(ps);
-                },
-              }}
-              locale={{
-                emptyText:
-                  searchTerm || filterStatus !== "all"
-                    ? "Không tìm thấy bộ môn phù hợp bộ lọc"
-                    : "Chưa có bộ môn nào. Hãy tạo bộ môn đầu tiên để bắt đầu.",
-              }}
-            />
+            <ConfigProvider locale={viVN}>
+              <Table
+                columns={columns}
+                dataSource={filteredDepartments}
+                rowKey="departmentId"
+                loading={loading}
+                pagination={{
+                  current: page,
+                  pageSize,
+                  total: filteredDepartments.length,
+                  showSizeChanger: true,
+                  showQuickJumper: false,
+                  pageSizeOptions: ["10", "20", "50"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} trên tổng ${total} chuyên ngành`,
+                  onChange: (p, ps) => {
+                    setPage(p);
+                    setPageSize(ps);
+                  },
+                }}
+                locale={{
+                  emptyText:
+                    searchTerm || filterStatus !== "all"
+                      ? "Không tìm thấy chuyên ngành phù hợp bộ lọc"
+                      : "Chưa có chuyên ngành nào. Hãy tạo chuyên ngành đầu tiên để bắt đầu.",
+                }}
+              />
+            </ConfigProvider>
           </Card>
         </div>
       </main>
