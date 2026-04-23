@@ -114,10 +114,12 @@ interface GroupRow {
     firstName: string;
     lastName: string;
     email: string;
+    avatar?: string | null;
     percentage: number;
     receivedGrade: number;
     isLeader: boolean;
     instructorGrade: number;
+    hasDistribution: boolean;
   }>;
 }
 
@@ -128,10 +130,12 @@ interface GroupRow {
 const MemberAvatar: React.FC<{
   firstName: string;
   isLeader: boolean;
+  avatar?: string | null;
   size?: number;
-}> = ({ firstName, isLeader, size = 36 }) => (
+}> = ({ firstName, isLeader, avatar, size = 36 }) => (
   <div className="relative">
     <Avatar
+      src={avatar || undefined}
       size={size}
       style={{
         background: isLeader
@@ -261,7 +265,12 @@ const memberColumns: ColumnsType<GroupRow["members"][0]> = [
     key: "member",
     render: (_, record) => (
       <div className="flex items-center gap-3">
-        <MemberAvatar firstName={record.firstName} isLeader={record.isLeader} size={36} />
+        <MemberAvatar
+          firstName={record.firstName}
+          isLeader={record.isLeader}
+          avatar={record.avatar}
+          size={36}
+        />
         <div>
           <div className="flex items-center gap-2">
             <Text strong className="text-sm" style={{ color: colors.gray[800] }}>
@@ -407,8 +416,6 @@ const InstructorClassStudentsPage: React.FC = () => {
   }, [data]);
 
   const groupRows: GroupRow[] = useMemo(() => {
-    if (!classDistributions.length) return [];
-
     const distMap = new Map<number, GradeDistribution[]>();
     for (const d of classDistributions) {
       const arr = distMap.get(d.groupId) ?? [];
@@ -437,27 +444,35 @@ const InstructorClassStudentsPage: React.FC = () => {
         ? `${leader.firstName ?? ""} ${leader.lastName ?? ""}`.trim()
         : "—";
 
-      const members = dist?.members?.map((m) => {
-        const student = (group.students ?? []).find(
-          (s: GroupStudent) => String(s.userId) === String(m.studentId),
-        );
+      const distributionMembers = new Map(
+        (dist?.members ?? []).map((member) => [String(member.studentId), member]),
+      );
+
+      const members = (group.students ?? []).map((student: GroupStudent) => {
+        const studentId = Number(student.userId ?? student.id ?? 0);
+        const distributionMember = distributionMembers.get(String(studentId));
+
         return {
-          studentId: m.studentId,
-          firstName: student?.firstName ?? "",
-          lastName: student?.lastName ?? "",
-          email: student?.email ?? "",
-          percentage: m.percentage,
-          receivedGrade: m.receivedGrade,
-          isLeader: m.studentId === dist?.leaderStudentId,
+          studentId,
+          firstName: student.firstName ?? "",
+          lastName: student.lastName ?? "",
+          email: student.email ?? student.username ?? "",
+          avatar: student.avatar ?? null,
+          percentage: distributionMember?.percentage ?? 0,
+          receivedGrade: distributionMember?.receivedGrade ?? 0,
+          isLeader:
+            student.GroupStudent?.role === "leader" ||
+            studentId === dist?.leaderStudentId,
           instructorGrade: dist?.instructorGrade ?? 0,
+          hasDistribution: Boolean(distributionMember),
         };
-      }) ?? [];
+      });
 
       rows.push({
         groupId,
         groupName: (group.groupName ?? group.name ?? `Nhóm #${groupId}`) as string,
         leaderName,
-        memberCount: members.length || (group.students?.length ?? 0),
+        memberCount: group.students?.length ?? members.length,
         distribution: dist,
         members,
       });
@@ -506,8 +521,11 @@ const InstructorClassStudentsPage: React.FC = () => {
     );
   }
 
-  const gradedCount = groupRows.flatMap((r) => r.members).filter((m) => m.receivedGrade > 0).length;
-  const totalMembers = groupRows.flatMap((r) => r.members).length;
+  const gradedCount = groupRows
+    .flatMap((r) => r.members)
+    .filter((m) => m.hasDistribution)
+    .length;
+  const totalMembers = data.totalStudents;
   const finalizedCount = groupRows.filter((r) => r.distribution?.status === "finalized").length;
   const pendingCount = groupRows.filter((r) => r.distribution && r.distribution.status !== "finalized").length;
 
@@ -848,13 +866,18 @@ const InstructorClassStudentsPage: React.FC = () => {
                       style={{ background: colors.primaryLight }}
                     >
                       <Space>
-                        <MemberAvatar firstName={record.members[0]?.firstName ?? "?"} isLeader={false} size={28} />
+                        <MemberAvatar
+                          firstName={record.members[0]?.firstName ?? "?"}
+                          avatar={record.members[0]?.avatar ?? null}
+                          isLeader={false}
+                          size={28}
+                        />
                         <div>
                           <Text strong className="text-sm" style={{ color: colors.primary }}>
                             Thành viên nhóm — {record.groupName}
                           </Text>
                           <Text type="secondary" className="text-xs block ml-1">
-                            {record.members.length} thành viên
+                            {record.memberCount} thành viên
                           </Text>
                         </div>
                       </Space>
