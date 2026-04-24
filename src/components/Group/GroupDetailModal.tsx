@@ -24,6 +24,7 @@ import {
   fetchGroupsByClass,
   fetchMyGroupByClass,
   leaveGroup,
+  changeLeaderOfGroup,
   GroupStudent,
 } from "@/services/features/group/groupSlice";
 import { useNavigate } from "react-router-dom";
@@ -129,6 +130,28 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     }
   };
 
+  const handleChangeLeader = async (member: GroupStudent) => {
+    if (!groupId) return;
+    const userId = Number(member.userId ?? member.id ?? 0);
+    if (!Number.isFinite(userId) || userId <= 0) return;
+
+    try {
+      await dispatch(changeLeaderOfGroup({ groupId, userId })).unwrap();
+      await dispatch(fetchGroupDetail(groupId)).unwrap();
+      const classId = Number(
+        groupDetail?.classId ?? groupDetail?.class?.classId ?? 0,
+      );
+      if (Number.isFinite(classId) && classId > 0) {
+        await dispatch(fetchGroupsByClass(classId)).unwrap();
+      }
+      void message.success("Đã chuyển trưởng nhóm thành công.");
+    } catch (err: unknown) {
+      void message.error(
+        err instanceof Error ? err.message : "Không thể chuyển trưởng nhóm.",
+      );
+    }
+  };
+
   if (!isOpen) return null;
 
   const memberCount = groupDetail?.memberCount ?? groupDetail?.students?.length ?? 0;
@@ -201,7 +224,7 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
 
             {/* Stats row */}
             <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm">
                 <TeamOutlined className="text-white/90 text-sm" />
                 <Text className="text-white text-sm font-semibold">
                   {memberCount} thành viên
@@ -282,6 +305,8 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                         const name = getMemberDisplayName(member);
                         const role = member.GroupStudent?.role;
                         const isLeader = role === "leader";
+                        const canChangeLeader =
+                          isInstructor && memberCount > 1 && !isLeader;
 
                         return (
                           <div
@@ -344,26 +369,48 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                               )}
                             </div>
 
-                            {/* Role badge */}
-                            <Tag
-                              color={isLeader ? "gold" : "default"}
-                              className={`flex-shrink-0 !m-0 ${
-                                isLeader
-                                  ? "!bg-amber-50 !text-amber-600 !border-amber-200"
-                                  : "!bg-slate-50 !text-slate-500 !border-slate-200"
-                              }`}
-                              icon={
-                                isLeader ? (
-                                  <CrownOutlined className="text-[10px]" />
-                                ) : (
-                                  <UserOutlined className="text-[10px]" />
-                                )
-                              }
-                            >
-                              <span className="text-xs">
-                                {isLeader ? "Trưởng nhóm" : "Thành viên"}
-                              </span>
-                            </Tag>
+                            {/* Role badge + instructor action */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {canChangeLeader && (
+                                <Popconfirm
+                                  title="Chuyển trưởng nhóm?"
+                                  description={`Đặt ${name} làm trưởng nhóm mới.`}
+                                  okText="Chuyển"
+                                  cancelText="Hủy"
+                                  onConfirm={() => handleChangeLeader(member)}
+                                  disabled={actionLoading}
+                                >
+                                  <Button
+                                    size="small"
+                                    type="default"
+                                    disabled={actionLoading}
+                                    loading={actionLoading}
+                                    className="!rounded-full !text-xs !font-semibold !border-sky-200 !text-sky-600 hover:!border-sky-300 hover:!text-sky-700"
+                                  >
+                                    Chuyển trưởng nhóm
+                                  </Button>
+                                </Popconfirm>
+                              )}
+                              <Tag
+                                color={isLeader ? "gold" : "default"}
+                                className={`!m-0 ${
+                                  isLeader
+                                    ? "!rounded-full bg-amber-50 !text-amber-600 !border-amber-200"
+                                    : "!rounded-full bg-slate-50 !text-slate-500 !border-slate-200"
+                                }`}
+                                icon={
+                                  isLeader ? (
+                                    <CrownOutlined className="text-[10px]" />
+                                  ) : (
+                                    <UserOutlined className="text-[10px]" />
+                                  )
+                                }
+                              >
+                                <span className="text-xs ">
+                                  {isLeader ? "Trưởng nhóm" : "Thành viên"}
+                                </span>
+                              </Tag>
+                            </div>
                           </div>
                         );
                       })}

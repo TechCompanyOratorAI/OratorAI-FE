@@ -4,6 +4,8 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { CreateTopicData } from "@/services/features/topic/topicSlice";
 
+const RequiredStar = () => <span className="text-red-500">*</span>;
+
 interface UpdateTopicFormData {
   topicName: string;
   maxDurationMinutes: number;
@@ -138,7 +140,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
       <div className="space-y-4 pt-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Tên chủ đề *
+            Tên chủ đề <RequiredStar />
           </label>
           <Input
             value={formData.topicName}
@@ -153,7 +155,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Thời lượng tối đa (phút) *
+            Thời lượng tối đa (phút) <RequiredStar />
           </label>
           <InputNumber
             className="w-full"
@@ -173,7 +175,7 @@ const TopicUpdateModal: React.FC<TopicUpdateModalProps> = ({
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Hạn nộp *
+            Hạn nộp <RequiredStar />
           </label>
           <DatePicker
             showTime={{ format: "HH:mm" }}

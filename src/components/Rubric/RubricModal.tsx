@@ -130,9 +130,6 @@ const SortableCriterionItem = ({
               <span className="rounded-full bg-slate-100 px-2 py-0.5">
                 Phần trăm: {Number(criterion.weight).toFixed(0)}%
               </span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                Điểm tối đa: {Number(criterion.maxScore)}
-              </span>
               <span
                 className={`rounded-full px-2 py-0.5 ${Number(criterion.isActive ?? 1) === 1
                   ? "bg-emerald-100 text-emerald-700"
@@ -185,11 +182,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
   onDeleteCriteria,
   onReorderCriteria,
 }) => {
+  const WEIGHT_SUGGESTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
   const [formData, setFormData] = useState<RubricFormState>({
     criteriaName: "",
     criteriaDescription: "",
     weight: "1",
-    maxScore: "10",
+    maxScore: "100",
     displayOrder: String(defaultDisplayOrder),
     evaluationGuide: "",
   });
@@ -206,6 +204,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
   >([]);
   const [deletingCriterion, setDeletingCriterion] =
     useState<RubricCriterionItem | null>(null);
+  const [showWeightSuggestions, setShowWeightSuggestions] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -262,7 +261,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         criteriaName: criterion.criteriaName || "",
         criteriaDescription: criterion.criteriaDescription || "",
         weight: String(Number(criterion.weight)),
-        maxScore: String(Number(criterion.maxScore)),
+        maxScore: "100",
         displayOrder: String(criterion.displayOrder),
         evaluationGuide:
           criterion.evaluationGuide || initialData?.evaluationGuide || "",
@@ -276,6 +275,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
       setErrors({});
       setSearchTerm("");
       setDeletingCriterion(null);
+      setShowWeightSuggestions(false);
       return;
     }
 
@@ -285,7 +285,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         criteriaName: "",
         criteriaDescription: "",
         weight: "1",
-        maxScore: "10",
+        maxScore: "100",
         displayOrder: String(defaultDisplayOrder),
         evaluationGuide: "",
         isActive: true,
@@ -309,7 +309,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         criteriaName: initialData?.criteriaName ?? "",
         criteriaDescription: initialData?.criteriaDescription ?? "",
         weight: String(Number(initialData?.weight ?? 1)),
-        maxScore: String(Number(initialData?.maxScore ?? 10)),
+        maxScore: "100",
         displayOrder: String(
           Number(initialData?.displayOrder ?? defaultDisplayOrder),
         ),
@@ -367,10 +367,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
   }, [nextOrder, selectedCriterionId]);
 
-  const normalizeNumberValue = (
-    field: "persen" | "maxScore" | "displayOrder",
-    raw: string,
-  ) => {
+  const normalizeNumberValue = (field: "persen" | "displayOrder", raw: string) => {
     if (raw.trim() === "") {
       setFormData((prev) => ({ ...prev, [field]: "" }));
       return;
@@ -390,7 +387,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const validateForm = () => {
     const newErrors: Partial<Record<keyof RubricCriteriaPayload, string>> = {};
     const weight = Number(formData.weight);
-    const maxScore = Number(formData.maxScore);
     const displayOrder = Number(formData.displayOrder);
 
     if (!formData.criteriaName.trim()) {
@@ -398,9 +394,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
     if (!Number.isFinite(weight) || weight <= 0) {
       newErrors.weight = "Trọng số phải lớn hơn 0";
-    }
-    if (!Number.isFinite(maxScore) || maxScore <= 0) {
-      newErrors.maxScore = "Điểm tối đa phải lớn hơn 0";
     }
     if (!Number.isFinite(displayOrder) || displayOrder <= 0) {
       newErrors.displayOrder = "Thứ tự hiển thị phải lớn hơn 0";
@@ -482,7 +475,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         criteriaName: formData.criteriaName.trim(),
         criteriaDescription: formData.criteriaDescription.trim(),
         weight: Number(formData.weight),
-        maxScore: Number(formData.maxScore),
+        maxScore: 100,
         displayOrder: Math.trunc(Number(formData.displayOrder)),
         evaluationGuide: formData.evaluationGuide.trim(),
       },
@@ -584,7 +577,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     criteriaName: "",
                     criteriaDescription: "",
                     weight: "1",
-                    maxScore: "10",
+                    maxScore: "100",
                     displayOrder: String(nextOrder),
                     evaluationGuide: "",
                   });
@@ -719,23 +712,57 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
                     Phần trăm (%)
                   </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                    onBlur={() =>
-                      normalizeNumberValue("persen", formData.weight)
-                    }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
-                      }`}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      name="weight"
+                      value={formData.weight}
+                      onFocus={() => setShowWeightSuggestions(true)}
+                      onBlur={() => {
+                        normalizeNumberValue("persen", formData.weight);
+                        setTimeout(() => setShowWeightSuggestions(false), 120);
+                      }}
+                      onChange={handleChange}
+                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+                        }`}
+                    />
+                    {showWeightSuggestions && (
+                      <div className="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          Gợi ý nhanh
+                        </p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {WEIGHT_SUGGESTIONS.map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  weight: String(value),
+                                }));
+                                setShowWeightSuggestions(false);
+                              }}
+                              className={`flex h-8 w-full items-center justify-center rounded-full border text-[11px] font-semibold leading-none transition ${
+                                Number(formData.weight) === value
+                                  ? "border-sky-300 bg-sky-100 text-sky-700"
+                                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-200 hover:bg-white hover:text-sky-700"
+                              }`}
+                            >
+                              {value}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {errors.weight && (
                     <p className="mt-1 text-xs text-rose-600">
                       {errors.weight}
@@ -745,29 +772,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     <p className="mt-1 text-xs text-amber-600 font-semibold">
                       ⚠️ Tổng sẽ vượt 100%
 
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Điểm tối đa
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="maxScore"
-                    value={formData.maxScore}
-                    onChange={handleChange}
-                    onBlur={() =>
-                      normalizeNumberValue("maxScore", formData.maxScore)
-                    }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.maxScore ? "border-rose-300" : "border-slate-300"
-                      }`}
-                  />
-                  {errors.maxScore && (
-                    <p className="mt-1 text-xs text-rose-600">
-                      {errors.maxScore}
                     </p>
                   )}
                 </div>
