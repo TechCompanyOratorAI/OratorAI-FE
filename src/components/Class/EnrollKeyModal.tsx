@@ -46,7 +46,7 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
 
   return (
     <Modal
-      title={`Tạo mã đăng ký — ${classData?.classCode ?? ""}`}
+      title={`Tạo mã vào lớp học — ${classData?.classCode ?? ""}`}
       open={isOpen}
       onOk={handleSubmit}
       onCancel={handleClose}
@@ -56,11 +56,11 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
     >
       <Form form={form} layout="vertical" className="mt-4">
         <Form.Item
-          label="Mã tùy chỉnh (customKey)"
+          label="Mã vào lớp"
           name="customKey"
           rules={[{ max: 50, message: "Tối đa 50 ký tự" }]}
         >
-          <Input placeholder="Để trống để tự động tạo" allowClear />
+          <Input.Password placeholder="Nhập mã vào lớp học" />
         </Form.Item>
         <Form.Item label="Ngày hết hạn" name="expiresAt">
           <DatePicker
@@ -72,11 +72,11 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
           />
         </Form.Item>
         <Form.Item
-          label="Số lượt đăng ký tối đa (maxUses)"
+          label="Số lượng sử dụng tối đa"
           name="maxUses"
-          rules={[{ type: "number", min: 1, message: "Phải lớn hơn 0" }]}
+          rules={[{ type: "number", min: 1, max: 35, message: "Tối đa 35 lần sử dụng cho mỗi lớp học" }]}
         >
-          <InputNumber min={1} className="w-full" placeholder="Không giới hạn" />
+          <InputNumber min={1} className="w-full" placeholder="Tối đa 35 lần sử dụng cho mỗi lớp học" />
         </Form.Item>
       </Form>
     </Modal>

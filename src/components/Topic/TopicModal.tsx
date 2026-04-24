@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { CreateTopicData } from "@/services/features/topic/topicSlice";
 
 const { TextArea } = Input;
+const RequiredStar = () => <span className="text-red-500">*</span>;
 
 export interface TopicClassOption {
   classId: number;
@@ -157,7 +158,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
         {classOptions && classOptions.length > 1 && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Lớp học *
+              Lớp học <RequiredStar />
             </label>
             <Select
               className="w-full"
@@ -181,7 +182,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Tên chủ đề *
+            Tên chủ đề <RequiredStar />
           </label>
           <Input
             value={formData.topicName}
@@ -196,7 +197,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Mô tả *
+            Mô tả <RequiredStar />
           </label>
           <TextArea
             rows={4}
@@ -213,7 +214,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Thứ tự *
+              Thứ tự <RequiredStar />
             </label>
             <InputNumber
               className="w-full"
@@ -231,7 +232,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Thời lượng tối đa (phút) *
+              Thời lượng tối đa (phút) <RequiredStar />
             </label>
             <InputNumber
               className="w-full"
@@ -252,7 +253,7 @@ const TopicModal: React.FC<TopicModalProps> = ({
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Hạn nộp *
+            Hạn nộp <RequiredStar />
           </label>
           <DatePicker
             showTime={{ format: "HH:mm" }}

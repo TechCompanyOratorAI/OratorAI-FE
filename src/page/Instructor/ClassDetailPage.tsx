@@ -120,9 +120,10 @@ const SortableCriterionItem = React.memo(
         style={style}
         {...attributes}
         {...listeners}
+        onClick={() => onEdit(criterion)}
         className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${isDragging
           ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
-          : "cursor-grab"
+          : "cursor-grab hover:border-sky-300"
           }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -592,8 +593,19 @@ const ClassDetailPage: React.FC = () => {
         ).unwrap();
       }
 
-      // Fetch updated rubric to calculate total percentage
-      const result = await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+      // Keep modal open after update for quick iterative edits.
+      // Close only when creating a new criterion.
+      if (!targetCriterionId) {
+        setIsRubricModalOpen(false);
+        setEditingRubric(null);
+      }
+
+      let result: ClassRubricCriteria[] | null = null;
+      try {
+        result = await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
+      } catch {
+        result = null;
+      }
 
       // Calculate total percentage of active criteria
       if (result && Array.isArray(result)) {
@@ -621,10 +633,6 @@ const ClassDetailPage: React.FC = () => {
           type: "success",
         });
       }
-
-      // Close modal for both create and edit
-      setIsRubricModalOpen(false);
-      setEditingRubric(null);
     } catch (error: unknown) {
       setToast({
         message:
@@ -1393,7 +1401,7 @@ const ClassDetailPage: React.FC = () => {
                     >
                       Lưu thứ tự
                     </AntButton>
-                  </div>
+                  </div>  
                 )}
               </Card>
             </div>
@@ -1403,12 +1411,10 @@ const ClassDetailPage: React.FC = () => {
                 <div className="bg-gradient-to-r from-sky-700 to-sky-600 px-5 py-4 text-white">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/75 font-semibold">
-                        Topic
-                      </p>
+                      
                       <h3 className="mt-1 text-xl font-bold">Chủ đề</h3>
                       <p className="mt-1 text-sm text-white/80">
-                        Nhấn vào topic để mở trang chi tiết.
+                        Nhấn vào chủ đề để mở trang chi tiết.
                       </p>
                     </div>
                     <AntButton
@@ -1424,7 +1430,7 @@ const ClassDetailPage: React.FC = () => {
                   </div>
                   <div className="mt-4 flex items-center gap-2 text-xs">
                     <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
-                      {topicsForClass.length} topic
+                      {topicsForClass.length} chủ đề
                     </span>
                     <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
                       {selectedTemplate
@@ -1443,7 +1449,7 @@ const ClassDetailPage: React.FC = () => {
                           placement="left"
                           title={
                             <div className="space-y-1">
-                              <p>Nhấn để xem topic detail</p>
+                              <p>Nhấn để xem chi tiết chủ đề</p>
                             </div>
                           }
                         >
@@ -1481,7 +1487,7 @@ const ClassDetailPage: React.FC = () => {
                                   <AntButton
                                     size="small"
                                     icon={<Edit className="w-3.5 h-3.5" />}
-                                    className="!inline-flex !items-center !gap-1.5 !rounded-lg !border-sky-200 !bg-sky-50 !px-2.5 !text-xs !font-semibold !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100"
+                                    className="!inline-flex !items-center !gap-1.5 !rounded-full !border-sky-200 !bg-sky-50 !px-2.5 !text-xs !font-semibold !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleEditTopic(topic.topicId);
@@ -1493,7 +1499,7 @@ const ClassDetailPage: React.FC = () => {
                                     size="small"
                                     danger
                                     icon={<Trash2 className="w-3.5 h-3.5" />}
-                                    className="!inline-flex !items-center !gap-1.5 !rounded-lg !border-red-200 !bg-red-50 !px-2.5 !text-xs !font-semibold hover:!border-red-300 hover:!bg-red-100"
+                                    className="!inline-flex !items-center !gap-1.5 !rounded-full !border-red-200 !bg-red-50 !px-2.5 !text-xs !font-semibold hover:!border-red-300 hover:!bg-red-100"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDeleteTopic({

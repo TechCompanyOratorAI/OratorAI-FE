@@ -50,6 +50,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const isEditMode = !!initialData;
   const isInstructorEditMode = isEditMode && mode === "instructor-edit";
+  const optionalLabelIndicator = isInstructorEditMode ? (
+    <span style={{ color: "#ff4d4f", fontSize: "14px" }}>*</span>
+  ) : (
+    <span style={{ color: "#999", fontSize: "12px" }}>(không bắt buộc)</span>
+  );
   const initialCourse = initialData?.course;
   const resolvedCourseId =
     initialData?.courseId ?? initialCourse?.courseId ?? undefined;
@@ -182,7 +187,16 @@ const ClassModal: React.FC<ClassModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark
+        requiredMark={
+          isInstructorEditMode
+            ? false
+            : (label, { required }) => (
+              <>
+                {label}
+                {required ? <span style={{ color: "#ff4d4f", marginLeft: 4 }}>*</span> : null}
+              </>
+            )
+        }
         disabled={submitting || isLoading}
         className="mt-4"
       >
@@ -276,9 +290,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               label={
                 <>
                   <Text strong>Số nhóm tối đa</Text>{" "}
-                  <span style={{ color: "#999", fontSize: "12px" }}>
-                    (không bắt buộc)
-                  </span>
+                  {optionalLabelIndicator}
                 </>
               }
               dependencies={["maxStudents"]}
@@ -309,7 +321,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               <InputNumber
                 className="w-full"
                 min={1}
-                placeholder="Không giới hạn"
+                placeholder="Tối đa 35 nhóm"
               />
             </Form.Item>
           ) : null}
@@ -323,9 +335,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 label={
                   <>
                     <Text strong>Mã đăng ký</Text>{" "}
-                    <span style={{ color: "#999", fontSize: "12px" }}>
-                      (không bắt buộc)
-                    </span>
+                    {optionalLabelIndicator}
                   </>
                 }
                 rules={[
@@ -343,7 +353,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   },
                 ]}
               >
-                <Input placeholder="VD: SE1025" />
+                <Input.Password placeholder="VD: SE1025" />
               </Form.Item>
 
               <Form.Item
@@ -351,9 +361,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 label={
                   <>
                     <Text strong>Thời hạn mã</Text>{" "}
-                    <span style={{ color: "#999", fontSize: "12px" }}>
-                      (không bắt buộc)
-                    </span>
+                    {optionalLabelIndicator}
                   </>
                 }
                 dependencies={["dateRange"]}
@@ -393,9 +401,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               label={
                 <>
                   <Text strong>Số lượt sử dụng mã</Text>{" "}
-                  <span style={{ color: "#999", fontSize: "12px" }}>
-                    (không bắt buộc)
-                  </span>
+                  {optionalLabelIndicator}
                 </>
               }
               dependencies={["maxStudents"]}
