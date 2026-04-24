@@ -74,6 +74,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     return mappedCourses;
   }, [courses, initialCourse, resolvedCourseId]);
 
+
   useEffect(() => {
     if (!isOpen) return;
     if (initialData) {
@@ -181,7 +182,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark={false}
+        requiredMark
         disabled={submitting || isLoading}
         className="mt-4"
       >
@@ -192,20 +193,40 @@ const ClassModal: React.FC<ClassModalProps> = ({
         )}
 
         <Form.Item
+          name="dateRange"
+          label={<Text strong>Thời gian lớp học</Text>}
+          rules={[{ required: true, message: "Bắt buộc" }]}
+        >
+          <DatePicker.RangePicker
+            className="w-full"
+            style={{ maxWidth: 420 }}
+            format="YYYY-MM-DD"
+            disabled={isInstructorEditMode}
+          />
+        </Form.Item>
+
+        <Form.Item
           name="courseId"
-          label={<Text strong>Khóa học</Text>}
-          rules={[{ required: true, message: "Vui lòng chọn khóa học" }]}
+          label={<Text strong>Môn học</Text>}
+          rules={[{ required: true, message: "Vui lòng chọn môn học" }]}
         >
           <Select
-            placeholder="Chọn khóa học..."
+            placeholder="Chọn môn học..."
             disabled={courseDisabled}
+            showSearch
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              String(option?.label ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
             options={courseOptions}
           />
         </Form.Item>
 
         {courseDisabled && (
           <Text type="secondary" className="text-xs block mb-3 -mt-2">
-            Không thể đổi khóa học khi đang chỉnh sửa lớp.
+            Không thể đổi môn học khi đang chỉnh sửa lớp.
           </Text>
         )}
 
@@ -254,7 +275,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               name="maxGroupMembers"
               label={
                 <>
-                  <Text strong>Số thành viên tối đa</Text>{" "}
+                  <Text strong>Số nhóm tối đa</Text>{" "}
                   <span style={{ color: "#999", fontSize: "12px" }}>
                     (không bắt buộc)
                   </span>
@@ -294,25 +315,19 @@ const ClassModal: React.FC<ClassModalProps> = ({
           ) : null}
         </div>
 
-        <Form.Item
-          name="dateRange"
-          label={<Text strong>Thời gian lớp học</Text>}
-          rules={[{ required: true, message: "Bắt buộc" }]}
-        >
-          <DatePicker.RangePicker
-            className="w-full"
-            style={{ maxWidth: 420 }}
-            format="YYYY-MM-DD"
-            disabled={isInstructorEditMode}
-          />
-        </Form.Item>
-
         {isEditMode && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
               <Form.Item
                 name="enrollKey"
-                label={<Text strong>Mã đăng ký</Text>}
+                label={
+                  <>
+                    <Text strong>Mã đăng ký</Text>{" "}
+                    <span style={{ color: "#999", fontSize: "12px" }}>
+                      (không bắt buộc)
+                    </span>
+                  </>
+                }
                 rules={[
                   {
                     validator(_, value) {
@@ -333,7 +348,14 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
               <Form.Item
                 name="keyExpiresAt"
-                label={<Text strong>Thời hạn mã</Text>}
+                label={
+                  <>
+                    <Text strong>Thời hạn mã</Text>{" "}
+                    <span style={{ color: "#999", fontSize: "12px" }}>
+                      (không bắt buộc)
+                    </span>
+                  </>
+                }
                 dependencies={["dateRange"]}
                 rules={[
                   ({ getFieldValue }) => ({
@@ -368,7 +390,14 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
             <Form.Item
               name="keyMaxUses"
-              label={<Text strong>Số lượt sử dụng mã</Text>}
+              label={
+                <>
+                  <Text strong>Số lượt sử dụng mã</Text>{" "}
+                  <span style={{ color: "#999", fontSize: "12px" }}>
+                    (không bắt buộc)
+                  </span>
+                </>
+              }
               dependencies={["maxStudents"]}
               rules={[
                 ({ getFieldValue }) => ({

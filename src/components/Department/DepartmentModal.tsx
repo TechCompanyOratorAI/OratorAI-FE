@@ -55,7 +55,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
         onFinish={handleFinish}
         requiredMark={(label, { required }) =>
           required ? (
-            label
+            <>
+              {label} <span style={{ color: "#ff4d4f" }}>*</span>
+            </>
           ) : (
             <>
               {label}{" "}
@@ -74,6 +76,17 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           isActive: initialData?.isActive ?? true,
         }}
       >
+        <Form.Item
+          name="departmentName"
+          label={<Text strong>Tên chuyên ngành</Text>}
+          rules={[
+            { required: true, message: "Tên chuyên ngành không được để trống" },
+            { min: 2, max: 100, message: "Tên chuyên ngành từ 2 – 100 ký tự" },
+          ]}
+        >
+          <Input placeholder="VD: Software Engineering" />
+        </Form.Item>
+
         {!initialData && (
           <Form.Item
             name="departmentCode"
@@ -89,24 +102,13 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
         {initialData && (
           <Form.Item
-            name="departmentCode"
             label={<Text strong>Mã chuyên ngành</Text>}
             required
+            extra="Không thể đổi mã chuyên ngành khi đang chỉnh sửa chuyên ngành."
           >
-            <Input disabled />
+            <Input disabled value={initialData.departmentCode} />
           </Form.Item>
         )}
-
-        <Form.Item
-          name="departmentName"
-          label={<Text strong>Tên chuyên ngành</Text>}
-          rules={[
-            { required: true, message: "Tên chuyên ngành không được để trống" },
-            { min: 2, max: 100, message: "Tên chuyên ngành từ 2 – 100 ký tự" },
-          ]}
-        >
-          <Input placeholder="VD: Software Engineering" />
-        </Form.Item>
 
         <Form.Item name="description" label={<Text strong>Mô tả</Text>}>
           <Input.TextArea placeholder="Nhập mô tả chuyên ngành..." rows={4} />
