@@ -62,6 +62,7 @@ const AdminClassPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "inactive" | "archived"
   >("all");
+  const [filterCourseId, setFilterCourseId] = useState<number | "all">("all");
   const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
     "newest",
   );
@@ -250,15 +251,17 @@ const AdminClassPage: React.FC = () => {
 
         const matchesStatus =
           filterStatus === "all" || classItem.status === filterStatus;
+        const matchesCourse =
+          filterCourseId === "all" || classItem.courseId === filterCourseId;
 
-          return matchesSearch && matchesStatus;
+          return matchesSearch && matchesStatus && matchesCourse;
         })
         .sort((a, b) => {
           const aTime = new Date(a.createdAt || 0).getTime();
           const bTime = new Date(b.createdAt || 0).getTime();
           return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
         }),
-    [classes, searchTerm, filterStatus, sortByCreatedAt],
+    [classes, searchTerm, filterStatus, filterCourseId, sortByCreatedAt],
   );
 
   const stats = useMemo(() => {
@@ -317,7 +320,7 @@ const AdminClassPage: React.FC = () => {
   };
 
   const tableTotal =
-    searchTerm || filterStatus !== "all"
+    searchTerm || filterStatus !== "all" || filterCourseId !== "all"
       ? filteredClasses.length
       : filteredClasses.length > pageSize &&
           filteredClasses.length < pagination.total
@@ -333,7 +336,7 @@ const AdminClassPage: React.FC = () => {
       ),
     },
     {
-      title: "Khóa học",
+      title: "Môn học",
       key: "course",
       render: (_, record) => (
         <div>
@@ -489,7 +492,7 @@ const AdminClassPage: React.FC = () => {
               </div>
               <Space wrap>
                 <Input
-                  placeholder="Tìm theo mã lớp, tên lớp hoặc khóa học..."
+                  placeholder="Tìm theo mã lớp, tên lớp hoặc môn học..."
                   prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchTerm}
                   onChange={(e) => {
@@ -511,6 +514,28 @@ const AdminClassPage: React.FC = () => {
                     { value: "active", label: "Đang hoạt động" },
                     { value: "inactive", label: "Không hoạt động" },
                     { value: "archived", label: "Đã lưu trữ" },
+                  ]}
+                />
+                <Select
+                  value={filterCourseId}
+                  onChange={(val) => {
+                    setFilterCourseId(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 220 }}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    String(option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={[
+                    { value: "all", label: "Tất cả môn học" },
+                    ...courses.map((course) => ({
+                      value: course.courseId,
+                      label: `${course.courseCode} - ${course.courseName}`,
+                    })),
                   ]}
                 />
                 <Select
@@ -559,7 +584,7 @@ const AdminClassPage: React.FC = () => {
                 }
                 locale={{
                   emptyText:
-                    searchTerm || filterStatus !== "all"
+                    searchTerm || filterStatus !== "all" || filterCourseId !== "all"
                       ? "Không tìm thấy lớp học phù hợp bộ lọc"
                       : "Chưa có lớp học nào. Hãy tạo lớp đầu tiên để bắt đầu.",
                 }}

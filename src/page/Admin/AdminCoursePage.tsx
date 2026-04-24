@@ -67,6 +67,9 @@ const AdminCoursePage: React.FC = () => {
   const [filterSemester, setFilterSemester] = useState<string | undefined>(
     undefined,
   );
+  const [filterDepartmentId, setFilterDepartmentId] = useState<
+    number | undefined
+  >(undefined);
   const [sortByCreatedAt, setSortByCreatedAt] = useState<
     "newest" | "oldest"
   >("newest");
@@ -323,7 +326,11 @@ const AdminCoursePage: React.FC = () => {
       const matchesSemester = filterSemester
         ? course.semester === filterSemester
         : true;
-      return matchesSearch && matchesSemester;
+      const matchesDepartment =
+        filterDepartmentId !== undefined
+          ? course.departmentId === filterDepartmentId
+          : true;
+      return matchesSearch && matchesSemester && matchesDepartment;
     });
 
     return filtered.sort((a, b) => {
@@ -331,7 +338,14 @@ const AdminCoursePage: React.FC = () => {
       const bTime = new Date(b.createdAt || 0).getTime();
       return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
     });
-  }, [courses, searchTerm, filterSemester, sortByCreatedAt, departmentLookup]);
+  }, [
+    courses,
+    searchTerm,
+    filterSemester,
+    filterDepartmentId,
+    sortByCreatedAt,
+    departmentLookup,
+  ]);
 
   const stats = useMemo(() => {
     const total = courses.length;
@@ -555,6 +569,22 @@ const AdminCoursePage: React.FC = () => {
                   options={semesters.map((s) => ({ value: s, label: s }))}
                 />
                 <Select
+                  value={filterDepartmentId}
+                  onChange={(val) => {
+                    setFilterDepartmentId(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 240 }}
+                  allowClear
+                  placeholder="Tất cả chuyên ngành"
+                  options={departments.map((department) => ({
+                    value: department.departmentId,
+                    label: `${department.departmentCode} – ${department.departmentName}`,
+                  }))}
+                  showSearch
+                  optionFilterProp="label"
+                />
+                <Select
                   value={sortByCreatedAt}
                   onChange={(val) => {
                     setSortByCreatedAt(val);
@@ -595,7 +625,7 @@ const AdminCoursePage: React.FC = () => {
                 }
                 locale={{
                   emptyText:
-                    searchTerm || filterSemester
+                    searchTerm || filterSemester || filterDepartmentId !== undefined
                       ? "Không tìm thấy môn học phù hợp bộ lọc"
                       : "Chưa có môn học nào. Hãy tạo môn học đầu tiên để bắt đầu.",
                 }}

@@ -94,7 +94,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
         onFinish={handleFinish}
         requiredMark={(label, { required }) =>
           required ? (
-            label
+            <>
+              {label} <span style={{ color: "#ff4d4f" }}>*</span>
+            </>
           ) : (
             <>
               {label}{" "}
@@ -121,14 +123,14 @@ const CourseModal: React.FC<CourseModalProps> = ({
         }}
       >
         <Form.Item
-          name="courseCode"
-          label={<Text strong>Mã môn học</Text>}
+          name="courseName"
+          label={<Text strong>Tên môn học</Text>}
           rules={[
-            { required: true, message: "Mã môn học không được để trống" },
-            { min: 2, max: 20, message: "Mã môn học từ 2 – 20 ký tự" },
+            { required: true, message: "Tên môn học không được để trống" },
+            { min: 2, max: 200, message: "Tên môn học từ 2 – 200 ký tự" },
           ]}
         >
-          <Input placeholder="VD: PRJ301" />
+          <Input placeholder="VD: Software Engineering Fundamentals" />
         </Form.Item>
 
         <Form.Item
@@ -153,22 +155,14 @@ const CourseModal: React.FC<CourseModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="courseName"
-          label={<Text strong>Tên môn học</Text>}
+          name="courseCode"
+          label={<Text strong>Mã môn học</Text>}
           rules={[
-            { required: true, message: "Tên môn học không được để trống" },
-            { min: 2, max: 200, message: "Tên môn học từ 2 – 200 ký tự" },
+            { required: true, message: "Mã môn học không được để trống" },
+            { min: 2, max: 20, message: "Mã môn học từ 2 – 20 ký tự" },
           ]}
         >
-          <Input placeholder="VD: Software Engineering Fundamentals" />
-        </Form.Item>
-
-        <Form.Item
-          name="description"
-          label={<Text strong>Mô tả</Text>}
-          rules={[{ required: true, message: "Mô tả không được để trống" }]}
-        >
-          <Input.TextArea placeholder="Nhập mô tả môn học..." rows={3} />
+          <Input placeholder="VD: PRJ301" />
         </Form.Item>
 
         <div className="grid grid-cols-2 gap-x-4">
@@ -241,6 +235,14 @@ const CourseModal: React.FC<CourseModalProps> = ({
             style={{ maxWidth: 420 }}
             format="YYYY-MM-DD"
           />
+        </Form.Item>
+
+        <Form.Item
+          name="description"
+          label={<Text strong>Mô tả</Text>}
+          rules={[{ required: true, message: "Mô tả không được để trống" }]}
+        >
+          <Input.TextArea placeholder="Nhập mô tả môn học..." rows={3} />
         </Form.Item>
 
         <Form.Item className="!mb-0">
