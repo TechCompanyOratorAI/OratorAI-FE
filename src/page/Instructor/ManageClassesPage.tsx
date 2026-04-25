@@ -149,7 +149,7 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
-      title: "Semester",
+      title: "Học kỳ",
       key: "semester",
       render: (_, record) => (
         <span>

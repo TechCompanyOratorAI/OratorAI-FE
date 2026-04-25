@@ -248,7 +248,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                     icon={<CheckCircleOutlined />}
                     className="!bg-emerald-50 !border-emerald-200 !text-emerald-700 !font-semibold"
                   >
-                    Đã ghi danh (nhóm)
+                    Đã tham gia (nhóm)
                   </Tag>
                 )}
               </Space>
@@ -461,7 +461,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         </Title>
                         <Text type="secondary" className="text-sm block">
                           Chỉ nhóm trưởng mới chọn chủ đề cho cả nhóm. Bạn sẽ
-                          được ghi danh khi nhóm trưởng đã chọn.
+                          được tham gia khi nhóm trưởng đã chọn.
                         </Text>
                         <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-sm font-medium">
                           <TeamOutlined />
@@ -504,7 +504,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                         </Title>
                         <Text type="secondary" className="text-sm block">
                           Chọn chủ đề này cho cả nhóm — các thành viên sẽ được
-                          ghi danh cùng lúc.
+                          tham gia cùng lúc.
                         </Text>
                         <Button
                           type="primary"

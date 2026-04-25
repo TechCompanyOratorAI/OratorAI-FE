@@ -299,7 +299,7 @@ const AdminClassPage: React.FC = () => {
       value: stats.totalStudents,
       icon: <TeamOutlined style={{ fontSize: 20 }} />,
       tone: "purple",
-      description: "Theo số lượng ghi danh",
+      description: "Theo số lượng tham gia",
     },
   ];
 

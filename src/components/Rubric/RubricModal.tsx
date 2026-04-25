@@ -528,7 +528,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Active
+                Đang hoạt động
               </p>
               <p className="text-lg font-bold text-emerald-700">
                 {activeCount}
@@ -538,7 +538,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    Percentage
+                    Phần trăm
                   </p>
                   <p
                     className={`text-lg font-bold ${isPercentageComplete

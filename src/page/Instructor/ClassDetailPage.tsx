@@ -1346,6 +1346,17 @@ const ClassDetailPage: React.FC = () => {
                     <Spin size="small" />
                   </div>
                 ) : localCriteria.length > 0 ? (
+                  <div className="p-3 pt-2 space-y-2">
+                    {totalRubricPercentage < 100 && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
+                        <ExclamationCircleOutlined className="text-amber-600" />
+                        <p className="text-xs font-medium text-amber-700">
+                          Tổng phần trăm tiêu chí hiện tại là{" "}
+                          {totalRubricPercentage.toFixed(0)}%. Vui lòng cập nhật
+                          đủ 100% để rubric hoạt động đầy đủ.
+                        </p>
+                      </div>
+                    )}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1358,7 +1369,7 @@ const ClassDetailPage: React.FC = () => {
                       )}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="p-3 space-y-2">
+                      <div className="space-y-2">
                         {localCriteria.map((criterion) => (
                           <SortableCriterionItem
                             key={criterion.classRubricCriteriaId}
@@ -1373,6 +1384,7 @@ const ClassDetailPage: React.FC = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
+                  </div>
                 ) : selectedTemplateId ? (
                   <div className="p-4 text-center">
                     <p className="text-xs text-slate-500">

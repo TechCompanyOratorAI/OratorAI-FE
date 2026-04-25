@@ -188,14 +188,14 @@ const StudentClassesPage: React.FC = () => {
                 Khám phá lớp học
               </Title>
               <Text className="text-sm text-gray-400">
-                Chọn khóa học, tìm lớp và ghi danh bằng mã do giảng viên cung
+                Chọn khóa học, tìm lớp và tham gia bằng mã do giảng viên cung
                 cấp
               </Text>
             </div>
             {selectedCourseId && filteredClasses.length > 0 && (
               <Text className="text-xs text-gray-400 pb-0.5">
                 {filteredClasses.length} lớp
-                {enrolledCount > 0 && ` · ${enrolledCount} đã ghi danh`}
+                {enrolledCount > 0 && ` · ${enrolledCount} đã tham gia`}
               </Text>
             )}
           </div>
@@ -355,7 +355,7 @@ const StudentClassesPage: React.FC = () => {
                                 <div className="flex items-center gap-1 text-green-600">
                                   <SafetyOutlined className="text-[11px]" />
                                   <span className="text-[10px] font-semibold">
-                                    Đã ghi danh
+                                    Đã tham gia
                                   </span>
                                 </div>
                               )}
@@ -457,7 +457,7 @@ const StudentClassesPage: React.FC = () => {
                                 onClick={() => openEnroll(c)}
                                 disabled={!isActive}
                               >
-                                Ghi danh
+                                Tham gia
                               </Button>
                             )}
                           </div>

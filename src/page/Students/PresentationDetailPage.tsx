@@ -748,7 +748,7 @@ const PresentationDetailPage: React.FC = () => {
       label: (
         <Space size={4}>
           <FileText size={13} />
-          <span>Transcript</span>
+          <span>Bản dịch</span>
         </Space>
       ),
       value: "transcript",

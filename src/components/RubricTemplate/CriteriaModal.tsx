@@ -446,10 +446,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Mẫu tiêu chí
+                Mẫu tiêu chí mới
               </p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">
-                Quản lý tiêu chí
+                Quản lý mẫu tiêu chí
               </h3>
               <p className="mt-1 text-sm text-slate-600">
                 {template.templateName}

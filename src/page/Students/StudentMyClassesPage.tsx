@@ -93,7 +93,7 @@ const StudentMyClassesPage: React.FC = () => {
                   Lớp của tôi
                 </Title>
                 <Text style={{ color: "#6B7280", fontSize: 15 }}>
-                  Quản lý các lớp học đã ghi danh
+                  Quản lý các lớp học đã tham gia
                 </Text>
               </div>
               <Button
@@ -154,7 +154,7 @@ const StudentMyClassesPage: React.FC = () => {
               <div style={{ textAlign: "center", padding: "48px 20px", background: "white", borderRadius: 14, border: "1px solid #E5E7EB" }}>
                 <ReadOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 10 }} />
                 <Text style={{ fontSize: 14, color: "#9CA3AF", display: "block" }}>
-                  {searchQuery ? "Không tìm thấy lớp phù hợp" : "Bạn chưa ghi danh lớp nào"}
+                  {searchQuery ? "Không tìm thấy lớp phù hợp" : "Bạn chưa tham gia lớp nào"}
                 </Text>
                 {searchQuery ? (
                   <Button size="large" onClick={() => setSearchQuery("")} style={{ marginTop: 16, borderRadius: 12 }}>
@@ -246,13 +246,13 @@ const StudentMyClassesPage: React.FC = () => {
                         {/* Enrolled date */}
                         {cls.enrolledAt && (
                           <Text style={{ fontSize: 11, color: "#9CA3AF", display: "block", marginBottom: 10 }}>
-                            Ghi danh: {new Date(cls.enrolledAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
+                            Tham gia: {new Date(cls.enrolledAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "short", year: "numeric" })}
                           </Text>
                         )}
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <Tag style={{ borderRadius: 20, fontSize: 11, padding: "2px 12px", background: "#D1FAE5", border: "1px solid #A7F3D0", color: "#059669", fontWeight: 600, margin: 0 }}>
-                            Đã ghi danh
+                            Đã tham gia
                           </Tag>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCopyCode(cls.class.classCode); }}
