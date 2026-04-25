@@ -172,7 +172,7 @@ const StudentClassDetailPage: React.FC = () => {
       (e) => e.studentId === user.userId,
     );
     if (!enrolled) {
-      toast.warning("Bạn cần ghi danh lớp này trước khi xem chi tiết.");
+      toast.warning("Bạn cần tham gia lớp này trước khi xem chi tiết.");
       navigate("/student/dashboard", { replace: true });
     }
   }, [loading, classDetail, user?.userId, navigate]);
@@ -364,7 +364,7 @@ const StudentClassDetailPage: React.FC = () => {
               </span>
               {isEnrolledInClass && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700">
-                  <CheckCircle2 size={11} /> Đã ghi danh
+                  <CheckCircle2 size={11} /> Đã tham gia
                 </span>
               )}
             </div>
@@ -602,26 +602,26 @@ const StudentClassDetailPage: React.FC = () => {
                                     e.stopPropagation();
                                     handlePickTopicForGroup(topic.topicId);
                                   }}
-                                  className="!rounded-lg"
+                                  className="!rounded-full"
                                 >
                                   Chọn
                                 </Button>
                               )}
                             {!isGroupEnrolled && (
-                              <Tooltip title="Bạn cần ghi danh lớp trước">
+                              <Tooltip title="Bạn cần tham gia lớp trước">
                                 <Button
                                   size="small"
                                   disabled
                                   icon={<Plus size={12} />}
-                                  className="!rounded-lg"
+                                  className="!rounded-full"
                                 >
-                                  Ghi danh
+                                  Tham gia
                                 </Button>
                               </Tooltip>
                             )}
                             <Button
                               size="small"
-                              className="!rounded-lg"
+                              className="!rounded-full"
                               onClick={() =>
                                 navigate(`/student/class/${classId}/topic/${topic.topicId}`)
                               }
@@ -693,7 +693,7 @@ const StudentClassDetailPage: React.FC = () => {
                     type="warning"
                     icon={<AlertTriangle size={14} />}
                     showIcon
-                    message="Bạn cần ghi danh lớp trước khi tham gia hoặc tạo nhóm."
+                    message="Bạn cần tham gia lớp trước khi tham gia hoặc tạo nhóm."
                     className="!rounded-xl"
                   />
                 </div>

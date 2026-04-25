@@ -415,7 +415,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
   ];
 
   const reportSegmentOptions = [
-    { label: "Transcript", value: "transcript" },
+    { label: "Bản dịch", value: "transcript" },
     { label: "AI đánh giá", value: "ai" },
     { label: `Feedback giảng viên${syncedFeedbacks.length ? ` (${syncedFeedbacks.length})` : ""}`, value: "instructor" },
   ];

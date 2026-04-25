@@ -785,7 +785,7 @@ const DesktopClassTable: React.FC<{
                     color: enrolled ? "#059669" : isActive ? "#2563EB" : "#9CA3AF",
                   }}
                 >
-                  {enrolled ? "Đã ghi danh" : isActive ? "Đang mở" : "Đã đóng"}
+                  {enrolled ? "Đã tham gia" : isActive ? "Đang mở" : "Đã đóng"}
                 </Tag>
               </div>
 
@@ -832,7 +832,7 @@ const DesktopClassTable: React.FC<{
                     }}
                   >
                     <KeyRound style={{ width: 14, height: 14 }} />
-                    Ghi danh
+                    Tham gia
                   </button>
                 ) : (
                   <Tag style={{ borderRadius: 8, fontSize: 11, padding: "4px 12px", background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#9CA3AF", fontWeight: 600 }}>
@@ -924,7 +924,7 @@ const MobileClassList: React.FC<{
                   color: enrolled ? "#059669" : isActive ? "#2563EB" : "#9CA3AF",
                 }}
               >
-                {enrolled ? "Đã ghi danh" : isActive ? "Đang mở" : "Đã đóng"}
+                {enrolled ? "Đã tham gia" : isActive ? "Đang mở" : "Đã đóng"}
               </Tag>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -949,7 +949,7 @@ const MobileClassList: React.FC<{
                   onClick={() => onEnroll(c)}
                   style={{ background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)", border: "none", fontSize: 12 }}
                 >
-                  Ghi danh
+                  Tham gia
                 </Button>
               ) : (
                 <Tag style={{ borderRadius: 8, fontSize: 11, background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#9CA3AF", fontWeight: 600 }}>

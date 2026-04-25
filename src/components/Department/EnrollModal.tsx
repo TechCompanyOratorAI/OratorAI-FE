@@ -41,7 +41,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
   const handleSubmit = async () => {
     const trimmed = enrollKey.trim();
     if (!trimmed) {
-      setEnrollError("Vui lòng nhập mã ghi danh");
+      setEnrollError("Vui lòng nhập mã tham gia");
       return;
     }
     if (!classData) return;
@@ -53,13 +53,13 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
         enrollClassByKey({ classId: classData.classId, enrollKey: trimmed }),
       ).unwrap();
       await dispatch(fetchEnrolledClasses());
-      toast.success(`Đã ghi danh thành công lớp "${classData.className}"!`);
+      toast.success(`Đã tham gia thành công lớp "${classData.className}"!`);
       handleClose();
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
-          : "Ghi danh thất bại. Vui lòng thử lại.";
+          : "Tham gia thất bại. Vui lòng thử lại.";
       setEnrollError(message);
     } finally {
       setEnrolling(false);
@@ -104,7 +104,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
           </div>
           <div>
             <Text strong style={{ color: "white", fontSize: 17 }}>
-              Ghi danh lớp học
+              Tham gia lớp học
             </Text>
             <Text
               style={{
@@ -128,10 +128,10 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
               marginBottom: 8,
             }}
           >
-            Mã ghi danh
+            Mã tham gia
           </label>
           <Input
-            placeholder="Nhập mã ghi danh do giáo viên cung cấp"
+            placeholder="Nhập mã tham gia do giáo viên cung cấp"
             prefix={
               <KeyRound style={{ width: 16, height: 16, color: "#9CA3AF" }} />
             }
@@ -198,7 +198,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
               gap: 6,
             }}
           >
-            {enrolling ? "Đang ghi danh..." : "Xác nhận"}
+            {enrolling ? "Đang tham gia..." : "Xác nhận"}
           </button>
         </div>
       </div>

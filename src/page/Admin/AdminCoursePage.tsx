@@ -380,7 +380,7 @@ const AdminCoursePage: React.FC = () => {
       value: stats.totalEnrollments,
       icon: <TeamOutlined style={{ fontSize: 20 }} />,
       tone: "purple",
-      description: "Theo dữ liệu ghi danh",
+      description: "Theo dữ liệu tham gia",
     },
   ];
 
