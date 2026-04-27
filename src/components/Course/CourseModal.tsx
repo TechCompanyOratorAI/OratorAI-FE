@@ -4,13 +4,11 @@ import {
   Form,
   Input,
   Select,
-  AutoComplete,
-  DatePicker,
+  Checkbox,
   Button,
   Space,
   Typography,
 } from "antd";
-import dayjs, { Dayjs } from "dayjs";
 import { CourseData } from "@/services/features/course/courseSlice";
 
 const { Text } = Typography;
@@ -26,16 +24,37 @@ interface CourseModalProps {
     departmentCode: string;
     departmentName: string;
   }>;
+  subjectAreas?: Array<{
+    subjectAreaId: number;
+    subjectCode: string;
+    subjectName: string;
+    departmentId: number | null;
+    isActive: boolean;
+  }>;
+  academicBlocks?: Array<{
+    academicBlockId: number;
+    blockCode: string;
+    term: string;
+    half?: string | null;
+    blockType: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    academicYear?: {
+      academicYearId: number;
+      year: number;
+      name: string;
+    };
+  }>;
 }
 
 interface CourseFormData {
   courseCode: string;
   courseName: string;
   departmentId: number;
+  subjectAreaId?: number;
+  academicBlockIds: number[];
   description: string;
-  semester: string;
-  academicYear: string;
-  dateRange: [Dayjs, Dayjs];
 }
 
 const CourseModal: React.FC<CourseModalProps> = ({
@@ -45,19 +64,20 @@ const CourseModal: React.FC<CourseModalProps> = ({
   initialData,
   isLoading = false,
   departments = [],
+  subjectAreas = [],
+  academicBlocks = [],
 }) => {
   const [form] = Form.useForm<CourseFormData>();
+  const selectedDepartmentId = Form.useWatch("departmentId", form);
 
   const handleFinish = (values: CourseFormData) => {
     onSubmit({
       courseCode: values.courseCode,
       courseName: values.courseName,
       departmentId: values.departmentId,
+      subjectAreaId: values.subjectAreaId,
+      academicBlockIds: values.academicBlockIds,
       description: values.description,
-      semester: values.semester,
-      academicYear: Number(values.academicYear),
-      startDate: values.dateRange[0].format("YYYY-MM-DD"),
-      endDate: values.dateRange[1].format("YYYY-MM-DD"),
     });
   };
 
@@ -71,11 +91,83 @@ const CourseModal: React.FC<CourseModalProps> = ({
     label: `${d.departmentCode} – ${d.departmentName}`,
   }));
 
-  const semesterOptions = [
-    { value: "Fall ", label: "Fall " },
-    { value: "Spring ", label: "Spring " },
-    { value: "Summer ", label: "Summer " },
-  ];
+  const subjectAreaOptions = subjectAreas
+    .filter(
+      (item) =>
+        item.isActive &&
+        (!selectedDepartmentId || item.departmentId === selectedDepartmentId),
+    )
+    .map((item) => ({
+      value: item.subjectAreaId,
+      label: `${item.subjectCode} – ${item.subjectName}`,
+    }));
+
+  const formatAcademicBlockLabel = (block: {
+    blockCode?: string;
+    term: string;
+    half?: string | null;
+    blockType: string;
+    academicYear?: { year: number };
+  }) => {
+    if (block.blockCode) {
+      return block.blockCode;
+    }
+    const year = block.academicYear?.year;
+    const suffix = block.blockType === "BLOCK3" ? "BLOCK3" : block.half || "H1";
+    if (year) {
+      return `${year}-${block.term}-${suffix}`;
+    }
+    return `${block.term}-${suffix}`;
+  };
+
+  const academicBlockOptions = academicBlocks
+    .filter((item) => item.isActive)
+    .map((item) => ({
+      value: item.academicBlockId,
+      label: formatAcademicBlockLabel(item),
+      term: item.term,
+      sortHalf:
+        item.blockType === "BLOCK3"
+          ? 3
+          : item.half === "H1"
+            ? 1
+            : item.half === "H2"
+              ? 2
+              : 4,
+    }));
+
+  const groupedAcademicBlockOptions = academicBlockOptions.reduce(
+    (acc, option) => {
+      if (!acc[option.term]) {
+        acc[option.term] = [];
+      }
+      acc[option.term].push(option);
+      return acc;
+    },
+    {} as Record<
+      string,
+      Array<{
+        value: number;
+        label: string;
+        term: string;
+        sortHalf: number;
+      }>
+    >,
+  );
+
+  const termOrder = ["SPRING", "SUMMER", "FALL"];
+  const sortedTerms = Object.keys(groupedAcademicBlockOptions).sort((a, b) => {
+    const idxA = termOrder.indexOf(a);
+    const idxB = termOrder.indexOf(b);
+    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+
+  const initialAcademicBlockIds =
+    initialData?.academicBlocks?.map((item) => item.academicBlockId) ||
+    (initialData?.academicBlockId ? [initialData.academicBlockId] : []);
 
   return (
     <Modal
@@ -113,13 +205,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
           courseName: initialData?.courseName || "",
           departmentId:
             initialData?.departmentId || departments[0]?.departmentId,
+          subjectAreaId: initialData?.subjectAreaId || undefined,
+          academicBlockIds: initialAcademicBlockIds,
           description: initialData?.description || "",
-          semester: initialData?.semester || "",
-          academicYear: String(initialData?.academicYear || dayjs().year()),
-          dateRange:
-            initialData?.startDate && initialData?.endDate
-              ? [dayjs(initialData.startDate), dayjs(initialData.endDate)]
-              : undefined,
         }}
       >
         <Form.Item
@@ -141,6 +229,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
           <Select
             placeholder="Chọn chuyên ngành..."
             options={departmentOptions}
+            onChange={() => {
+              form.setFieldValue("subjectAreaId", undefined);
+            }}
             showSearch
             optionFilterProp="label"
             filterOption={(input, option) =>
@@ -155,6 +246,27 @@ const CourseModal: React.FC<CourseModalProps> = ({
         </Form.Item>
 
         <Form.Item
+          name="subjectAreaId"
+          label={<Text strong>Lĩnh vực môn học</Text>}
+          rules={[
+            { required: true, message: "Vui lòng chọn lĩnh vực môn học" },
+          ]}
+        >
+          <Select
+            placeholder="Chọn lĩnh vực môn học..."
+            options={subjectAreaOptions}
+            showSearch
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              (option?.label ?? "")
+                .toString()
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          />
+        </Form.Item>
+
+        <Form.Item
           name="courseCode"
           label={<Text strong>Mã môn học</Text>}
           rules={[
@@ -165,76 +277,32 @@ const CourseModal: React.FC<CourseModalProps> = ({
           <Input placeholder="VD: PRJ301" />
         </Form.Item>
 
-        <div className="grid grid-cols-2 gap-x-4">
-          <Form.Item
-            name="semester"
-            label={<Text strong>Học kỳ</Text>}
-            rules={[{ required: true, message: "Vui lòng chọn học kỳ" }]}
-          >
-            <Select placeholder="Chọn học kỳ..." options={semesterOptions} />
-          </Form.Item>
-
-          <Form.Item
-            name="academicYear"
-            label={<Text strong>Năm học</Text>}
-            dependencies={["dateRange"]}
-            rules={[
-              { required: true, message: "Năm học không được để trống" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const year = Number(value);
-                  if (!value || Number.isNaN(year)) {
-                    return Promise.reject(
-                      new Error("Năm học phải là số hợp lệ"),
-                    );
-                  }
-                  if (year < 2000 || year > 2100) {
-                    return Promise.reject(new Error("Năm học từ 2000 – 2100"));
-                  }
-
-                  const dateRange = getFieldValue("dateRange") as
-                    | [Dayjs, Dayjs]
-                    | undefined;
-                  if (!value || !dateRange?.[0]) return Promise.resolve();
-
-                  if (year !== dateRange[0].year()) {
-                    return Promise.reject(
-                      new Error("Năm học phải trùng với năm của ngày bắt đầu"),
-                    );
-                  }
-
-                  return Promise.resolve();
-                },
-              }),
-            ]}
-          >
-            <AutoComplete
-              placeholder="Chọn năm học"
-              filterOption={(inputValue, option) =>
-                (option?.value ?? "")
-                  .toString()
-                  .toLowerCase()
-                  .includes(inputValue.toLowerCase())
-              }
-              options={[
-                { value: 2026, label: "2026" },
-                { value: 2027, label: "2027" },
-                { value: 2028, label: "2028" },
-              ]}
-            />
-          </Form.Item>
-        </div>
-
         <Form.Item
-          name="dateRange"
-          label={<Text strong>Thời gian môn học</Text>}
-          rules={[{ required: true, message: "Vui lòng chọn khoảng thời gian" }]}
+          name="academicBlockIds"
+          label={<Text strong>Kỳ học (Academic Blocks)</Text>}
+          rules={[{ required: true, message: "Vui lòng chọn ít nhất một kỳ học" }]}
         >
-          <DatePicker.RangePicker
-            className="w-full"
-            style={{ maxWidth: 420 }}
-            format="YYYY-MM-DD"
-          />
+          <Checkbox.Group className="w-full">
+            <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {sortedTerms.map((term) => {
+                const options = [...groupedAcademicBlockOptions[term]].sort(
+                  (a, b) => a.sortHalf - b.sortHalf,
+                );
+                return (
+                  <div key={term}>
+                    <p className="text-xs font-semibold text-gray-500 mb-1">{term}</p>
+                    <div className="flex flex-col gap-1">
+                      {options.map((option) => (
+                        <Checkbox key={option.value} value={option.value}>
+                          {option.label}
+                        </Checkbox>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Checkbox.Group>
         </Form.Item>
 
         <Form.Item

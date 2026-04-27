@@ -17,7 +17,6 @@ import AdminDashboardPage from "@/page/Admin/AdminDashboardPage";
 import AdminClassPage from "@/page/Admin/AdminClassPage";
 import UserManagementPage from "@/page/Admin/UserManagementPage";
 import AIConfigurationPage from "@/page/Admin/AIConfigurationPage";
-import SettingsPage from "@/page/Admin/SettingsPage";
 import StudentSettingsPage from "@/page/Students/StudentSettingsPage";
 import FeedbackPage from "@/page/Students/MyPresentPage";
 import StudentTopicDetailPage from "@/page/Students/StudentTopicDetailPage";
@@ -35,6 +34,7 @@ import InstructorPresentationsPage from "@/page/Instructor/InstructorPresentatio
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
 import SharePage from "@/page/Share/SharePage";
+import AdminAcademicYearPage from "@/page/Admin/AdminAcademicYearPage";
 
 const AppRouter = () => {
   return (
@@ -149,10 +149,13 @@ const AppRouter = () => {
           element={<AdminRubricTemplePage />}
         />
         <Route
+          path="/admin/manage-academic-years"
+          element={<AdminAcademicYearPage />}
+        />
+        <Route
           path="/admin/ai-configuration"
           element={<AIConfigurationPage />}
         />
-        <Route path="/admin/settings" element={<SettingsPage />} />
       </Route>
 
       {/* Error / fallback routes */}

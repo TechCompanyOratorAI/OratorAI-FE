@@ -11,6 +11,7 @@ import {
   Popconfirm,
   App,
   ConfigProvider,
+  Form,
 } from "antd";
 import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
@@ -18,9 +19,11 @@ import {
   BookOutlined,
   DeleteOutlined,
   EditOutlined,
+  FolderOpenOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  ToolOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
@@ -31,6 +34,10 @@ import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import DepartmentModal, {
   DepartmentFormData,
 } from "@/components/Department/DepartmentModal";
+import DepartmentSubjectAreasModal from "@/components/Department/DepartmentSubjectAreasModal";
+import SubjectAreaFormModal from "@/components/Department/SubjectAreaFormModal";
+import CompetencyListModal from "@/components/Department/CompetencyListModal";
+import CompetencyFormModal from "@/components/Department/CompetencyFormModal";
 import {
   fetchDepartments,
   createDepartment,
@@ -40,9 +47,58 @@ import {
 } from "@/services/features/admin/adminSlice";
 import { AppDispatch, RootState } from "@/services/store/store";
 import { extractLocalizedMessage } from "@/lib/utils";
+import { api } from "@/services/constant/axiosInstance";
+import {
+  SUBJECT_AREAS_ENDPOINT,
+  SUBJECT_AREA_DETAIL_ENDPOINT,
+  COMPETENCIES_ENDPOINT,
+} from "@/services/constant/apiConfig";
+
+interface SubjectArea {
+  subjectAreaId: number;
+  subjectCode: string;
+  subjectName: string;
+  departmentId: number | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  department?: {
+    departmentId: number;
+    departmentCode: string;
+    departmentName: string;
+  } | null;
+}
+
+interface SubjectAreaFormValues {
+  subjectCode: string;
+  subjectName: string;
+  departmentId?: number;
+  isActive: boolean;
+}
+
+interface Competency {
+  competencyId: number;
+  competencyCode: string;
+  competencyName: string;
+  description?: string | null;
+  departmentId: number | null;
+  subjectAreaId: number | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface CompetencyFormValues {
+  competencyCode: string;
+  competencyName: string;
+  description?: string;
+  isActive: boolean;
+}
 
 const AdminDepartmentPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const [subjectAreaForm] = Form.useForm<SubjectAreaFormValues>();
+  const [competencyForm] = Form.useForm<CompetencyFormValues>();
   const { departments, loading } = useSelector(
     (state: RootState) => state.admin,
   );
@@ -59,6 +115,38 @@ const AdminDepartmentPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [subjectAreas, setSubjectAreas] = useState<SubjectArea[]>([]);
+  const [subjectLoading, setSubjectLoading] = useState(false);
+  const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
+  const [subjectFilterStatus, setSubjectFilterStatus] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+  const [subjectFilterDepartmentId, setSubjectFilterDepartmentId] = useState<
+    number | undefined
+  >(undefined);
+  const [subjectPage, setSubjectPage] = useState(1);
+  const [subjectPageSize, setSubjectPageSize] = useState(10);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [selectedSubjectArea, setSelectedSubjectArea] = useState<
+    SubjectArea | undefined
+  >();
+  const [isDepartmentSubjectModalOpen, setIsDepartmentSubjectModalOpen] =
+    useState(false);
+  const [selectedDepartmentForSubject, setSelectedDepartmentForSubject] =
+    useState<Department | undefined>();
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [competencyLoading, setCompetencyLoading] = useState(false);
+  const [isCompetencyModalOpen, setIsCompetencyModalOpen] = useState(false);
+  const [isCompetencyFormModalOpen, setIsCompetencyFormModalOpen] =
+    useState(false);
+  const [selectedSubjectForCompetency, setSelectedSubjectForCompetency] =
+    useState<SubjectArea | undefined>();
+  const [competencySearchTerm, setCompetencySearchTerm] = useState("");
+  const [competencyFilterStatus, setCompetencyFilterStatus] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+  const [competencyPage, setCompetencyPage] = useState(1);
+  const [competencyPageSize, setCompetencyPageSize] = useState(10);
 
   const { notification } = App.useApp();
 
@@ -84,6 +172,25 @@ const AdminDepartmentPage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchDepartments());
   }, [dispatch]);
+
+  const fetchSubjectAreas = async () => {
+    setSubjectLoading(true);
+    try {
+      const response = await api.get(`${SUBJECT_AREAS_ENDPOINT}?limit=200`);
+      const payload = response.data as { data?: SubjectArea[] };
+      setSubjectAreas(Array.isArray(payload?.data) ? payload.data : []);
+    } catch (error) {
+      notifyError(
+        "Tải thất bại",
+        extractLocalizedMessage(error, "Không thể tải danh sách lĩnh vực môn học."),
+      );
+    }
+    setSubjectLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSubjectAreas();
+  }, []);
 
   const handleCreateDepartment = () => {
     setSelectedDepartment(undefined);
@@ -288,9 +395,16 @@ const AdminDepartmentPage: React.FC = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space size="small">
+          <Button
+            type="text"
+            icon={<FolderOpenOutlined style={{ fontSize: 14 }} />}
+            onClick={() => handleManageDepartmentSubjectAreas(record)}
+            className="text-violet-500 hover:text-violet-600"
+            title="Quản lý lĩnh vực môn học"
+          />
           <Button
             type="text"
             icon={<EditOutlined style={{ fontSize: 14 }} />}
@@ -316,6 +430,344 @@ const AdminDepartmentPage: React.FC = () => {
     },
   ];
 
+  const handleCreateSubjectArea = (department?: Department) => {
+    setSelectedSubjectArea(undefined);
+    const targetDepartmentId = department?.departmentId;
+    subjectAreaForm.setFieldsValue({
+      subjectCode: "",
+      subjectName: "",
+      departmentId: targetDepartmentId,
+      isActive: true,
+    });
+    setIsSubjectModalOpen(true);
+  };
+
+  const handleManageDepartmentSubjectAreas = (department: Department) => {
+    setSelectedDepartmentForSubject(department);
+    setIsDepartmentSubjectModalOpen(true);
+    setSubjectFilterDepartmentId(department.departmentId);
+    setSubjectPage(1);
+  };
+
+  const handleEditSubjectArea = (subjectArea: SubjectArea) => {
+    setSelectedSubjectArea(subjectArea);
+    subjectAreaForm.setFieldsValue({
+      subjectCode: subjectArea.subjectCode,
+      subjectName: subjectArea.subjectName,
+      departmentId: subjectArea.departmentId || undefined,
+      isActive: subjectArea.isActive,
+    });
+    setIsSubjectModalOpen(true);
+  };
+
+  const handleDeleteSubjectArea = async (subjectAreaId: number) => {
+    setActionLoading(true);
+    try {
+      const response = await api.delete(
+        SUBJECT_AREA_DETAIL_ENDPOINT(subjectAreaId.toString()),
+      );
+      await fetchSubjectAreas();
+      notifySuccess(
+        "Xóa thành công",
+        extractLocalizedMessage(response.data, "Đã xóa lĩnh vực môn học thành công."),
+      );
+    } catch (error) {
+      notifyError(
+        "Xóa thất bại",
+        extractLocalizedMessage(error, "Không thể xóa lĩnh vực môn học."),
+      );
+    }
+    setActionLoading(false);
+  };
+
+  const handleSubmitSubjectArea = async () => {
+    setActionLoading(true);
+    try {
+      const formData = await subjectAreaForm.validateFields();
+      const payload = {
+        subjectCode: formData.subjectCode.trim().toUpperCase(),
+        subjectName: formData.subjectName.trim(),
+        departmentId:
+          selectedDepartmentForSubject?.departmentId ?? formData.departmentId,
+        isActive: formData.isActive,
+      };
+      if (selectedSubjectArea) {
+        const response = await api.patch(
+          SUBJECT_AREA_DETAIL_ENDPOINT(selectedSubjectArea.subjectAreaId.toString()),
+          payload,
+        );
+        notifySuccess(
+          "Cập nhật thành công",
+          extractLocalizedMessage(
+            response.data,
+            "Đã cập nhật lĩnh vực môn học thành công.",
+          ),
+        );
+      } else {
+        const response = await api.post(SUBJECT_AREAS_ENDPOINT, payload);
+        notifySuccess(
+          "Tạo thành công",
+          extractLocalizedMessage(response.data, "Đã tạo lĩnh vực môn học thành công."),
+        );
+      }
+      await fetchSubjectAreas();
+      setIsSubjectModalOpen(false);
+      setSelectedSubjectArea(undefined);
+      subjectAreaForm.resetFields();
+    } catch (error: any) {
+      if (error?.errorFields) {
+        setActionLoading(false);
+        return;
+      }
+      notifyError(
+        selectedSubjectArea ? "Cập nhật thất bại" : "Tạo thất bại",
+        extractLocalizedMessage(
+          error,
+          selectedSubjectArea
+            ? "Không thể cập nhật lĩnh vực môn học."
+            : "Không thể tạo lĩnh vực môn học.",
+        ),
+      );
+    }
+    setActionLoading(false);
+  };
+
+  const filteredSubjectAreas = useMemo(() => {
+    return [...subjectAreas]
+      .sort((left, right) => {
+        const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+        const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+        return rightTime - leftTime;
+      })
+      .filter((subjectArea) => {
+        const matchesSearch =
+          subjectArea.subjectCode
+            .toLowerCase()
+            .includes(subjectSearchTerm.toLowerCase()) ||
+          subjectArea.subjectName
+            .toLowerCase()
+            .includes(subjectSearchTerm.toLowerCase()) ||
+          (subjectArea.department?.departmentName || "")
+            .toLowerCase()
+            .includes(subjectSearchTerm.toLowerCase()) ||
+          (subjectArea.department?.departmentCode || "")
+            .toLowerCase()
+            .includes(subjectSearchTerm.toLowerCase());
+
+        const matchesStatus =
+          subjectFilterStatus === "all" ||
+          (subjectFilterStatus === "active" && subjectArea.isActive) ||
+          (subjectFilterStatus === "inactive" && !subjectArea.isActive);
+
+        const matchesDepartment =
+          subjectFilterDepartmentId === undefined ||
+          subjectArea.departmentId === subjectFilterDepartmentId;
+
+        return matchesSearch && matchesStatus && matchesDepartment;
+      });
+  }, [
+    subjectAreas,
+    subjectSearchTerm,
+    subjectFilterStatus,
+    subjectFilterDepartmentId,
+  ]);
+
+  const subjectColumns: ColumnsType<SubjectArea> = [
+    {
+      title: "Lĩnh vực môn học",
+      key: "subject",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">{record.subjectName}</div>
+          <div className="text-xs text-gray-400">{record.subjectCode}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Chuyên ngành",
+      key: "department",
+      render: (_, record) =>
+        record.department
+          ? `${record.department.departmentCode} - ${record.department.departmentName}`
+          : "-",
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Đang hoạt động" : "Không hoạt động"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "actions",
+      width: 120,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<ToolOutlined style={{ fontSize: 14 }} />}
+            onClick={() => handleOpenCompetencyModal(record)}
+            className="text-violet-500 hover:text-violet-600"
+            title="Quản lý năng lực"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined style={{ fontSize: 14 }} />}
+            onClick={() => handleEditSubjectArea(record)}
+            className="text-blue-500 hover:text-blue-600"
+          />
+          <Popconfirm
+            title="Xác nhận xóa lĩnh vực môn học"
+            description="Bạn có chắc muốn xóa lĩnh vực này? Hành động này không thể hoàn tác."
+            onConfirm={() => handleDeleteSubjectArea(record.subjectAreaId)}
+            okText="Xóa"
+            okButtonProps={{ danger: true, loading: actionLoading }}
+            cancelText="Hủy"
+          >
+            <Button
+              type="text"
+              icon={<DeleteOutlined style={{ fontSize: 14 }} />}
+              danger
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const departmentSubjectAreas = useMemo(() => {
+    if (!selectedDepartmentForSubject) return [];
+    return filteredSubjectAreas.filter(
+      (item) => item.departmentId === selectedDepartmentForSubject.departmentId,
+    );
+  }, [filteredSubjectAreas, selectedDepartmentForSubject]);
+
+  const fetchCompetencies = async (subjectAreaId: number) => {
+    setCompetencyLoading(true);
+    try {
+      const response = await api.get(
+        `${COMPETENCIES_ENDPOINT}?subjectAreaId=${subjectAreaId}&limit=200`,
+      );
+      const payload = response.data as { data?: Competency[] };
+      setCompetencies(Array.isArray(payload?.data) ? payload.data : []);
+    } catch (error) {
+      notifyError(
+        "Tải thất bại",
+        extractLocalizedMessage(error, "Không thể tải danh sách năng lực."),
+      );
+    }
+    setCompetencyLoading(false);
+  };
+
+  const handleOpenCompetencyModal = async (subjectArea: SubjectArea) => {
+    setSelectedSubjectForCompetency(subjectArea);
+    setCompetencySearchTerm("");
+    setCompetencyFilterStatus("all");
+    setCompetencyPage(1);
+    setIsCompetencyModalOpen(true);
+    await fetchCompetencies(subjectArea.subjectAreaId);
+  };
+
+  const handleOpenCreateCompetency = () => {
+    competencyForm.setFieldsValue({
+      competencyCode: "",
+      competencyName: "",
+      description: "",
+      isActive: true,
+    });
+    setIsCompetencyFormModalOpen(true);
+  };
+
+  const handleSubmitCompetency = async () => {
+    if (!selectedSubjectForCompetency) return;
+    setActionLoading(true);
+    try {
+      const formData = await competencyForm.validateFields();
+      const payload = {
+        competencyCode: formData.competencyCode.trim().toUpperCase(),
+        competencyName: formData.competencyName.trim(),
+        description: (formData.description || "").trim() || null,
+        departmentId:
+          selectedDepartmentForSubject?.departmentId ??
+          selectedSubjectForCompetency.departmentId,
+        subjectAreaId: selectedSubjectForCompetency.subjectAreaId,
+        isActive: formData.isActive,
+      };
+      const response = await api.post(COMPETENCIES_ENDPOINT, payload);
+      notifySuccess(
+        "Tạo thành công",
+        extractLocalizedMessage(response.data, "Đã tạo năng lực thành công."),
+      );
+      await fetchCompetencies(selectedSubjectForCompetency.subjectAreaId);
+      setIsCompetencyFormModalOpen(false);
+      competencyForm.resetFields();
+    } catch (error: any) {
+      if (error?.errorFields) {
+        setActionLoading(false);
+        return;
+      }
+      notifyError(
+        "Tạo thất bại",
+        extractLocalizedMessage(error, "Không thể tạo năng lực."),
+      );
+    }
+    setActionLoading(false);
+  };
+
+  const filteredCompetencies = useMemo(() => {
+    return competencies.filter((item) => {
+      const matchesSearch =
+        item.competencyCode
+          .toLowerCase()
+          .includes(competencySearchTerm.toLowerCase()) ||
+        item.competencyName
+          .toLowerCase()
+          .includes(competencySearchTerm.toLowerCase()) ||
+        (item.description || "")
+          .toLowerCase()
+          .includes(competencySearchTerm.toLowerCase());
+      const matchesStatus =
+        competencyFilterStatus === "all" ||
+        (competencyFilterStatus === "active" && item.isActive) ||
+        (competencyFilterStatus === "inactive" && !item.isActive);
+      return matchesSearch && matchesStatus;
+    });
+  }, [competencies, competencySearchTerm, competencyFilterStatus]);
+
+  const competencyColumns: ColumnsType<Competency> = [
+    {
+      title: "Năng lực",
+      key: "competency",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">{record.competencyName}</div>
+          <div className="text-xs text-gray-400">{record.competencyCode}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      key: "description",
+      render: (value: string | null | undefined) => value || "-",
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      width: 150,
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Đang hoạt động" : "Không hoạt động"}
+        </Tag>
+      ),
+    },
+  ];
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <SidebarAdmin activeItem="manage-departments" />
@@ -336,8 +788,11 @@ const AdminDepartmentPage: React.FC = () => {
             <Space>
               <Button
                 icon={<ReloadOutlined style={{ fontSize: 14 }} />}
-                onClick={() => dispatch(fetchDepartments())}
-                loading={loading}
+                onClick={async () => {
+                  await dispatch(fetchDepartments());
+                  await fetchSubjectAreas();
+                }}
+                loading={loading || subjectLoading}
               >
                 Làm mới
               </Button>
@@ -433,6 +888,7 @@ const AdminDepartmentPage: React.FC = () => {
               />
             </ConfigProvider>
           </Card>
+
         </div>
       </main>
 
@@ -445,6 +901,116 @@ const AdminDepartmentPage: React.FC = () => {
         onSubmit={handleSubmitDepartment}
         initialData={selectedDepartment}
         isLoading={actionLoading}
+      />
+
+      <DepartmentSubjectAreasModal
+        open={isDepartmentSubjectModalOpen}
+        title={
+          selectedDepartmentForSubject
+            ? `Lĩnh vực môn học - ${selectedDepartmentForSubject.departmentName}`
+            : "Lĩnh vực môn học"
+        }
+        loading={subjectLoading}
+        searchTerm={subjectSearchTerm}
+        filterStatus={subjectFilterStatus}
+        page={subjectPage}
+        pageSize={subjectPageSize}
+        total={departmentSubjectAreas.length}
+        dataSource={departmentSubjectAreas as any[]}
+        columns={subjectColumns as any}
+        onClose={() => {
+          setIsDepartmentSubjectModalOpen(false);
+          setSelectedDepartmentForSubject(undefined);
+          setSubjectSearchTerm("");
+          setSubjectFilterStatus("all");
+          setSubjectFilterDepartmentId(undefined);
+          setSubjectPage(1);
+        }}
+        onSearchChange={(value) => {
+          setSubjectSearchTerm(value);
+          setSubjectPage(1);
+        }}
+        onFilterStatusChange={(value) => {
+          setSubjectFilterStatus(value);
+          setSubjectPage(1);
+        }}
+        onRefresh={fetchSubjectAreas}
+        onCreateNew={() =>
+          selectedDepartmentForSubject &&
+          handleCreateSubjectArea(selectedDepartmentForSubject)
+        }
+        onPageChange={(p, ps) => {
+          setSubjectPage(p);
+          setSubjectPageSize(ps);
+        }}
+      />
+
+      <CompetencyListModal
+        open={isCompetencyModalOpen}
+        title={
+          selectedSubjectForCompetency
+            ? `Năng lực - ${selectedSubjectForCompetency.subjectName}`
+            : "Năng lực"
+        }
+        loading={competencyLoading}
+        searchTerm={competencySearchTerm}
+        filterStatus={competencyFilterStatus}
+        page={competencyPage}
+        pageSize={competencyPageSize}
+        total={filteredCompetencies.length}
+        dataSource={filteredCompetencies as any[]}
+        columns={competencyColumns as any}
+        onClose={() => {
+          setIsCompetencyModalOpen(false);
+          setSelectedSubjectForCompetency(undefined);
+          setCompetencies([]);
+          setCompetencySearchTerm("");
+          setCompetencyFilterStatus("all");
+          setCompetencyPage(1);
+        }}
+        onSearchChange={(value) => {
+          setCompetencySearchTerm(value);
+          setCompetencyPage(1);
+        }}
+        onFilterStatusChange={(value) => {
+          setCompetencyFilterStatus(value);
+          setCompetencyPage(1);
+        }}
+        onRefresh={() =>
+          selectedSubjectForCompetency &&
+          fetchCompetencies(selectedSubjectForCompetency.subjectAreaId)
+        }
+        onCreateNew={handleOpenCreateCompetency}
+        onPageChange={(p, ps) => {
+          setCompetencyPage(p);
+          setCompetencyPageSize(ps);
+        }}
+      />
+
+      <SubjectAreaFormModal
+        open={isSubjectModalOpen}
+        isEditing={!!selectedSubjectArea}
+        loading={actionLoading}
+        form={subjectAreaForm}
+        departments={departments}
+        disableDepartmentSelect={!!selectedDepartmentForSubject}
+        onCancel={() => {
+          setIsSubjectModalOpen(false);
+          setSelectedSubjectArea(undefined);
+          subjectAreaForm.resetFields();
+        }}
+        onSubmit={handleSubmitSubjectArea}
+      />
+
+      <CompetencyFormModal
+        open={isCompetencyFormModalOpen}
+        loading={actionLoading}
+        form={competencyForm}
+        onCancel={() => {
+          setIsCompetencyFormModalOpen(false);
+          competencyForm.resetFields();
+        }}
+        onSubmit={handleSubmitCompetency}
       />
     </div>
   );

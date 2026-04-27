@@ -271,6 +271,20 @@ export const INSTRUCTOR_DASHBOARD_ENDPOINT = `${BASE_URL}/api/v1/instructor/dash
 // Admin Dashboard endpoints
 export const ADMIN_DASHBOARD_ENDPOINT = `${BASE_URL}/api/v1/admin/dashboard`;
 
+// Academic calendar endpoints
+export const ACADEMIC_YEARS_ENDPOINT = `${BASE_URL}/api/v1/academic-calendar/years`;
+export const UPDATE_ACADEMIC_YEAR_ENDPOINT = (academicYearId: string) =>
+  `${BASE_URL}/api/v1/academic-calendar/years/${academicYearId}`;
+export const DELETE_ACADEMIC_YEAR_ENDPOINT = (academicYearId: string) =>
+  `${BASE_URL}/api/v1/academic-calendar/years/${academicYearId}`;
+export const ACADEMIC_BLOCKS_ENDPOINT = `${BASE_URL}/api/v1/academic-calendar/blocks`;
+export const ACADEMIC_BLOCKS_BULK_ENDPOINT = `${BASE_URL}/api/v1/academic-calendar/blocks/bulk`;
+export const CURRENT_ACADEMIC_BLOCK_ENDPOINT = `${BASE_URL}/api/v1/academic-calendar/blocks/current`;
+export const UPDATE_ACADEMIC_BLOCK_ENDPOINT = (academicBlockId: string) =>
+  `${BASE_URL}/api/v1/academic-calendar/blocks/${academicBlockId}`;
+export const DELETE_ACADEMIC_BLOCK_ENDPOINT = (academicBlockId: string) =>
+  `${BASE_URL}/api/v1/academic-calendar/blocks/${academicBlockId}`;
+
 // Speaker mapping endpoints
 export const SPEAKERS_BY_PRESENTATION_ENDPOINT = (id: string) =>
   `${BASE_URL}/api/v1/speakers/presentation/${id}`;
@@ -293,3 +307,11 @@ export const TRANSCRIPT_BY_PRESENTATION_ENDPOINT = (presentationId: string) =>
 // Email Whitelist endpoints
 export const CLASS_EMAIL_WHITELIST_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}/email-whitelist`;
+
+// Subject area endpoints
+export const SUBJECT_AREAS_ENDPOINT = `${BASE_URL}/api/v1/subject-areas`;
+export const SUBJECT_AREA_DETAIL_ENDPOINT = (subjectAreaId: string) =>
+  `${BASE_URL}/api/v1/subject-areas/${subjectAreaId}`;
+
+// Competency endpoints
+export const COMPETENCIES_ENDPOINT = `${BASE_URL}/api/v1/competencies`;

@@ -47,7 +47,9 @@ import SummaryMetrics, {
 import axiosInstance from "@/services/constant/axiosInstance";
 import {
   ADD_INSTRUCTOR_TO_COURSE_ENDPOINT,
+  ACADEMIC_BLOCKS_ENDPOINT,
   REMOVE_INSTRUCTOR_FROM_COURSE_ENDPOINT,
+  SUBJECT_AREAS_ENDPOINT,
 } from "@/services/constant/apiConfig";
 import { extractLocalizedMessage } from "@/lib/utils";
 
@@ -76,6 +78,32 @@ const AdminCoursePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [subjectAreas, setSubjectAreas] = useState<
+    Array<{
+      subjectAreaId: number;
+      subjectCode: string;
+      subjectName: string;
+      departmentId: number | null;
+      isActive: boolean;
+    }>
+  >([]);
+  const [academicBlocks, setAcademicBlocks] = useState<
+    Array<{
+      academicBlockId: number;
+      blockCode: string;
+      term: string;
+      half?: string | null;
+      blockType: string;
+      startDate: string;
+      endDate: string;
+      isActive: boolean;
+      academicYear?: {
+        academicYearId: number;
+        year: number;
+        name: string;
+      };
+    }>
+  >([]);
 
   const { notification } = App.useApp();
 
@@ -117,6 +145,34 @@ const AdminCoursePage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchDepartments());
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchCourseDependencies = async () => {
+      try {
+        const [subjectRes, blockRes] = await Promise.all([
+          axiosInstance.get(`${SUBJECT_AREAS_ENDPOINT}?limit=200`),
+          axiosInstance.get(`${ACADEMIC_BLOCKS_ENDPOINT}?isActive=true`),
+        ]);
+        const subjectPayload = subjectRes.data as { data?: any[] };
+        const blockPayload = blockRes.data as { data?: any[] };
+        setSubjectAreas(
+          Array.isArray(subjectPayload?.data) ? subjectPayload.data : [],
+        );
+        setAcademicBlocks(
+          Array.isArray(blockPayload?.data) ? blockPayload.data : [],
+        );
+      } catch (error) {
+        notifyError(
+          "Tải dữ liệu phụ trợ thất bại",
+          extractLocalizedMessage(
+            error,
+            "Không thể tải lĩnh vực môn học hoặc kỳ học.",
+          ),
+        );
+      }
+    };
+    fetchCourseDependencies();
+  }, []);
 
   const handleCreateCourse = () => {
     setSelectedCourse(undefined);
@@ -386,6 +442,40 @@ const AdminCoursePage: React.FC = () => {
 
   const semesters = Array.from(new Set(courses.map((c) => c.semester)));
 
+  const getBlockDisplaySuffix = (block: any) => {
+    const isPrimary = Boolean(block?.CourseAcademicBlock?.isPrimary);
+    const suffix =
+      block?.blockType === "BLOCK3" ? "BLOCK3" : (block?.half ?? "H1");
+    const code = `${block?.term}-${suffix}`;
+    return isPrimary ? `${code} (Primary)` : code;
+  };
+
+  const getCourseTermsDisplay = (course: CourseData) => {
+    if (!course.academicBlocks || course.academicBlocks.length === 0) {
+      return course.semester || "-";
+    }
+    return course.academicBlocks
+      .map((block) => getBlockDisplaySuffix(block))
+      .join(", ");
+  };
+
+  const getCourseAcademicYearsDisplay = (course: CourseData) => {
+    if (!course.academicBlocks || course.academicBlocks.length === 0) {
+      return course.academicYear ? String(course.academicYear) : "-";
+    }
+    const years = Array.from(
+      new Set(
+        course.academicBlocks
+          .map((block) => block.academicYear?.year)
+          .filter((year): year is number => Number.isInteger(year)),
+      ),
+    );
+    if (years.length === 0) {
+      return course.academicYear ? String(course.academicYear) : "-";
+    }
+    return years.join(", ");
+  };
+
   const columns: ColumnsType<CourseData> = [
     {
       title: "Thông tin môn học",
@@ -439,14 +529,13 @@ const AdminCoursePage: React.FC = () => {
     },
     {
       title: "Học kỳ",
-      dataIndex: "semester",
       key: "semester",
-      render: (val) => <Tag>{val}</Tag>,
+      render: (_, record) => <Tag>{getCourseTermsDisplay(record)}</Tag>,
     },
     {
       title: "Năm học",
-      dataIndex: "academicYear",
       key: "academicYear",
+      render: (_, record) => getCourseAcademicYearsDisplay(record),
     },
     {
       title: "Trạng thái",
@@ -645,6 +734,8 @@ const AdminCoursePage: React.FC = () => {
         initialData={selectedCourse}
         isLoading={actionLoading}
         departments={departments}
+        subjectAreas={subjectAreas}
+        academicBlocks={academicBlocks}
       />
 
       <InstructorModal
