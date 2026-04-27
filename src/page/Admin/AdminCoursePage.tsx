@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/services/store/store";
 import {
   fetchCourses,
+  fetchCourseDetail,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -23,9 +24,11 @@ import {
   ReadOutlined,
   ReloadOutlined,
   SearchOutlined,
-  TeamOutlined,
+  
   UsergroupAddOutlined,
   CheckCircleOutlined,
+  
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import {
   Table,
@@ -70,6 +73,9 @@ const AdminCoursePage: React.FC = () => {
   const [filterDepartmentId, setFilterDepartmentId] = useState<
     number | undefined
   >(undefined);
+  const [filterInstructorStatus, setFilterInstructorStatus] = useState<
+    "all" | "has" | "none"
+  >("all");
   const [sortByCreatedAt, setSortByCreatedAt] = useState<
     "newest" | "oldest"
   >("newest");
@@ -123,9 +129,17 @@ const AdminCoursePage: React.FC = () => {
     setIsCourseModalOpen(true);
   };
 
-  const handleEditCourse = (course: CourseData) => {
+  const handleEditCourse = async (course: CourseData) => {
     setSelectedCourse(course);
     setIsCourseModalOpen(true);
+    try {
+      const detailedCourse = await dispatch(
+        fetchCourseDetail(course.courseId),
+      ).unwrap();
+      setSelectedCourse(detailedCourse);
+    } catch {
+      // Keep basic row data if detail fetch fails.
+    }
   };
 
   const handleDeleteCourse = async (courseId: number) => {
@@ -312,6 +326,11 @@ const AdminCoursePage: React.FC = () => {
     );
   }, [departments]);
 
+  const hasInstructorAssigned = (course: CourseData) =>
+    Boolean(
+      (course.instructors && course.instructors.length > 0) || course.instructor,
+    );
+
   const filteredCourses = useMemo(() => {
     const filtered = courses.filter((course) => {
       const department = departmentLookup[course.departmentId];
@@ -330,7 +349,18 @@ const AdminCoursePage: React.FC = () => {
         filterDepartmentId !== undefined
           ? course.departmentId === filterDepartmentId
           : true;
-      return matchesSearch && matchesSemester && matchesDepartment;
+      const matchesInstructor =
+        filterInstructorStatus === "all"
+          ? true
+          : filterInstructorStatus === "has"
+            ? hasInstructorAssigned(course)
+            : !hasInstructorAssigned(course);
+      return (
+        matchesSearch &&
+        matchesSemester &&
+        matchesDepartment &&
+        matchesInstructor
+      );
     });
 
     return filtered.sort((a, b) => {
@@ -343,6 +373,7 @@ const AdminCoursePage: React.FC = () => {
     searchTerm,
     filterSemester,
     filterDepartmentId,
+    filterInstructorStatus,
     sortByCreatedAt,
     departmentLookup,
   ]);
@@ -350,11 +381,8 @@ const AdminCoursePage: React.FC = () => {
   const stats = useMemo(() => {
     const total = courses.length;
     const active = courses.filter((c) => c.isActive).length;
-    const totalEnrollments = courses.reduce(
-      (sum, c) => sum + (c.enrollmentCount || 0),
-      0,
-    );
-    return { total, active, totalEnrollments };
+    const noInstructor = courses.filter((c) => !hasInstructorAssigned(c)).length;
+    return { total, active, noInstructor };
   }, [courses]);
 
   const summaryItems: SummaryMetricItem[] = [
@@ -376,11 +404,11 @@ const AdminCoursePage: React.FC = () => {
     },
     {
       key: "enrollments",
-      title: "Tổng lượt đăng ký",
-      value: stats.totalEnrollments,
-      icon: <TeamOutlined style={{ fontSize: 20 }} />,
-      tone: "purple",
-      description: "Theo dữ liệu tham gia",
+      title: "Các Môn Chưa có Giảng Viên",
+      value: stats.noInstructor,
+      icon: <ExclamationCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "red",
+      description: "Chưa phân công",
     },
   ];
 
@@ -583,6 +611,20 @@ const AdminCoursePage: React.FC = () => {
                   }))}
                   showSearch
                   optionFilterProp="label"
+                  listHeight={192}
+                />
+                <Select
+                  value={filterInstructorStatus}
+                  onChange={(val) => {
+                    setFilterInstructorStatus(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 190 }}
+                  options={[
+                    { value: "all", label: "Tất cả môn học" },
+                    { value: "has", label: "Đã có giảng viên" },
+                    { value: "none", label: "Chưa có giảng viên" },
+                  ]}
                 />
                 <Select
                   value={sortByCreatedAt}
@@ -625,7 +667,10 @@ const AdminCoursePage: React.FC = () => {
                 }
                 locale={{
                   emptyText:
-                    searchTerm || filterSemester || filterDepartmentId !== undefined
+                    searchTerm ||
+                    filterSemester ||
+                    filterDepartmentId !== undefined ||
+                    filterInstructorStatus !== "all"
                       ? "Không tìm thấy môn học phù hợp bộ lọc"
                       : "Chưa có môn học nào. Hãy tạo môn học đầu tiên để bắt đầu.",
                 }}

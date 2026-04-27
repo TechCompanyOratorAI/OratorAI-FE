@@ -83,6 +83,12 @@ const clampWeightValue = (value: number) => {
   return Math.min(100, Math.max(1, value));
 };
 
+const RequiredAsterisk = () => (
+  <span className="ml-1 text-rose-500" aria-hidden="true">
+    *
+  </span>
+);
+
 type SortableCriteriaItemProps = {
   criterion: RubricTemplateCriterion;
   isEditing: boolean;
@@ -614,6 +620,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
                   Tên tiêu chí
+                  <RequiredAsterisk />
                 </label>
                 <input
                   type="text"
@@ -639,6 +646,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
                   Mô tả tiêu chi tiết
+                  <RequiredAsterisk />
                 </label>
                 <textarea
                   rows={2}
@@ -667,6 +675,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
                     Phần trăm (%)
+                    <RequiredAsterisk />
                   </label>
                   <div className="relative">
                     <input
@@ -750,6 +759,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
                     Thứ tự hiển thị
+                    <RequiredAsterisk />
                   </label>
                   <input
                     type="number"

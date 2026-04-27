@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   Form,
@@ -14,6 +14,11 @@ import dayjs, { Dayjs } from "dayjs";
 import { CourseData } from "@/services/features/course/courseSlice";
 
 const { Text } = Typography;
+
+type CourseDateCompatible = CourseData & {
+  start_date?: string;
+  end_date?: string;
+};
 
 interface CourseModalProps {
   isOpen: boolean;
@@ -38,6 +43,21 @@ interface CourseFormData {
   dateRange: [Dayjs, Dayjs];
 }
 
+const resolveDateRange = (course?: CourseDateCompatible) => {
+  if (!course) return undefined;
+
+  const rawStart = course.startDate;
+  const rawEnd = course.endDate;
+  const fallbackStart = course.start_date;
+  const fallbackEnd = course.end_date;
+
+  const start = dayjs((rawStart ?? fallbackStart) as string | undefined);
+  const end = dayjs((rawEnd ?? fallbackEnd) as string | undefined);
+
+  if (!start.isValid() || !end.isValid()) return undefined;
+  return [start, end] as [Dayjs, Dayjs];
+};
+
 const CourseModal: React.FC<CourseModalProps> = ({
   isOpen,
   onClose,
@@ -47,6 +67,20 @@ const CourseModal: React.FC<CourseModalProps> = ({
   departments = [],
 }) => {
   const [form] = Form.useForm<CourseFormData>();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    form.setFieldsValue({
+      courseCode: initialData?.courseCode || "",
+      courseName: initialData?.courseName || "",
+      departmentId: initialData?.departmentId || departments[0]?.departmentId,
+      description: initialData?.description || "",
+      semester: initialData?.semester || "",
+      academicYear: String(initialData?.academicYear || dayjs().year()),
+      dateRange: resolveDateRange(initialData),
+    });
+  }, [isOpen, initialData, departments, form]);
 
   const handleFinish = (values: CourseFormData) => {
     onSubmit({
@@ -116,10 +150,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           description: initialData?.description || "",
           semester: initialData?.semester || "",
           academicYear: String(initialData?.academicYear || dayjs().year()),
-          dateRange:
-            initialData?.startDate && initialData?.endDate
-              ? [dayjs(initialData.startDate), dayjs(initialData.endDate)]
-              : undefined,
+          dateRange: resolveDateRange(initialData),
         }}
       >
         <Form.Item

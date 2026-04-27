@@ -58,6 +58,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
   const initialCourse = initialData?.course;
   const resolvedCourseId =
     initialData?.courseId ?? initialCourse?.courseId ?? undefined;
+  const currentKeyUsedCount =
+    initialData?.activeKeys?.[0]?.usedCount ?? initialData?.enrollKeys?.[0]?.usedCount;
 
   const courseOptions = React.useMemo(() => {
     const mappedCourses = courses.map((c) => ({
@@ -437,6 +439,11 @@ const ClassModal: React.FC<ClassModalProps> = ({
             >
               <InputNumber className="w-full" min={0} max={35} />
             </Form.Item>
+            {typeof currentKeyUsedCount === "number" && (
+              <Text type="secondary" className="text-xs -mt-1 block">
+                Đã dùng: {currentKeyUsedCount} lượt
+              </Text>
+            )}
           </>
         )}
 

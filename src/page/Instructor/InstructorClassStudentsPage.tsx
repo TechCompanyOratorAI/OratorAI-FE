@@ -661,11 +661,12 @@ const InstructorClassStudentsPage: React.FC = () => {
             <div className="flex items-center justify-between mb-5">
               <Space>
                 <Button
+                  type="link"
                   icon={<ArrowLeft size={16} />}
                   onClick={() => navigate("/instructor/students")}
-                  className="rounded-lg"
+                  className="!px-0 !text-sky-700 hover:!text-sky-800"
                 >
-                  Quay lại
+                  Quay lại danh sách lớp
                 </Button>
               </Space>
               <Button
@@ -676,7 +677,7 @@ const InstructorClassStudentsPage: React.FC = () => {
                   void dispatch(fetchGroupsByClass(numericClassId!));
                 }}
                 loading={scoresLoading || groupLoading}
-                className="rounded-lg"
+                className="rounded-xl"
               >
                 Làm mới
               </Button>

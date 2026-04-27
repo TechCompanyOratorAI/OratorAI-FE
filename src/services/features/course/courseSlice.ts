@@ -155,8 +155,8 @@ export const fetchCourseDetail = createAsyncThunk(
       const response = await axiosInstance.get(
         COURSE_DETAIL_ENDPOINT(courseId.toString()),
       );
-      // API returns { success: true, course: {...} }
-      return response.data.course || response.data;
+      // Support multiple backend response shapes.
+      return response.data.course || response.data.data || response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch course detail",
