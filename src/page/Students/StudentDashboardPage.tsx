@@ -5,6 +5,7 @@ import {
   Search,
   BookText,
   GraduationCap,
+  Zap,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchCourses } from "@/services/features/course/courseSlice";
@@ -45,6 +46,8 @@ const StudentDashboardPage: React.FC = () => {
     open: boolean;
     classItem: ClassItem | null;
   }>({ open: false, classItem: null });
+
+  const [quickJoinOpen, setQuickJoinOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDepartments());
@@ -134,9 +137,78 @@ const StudentDashboardPage: React.FC = () => {
                 border: "2px solid #1da9e6",
                 fontSize: 15,
                 boxShadow: "0 2px 8px rgba(29,169,230,0.08)",
-                marginBottom: 28,
+                marginBottom: 20,
               }}
             />
+
+            {/* Quick Join Banner */}
+            <div
+              onClick={() => setQuickJoinOpen(true)}
+              style={{
+                background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)",
+                borderRadius: 14,
+                padding: "14px 20px",
+                marginBottom: 28,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                cursor: "pointer",
+                boxShadow: "0 4px 16px rgba(29,169,230,0.25)",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              className="hover:-translate-y-0.5 hover:shadow-xl"
+            >
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Zap style={{ width: 22, height: 22, color: "white" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: 15,
+                  }}
+                >
+                  Tham gia lớp nhanh
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    color: "rgba(255,255,255,0.82)",
+                    fontSize: 12,
+                  }}
+                >
+                  Nhập mã do giảng viên cung cấp — không cần tìm kiếm lớp
+                </span>
+              </div>
+              <span
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  fontSize: 11,
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  letterSpacing: 0.5,
+                  flexShrink: 0,
+                }}
+              >
+                ORA-XXXX-XXXX-XXXX
+              </span>
+            </div>
 
             <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
               <Text style={{ fontSize: 18, fontWeight: 700, color: "#1F2937" }}>
@@ -330,6 +402,16 @@ const StudentDashboardPage: React.FC = () => {
             open={enrollModal.open}
             classData={enrollModal.classItem}
             onClose={closeEnroll}
+          />
+
+          {/* Quick Join Modal — classData=null triggers quick-join mode */}
+          <EnrollModal
+            open={quickJoinOpen}
+            classData={null}
+            onClose={() => {
+              setQuickJoinOpen(false);
+              dispatch(fetchEnrolledClasses());
+            }}
           />
         </div>
       </ConfigProvider>
