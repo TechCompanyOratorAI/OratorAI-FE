@@ -28,10 +28,35 @@ export interface CourseData {
   courseCode: string;
   courseName: string;
   departmentId: number;
+  subjectAreaId?: number | null;
   description: string;
   instructorId: number;
   semester: string;
   academicYear: number;
+  academicBlockId?: number | null;
+  academicBlocks?: Array<{
+    academicBlockId: number;
+    blockCode: string;
+    term: string;
+    half?: string | null;
+    blockType: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    academicYear?: {
+      academicYearId: number;
+      year: number;
+      name: string;
+      startDate?: string;
+      endDate?: string;
+      isActive?: boolean;
+      createdAt?: string;
+      updatedAt?: string;
+    };
+    CourseAcademicBlock?: {
+      isPrimary: boolean;
+    };
+  }>;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -49,11 +74,13 @@ export interface CreateCourseData {
   courseCode: string;
   courseName: string;
   departmentId: number;
+  subjectAreaId?: number;
+  academicBlockIds?: number[];
   description: string;
-  semester: string;
-  academicYear: number;
-  startDate: string;
-  endDate: string;
+  semester?: string;
+  academicYear?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CoursesResponse {
