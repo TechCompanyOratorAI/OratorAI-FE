@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Input, Button, Typography, Segmented, Tag, ConfigProvider } from "antd";
 import type { SegmentedProps } from "antd";
-import { SearchOutlined, ReadOutlined, CopyOutlined } from "@ant-design/icons";
+import { SearchOutlined, ReadOutlined, CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { GraduationCap, CheckCircle2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchEnrolledClasses } from "@/services/features/enrollment/enrollmentSlice";
 import StudentLayout from "@/components/StudentLayout/StudentLayout";
+import EnrollModal from "@/components/Department/EnrollModal";
 
 const { Title, Text } = Typography;
 
@@ -25,6 +26,7 @@ const StudentMyClassesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [quickJoinOpen, setQuickJoinOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchEnrolledClasses());
@@ -96,15 +98,25 @@ const StudentMyClassesPage: React.FC = () => {
                   Quản lý các lớp học đã tham gia
                 </Text>
               </div>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <Button
                 type="primary"
                 size="large"
+                icon={<PlusOutlined />}
+                onClick={() => setQuickJoinOpen(true)}
+                style={{ borderRadius: 12, fontWeight: 700, height: 48, paddingInline: 24, background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)", border: "none", boxShadow: "0 4px 12px rgba(29,169,230,0.3)" }}
+              >
+                Tham gia nhanh
+              </Button>
+              <Button
+                size="large"
                 icon={<ReadOutlined />}
                 onClick={() => navigate("/student/dashboard")}
-                style={{ borderRadius: 12, fontWeight: 600, height: 48, paddingInline: 24, background: "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)", border: "none", boxShadow: "0 4px 12px rgba(29,169,230,0.3)" }}
+                style={{ borderRadius: 12, fontWeight: 600, height: 48, paddingInline: 20, border: "1.5px solid #E5E7EB", color: "#6B7280" }}
               >
                 Khám phá lớp học
               </Button>
+            </div>
             </div>
 
             {/* Search + filter row */}
@@ -284,6 +296,16 @@ const StudentMyClassesPage: React.FC = () => {
           </div>
         </div>
       </ConfigProvider>
+
+      {/* Quick Join Modal */}
+      <EnrollModal
+        open={quickJoinOpen}
+        classData={null}
+        onClose={() => {
+          setQuickJoinOpen(false);
+          dispatch(fetchEnrolledClasses());
+        }}
+      />
     </StudentLayout>
   );
 };

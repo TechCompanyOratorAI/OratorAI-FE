@@ -14,11 +14,15 @@ import {
   Typography,
   App,
   Tooltip,
+
   ConfigProvider,
+
+  Modal,
+
 } from "antd";
 import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, KeyOutlined } from "@ant-design/icons";
+import { EditOutlined, KeyOutlined, CopyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import {
   BookOpen,
   Users,
@@ -34,6 +38,8 @@ import {
   fetchClassesByInstructor,
   updateClass,
   createEnrollKey,
+  clearLastCreatedKey,
+  fetchActiveKeysByClass,
   ClassData,
 } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
@@ -53,6 +59,8 @@ const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { classes: apiClasses, loading } =
+
+  const { classes: apiClasses, loading, pagination, lastCreatedKey, keysByClass } =
     useAppSelector((state) => state.class);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,12 +73,35 @@ const ManageClassesPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [keyTargetClass, setKeyTargetClass] = useState<ClassData | null>(null);
+  const [keyResultOpen, setKeyResultOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [keyAlreadyExisted, setKeyAlreadyExisted] = useState(false);
+  /** Key được hiển thị trong modal — có thể là key vừa tạo (lastCreatedKey) hoặc key đã tồn tại (từ keysByClass) */
+  const [displayKey, setDisplayKey] = useState<string | null>(null);
+
+  /** Click 🔑 — luôn mở EnrollKeyModal.
+   *  Modal tự quyết định hiện key hiện có (nếu đã có) hay form tạo mới.
+   */
+  const handleKeyButtonClick = (record: ClassData) => {
+    setKeyTargetClass(record);
+    setKeyModalOpen(true);
+  };
 
   const { message: antdMessage } = App.useApp();
 
   useEffect(() => {
     dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
   }, [dispatch]);
+
+  // After classes load, fetch active key for each class in parallel
+  useEffect(() => {
+    if (apiClasses.length === 0) return;
+    apiClasses.forEach((c) => {
+      if (keysByClass[c.classId] === undefined) {
+        void dispatch(fetchActiveKeysByClass(c.classId));
+      }
+    });
+  }, [apiClasses, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredCourses = useMemo(() => {
     return apiClasses.filter((course) => {
@@ -196,6 +227,73 @@ const ManageClassesPage: React.FC = () => {
       ),
     },
     {
+      title: "Mã đăng ký",
+      key: "enrollKey",
+      width: 220,
+      render: (_, record) => {
+        const keyValue = keysByClass[record.classId];
+        // undefined = not fetched yet (loading), null = no key
+        if (keyValue === undefined) {
+          return <span className="text-gray-300 text-xs">...</span>;
+        }
+        if (!keyValue) {
+          return (
+            <Button
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleKeyButtonClick(record);
+              }}
+              style={{ borderRadius: 6, fontSize: 11, color: "#6B7280", borderColor: "#D1D5DB" }}
+            >
+              Tạo mã
+            </Button>
+          );
+        }
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%)",
+              border: "1.5px solid #BFDBFE",
+              borderRadius: 8,
+              padding: "4px 10px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span
+              style={{
+                fontFamily: "'Courier New', monospace",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 1,
+                color: "#1D4ED8",
+                flex: 1,
+                userSelect: "text",
+              }}
+            >
+              {keyValue}
+            </span>
+            <Tooltip title="Sao chép">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined style={{ fontSize: 11 }} />}
+                style={{ padding: 2, minWidth: 20, height: 20 }}
+                onClick={() => {
+                  navigator.clipboard.writeText(keyValue);
+                  antdMessage.success("Đã sao chép mã!");
+                }}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+    {
       title: "",
       key: "chevron",
       width: 32,
@@ -228,16 +326,16 @@ const ManageClassesPage: React.FC = () => {
             }}
             title="Chỉnh sửa"
           />
-          <Button
-            type="text"
-            icon={<KeyOutlined />}
-            onClick={(event) => {
-              event.stopPropagation();
-              setKeyTargetClass(record);
-              setKeyModalOpen(true);
-            }}
-            title="Tạo mã đăng ký"
-          />
+          <Tooltip title={keysByClass[record.classId] ? "Xem mã" : "Tạo mã đăng ký"}>
+            <Button
+              type="text"
+              icon={<KeyOutlined />}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleKeyButtonClick(record);
+              }}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -264,7 +362,7 @@ const ManageClassesPage: React.FC = () => {
   const handleCreateKey = async (data: { customKey?: string; expiresAt?: dayjs.Dayjs; maxUses?: number }) => {
     if (!keyTargetClass) return;
     try {
-      await dispatch(
+      const result = await dispatch(
         createEnrollKey({
           classId: keyTargetClass.classId,
           customKey: data.customKey,
@@ -272,12 +370,23 @@ const ManageClassesPage: React.FC = () => {
           maxUses: data.maxUses,
         }),
       ).unwrap();
-      antdMessage.success("Tạo mã đăng ký thành công!");
       setKeyModalOpen(false);
       setKeyTargetClass(null);
+      setDisplayKey(result.keyValue);
+      setKeyAlreadyExisted(result.alreadyExists);
+      setKeyResultOpen(true);
     } catch (err: any) {
       antdMessage.error(err || "Không thể tạo mã đăng ký. Vui lòng thử lại.");
     }
+  };
+
+  const handleCopyKey = () => {
+    const key = displayKey ?? lastCreatedKey;
+    if (!key) return;
+    navigator.clipboard.writeText(key).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
@@ -420,6 +529,7 @@ const ManageClassesPage: React.FC = () => {
               }
             : null
         }
+        existingKey={keyTargetClass ? (keysByClass[keyTargetClass.classId] ?? null) : null}
         onClose={() => {
           setKeyModalOpen(false);
           setKeyTargetClass(null);
@@ -427,6 +537,105 @@ const ManageClassesPage: React.FC = () => {
         onSubmit={handleCreateKey}
         isLoading={loading}
       />
+
+      {/* ── Key Result Modal ───────────────────────────────────────── */}
+      <Modal
+        open={keyResultOpen}
+        onCancel={() => {
+          setKeyResultOpen(false);
+          dispatch(clearLastCreatedKey());
+          setCopied(false);
+          setKeyAlreadyExisted(false);
+          setDisplayKey(null);
+        }}
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              setKeyResultOpen(false);
+              dispatch(clearLastCreatedKey());
+              setCopied(false);
+              setKeyAlreadyExisted(false);
+              setDisplayKey(null);
+            }}
+            style={{ borderRadius: 8 }}
+          >
+            Đóng
+          </Button>
+        }
+        width={440}
+        styles={{ content: { borderRadius: 16 } }}
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {keyAlreadyExisted ? (
+              <KeyOutlined style={{ color: "#D97706", fontSize: 20 }} />
+            ) : (
+              <CheckCircleOutlined style={{ color: "#059669", fontSize: 20 }} />
+            )}
+            <span style={{ fontWeight: 700, fontSize: 16 }}>
+              {keyAlreadyExisted ? "Mã đăng ký hiện tại" : "Mã tham gia lớp đã tạo"}
+            </span>
+          </div>
+        }
+      >
+        <div style={{ textAlign: "center", padding: "16px 0" }}>
+          <p style={{ color: "#6B7280", marginBottom: 16, fontSize: 14 }}>
+            {keyAlreadyExisted
+              ? "Lớp học này đã có mã đăng ký đang hoạt động. Chia sẻ mã này cho sinh viên:"
+              : "Chia sẻ mã sau cho sinh viên để họ có thể tham gia lớp nhanh:"}
+          </p>
+
+          {/* Key display */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #F0F9FF 0%, #EEF2FF 100%)",
+              border: "2px solid #BAE6FD",
+              borderRadius: 14,
+              padding: "20px 24px",
+              marginBottom: 16,
+              position: "relative",
+            }}
+          >
+            <Typography.Text
+              style={{
+                fontFamily: "'Courier New', monospace",
+                fontSize: 26,
+                fontWeight: 800,
+                letterSpacing: 3,
+                color: "#1E40AF",
+                display: "block",
+              }}
+            >
+              {displayKey ?? lastCreatedKey ?? "—"}
+            </Typography.Text>
+          </div>
+
+          {/* Copy button */}
+          <Button
+            icon={copied ? <CheckCircleOutlined style={{ color: "#059669" }} /> : <CopyOutlined />}
+            onClick={handleCopyKey}
+            size="large"
+            style={{
+              borderRadius: 10,
+              fontWeight: 600,
+              background: copied
+                ? "#D1FAE5"
+                : "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+              color: copied ? "#059669" : "white",
+              border: "none",
+              padding: "0 32px",
+              height: 44,
+              transition: "all 0.2s",
+            }}
+          >
+            {copied ? "Đã sao chép!" : "Sao chép mã"}
+          </Button>
+
+          <p style={{ color: "#9CA3AF", fontSize: 12, marginTop: 12 }}>
+            Sinh viên dùng mã này để tham gia lớp từ Dashboard hoặc mục Lớp của tôi.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import {
   GET_CLASSES_BY_COURSE_ENDPOINT,
   CLASS_UPLOAD_PERMISSION_ENDPOINT,
   ENROLL_KEYS_ENDPOINT,
+  ENROLL_KEYS_BY_CLASS_ENDPOINT,
   CLASS_EMAIL_WHITELIST_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
@@ -20,6 +21,14 @@ export interface EnrollKey {
   keyId: number;
   isActive: boolean;
   keyValue?: string;
+  expiresAt?: string;
+  maxUses?: number;
+  usedCount?: number;
+}
+
+export interface CreateEnrollKeyResult {
+  keyValue: string | null;
+  alreadyExists: boolean;
   expiresAt?: string;
   maxUses?: number;
   usedCount?: number;
@@ -111,6 +120,9 @@ export interface ClassState {
   selectedClass: ClassData | null;
   loading: boolean;
   error: string | null;
+  lastCreatedKey: string | null;
+  /** active key value per classId, null = no active key, undefined = not fetched yet */
+  keysByClass: Record<number, string | null>;
   pagination: {
     total: number;
     page: number;
@@ -130,6 +142,8 @@ const initialState: ClassState = {
   selectedClass: null,
   loading: false,
   error: null,
+  lastCreatedKey: null,
+  keysByClass: {},
   pagination: {
     total: 0,
     page: 1,
@@ -167,15 +181,103 @@ export interface CreateEnrollKeyPayload {
   maxUses?: number;
 }
 
-export const createEnrollKey = createAsyncThunk(
+export const createEnrollKey = createAsyncThunk<
+  CreateEnrollKeyResult,
+  CreateEnrollKeyPayload,
+  { rejectValue: string }
+>(
   "class/createEnrollKey",
-  async (payload: CreateEnrollKeyPayload, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       const response = await api.post(ENROLL_KEYS_ENDPOINT, payload);
-      return response.data;
+      const data = response.data;
+
+      // Success: new key created
+      if (data?.success !== false) {
+        return {
+          keyValue: data?.key?.keyValue ?? data?.keyValue ?? null,
+          alreadyExists: false,
+          expiresAt: data?.key?.expiresAt,
+          maxUses: data?.key?.maxUses,
+          usedCount: data?.key?.usedCount ?? 0,
+        };
+      }
+
+      // Class already has an active key — treat as fulfilled (not an error)
+      if (data?.existingKey) {
+        return {
+          keyValue: data.existingKey.keyValue ?? null,
+          alreadyExists: true,
+          expiresAt: data.existingKey.expiresAt,
+          maxUses: data.existingKey.maxUses,
+          usedCount: data.existingKey.usedCount,
+        };
+      }
+
+      return rejectWithValue(data?.message || "Không thể tạo mã đăng ký");
+    } catch (error: any) {
+      // Axios 4xx/5xx: check if response body has existingKey
+      const data = error.response?.data;
+      if (data?.existingKey) {
+        return {
+          keyValue: data.existingKey.keyValue ?? null,
+          alreadyExists: true,
+          expiresAt: data.existingKey.expiresAt,
+          maxUses: data.existingKey.maxUses,
+          usedCount: data.existingKey.usedCount,
+        };
+      }
+      return rejectWithValue(
+        data?.message || "Failed to create enroll key",
+      );
+    }
+  },
+);
+
+/** Fetch the active enrollment key for a class (returns null if none) */
+export const fetchActiveKeysByClass = createAsyncThunk<
+  { classId: number; keyValue: string | null; keyId: number | null },
+  number,
+  { rejectValue: string }
+>(
+  "class/fetchActiveKeysByClass",
+  async (classId) => {
+    try {
+      const response = await api.get(ENROLL_KEYS_BY_CLASS_ENDPOINT(classId.toString()));
+      const keys: EnrollKey[] = response.data?.keys ?? response.data ?? [];
+      const now = new Date();
+      const active = keys.find(
+        (k) =>
+          k.isActive &&
+          !(k as any).isRevoked &&
+          (!k.expiresAt || new Date(k.expiresAt) > now) &&
+          (!k.maxUses || (k.usedCount ?? 0) < k.maxUses),
+      );
+      return {
+        classId,
+        keyValue: active?.keyValue ?? null,
+        keyId: active?.keyId ?? null,
+      };
+    } catch {
+      return { classId, keyValue: null, keyId: null };
+    }
+  },
+);
+
+/** Revoke an enrollment key */
+export const revokeEnrollKey = createAsyncThunk<
+  { classId: number },
+  { classId: number; keyId: number },
+  { rejectValue: string }
+>(
+  "class/revokeEnrollKey",
+  async ({ classId, keyId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`${ENROLL_KEYS_ENDPOINT}/${keyId}`);
+      return { classId };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create enroll key",
+        error.response?.data?.message || "Không thể thu hồi mã đăng ký",
       );
     }
   },
@@ -428,6 +530,9 @@ const classSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    clearLastCreatedKey: (state) => {
+      state.lastCreatedKey = null;
     },
     applyUploadPermissionUpdate: (
       state,
@@ -691,8 +796,37 @@ const classSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to fetch class detail";
+      });
+
+    // Create enroll key — save keyValue for display (works for both new key and existing key)
+    builder
+      .addCase(createEnrollKey.fulfilled, (state, action) => {
+        state.lastCreatedKey = action.payload.keyValue;
+        // Also sync keysByClass so the table updates immediately
+        if (action.meta.arg.classId) {
+          state.keysByClass[action.meta.arg.classId] = action.payload.keyValue;
+        }
       })
-      // Upload permission reducers
+      .addCase(createEnrollKey.rejected, (state) => {
+        state.lastCreatedKey = null;
+      });
+
+    // Fetch active key per class
+    builder
+      .addCase(fetchActiveKeysByClass.fulfilled, (state, action) => {
+        state.keysByClass[action.payload.classId] = action.payload.keyValue;
+      });
+
+    // Revoke enroll key → clear from keysByClass
+    builder
+      .addCase(revokeEnrollKey.fulfilled, (state, action) => {
+        state.keysByClass[action.payload.classId] = null;
+        // Also clear lastCreatedKey if it was for this class
+        state.lastCreatedKey = null;
+      });
+
+    // Upload permission reducers
+    builder
       .addCase(fetchUploadPermission.fulfilled, (state, action) => {
         const { classId, isUploadEnabled, uploadStartDate, uploadEndDate } =
           action.payload;
@@ -734,7 +868,7 @@ const classSlice = createSlice({
   },
 });
 
-export const { setSelectedClass, clearError, applyUploadPermissionUpdate } = classSlice.actions;
+export const { setSelectedClass, clearError, clearLastCreatedKey, applyUploadPermissionUpdate } = classSlice.actions;
 
 // Upload permission async thunks
 export const fetchUploadPermission = createAsyncThunk(
