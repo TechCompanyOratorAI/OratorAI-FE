@@ -8,10 +8,10 @@ import {
   ReadOutlined,
   ReloadOutlined,
   SearchOutlined,
-  TeamOutlined,
   CheckCircleOutlined,
   UsergroupAddOutlined,
   FileExcelOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import {
   Table,
@@ -36,6 +36,7 @@ import InstructorModal from "@/components/Course/InstructorModal";
 import EmailWhitelistModal from "@/components/Class/EmailWhitelistModal";
 import {
   fetchClasses,
+  fetchClassDetail,
   createClass,
   updateClass,
   deleteClass,
@@ -67,6 +68,9 @@ const AdminClassPage: React.FC = () => {
     "all" | "active" | "inactive" | "archived"
   >("all");
   const [filterCourseId, setFilterCourseId] = useState<number | "all">("all");
+  const [filterStudentStatus, setFilterStudentStatus] = useState<
+    "all" | "has" | "none"
+  >("all");
   const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
     "newest",
   );
@@ -105,9 +109,19 @@ const AdminClassPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleEditClass = (classData: ClassData) => {
+  const handleEditClass = async (classData: ClassData) => {
     setSelectedClass(classData);
     setIsModalOpen(true);
+    try {
+      const detailedClass = await dispatch(
+        fetchClassDetail(classData.classId),
+      ).unwrap();
+      if (detailedClass) {
+        setSelectedClass(detailedClass);
+      }
+    } catch {
+      // Keep list data if detail fetch fails.
+    }
   };
 
   const handleDeleteClass = async (classId: number) => {
@@ -262,15 +276,33 @@ const AdminClassPage: React.FC = () => {
           filterStatus === "all" || classItem.status === filterStatus;
         const matchesCourse =
           filterCourseId === "all" || classItem.courseId === filterCourseId;
+        const matchesStudentStatus =
+          filterStudentStatus === "all"
+            ? true
+            : filterStudentStatus === "has"
+              ? (classItem.enrollmentCount || 0) > 0
+              : (classItem.enrollmentCount || 0) === 0;
 
-          return matchesSearch && matchesStatus && matchesCourse;
+          return (
+            matchesSearch &&
+            matchesStatus &&
+            matchesCourse &&
+            matchesStudentStatus
+          );
         })
         .sort((a, b) => {
           const aTime = new Date(a.createdAt || 0).getTime();
           const bTime = new Date(b.createdAt || 0).getTime();
           return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
         }),
-    [classes, searchTerm, filterStatus, filterCourseId, sortByCreatedAt],
+    [
+      classes,
+      searchTerm,
+      filterStatus,
+      filterCourseId,
+      filterStudentStatus,
+      sortByCreatedAt,
+    ],
   );
 
   const stats = useMemo(() => {
@@ -278,11 +310,10 @@ const AdminClassPage: React.FC = () => {
     const active = classes.filter(
       (c: ClassData) => c.status === "active",
     ).length;
-    const totalStudents = classes.reduce(
-      (sum: number, c: ClassData) => sum + (c.enrollmentCount || 0),
-      0,
-    );
-    return { total, active, totalStudents };
+    const classesWithoutStudents = classes.filter(
+      (c: ClassData) => (c.enrollmentCount || 0) === 0,
+    ).length;
+    return { total, active, classesWithoutStudents };
   }, [classes]);
 
   const summaryItems: SummaryMetricItem[] = [
@@ -304,11 +335,11 @@ const AdminClassPage: React.FC = () => {
     },
     {
       key: "students",
-      title: "Tổng sinh viên",
-      value: stats.totalStudents,
-      icon: <TeamOutlined style={{ fontSize: 20 }} />,
-      tone: "purple",
-      description: "Theo số lượng tham gia",
+      title: "Lớp Chưa Có Sinh Viên",
+      value: stats.classesWithoutStudents,
+      icon: <ExclamationCircleOutlined style={{ fontSize: 20 }} />,
+      tone: "red",
+      description: "Chưa có đăng ký",
     },
   ];
 
@@ -329,7 +360,10 @@ const AdminClassPage: React.FC = () => {
   };
 
   const tableTotal =
-    searchTerm || filterStatus !== "all" || filterCourseId !== "all"
+    searchTerm ||
+    filterStatus !== "all" ||
+    filterCourseId !== "all" ||
+    filterStudentStatus !== "all"
       ? filteredClasses.length
       : filteredClasses.length > pageSize &&
           filteredClasses.length < pagination.total
@@ -526,10 +560,10 @@ const AdminClassPage: React.FC = () => {
                   }}
                   style={{ width: 140 }}
                   options={[
-                    { value: "all", label: "Tất cả" },
+                    { value: "all", label: "Trạng thái" },
                     { value: "active", label: "Đang hoạt động" },
                     { value: "inactive", label: "Không hoạt động" },
-                    { value: "archived", label: "Đã lưu trữ" },
+                    
                   ]}
                 />
                 <Select
@@ -552,6 +586,19 @@ const AdminClassPage: React.FC = () => {
                       value: course.courseId,
                       label: `${course.courseCode} - ${course.courseName}`,
                     })),
+                  ]}
+                />
+                <Select
+                  value={filterStudentStatus}
+                  onChange={(val) => {
+                    setFilterStudentStatus(val);
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: 190 }}
+                  options={[
+                    { value: "all", label: "Tất cả lớp" },
+                    { value: "has", label: "Đã có sinh viên" },
+                    { value: "none", label: "Chưa có sinh viên" },
                   ]}
                 />
                 <Select
@@ -600,7 +647,10 @@ const AdminClassPage: React.FC = () => {
                 }
                 locale={{
                   emptyText:
-                    searchTerm || filterStatus !== "all" || filterCourseId !== "all"
+                    searchTerm ||
+                    filterStatus !== "all" ||
+                    filterCourseId !== "all" ||
+                    filterStudentStatus !== "all"
                       ? "Không tìm thấy lớp học phù hợp bộ lọc"
                       : "Chưa có lớp học nào. Hãy tạo lớp đầu tiên để bắt đầu.",
                 }}

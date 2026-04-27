@@ -14,8 +14,13 @@ import {
   Typography,
   App,
   Tooltip,
+
+  ConfigProvider,
+
   Modal,
+
 } from "antd";
+import viVN from "antd/locale/vi_VN";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, KeyOutlined, CopyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import {
@@ -53,6 +58,8 @@ const isClassExpired = (endDate: string): boolean => {
 const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { classes: apiClasses, loading } =
+
   const { classes: apiClasses, loading, pagination, lastCreatedKey, keysByClass } =
     useAppSelector((state) => state.class);
 
@@ -83,8 +90,8 @@ const ManageClassesPage: React.FC = () => {
   const { message: antdMessage } = App.useApp();
 
   useEffect(() => {
-    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
-  }, [dispatch, currentPage, pageSize]);
+    dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
+  }, [dispatch]);
 
   // After classes load, fetch active key for each class in parallel
   useEffect(() => {
@@ -112,12 +119,17 @@ const ManageClassesPage: React.FC = () => {
       if (selectedFilter === "active") {
         return matchesSearch && course.status === "active" && !expired;
       } else if (selectedFilter === "archived") {
-        return matchesSearch && course.status !== "active";
+        return matchesSearch && (course.status !== "active" || expired);
       }
 
-      return matchesSearch && !expired;
+      return matchesSearch;
     });
   }, [apiClasses, searchQuery, selectedFilter]);
+
+  const paginatedCourses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCourses.slice(start, start + pageSize);
+  }, [filteredCourses, currentPage, pageSize]);
 
   // Zebra stripe: đổi màu xen kẽ theo hàng + hover effect
   const getRowClassName = (_: any, index: number) => {
@@ -396,7 +408,7 @@ const ManageClassesPage: React.FC = () => {
             <Button
               icon={<RefreshCw size={14} />}
               onClick={() =>
-                dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }))
+                dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }))
               }
               loading={loading}
             >
@@ -443,50 +455,52 @@ const ManageClassesPage: React.FC = () => {
               </Space>
             </div>
 
-            <Tooltip title="Click to view class details" placement="top">
-              <Table
-                columns={columns}
-                dataSource={filteredCourses}
-                rowKey="classId"
-                loading={loading}
-                onRow={(record, index) => ({
-                  className: getRowClassName(record, index ?? 0),
-                  onClick: () => navigate(`/instructor/class/${record.classId}`),
-                  style: { cursor: "pointer" },
-                  onMouseEnter: (e) => {
-                    // Highlight chevron on hover
-                    const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
-                    if (chevron) chevron.classList.add("text-blue-500");
-                  },
-                  onMouseLeave: (e) => {
-                    const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
-                    if (chevron) chevron.classList.remove("text-blue-500");
-                  },
-                })}
-                pagination={
-                  pagination && pagination.total > 0
-                    ? {
-                      current: currentPage,
-                      pageSize,
-                      total: pagination.total,
-                      showSizeChanger: true,
-                      pageSizeOptions: ["10", "20", "50"],
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} trên ${total} lớp`,
-                      onChange: (p, ps) => {
-                        setCurrentPage(p);
-                        setPageSize(ps);
-                      },
-                    }
-                    : false
-                }
-                locale={{
-                  emptyText: searchQuery
-                    ? "Không tìm thấy lớp học phù hợp từ khóa"
-                    : "Chưa có lớp học",
-                }}
-              />
-            </Tooltip>
+            <ConfigProvider locale={viVN}>
+              <Tooltip title="Click to view class details" placement="top">
+                <Table
+                  columns={columns}
+                  dataSource={paginatedCourses}
+                  rowKey="classId"
+                  loading={loading}
+                  onRow={(record, index) => ({
+                    className: getRowClassName(record, index ?? 0),
+                    onClick: () => navigate(`/instructor/class/${record.classId}`),
+                    style: { cursor: "pointer" },
+                    onMouseEnter: (e) => {
+                      // Highlight chevron on hover
+                      const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                      if (chevron) chevron.classList.add("text-blue-500");
+                    },
+                    onMouseLeave: (e) => {
+                      const chevron = e.currentTarget.querySelector(".row-chevron") as HTMLElement;
+                      if (chevron) chevron.classList.remove("text-blue-500");
+                    },
+                  })}
+                  pagination={
+                    filteredCourses.length > 0
+                      ? {
+                          current: currentPage,
+                          pageSize,
+                          total: filteredCourses.length,
+                          showSizeChanger: true,
+                          pageSizeOptions: ["10", "20", "50"],
+                          showTotal: (total, range) =>
+                            `${range[0]}-${range[1]} trên ${total} lớp`,
+                          onChange: (p, ps) => {
+                            setCurrentPage(p);
+                            setPageSize(ps);
+                          },
+                        }
+                      : false
+                  }
+                  locale={{
+                    emptyText: searchQuery
+                      ? "Không tìm thấy lớp học phù hợp từ khóa"
+                      : "Chưa có lớp học",
+                  }}
+                />
+              </Tooltip>
+            </ConfigProvider>
           </Card>
         </div>
       </main>

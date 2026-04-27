@@ -77,7 +77,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
         {/* Add Instructor */}
         <div>
           <Text strong className="block mb-3">
-            Thêm giảng viên
+            Danh sách giảng viên của môn học ({availableForSelection.length})
           </Text>
           <Space.Compact style={{ width: "100%" }}>
             <Select

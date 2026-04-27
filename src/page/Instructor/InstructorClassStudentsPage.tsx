@@ -702,13 +702,28 @@ const InstructorClassStudentsPage: React.FC = () => {
             <div className="flex items-center justify-between mb-5">
               <Space>
                 <Button
+                  type="link"
                   icon={<ArrowLeft size={16} />}
                   onClick={() => navigate("/instructor/students")}
-                  className="rounded-lg"
+                  className="!px-0 !text-sky-700 hover:!text-sky-800"
                 >
-                  Quay lại
+                  Quay lại danh sách lớp
                 </Button>
               </Space>
+
+              <Button
+                icon={<RefreshCw size={14} />}
+                onClick={() => {
+                  dispatch(fetchClassScores(numericClassId!));
+                  void dispatch(fetchGradeDistributionsByClass(numericClassId!));
+                  void dispatch(fetchGroupsByClass(numericClassId!));
+                }}
+                loading={scoresLoading || groupLoading}
+                className="rounded-xl"
+              >
+                Làm mới
+              </Button>
+
               <Space size={8}>
                 <Button
                   icon={<Shuffle size={14} />}

@@ -4,6 +4,13 @@ import { RubricTemplatePayload } from "@/services/features/admin/rubricTempleSli
 
 const { Text } = Typography;
 
+const requiredLabel = (label: string) => (
+  <Text strong>
+    {label}
+    <span style={{ color: "#ff4d4f", marginLeft: 4 }}>*</span>
+  </Text>
+);
+
 interface RubricTemplateModalProps {
   isOpen: boolean;
   mode: "create" | "edit";
@@ -52,18 +59,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        requiredMark={(label, { required }) =>
-          required ? (
-            label
-          ) : (
-            <>
-              {label}{" "}
-              <span style={{ color: "#999", fontSize: "12px" }}>
-                (không bắt buộc)
-              </span>
-            </>
-          )
-        }
+        requiredMark={false}
         disabled={isLoading}
         className="mt-4"
         initialValues={{
@@ -75,7 +71,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
       >
         <Form.Item
           name="templateName"
-          label={<Text strong>Tên mẫu</Text>}
+          label={requiredLabel("Tên mẫu")}
           rules={[
             { required: true, message: "Tên mẫu không được để trống" },
             { min: 2, max: 200, message: "Tên mẫu từ 2 - 200 ký tự" },
@@ -86,7 +82,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
 
         <Form.Item
           name="description"
-          label={<Text strong>Mô tả</Text>}
+          label={requiredLabel("Mô tả")}
           rules={[
             { required: true, message: "Mô tả không được để trống" },
             { min: 2, max: 1000, message: "Mô tả từ 2 - 1000 ký tự" },
@@ -100,7 +96,7 @@ const RubricTemplateModal: React.FC<RubricTemplateModalProps> = ({
 
         <Form.Item
           name="assignmentType"
-          label={<Text strong>Loại bài nộp</Text>}
+          label={requiredLabel("Loại bài nộp")}
           rules={[
             { required: true, message: "Loại bài nộp không được để trống" },
           ]}

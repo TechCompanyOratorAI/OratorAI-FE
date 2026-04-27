@@ -1,6 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Button, Tag, Space, Typography, Empty, Spin } from "antd";
+import {
+  Card,
+  Button,
+  Tag,
+  Space,
+  Typography,
+  Empty,
+  Spin,
+  Pagination,
+  ConfigProvider,
+  Input,
+  Select,
+} from "antd";
+import viVN from "antd/locale/vi_VN";
 import {
   BookOpen,
   Users,
@@ -19,18 +32,43 @@ const InstructorStudentsPage: React.FC = () => {
     (state) => state.class,
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 12;
+  const [pageSize, setPageSize] = useState(9);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
+    "newest",
+  );
 
   useEffect(() => {
-    dispatch(
-      fetchClassesByInstructor({ page: currentPage, limit: pageSize }),
-    );
-  }, [dispatch, currentPage]);
+    dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
+  }, [dispatch]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((pagination?.total || classes.length || 0) / pageSize) || 1,
-  );
+  const processedClasses = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    return classes
+      .filter((cls) => {
+        if (!keyword) return true;
+        const classCode = (cls.classCode || "").toLowerCase();
+        const courseCode = (cls.course?.courseCode || "").toLowerCase();
+        const courseName = (cls.course?.courseName || "").toLowerCase();
+        return (
+          classCode.includes(keyword) ||
+          courseCode.includes(keyword) ||
+          courseName.includes(keyword)
+        );
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.createdAt || 0).getTime();
+        const bTime = new Date(b.createdAt || 0).getTime();
+        return sortByCreatedAt === "newest" ? bTime - aTime : aTime - bTime;
+      });
+  }, [classes, searchTerm, sortByCreatedAt]);
+
+  const totalItems = processedClasses.length || pagination?.total || 0;
+  const paginatedClasses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedClasses.slice(start, start + pageSize);
+  }, [processedClasses, currentPage, pageSize]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -41,7 +79,7 @@ const InstructorStudentsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <Text className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Instructor
+                Giảng viên
               </Text>
               <h1 className="text-2xl font-bold text-gray-900">
                 Danh sách lớp học
@@ -53,12 +91,37 @@ const InstructorStudentsPage: React.FC = () => {
             <Button
               icon={<RefreshCw size={14} />}
               onClick={() =>
-                dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }))
+                dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }))
               }
               loading={loading}
             >
               Làm mới
             </Button>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-3">
+            <Input.Search
+              placeholder="Tìm theo mã lớp, mã môn, tên môn..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full md:w-96"
+              allowClear
+            />
+            <Select
+              value={sortByCreatedAt}
+              onChange={(val) => {
+                setSortByCreatedAt(val);
+                setCurrentPage(1);
+              }}
+              style={{ width: 170 }}
+              options={[
+                { value: "newest", label: "Mới nhất" },
+                { value: "oldest", label: "Cũ nhất" },
+              ]}
+            />
           </div>
 
           {/* Loading */}
@@ -82,10 +145,10 @@ const InstructorStudentsPage: React.FC = () => {
           )}
 
           {/* Class cards grid */}
-          {classes.length > 0 && (
+          {processedClasses.length > 0 && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classes.map((cls) => (
+                {paginatedClasses.map((cls) => (
                   <Card
                     key={cls.classId}
                     hoverable
@@ -138,26 +201,26 @@ const InstructorStudentsPage: React.FC = () => {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center">
-                  <Space>
-                    <Button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    >
-                      Trước
-                    </Button>
-                    <Text>
-                      Page {currentPage} of {totalPages}
-                    </Text>
-                    <Button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                      Sau
-                    </Button>
-                  </Space>
-                </div>
+              {totalItems > 0 && (
+                <ConfigProvider locale={viVN}>
+                  <div className="w-full flex justify-end">
+                    <Pagination
+                      current={currentPage}
+                      pageSize={pageSize}
+                      total={totalItems}
+                      showSizeChanger
+                      showQuickJumper={false}
+                      pageSizeOptions={["9", "18", "45"]}
+                      showTotal={(total, range) =>
+                        `${range[0]}-${range[1]} trên ${total} lớp`
+                      }
+                      onChange={(page, size) => {
+                        setCurrentPage(page);
+                        setPageSize(size);
+                      }}
+                    />
+                  </div>
+                </ConfigProvider>
               )}
             </>
           )}

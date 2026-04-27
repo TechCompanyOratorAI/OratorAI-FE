@@ -419,7 +419,7 @@ const AdminRubricTemplePage: React.FC = () => {
             {sortedCriteria.slice(0, 3).map((criterion) => (
               <div
                 key={criterion.criteriaId}
-                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs cursor-pointer hover:border-blue-300 hover:bg-blue-50"
+                className="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs cursor-pointer hover:border-blue-300 hover:bg-blue-50"
                 role="button"
                 tabIndex={0}
                 onClick={() =>
@@ -432,11 +432,11 @@ const AdminRubricTemplePage: React.FC = () => {
                 }}
                 title="Mở quản lý criteria"
               >
-                <span className="font-medium text-gray-800 truncate">
+                <span className="font-medium text-gray-800 truncate rounded-md">
                   {criterion.displayOrder}. {criterion.criteriaName}
                 </span>
                 <Tag className="text-[10px]" color="blue">
-                  {Number(criterion.weight)}% · {criterion.maxScore}
+                  {Number(criterion.weight)}%
                 </Tag>
               </div>
             ))}
