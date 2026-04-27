@@ -25,6 +25,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   RubricTemplate,
+  RubricTemplateCriteriaBatchUpdatePayload,
   RubricTemplateCriterion,
   RubricTemplateCriterionPayload,
 } from "@/services/features/admin/rubricTempleSlice";
@@ -40,7 +41,7 @@ interface CriteriaModalProps {
   ) => Promise<void>;
   onUpdate: (
     criteriaId: number,
-    payload: RubricTemplateCriterionPayload,
+    payload: RubricTemplateCriteriaBatchUpdatePayload,
   ) => Promise<void>;
   onReorder: (criteria: RubricTemplateCriterion[]) => Promise<void>;
   onDelete: (criteriaId: number, rubricTemplateId: number) => Promise<void>;
@@ -52,7 +53,6 @@ interface CriteriaFormState {
   weight: string;
   maxScore: string;
   displayOrder: string;
-  evaluationGuide: string;
   isActive: boolean;
 }
 
@@ -62,7 +62,6 @@ const defaultFormState: CriteriaFormState = {
   weight: "1",
   maxScore: "100",
   displayOrder: "1",
-  evaluationGuide: "",
   isActive: true,
 };
 
@@ -78,6 +77,11 @@ const WEIGHT_SUGGESTIONS = [
   "90",
   "100",
 ] as const;
+
+const clampWeightValue = (value: number) => {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(100, Math.max(1, value));
+};
 
 type SortableCriteriaItemProps = {
   criterion: RubricTemplateCriterion;
@@ -280,8 +284,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     return localCriteria.filter((criterion) => {
       return (
         criterion.criteriaName.toLowerCase().includes(keyword) ||
-        criterion.criteriaDescription.toLowerCase().includes(keyword) ||
-        criterion.evaluationGuide.toLowerCase().includes(keyword)
+        criterion.criteriaDescription.toLowerCase().includes(keyword)
       );
     });
   }, [localCriteria, searchTerm]);
@@ -346,7 +349,6 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
       weight: String(weightNum % 1 === 0 ? Math.floor(weightNum) : weightNum),
       maxScore: String(criterion.maxScore ?? ""),
       displayOrder: String(criterion.displayOrder ?? ""),
-      evaluationGuide: criterion.evaluationGuide || "",
       isActive: criterion.isActive,
     });
   };
@@ -360,7 +362,6 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
       weight: "1",
       maxScore: "100",
       displayOrder: String(displayOrder),
-      evaluationGuide: "",
       isActive: true,
     });
   };
@@ -390,10 +391,6 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
       nextErrors.displayOrder = "Thứ tự hiển thị phải là số nguyên dương";
     }
 
-    if (!formState.evaluationGuide.trim()) {
-      nextErrors.evaluationGuide = "Hướng dẫn đánh giá không được để trống";
-    }
-
     if (formState.isActive && potentialTotalPercentage > 100) {
       nextErrors.weight = `Tổng phần trăm sẽ vượt quá 100% `;
     }
@@ -408,7 +405,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     weight: Number(formState.weight),
     maxScore: 100,
     displayOrder: Number(formState.displayOrder),
-    evaluationGuide: formState.evaluationGuide.trim(),
+    evaluationGuide: "",
     isActive: formState.isActive,
   });
 
@@ -420,7 +417,13 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
     const payload = buildPayload();
 
     if (editingCriterion) {
-      await onUpdate(editingCriterion.criteriaId, payload);
+      await onUpdate(editingCriterion.criteriaId, {
+        criteriaName: payload.criteriaName.trim(),
+        criteriaDescription: payload.criteriaDescription.trim(),
+        weight: Number(payload.weight),
+        maxScore: Number(payload.maxScore),
+        displayOrder: Number(payload.displayOrder),
+      });
       setCreateMode();
     } else {
       await onCreate(template.rubricTemplateId, payload);
@@ -441,7 +444,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-      <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div className="w-full max-w-6xl overflow-visible rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="bg-gradient-to-r from-sky-50 via-white to-emerald-50 border-b border-slate-100 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -530,7 +533,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm theo tên, mô tả, hướng dẫn..."
+                placeholder="Tìm theo tên, mô tả..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
               />
             </div>
@@ -635,7 +638,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả
+                  Mô tả tiêu chi tiết
                 </label>
                 <textarea
                   rows={2}
@@ -668,18 +671,33 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   <div className="relative">
                     <input
                       type="number"
-                      step="0.01"
-                      min="0"
+                      step="1"
+                      min="1"
+                      max="100"
                       value={formState.weight}
+                      onWheel={(event) => {
+                        if (document.activeElement !== event.currentTarget) return;
+                        event.preventDefault();
+                        const current = Number(formState.weight || 0);
+                        const direction = event.deltaY > 0 ? -1 : 1;
+                        const next = clampWeightValue(current + direction);
+                        setFormState((prev) => ({
+                          ...prev,
+                          weight: String(next),
+                        }));
+                      }}
                       onFocus={() => setShowWeightSuggestions(true)}
                       onBlur={() =>
                         setTimeout(() => setShowWeightSuggestions(false), 120)
                       }
                       onChange={(e) =>
-                        setFormState((prev) => ({
-                          ...prev,
-                          weight: e.target.value,
-                        }))
+                        setFormState((prev) => {
+                          if (e.target.value === "") {
+                            return { ...prev, weight: "" };
+                          }
+                          const next = clampWeightValue(Number(e.target.value));
+                          return { ...prev, weight: String(next) };
+                        })
                       }
                       className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
                         errors.weight ? "border-rose-300" : "border-slate-300"
@@ -690,7 +708,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                           Gợi ý nhanh
                         </p>
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="max-h-24 overflow-y-auto pr-1">
+                          <div className="grid grid-cols-5 gap-2">
                           {WEIGHT_SUGGESTIONS.map((value) => (
                             <button
                               key={value}
@@ -712,6 +731,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                               {value}%
                             </button>
                           ))}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -753,33 +773,6 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Hướng dẫn đánh giá
-                </label>
-                <textarea
-                  rows={3}
-                  value={formState.evaluationGuide}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      evaluationGuide: e.target.value,
-                    }))
-                  }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.evaluationGuide
-                      ? "border-rose-300"
-                      : "border-slate-300"
-                  }`}
-                  placeholder="Hướng dẫn đánh giá..."
-                />
-                {errors.evaluationGuide && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.evaluationGuide}
-                  </p>
-                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-1">

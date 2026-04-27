@@ -14,6 +14,13 @@ import {
   Badge,
   Row,
   Col,
+  Modal,
+  Form,
+  InputNumber,
+  Radio,
+  Input,
+  Switch,
+  Alert,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -28,6 +35,7 @@ import {
   Trophy,
   Crown,
   Lock,
+  Shuffle,
 } from "lucide-react";
 import {
   TrophyOutlined,
@@ -44,7 +52,10 @@ import {
   GradeDistribution,
   setClassDistribution,
 } from "@/services/features/groupGrade/groupGradeSlice";
-import { fetchGroupsByClass } from "@/services/features/group/groupSlice";
+import {
+  fetchGroupsByClass,
+  autoAssignGroups,
+} from "@/services/features/group/groupSlice";
 import type { GroupStudent } from "@/services/features/group/groupSlice";
 import { useSocket } from "@/hooks/useSocket";
 
@@ -483,6 +494,36 @@ const InstructorClassStudentsPage: React.FC = () => {
 
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
 
+  // ── Auto-assign modal state ───────────────────────────────────────────────
+  const [autoAssignOpen, setAutoAssignOpen] = useState(false);
+  const [autoForm] = Form.useForm();
+  const { autoAssignLoading } = useAppSelector((state) => state.group);
+
+  const handleAutoAssign = async () => {
+    try {
+      const values = await autoForm.validateFields();
+      const result = await dispatch(
+        autoAssignGroups({
+          classId: numericClassId!,
+          strategy: values.strategy,
+          value: values.value,
+          namePrefix: values.namePrefix || "Nhóm",
+          resetExisting: values.resetExisting ?? false,
+        })
+      ).unwrap();
+
+      toast.success(result.message);
+      setAutoAssignOpen(false);
+      autoForm.resetFields();
+      // Refresh groups
+      void dispatch(fetchGroupsByClass(numericClassId!));
+      void dispatch(fetchClassScores(numericClassId!));
+    } catch (err: unknown) {
+      const msg = typeof err === "string" ? err : "Phân nhóm thất bại. Vui lòng thử lại.";
+      toast.error(msg);
+    }
+  };
+
   if (numericClassId == null) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: colors.gray[50] }}>
@@ -668,18 +709,34 @@ const InstructorClassStudentsPage: React.FC = () => {
                   Quay lại
                 </Button>
               </Space>
-              <Button
-                icon={<RefreshCw size={14} />}
-                onClick={() => {
-                  dispatch(fetchClassScores(numericClassId!));
-                  void dispatch(fetchGradeDistributionsByClass(numericClassId!));
-                  void dispatch(fetchGroupsByClass(numericClassId!));
-                }}
-                loading={scoresLoading || groupLoading}
-                className="rounded-lg"
-              >
-                Làm mới
-              </Button>
+              <Space size={8}>
+                <Button
+                  icon={<Shuffle size={14} />}
+                  type="primary"
+                  onClick={() => setAutoAssignOpen(true)}
+                  style={{
+                    borderRadius: 10,
+                    background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
+                    border: "none",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(124,58,237,0.3)",
+                  }}
+                >
+                  Phân nhóm tự động
+                </Button>
+                <Button
+                  icon={<RefreshCw size={14} />}
+                  onClick={() => {
+                    dispatch(fetchClassScores(numericClassId!));
+                    void dispatch(fetchGradeDistributionsByClass(numericClassId!));
+                    void dispatch(fetchGroupsByClass(numericClassId!));
+                  }}
+                  loading={scoresLoading || groupLoading}
+                  className="rounded-lg"
+                >
+                  Làm mới
+                </Button>
+              </Space>
             </div>
 
             {/* Class info */}
@@ -909,6 +966,158 @@ const InstructorClassStudentsPage: React.FC = () => {
             />
           </Card>
         </div>
+
+        {/* ── Auto-assign Modal ────────────────────────────────────────── */}
+        <Modal
+          title={
+            <div className="flex items-center gap-3">
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Shuffle size={18} color="white" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: colors.gray[800] }}>
+                  Phân nhóm tự động
+                </div>
+                <div style={{ fontSize: 12, color: colors.gray[500], fontWeight: 400 }}>
+                  {data.class.classCode} — {data.totalStudents} sinh viên
+                </div>
+              </div>
+            </div>
+          }
+          open={autoAssignOpen}
+          onCancel={() => {
+            setAutoAssignOpen(false);
+            autoForm.resetFields();
+          }}
+          onOk={handleAutoAssign}
+          okText="Phân nhóm"
+          cancelText="Hủy"
+          confirmLoading={autoAssignLoading}
+          okButtonProps={{
+            style: {
+              background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+            },
+          }}
+          width={480}
+          styles={{
+            content: { borderRadius: 16, padding: "28px 24px 24px" },
+          }}
+          destroyOnHidden
+        >
+          <Form
+            form={autoForm}
+            layout="vertical"
+            initialValues={{
+              strategy: "groupCount",
+              value: 5,
+              namePrefix: "Nhóm",
+              resetExisting: false,
+            }}
+            style={{ marginTop: 16 }}
+          >
+            {/* Strategy */}
+            <Form.Item
+              label={<span style={{ fontWeight: 600, color: colors.gray[700] }}>Chiến lược phân nhóm</span>}
+              name="strategy"
+            >
+              <Radio.Group>
+                <Radio.Button value="groupCount" style={{ borderRadius: "8px 0 0 8px" }}>
+                  Số nhóm
+                </Radio.Button>
+                <Radio.Button value="membersPerGroup" style={{ borderRadius: "0 8px 8px 0" }}>
+                  Số thành viên / nhóm
+                </Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+
+            {/* Value */}
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, cur) => prev.strategy !== cur.strategy}
+            >
+              {({ getFieldValue }) => {
+                const strategy = getFieldValue("strategy");
+                return (
+                  <Form.Item
+                    label={
+                      <span style={{ fontWeight: 600, color: colors.gray[700] }}>
+                        {strategy === "groupCount" ? "Số nhóm muốn tạo" : "Số thành viên mỗi nhóm"}
+                      </span>
+                    }
+                    name="value"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập giá trị" },
+                      { type: "number", min: 1, max: 200, message: "Giá trị phải từ 1-200" },
+                    ]}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      style={{ width: "100%", borderRadius: 8 }}
+                      placeholder={strategy === "groupCount" ? "VD: 5" : "VD: 4"}
+                    />
+                  </Form.Item>
+                );
+              }}
+            </Form.Item>
+
+            {/* Name prefix */}
+            <Form.Item
+              label={<span style={{ fontWeight: 600, color: colors.gray[700] }}>Tiền tố tên nhóm</span>}
+              name="namePrefix"
+              extra={<span style={{ fontSize: 11, color: colors.gray[400] }}>VD: &ldquo;Nhóm&rdquo; → Nhóm 1, Nhóm 2...</span>}
+            >
+              <Input
+                placeholder="Nhóm"
+                maxLength={30}
+                style={{ borderRadius: 8 }}
+              />
+            </Form.Item>
+
+            {/* Reset existing */}
+            <Form.Item
+              label={<span style={{ fontWeight: 600, color: colors.gray[700] }}>Đặt lại nhóm cũ</span>}
+              name="resetExisting"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            {/* Warning about reset */}
+            <Form.Item noStyle shouldUpdate={(p, c) => p.resetExisting !== c.resetExisting}>
+              {({ getFieldValue }) =>
+                getFieldValue("resetExisting") ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="Tất cả các nhóm hiện tại trong lớp sẽ bị xóa trước khi phân nhóm lại."
+                    style={{ borderRadius: 8, marginBottom: 16 }}
+                  />
+                ) : (
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="Chỉ phân nhóm sinh viên chưa có nhóm. Sinh viên đã có nhóm sẽ được giữ nguyên."
+                    style={{ borderRadius: 8, marginBottom: 16 }}
+                  />
+                )
+              }
+            </Form.Item>
+          </Form>
+        </Modal>
       </main>
     </div>
   );

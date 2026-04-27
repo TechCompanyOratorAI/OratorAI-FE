@@ -5,6 +5,7 @@ import {
   deleteRubricTemplateCriterion,
   RubricTemplate,
   RubricTemplateCriterion,
+  RubricTemplateCriteriaBatchUpdatePayload,
   RubricTemplateCriterionPayload,
   RubricTemplatePayload,
   clearRubricTemplateError,
@@ -292,7 +293,7 @@ const AdminRubricTemplePage: React.FC = () => {
 
   const handleUpdateCriteria = async (
     criteriaId: number,
-    payload: RubricTemplateCriterionPayload,
+    payload: RubricTemplateCriteriaBatchUpdatePayload,
   ) => {
     try {
       await dispatch(
@@ -346,13 +347,11 @@ const AdminRubricTemplePage: React.FC = () => {
             updateRubricTemplateCriterion({
               criteriaId: criterion.criteriaId,
               data: {
-                criteriaName: criterion.criteriaName,
-                criteriaDescription: criterion.criteriaDescription,
-                weight: Number(criterion.weight),
-                maxScore: Number(criterion.maxScore),
-                displayOrder: criterion.displayOrder,
-                evaluationGuide: criterion.evaluationGuide,
-                isActive: criterion.isActive,
+            criteriaName: criterion.criteriaName.trim(),
+            criteriaDescription: criterion.criteriaDescription.trim(),
+            weight: Number(criterion.weight),
+            maxScore: Number(criterion.maxScore),
+            displayOrder: criterion.displayOrder,
               },
             }),
           ).unwrap(),

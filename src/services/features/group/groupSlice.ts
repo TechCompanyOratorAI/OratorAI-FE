@@ -12,6 +12,7 @@ import {
   CHANGE_LEADER_OF_GROUP_ENDPOINT,
   GROUP_DETAIL_ENDPOINT,
   GROUP_TOPIC_ENDPOINT,
+  AUTO_ASSIGN_GROUPS_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface GroupStudentMeta {
@@ -74,7 +75,14 @@ export interface GroupState {
   isEnrolled: boolean;
   loading: boolean;
   actionLoading: boolean;
+  autoAssignLoading: boolean;
   error: string | null;
+}
+
+export interface AutoAssignResult {
+  totalAssigned: number;
+  groupsCreated: number;
+  groups: { groupId: number; groupName: string; memberCount: number; leaderId: number }[];
 }
 
 const initialState: GroupState = {
@@ -88,6 +96,7 @@ const initialState: GroupState = {
   isEnrolled: false,
   loading: false,
   actionLoading: false,
+  autoAssignLoading: false,
   error: null,
 };
 
@@ -371,6 +380,36 @@ export const clearGroupTopic = createAsyncThunk<
   }
 });
 
+export const autoAssignGroups = createAsyncThunk<
+  { message: string; data: AutoAssignResult },
+  {
+    classId: number;
+    strategy: "groupCount" | "membersPerGroup";
+    value: number;
+    namePrefix?: string;
+    resetExisting?: boolean;
+  },
+  { rejectValue: string }
+>(
+  "group/autoAssignGroups",
+  async ({ classId, strategy, value, namePrefix = "Nhóm", resetExisting = false }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        AUTO_ASSIGN_GROUPS_ENDPOINT(classId.toString()),
+        { strategy, value, namePrefix, resetExisting },
+      );
+      return {
+        message: response.data.message,
+        data: response.data.data as AutoAssignResult,
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể phân nhóm tự động",
+      );
+    }
+  },
+);
+
 const groupSlice = createSlice({
   name: "group",
   initialState,
@@ -582,6 +621,17 @@ const groupSlice = createSlice({
       .addCase(clearGroupTopic.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload || "Failed to clear group topic";
+      })
+      .addCase(autoAssignGroups.pending, (state) => {
+        state.autoAssignLoading = true;
+        state.error = null;
+      })
+      .addCase(autoAssignGroups.fulfilled, (state) => {
+        state.autoAssignLoading = false;
+      })
+      .addCase(autoAssignGroups.rejected, (state, action) => {
+        state.autoAssignLoading = false;
+        state.error = action.payload || "Không thể phân nhóm tự động";
       });
   },
 });

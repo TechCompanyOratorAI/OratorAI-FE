@@ -3,6 +3,7 @@ import axiosInstance from "../../constant/axiosInstance";
 import {
   GET_ENROLLED_CLASSES_ENDPOINT,
   ENROLL_CLASS_BY_KEY_ENDPOINT,
+  VALIDATE_ENROLL_KEY_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface EnrolledClass {
@@ -50,6 +51,26 @@ export interface EnrolledClass {
   };
 }
 
+export interface ClassPreview {
+  classId: number;
+  classCode: string;
+  className: string;
+  status: string;
+  maxStudents?: number;
+  course?: {
+    courseCode: string;
+    courseName: string;
+    semester?: string;
+    academicYear?: number;
+  };
+  instructors?: {
+    userId: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+  }[];
+}
+
 export interface EnrolledClassesResponse {
   success: boolean;
   data: EnrolledClass[];
@@ -58,7 +79,9 @@ export interface EnrolledClassesResponse {
 export interface EnrollClassResponse {
   success: boolean;
   message: string;
-  enrollmentId: number;
+  enrollmentId?: number;
+  enrollment?: { enrollmentId: number };
+  alreadyEnrolled?: boolean;
 }
 
 export interface EnrollmentState {
@@ -75,18 +98,45 @@ const initialState: EnrollmentState = {
   error: null,
 };
 
+/**
+ * Preview class info by enroll key (before joining)
+ */
+export const previewClassByKey = createAsyncThunk(
+  "enrollment/previewClassByKey",
+  async (enrollKey: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post<{
+        success: boolean;
+        key: { classId: number; class: ClassPreview };
+      }>(VALIDATE_ENROLL_KEY_ENDPOINT, { keyValue: enrollKey });
+      return response.data.key;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Mã đăng ký không hợp lệ",
+      );
+    }
+  },
+);
+
+/**
+ * Enroll in class using only the enroll key (globally unique — no classId needed)
+ */
 export const enrollClassByKey = createAsyncThunk(
   "enrollment/enrollClassByKey",
   async (
-    { classId, enrollKey }: { classId: number; enrollKey: string },
+    { enrollKey }: { enrollKey: string },
     { rejectWithValue },
   ) => {
     try {
       const response = await axiosInstance.post<EnrollClassResponse>(
         ENROLL_CLASS_BY_KEY_ENDPOINT,
-        { classId, enrollKey },
+        { enrollKey },
       );
-      return { enrollmentId: response.data.enrollmentId };
+      return {
+        enrollmentId: response.data.enrollment?.enrollmentId ?? response.data.enrollmentId,
+        alreadyEnrolled: response.data.alreadyEnrolled ?? false,
+        message: response.data.message,
+      };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to enroll in class with key",

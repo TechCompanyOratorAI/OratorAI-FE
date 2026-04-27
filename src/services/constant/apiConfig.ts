@@ -93,6 +93,9 @@ export const CHANGE_LEADER_OF_GROUP_ENDPOINT = (
 /** GET/POST/DELETE — topic the nhóm (leader chọn / hủy) */
 export const GROUP_TOPIC_ENDPOINT = (groupId: string) =>
   `${BASE_URL}/api/v1/groups/${groupId}/topic`;
+/** POST — Phân nhóm tự động (Instructor/Admin) */
+export const AUTO_ASSIGN_GROUPS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/groups/classes/${classId}/auto-assign`;
 
 //Rubric endpoints
 export const GET_RUBRIC_BY_CLASS_ENDPOINT = (classId: string) =>
@@ -141,6 +144,8 @@ export const UPDATE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
   classRubricCriteriaId: string,
 ) =>
   `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
+export const UPDATE_CRITERIA_BY_INSTRUCTOR_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/instructor/classesRubricCriteria/${classId}/rubric/criteria`;
 export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
   classRubricCriteriaId: string,
 ) =>
@@ -255,6 +260,8 @@ export const CLASS_GROUP_GRADE_DISTRIBUTIONS_ENDPOINT = (classId: string) =>
 
 // Enroll Keys endpoints
 export const ENROLL_KEYS_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys`;
+export const ENROLL_KEYS_BY_CLASS_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/enroll-keys/${classId}`;
 
 // Instructor Approval endpoints
 export const INSTRUCTOR_PENDING_APPROVALS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/pending`;
@@ -308,6 +315,7 @@ export const TRANSCRIPT_BY_PRESENTATION_ENDPOINT = (presentationId: string) =>
 export const CLASS_EMAIL_WHITELIST_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}/email-whitelist`;
 
+
 // Subject area endpoints
 export const SUBJECT_AREAS_ENDPOINT = `${BASE_URL}/api/v1/subject-areas`;
 export const SUBJECT_AREA_DETAIL_ENDPOINT = (subjectAreaId: string) =>
@@ -315,3 +323,7 @@ export const SUBJECT_AREA_DETAIL_ENDPOINT = (subjectAreaId: string) =>
 
 // Competency endpoints
 export const COMPETENCIES_ENDPOINT = `${BASE_URL}/api/v1/competencies`;
+
+// Validate enroll key (preview class info before joining)
+export const VALIDATE_ENROLL_KEY_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys/validate`;
+

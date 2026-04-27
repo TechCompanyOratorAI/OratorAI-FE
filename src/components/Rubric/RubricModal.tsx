@@ -700,7 +700,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả
+                  Mô tả tiêu chi tiết
                 </label>
                 <textarea
                   rows={2}
@@ -708,7 +708,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   value={formData.criteriaDescription}
                   onChange={handleChange}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
-                  placeholder="Đánh giá độ rõ ràng và chiều sâu của nội dung"
+                  placeholder="Đánh giá độ rõ ràng và chiều sâu của tiêu chi tiết"
                 />
               </div>
 
