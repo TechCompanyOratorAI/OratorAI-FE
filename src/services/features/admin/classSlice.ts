@@ -241,7 +241,7 @@ export const fetchActiveKeysByClass = createAsyncThunk<
   { rejectValue: string }
 >(
   "class/fetchActiveKeysByClass",
-  async (classId, { rejectWithValue }) => {
+  async (classId) => {
     try {
       const response = await api.get(ENROLL_KEYS_BY_CLASS_ENDPOINT(classId.toString()));
       const keys: EnrollKey[] = response.data?.keys ?? response.data ?? [];

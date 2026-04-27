@@ -35,7 +35,6 @@ import {
   createEnrollKey,
   clearLastCreatedKey,
   fetchActiveKeysByClass,
-  revokeEnrollKey,
   ClassData,
 } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
