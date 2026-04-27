@@ -13,6 +13,7 @@ import {
   GET_CLASSES_BY_COURSE_ENDPOINT,
   CLASS_UPLOAD_PERMISSION_ENDPOINT,
   ENROLL_KEYS_ENDPOINT,
+  CLASS_EMAIL_WHITELIST_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
@@ -356,6 +357,63 @@ export const removeInstructorFromClass = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           "Failed to remove instructor from class",
+      );
+    }
+  },
+);
+
+// ─── Email Whitelist thunks ────────────────────────────────────────────────
+
+export const uploadEmailWhitelist = createAsyncThunk(
+  "class/uploadEmailWhitelist",
+  async (
+    { classId, file }: { classId: number; file: File },
+    { rejectWithValue },
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await api.post(
+        CLASS_EMAIL_WHITELIST_ENDPOINT(classId.toString()),
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể upload danh sách email",
+      );
+    }
+  },
+);
+
+export const fetchEmailWhitelist = createAsyncThunk(
+  "class/fetchEmailWhitelist",
+  async (classId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        CLASS_EMAIL_WHITELIST_ENDPOINT(classId.toString()),
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể lấy danh sách email",
+      );
+    }
+  },
+);
+
+export const deleteEmailWhitelist = createAsyncThunk(
+  "class/deleteEmailWhitelist",
+  async (classId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(
+        CLASS_EMAIL_WHITELIST_ENDPOINT(classId.toString()),
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể xóa danh sách email",
       );
     }
   },

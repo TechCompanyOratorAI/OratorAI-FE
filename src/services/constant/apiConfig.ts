@@ -289,3 +289,7 @@ export const SPEAKER_BATCH_MAP_ENDPOINT = `${BASE_URL}/api/v1/speakers/batch-map
 // Transcript endpoints
 export const TRANSCRIPT_BY_PRESENTATION_ENDPOINT = (presentationId: string) =>
   `${BASE_URL}/api/v1/transcripts/presentation/${presentationId}`;
+
+// Email Whitelist endpoints
+export const CLASS_EMAIL_WHITELIST_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/email-whitelist`;

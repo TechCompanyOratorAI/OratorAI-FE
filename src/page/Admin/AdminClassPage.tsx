@@ -11,6 +11,7 @@ import {
   TeamOutlined,
   CheckCircleOutlined,
   UsergroupAddOutlined,
+  FileExcelOutlined,
 } from "@ant-design/icons";
 import {
   Table,
@@ -32,6 +33,7 @@ import SummaryMetrics, {
 import SidebarAdmin from "@/components/Sidebar/SidebarAdmin/SidebarAdmin";
 import ClassModal from "@/components/Course/ClassModal";
 import InstructorModal from "@/components/Course/InstructorModal";
+import EmailWhitelistModal from "@/components/Class/EmailWhitelistModal";
 import {
   fetchClasses,
   createClass,
@@ -57,6 +59,8 @@ const AdminClassPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInstructorModalOpen, setIsInstructorModalOpen] = useState(false);
+  const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
+  const [whitelistClass, setWhitelistClass] = useState<{ classId: number; classCode: string } | null>(null);
   const [selectedClass, setSelectedClass] = useState<ClassData | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -167,6 +171,11 @@ const AdminClassPage: React.FC = () => {
     setSelectedClass(classData);
     setIsInstructorModalOpen(true);
     await dispatch(fetchInstructorByClass(classData.courseId.toString()));
+  };
+
+  const handleManageWhitelist = (classData: ClassData) => {
+    setWhitelistClass({ classId: classData.classId, classCode: classData.classCode });
+    setIsWhitelistModalOpen(true);
   };
 
   const handleAddInstructor = async (userId: number) => {
@@ -408,9 +417,16 @@ const AdminClassPage: React.FC = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 140,
+      width: 165,
       render: (_, record) => (
         <Space size="small">
+          <Button
+            type="text"
+            icon={<FileExcelOutlined style={{ fontSize: 14 }} />}
+            onClick={() => handleManageWhitelist(record)}
+            className="text-emerald-600 hover:text-emerald-700"
+            title="Danh sách sinh viên"
+          />
           <Button
             type="text"
             icon={<UsergroupAddOutlined style={{ fontSize: 14 }} />}
@@ -617,6 +633,15 @@ const AdminClassPage: React.FC = () => {
         onAddInstructor={handleAddInstructor}
         onRemoveInstructor={handleRemoveInstructor}
         isLoading={loading}
+      />
+
+      <EmailWhitelistModal
+        isOpen={isWhitelistModalOpen}
+        classData={whitelistClass}
+        onClose={() => {
+          setIsWhitelistModalOpen(false);
+          setWhitelistClass(null);
+        }}
       />
     </div>
   );
