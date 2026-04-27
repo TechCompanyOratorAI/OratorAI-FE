@@ -58,9 +58,7 @@ const isClassExpired = (endDate: string): boolean => {
 const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { classes: apiClasses, loading } =
-
-  const { classes: apiClasses, loading, pagination, lastCreatedKey, keysByClass } =
+  const { classes: apiClasses, loading, lastCreatedKey, keysByClass } =
     useAppSelector((state) => state.class);
 
   const [searchQuery, setSearchQuery] = useState("");

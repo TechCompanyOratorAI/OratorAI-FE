@@ -13,11 +13,6 @@ import { CourseData } from "@/services/features/course/courseSlice";
 
 const { Text } = Typography;
 
-type CourseDateCompatible = CourseData & {
-  start_date?: string;
-  end_date?: string;
-};
-
 interface CourseModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,21 +57,6 @@ interface CourseFormData {
   description: string;
 }
 
-const resolveDateRange = (course?: CourseDateCompatible) => {
-  if (!course) return undefined;
-
-  const rawStart = course.startDate;
-  const rawEnd = course.endDate;
-  const fallbackStart = course.start_date;
-  const fallbackEnd = course.end_date;
-
-  const start = dayjs((rawStart ?? fallbackStart) as string | undefined);
-  const end = dayjs((rawEnd ?? fallbackEnd) as string | undefined);
-
-  if (!start.isValid() || !end.isValid()) return undefined;
-  return [start, end] as [Dayjs, Dayjs];
-};
-
 const CourseModal: React.FC<CourseModalProps> = ({
   isOpen,
   onClose,
@@ -89,6 +69,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
 }) => {
   const [form] = Form.useForm<CourseFormData>();
   const selectedDepartmentId = Form.useWatch("departmentId", form);
+  const initialAcademicBlockIds =
+    initialData?.academicBlocks?.map((item) => item.academicBlockId) ||
+    (initialData?.academicBlockId ? [initialData.academicBlockId] : []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -97,12 +80,11 @@ const CourseModal: React.FC<CourseModalProps> = ({
       courseCode: initialData?.courseCode || "",
       courseName: initialData?.courseName || "",
       departmentId: initialData?.departmentId || departments[0]?.departmentId,
+      subjectAreaId: initialData?.subjectAreaId || undefined,
+      academicBlockIds: initialAcademicBlockIds,
       description: initialData?.description || "",
-      semester: initialData?.semester || "",
-      academicYear: String(initialData?.academicYear || dayjs().year()),
-      dateRange: resolveDateRange(initialData),
     });
-  }, [isOpen, initialData, departments, form]);
+  }, [isOpen, initialData, departments, form, initialAcademicBlockIds]);
 
   const handleFinish = (values: CourseFormData) => {
     onSubmit({
@@ -199,10 +181,6 @@ const CourseModal: React.FC<CourseModalProps> = ({
     return idxA - idxB;
   });
 
-  const initialAcademicBlockIds =
-    initialData?.academicBlocks?.map((item) => item.academicBlockId) ||
-    (initialData?.academicBlockId ? [initialData.academicBlockId] : []);
-
   return (
     <Modal
       title={initialData ? "Chỉnh sửa môn học" : "Tạo môn học mới"}
@@ -242,10 +220,6 @@ const CourseModal: React.FC<CourseModalProps> = ({
           subjectAreaId: initialData?.subjectAreaId || undefined,
           academicBlockIds: initialAcademicBlockIds,
           description: initialData?.description || "",
-          semester: initialData?.semester || "",
-          academicYear: String(initialData?.academicYear || dayjs().year()),
-          dateRange: resolveDateRange(initialData),
-
         }}
       >
         <Form.Item
