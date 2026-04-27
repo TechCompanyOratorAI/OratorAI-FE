@@ -89,6 +89,14 @@ export interface RubricTemplateCriterionPayload {
   isActive?: boolean;
 }
 
+export interface RubricTemplateCriteriaBatchUpdatePayload {
+  criteriaName: string;
+  criteriaDescription: string;
+  weight: number;
+  maxScore: number;
+  displayOrder: number;
+}
+
 const initialState: RubricTemplateState = {
   templates: [],
   pagination: null,
@@ -229,19 +237,27 @@ export const createRubricTemplateCriterion = createAsyncThunk<
 
 export const updateRubricTemplateCriterion = createAsyncThunk<
   RubricTemplateCriterion,
-  { criteriaId: number; data: RubricTemplateCriterionPayload },
+  { criteriaId: number; data: RubricTemplateCriteriaBatchUpdatePayload },
   { rejectValue: string }
 >(
   "rubricTemplate/updateCriterion",
   async ({ criteriaId, data }, { rejectWithValue }) => {
     try {
+      const normalizedData: RubricTemplateCriteriaBatchUpdatePayload = {
+        criteriaName: data.criteriaName.trim(),
+        criteriaDescription: data.criteriaDescription.trim(),
+        weight: Number(data.weight),
+        maxScore: Number(data.maxScore),
+        displayOrder: Number(data.displayOrder),
+      };
+
       const response = await axiosInstance.put<{
         success: boolean;
         data?: RubricTemplateCriterion;
         message?: string;
       }>(
         UPDATE_CRITERIA_BY_RUBRIC_TEMPLATE_ENDPOINT(criteriaId.toString()),
-        data,
+        normalizedData,
       );
 
       if (!response.data?.data) {

@@ -28,6 +28,7 @@ import {
   ExclamationCircleOutlined,
   CheckOutlined,
   CloseOutlined,
+  UpOutlined,
 } from "@ant-design/icons";
 import {
   Calendar,
@@ -86,7 +87,7 @@ import {
   fetchRubricTemplatesForInstructor,
   fetchRubricByClass,
   pickRubricTemplateForClass,
-  updateRubricCriteria,
+  updateCriteriaByInstructor,
   createRubricCriteria,
 } from "@/services/features/rubric/rubricSilce";
 
@@ -219,11 +220,9 @@ const ClassDetailPage: React.FC = () => {
   >(null);
   const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
     rubricTemplateId: 0,
-    enableAiReport: true,
-    requireInstructorConfirmation: false,
-    allowInstructorEdit: true,
-    feedbackLanguage: "en",
+    feedbackLanguage: "vi",
     reportFormat: "detailed",
+    allowInstructorEdit: true,
     includeCriterionComments: true,
     includeOverallSummary: true,
     includeSuggestions: true,
@@ -286,21 +285,15 @@ const ClassDetailPage: React.FC = () => {
 
   const buildPickPayload = useCallback(
     (templateId: number): PickRubricTemplatePayload => {
-      const payload: PickRubricTemplatePayload = {
+      return {
         rubricTemplateId: templateId,
-        enableAiReport: true,
+        feedbackLanguage: pickSettings.feedbackLanguage,
+        reportFormat: pickSettings.reportFormat,
+        allowInstructorEdit: pickSettings.allowInstructorEdit,
+        includeCriterionComments: pickSettings.includeCriterionComments,
+        includeOverallSummary: pickSettings.includeOverallSummary,
+        includeSuggestions: pickSettings.includeSuggestions,
       };
-
-      payload.requireInstructorConfirmation =
-        pickSettings.requireInstructorConfirmation;
-      payload.allowInstructorEdit = pickSettings.allowInstructorEdit;
-      payload.feedbackLanguage = pickSettings.feedbackLanguage;
-      payload.reportFormat = pickSettings.reportFormat;
-      payload.includeCriterionComments = pickSettings.includeCriterionComments;
-      payload.includeOverallSummary = pickSettings.includeOverallSummary;
-      payload.includeSuggestions = pickSettings.includeSuggestions;
-
-      return payload;
     },
     [pickSettings],
   );
@@ -478,23 +471,19 @@ const ClassDetailPage: React.FC = () => {
         displayOrder: index + 1,
       }));
 
-      await Promise.all(
-        reorderedCriteria.map((criterion) =>
-          dispatch(
-            updateRubricCriteria({
-              classRubricCriteriaId: criterion.classRubricCriteriaId,
-              rubricData: {
-                criteriaName: criterion.criteriaName,
-                criteriaDescription: criterion.criteriaDescription,
-                weight: Number(criterion.weight),
-                maxScore: Number(criterion.maxScore),
-                displayOrder: criterion.displayOrder,
-                evaluationGuide: criterion.evaluationGuide,
-              },
-            }),
-          ).unwrap(),
-        ),
-      );
+      await dispatch(
+        updateCriteriaByInstructor({
+          classId: classIdNumber,
+          criteriaData: reorderedCriteria.map((criterion) => ({
+            classRubricCriteriaId: criterion.classRubricCriteriaId,
+            criteriaName: criterion.criteriaName,
+            criteriaDescription: criterion.criteriaDescription,
+            weight: Number(criterion.weight),
+            maxScore: Number(criterion.maxScore),
+            displayOrder: criterion.displayOrder,
+          })),
+        }),
+      ).unwrap();
 
       setLocalCriteria(reorderedCriteria);
       setOriginalCriteria(reorderedCriteria);
@@ -520,11 +509,9 @@ const ClassDetailPage: React.FC = () => {
     setPendingTemplateId(templateId);
     setPickSettings({
       rubricTemplateId: templateId,
-      enableAiReport: true,
-      requireInstructorConfirmation: false,
-      allowInstructorEdit: true,
-      feedbackLanguage: "en",
+      feedbackLanguage: "vi",
       reportFormat: "detailed",
+      allowInstructorEdit: true,
       includeCriterionComments: true,
       includeOverallSummary: true,
       includeSuggestions: true,
@@ -578,10 +565,30 @@ const ClassDetailPage: React.FC = () => {
       const targetCriterionId = criterionId;
 
       if (targetCriterionId) {
+        const updatedCriteria = sortedRubricCriteria.map((criterion) =>
+          criterion.classRubricCriteriaId === targetCriterionId
+            ? {
+              ...criterion,
+              criteriaName: payload.criteriaName,
+              criteriaDescription: payload.criteriaDescription,
+              weight: payload.weight,
+              maxScore: payload.maxScore,
+              displayOrder: payload.displayOrder,
+            }
+            : criterion,
+        );
+
         await dispatch(
-          updateRubricCriteria({
-            classRubricCriteriaId: targetCriterionId,
-            rubricData: payload,
+          updateCriteriaByInstructor({
+            classId: classIdNumber,
+            criteriaData: updatedCriteria.map((criterion) => ({
+              classRubricCriteriaId: criterion.classRubricCriteriaId,
+              criteriaName: criterion.criteriaName,
+              criteriaDescription: criterion.criteriaDescription,
+              weight: Number(criterion.weight),
+              maxScore: Number(criterion.maxScore),
+              displayOrder: criterion.displayOrder,
+            })),
           }),
         ).unwrap();
       } else {
@@ -695,23 +702,19 @@ const ClassDetailPage: React.FC = () => {
     if (!classIdNumber) return;
 
     try {
-      await Promise.all(
-        criteria.map((criterion, index) =>
-          dispatch(
-            updateRubricCriteria({
-              classRubricCriteriaId: criterion.classRubricCriteriaId,
-              rubricData: {
-                criteriaName: criterion.criteriaName,
-                criteriaDescription: criterion.criteriaDescription,
-                weight: Number(criterion.weight),
-                maxScore: Number(criterion.maxScore),
-                displayOrder: index + 1,
-                evaluationGuide: criterion.evaluationGuide || "",
-              },
-            }),
-          ).unwrap(),
-        ),
-      );
+      await dispatch(
+        updateCriteriaByInstructor({
+          classId: classIdNumber,
+          criteriaData: criteria.map((criterion, index) => ({
+            classRubricCriteriaId: criterion.classRubricCriteriaId,
+            criteriaName: criterion.criteriaName,
+            criteriaDescription: criterion.criteriaDescription,
+            weight: Number(criterion.weight),
+            maxScore: Number(criterion.maxScore),
+            displayOrder: index + 1,
+          })),
+        }),
+      ).unwrap();
 
       setToast({ message: "Đã cập nhật thứ tự rubric.", type: "success" });
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
@@ -1178,7 +1181,7 @@ const ClassDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       {!isRubricActive && (
-                        <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700 mr-1">
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 mr-1">
                           Chưa đạt
                         </span>
                       )}
@@ -1225,63 +1228,75 @@ const ClassDetailPage: React.FC = () => {
               >
                 {!selectedTemplateId && (
                   <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-700">
-                        Chọn mẫu cho lớp học này
-                      </p>
-                      <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Chọn mẫu rubric
+                        </p>
+                        <p className="mt-1 text-[12px] text-slate-500">
+                          Chọn sẵn một mẫu để áp dụng nhanh cho lớp học.
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700 whitespace-nowrap">
                         Chưa chọn mẫu
                       </span>
                     </div>
 
                     {rubricTemplatesLoading ? (
-                      <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-600 text-center">
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs text-slate-600 text-center">
                         Đang tải mẫu rubric...
                       </div>
                     ) : rubricTemplates.length > 0 ? (
-                      <div className="space-y-2">
-                        <Select
-                          className="w-full"
-                          placeholder="Chọn mẫu"
-                          loading={rubricTemplatesLoading}
-                          disabled={rubricPickLoading || rubricTemplatesLoading}
-                          value={selectedTemplateOptionId ?? undefined}
-                          onChange={(val) => {
-                            setSelectedTemplateOptionId(val);
-                            setExpandedTemplateId(val);
-                          }}
-                          options={rubricTemplates.map((t) => ({
-                            value: t.rubricTemplateId,
-                            label: (
-                              <div>
-                                <div className="font-medium text-sm">
-                                  {t.templateName}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {t.assignmentType}
-                                </div>
-                              </div>
-                            ),
-                          }))}
-                        />
-                        <AntButton
-                          type="primary"
-                          shape="round"
-                          size="small"
-                          icon={<PlusOutlined />}
-                          loading={rubricPickLoading}
-                          disabled={!selectedTemplateOptionId}
-                          className="w-full"
-                          onClick={() => {
-                            if (!selectedTemplateOptionId) return;
-                            handleChooseTemplate(selectedTemplateOptionId);
-                          }}
-                        >
-                          Thêm mẫu
-                        </AntButton>
+                      <div className="space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="grid w-full grid-cols-[minmax(0,1fr)_132px] items-stretch gap-2">
+                            <div className="min-w-0">
+                              <Select
+                                className="w-full"
+                                placeholder="Chọn mẫu cho lớp học"
+                                style={{ width: "100%" }}
+                                suffixIcon={<UpOutlined />}
+                                loading={rubricTemplatesLoading}
+                                disabled={rubricPickLoading || rubricTemplatesLoading}
+                                value={selectedTemplateOptionId ?? undefined}
+                                onChange={(val) => {
+                                  setSelectedTemplateOptionId(val);
+                                  setExpandedTemplateId(val);
+                                }}
+                                options={rubricTemplates.map((t) => ({
+                                  value: t.rubricTemplateId,
+                                  label: (
+                                    <div className="leading-tight">
+                                      <div className="font-semibold text-sm">
+                                        {t.templateName}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500">
+                                        {t.assignmentType}
+                                      </div>
+                                    </div>
+                                  ),
+                                }))}
+                              />
+                            </div>
+                            <AntButton
+                              type="primary"
+                              size="middle"
+                              icon={<PlusOutlined />}
+                              loading={rubricPickLoading}
+                              disabled={!selectedTemplateOptionId}
+                              className="h-full whitespace-nowrap rounded-xl px-3"
+                              onClick={() => {
+                                if (!selectedTemplateOptionId) return;
+                                handleChooseTemplate(selectedTemplateOptionId);
+                              }}
+                            >
+                              Áp dụng mẫu
+                            </AntButton>
+                          </div>
+                        </div>
 
                         {expandedTemplateId && (
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                             {(() => {
                               const expandedTemplate = rubricTemplates.find(
                                 (template) =>
@@ -1291,10 +1306,20 @@ const ClassDetailPage: React.FC = () => {
                               if (!expandedTemplate) return null;
                               return (
                                 <>
-                                  <p className="text-xs font-semibold text-slate-900 mb-2">
-                                    {expandedTemplate.templateName}
-                                  </p>
-                                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-semibold text-slate-900 truncate">
+                                        {expandedTemplate.templateName}
+                                      </p>
+                                      <p className="text-[11px] text-slate-500">
+                                        Xem trước tiêu chí của mẫu đã chọn
+                                      </p>
+                                    </div>
+                                    <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 shrink-0">
+                                      {(expandedTemplate.criteria || []).length} tiêu chí
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
                                     {expandedTemplate.criteria?.length ? (
                                       expandedTemplate.criteria
                                         .slice()
@@ -1305,18 +1330,15 @@ const ClassDetailPage: React.FC = () => {
                                         .map((criterion) => (
                                           <div
                                             key={criterion.criteriaId}
-                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
+                                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-2"
                                           >
-                                            <div className="flex items-center justify-between gap-2">
-                                              <p className="text-xs font-semibold text-slate-800">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <p className="text-xs font-medium text-slate-800 leading-5">
                                                 {criterion.displayOrder}.{" "}
                                                 {criterion.criteriaName}
                                               </p>
-                                              <span className="text-xs text-slate-600 shrink-0">
-                                                {Number(
-                                                  criterion.weight,
-                                                ).toFixed(0)}
-                                                % | Tối đa {criterion.maxScore}
+                                              <span className="text-[11px] text-slate-600 shrink-0 rounded-full bg-slate-100 px-2 py-0.5">
+                                                {Number(criterion.weight).toFixed(0)}% · {criterion.maxScore}
                                               </span>
                                             </div>
                                           </div>
@@ -1334,7 +1356,7 @@ const ClassDetailPage: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-600 text-center">
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs text-slate-600 text-center">
                         Không có mẫu tiêu chí khả dụng.
                       </div>
                     )}
