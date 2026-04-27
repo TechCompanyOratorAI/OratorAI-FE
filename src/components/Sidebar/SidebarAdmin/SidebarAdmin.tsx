@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import {
   LayoutDashboard,
   Users,
-  Settings,
   Cog,
   Menu,
   X,
   Shapes,
   Book,
   FolderCog,
+  CalendarRange,
   LogOut,
   ClipboardList,
   ChevronRight,
@@ -40,8 +40,8 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
     { id: "manage-classes", label: "Quản lý lớp học", icon: Shapes, path: "/admin/manage-classes" },
     { id: "manage-courses", label: "Quản lý môn học", icon: Book, path: "/admin/manage-courses" },
     { id: "manage-departments", label: "Quản lý chuyên ngành", icon: FolderCog, path: "/admin/manage-departments" },
+    { id: "manage-academic-years", label: "Quản lý niên khóa", icon: CalendarRange, path: "/admin/manage-academic-years" },
     { id: "rubric-templates", label: "Mẫu tiêu chí", icon: ClipboardList, path: "/admin/rubric-templates" },
-    { id: "settings", label: "Cài đặt", icon: Settings, path: "/admin/settings" },
   ];
 
   const userInitial =
