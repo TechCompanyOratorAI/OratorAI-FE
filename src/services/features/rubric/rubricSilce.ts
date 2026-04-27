@@ -7,6 +7,7 @@ import {
   DELETE_CLASS_RUBRIC_ENDPOINT,
   GET_RUBRIC_TEMPLATES_FOR_INSTRUCTOR_ENDPOINT,
   PICK_RUBRIC_TEMPLATE_FOR_CLASS_ENDPOINT,
+  UPDATE_CRITERIA_BY_INSTRUCTOR_ENDPOINT,
 } from "../../constant/apiConfig";
 
 export interface RubricTemplateSummary {
@@ -50,14 +51,12 @@ export interface RubricTemplateForInstructor {
 
 export interface PickRubricTemplatePayload {
   rubricTemplateId: number;
-  enableAiReport: boolean;
-  requireInstructorConfirmation?: boolean;
-  allowInstructorEdit?: boolean;
-  feedbackLanguage?: string;
-  reportFormat?: string;
-  includeCriterionComments?: boolean;
-  includeOverallSummary?: boolean;
-  includeSuggestions?: boolean;
+  feedbackLanguage: string;
+  reportFormat: string;
+  allowInstructorEdit: boolean;
+  includeCriterionComments: boolean;
+  includeOverallSummary: boolean;
+  includeSuggestions: boolean;
 }
 
 export interface ClassRubricCriteria {
@@ -123,6 +122,15 @@ export interface RubricCriteriaPayload {
   maxScore: number;
   displayOrder: number;
   evaluationGuide: string;
+}
+
+export interface UpdateCriteriaByInstructorPayload {
+  classRubricCriteriaId?: number;
+  criteriaName: string;
+  criteriaDescription: string;
+  weight: number;
+  maxScore: number;
+  displayOrder: number;
 }
 
 interface RubricMutationResponse {
@@ -248,6 +256,28 @@ export const updateRubricCriteria = createAsyncThunk<
   },
 );
 
+export const updateCriteriaByInstructor = createAsyncThunk<
+  ClassRubricCriteria[] | null,
+  { classId: number; criteriaData: UpdateCriteriaByInstructorPayload[] },
+  { rejectValue: string }
+>(
+  "rubric/updateCriteriaByInstructor",
+  async ({ classId, criteriaData }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put<{
+        success: boolean;
+        data?: ClassRubricCriteria[];
+      }>(UPDATE_CRITERIA_BY_INSTRUCTOR_ENDPOINT(classId.toString()), criteriaData);
+
+      return response.data?.data || null;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update criteria by instructor",
+      );
+    }
+  },
+);
+
 export const deleteRubricCriteria = createAsyncThunk<
   number,
   { classRubricCriteriaId: number },
@@ -349,6 +379,20 @@ const rubricSlice = createSlice({
       .addCase(updateRubricCriteria.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload || "Failed to update rubric criteria";
+      })
+      .addCase(updateCriteriaByInstructor.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(updateCriteriaByInstructor.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        if (action.payload) {
+          state.criteria = action.payload;
+        }
+      })
+      .addCase(updateCriteriaByInstructor.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload || "Failed to update criteria by instructor";
       })
       .addCase(deleteRubricCriteria.pending, (state) => {
         state.actionLoading = true;
