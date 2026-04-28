@@ -262,6 +262,8 @@ export const CLASS_GROUP_GRADE_DISTRIBUTIONS_ENDPOINT = (classId: string) =>
 export const ENROLL_KEYS_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys`;
 export const ENROLL_KEYS_BY_CLASS_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/enroll-keys/${classId}`;
+export const ENROLL_KEYS_ROTATE_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/enroll-keys/${classId}/rotate`;
 
 // Instructor Approval endpoints
 export const INSTRUCTOR_PENDING_APPROVALS_ENDPOINT = `${BASE_URL}/api/v1/instructor/presentations/pending`;

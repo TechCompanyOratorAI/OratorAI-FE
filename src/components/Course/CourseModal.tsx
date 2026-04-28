@@ -149,6 +149,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     .map((item) => ({
       value: item.academicBlockId,
       label: formatAcademicBlockLabel(item),
+      endDate: item.endDate,
       term: item.term,
       sortHalf:
         item.blockType === "BLOCK3"
@@ -173,6 +174,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
       Array<{
         value: number;
         label: string;
+        endDate: string;
         term: string;
         sortHalf: number;
       }>
@@ -303,7 +305,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           rules={[{ required: true, message: "Vui lòng chọn ít nhất một kỳ học" }]}
         >
           <Checkbox.Group className="w-full">
-            <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-4">
               {sortedTerms.map((term) => {
                 const options = [...groupedAcademicBlockOptions[term]].sort(
                   (a, b) => a.sortHalf - b.sortHalf,
@@ -313,7 +315,11 @@ const CourseModal: React.FC<CourseModalProps> = ({
                     <p className="text-xs font-semibold text-gray-500 mb-1">{term}</p>
                     <div className="flex flex-col gap-1">
                       {options.map((option) => (
-                        <Checkbox key={option.value} value={option.value}>
+                        <Checkbox
+                          key={option.value}
+                          value={option.value}
+                          disabled={new Date(option.endDate).getTime() < Date.now()}
+                        >
                           {option.label}
                         </Checkbox>
                       ))}

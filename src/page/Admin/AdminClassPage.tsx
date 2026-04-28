@@ -12,6 +12,7 @@ import {
   UsergroupAddOutlined,
   FileExcelOutlined,
   ExclamationCircleOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import {
   Table,
@@ -49,6 +50,8 @@ import { fetchInstructorByClass } from "@/services/features/admin/adminSlice";
 import { fetchCourses } from "@/services/features/course/courseSlice";
 import { RootState, AppDispatch } from "@/services/store/store";
 import { extractLocalizedMessage } from "@/lib/utils";
+import axiosInstance from "@/services/constant/axiosInstance";
+import { ACADEMIC_BLOCKS_ENDPOINT } from "@/services/constant/apiConfig";
 
 const AdminClassPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -77,8 +80,25 @@ const AdminClassPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [academicBlocks, setAcademicBlocks] = useState<
+    Array<{
+      academicBlockId: number;
+      blockCode: string;
+      term: string;
+      half?: string | null;
+      blockType: string;
+      startDate: string;
+      endDate: string;
+      isActive: boolean;
+      academicYear?: {
+        academicYearId: number;
+        year: number;
+        name: string;
+      };
+    }>
+  >([]);
 
-  const { notification } = App.useApp();
+  const { notification, message } = App.useApp();
 
   const notifySuccess = (title: string, description: string) => {
     notification.success({
@@ -103,6 +123,22 @@ const AdminClassPage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchCourses({ page: 1, limit: 100 }));
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchAcademicBlocks = async () => {
+      try {
+        const response = await axiosInstance.get(`${ACADEMIC_BLOCKS_ENDPOINT}?isActive=true`);
+        const payload = response.data as { data?: any[] };
+        setAcademicBlocks(Array.isArray(payload?.data) ? payload.data : []);
+      } catch (error) {
+        notifyError(
+          "Tải kỳ học thất bại",
+          extractLocalizedMessage(error, "Không thể tải danh sách kỳ học."),
+        );
+      }
+    };
+    fetchAcademicBlocks();
+  }, []);
 
   const handleCreateClass = () => {
     setSelectedClass(undefined);
@@ -192,13 +228,14 @@ const AdminClassPage: React.FC = () => {
     setIsWhitelistModalOpen(true);
   };
 
-  const handleAddInstructor = async (userId: number) => {
+  const handleAddInstructor = async (userIds: number[]) => {
     if (!selectedClass) return;
+    if (!Array.isArray(userIds) || userIds.length === 0) return;
     try {
       const response = await dispatch(
         addInstructorToClass({
           classId: selectedClass.classId,
-          userId: userId,
+          userIds,
         }),
       ).unwrap();
       const refreshResult = await dispatch(
@@ -215,7 +252,7 @@ const AdminClassPage: React.FC = () => {
       }
       notifySuccess(
         "Thêm giảng viên thành công",
-        extractLocalizedMessage(response, "Đã thêm giảng viên thành công."),
+        extractLocalizedMessage(response, `Đã thêm ${userIds.length} giảng viên thành công.`),
       );
     } catch (error) {
       notifyError(
@@ -370,6 +407,16 @@ const AdminClassPage: React.FC = () => {
         ? filteredClasses.length
         : pagination.total;
 
+  const getClassEnrollKey = (record: ClassData): string | null => {
+    const fromActive = record.activeKeys?.find((k) => k.isActive && !((k as any).isRevoked))
+      ?.keyValue;
+    const fromEnrollKeys = record.enrollKeys?.find(
+      (k) => k.isActive && !((k as any).isRevoked),
+    )?.keyValue;
+    const fromLegacy = (record as any).enrollkey as string | undefined;
+    return fromActive || fromEnrollKeys || fromLegacy || null;
+  };
+
   const columns: ColumnsType<ClassData> = [
     {
       title: "Lớp",
@@ -438,6 +485,36 @@ const AdminClassPage: React.FC = () => {
                 <div className="text-xs text-gray-400">{instructor.email}</div>
               </div>
             ))}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Mã đăng ký",
+      key: "enrollKey",
+      width: 220,
+      render: (_, record) => {
+        const keyValue = getClassEnrollKey(record);
+        if (!keyValue) {
+          return <Tag>Chưa có mã</Tag>;
+        }
+        return (
+          <div
+            className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-2 py-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="font-mono text-xs font-semibold tracking-wide text-blue-700 flex-1">
+              {keyValue}
+            </span>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(keyValue);
+                message.success("Đã sao chép mã đăng ký");
+              }}
+            />
           </div>
         );
       },
@@ -670,6 +747,7 @@ const AdminClassPage: React.FC = () => {
         initialData={selectedClass}
         isLoading={actionLoading}
         courses={courses}
+        academicBlocks={academicBlocks}
       />
 
       <InstructorModal

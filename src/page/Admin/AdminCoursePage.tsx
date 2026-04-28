@@ -295,19 +295,23 @@ const AdminCoursePage: React.FC = () => {
     }
   };
 
-  const handleAddInstructor = async (userId: number) => {
+  const handleAddInstructor = async (userIds: number[]) => {
     if (!selectedCourse) return;
+    if (!Array.isArray(userIds) || userIds.length === 0) return;
     const courseId = selectedCourse.courseId;
 
     try {
       const response = await axiosInstance.post(
         ADD_INSTRUCTOR_TO_COURSE_ENDPOINT(courseId.toString()),
-        { instructorIds: [userId] },
+        { instructorIds: userIds },
       );
       notifySuccess(
         "Thêm giảng viên thành công",
         normalizeCourseMessage(
-          extractLocalizedMessage(response.data, "Đã thêm giảng viên thành công."),
+          extractLocalizedMessage(
+            response.data,
+            `Đã thêm ${userIds.length} giảng viên thành công.`,
+          ),
         ),
       );
       await refreshSelectedCourse(courseId);
