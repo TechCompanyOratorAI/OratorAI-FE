@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "react-toastify";
+import { getErrorMessage, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { registerUser } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
@@ -83,11 +83,13 @@ const RegisterForm: React.FC = () => {
           navigate("/login");
         }, 1200);
       } else if (registerUser.rejected.match(resultAction)) {
-        toast.error(resultAction.payload?.message || "Đăng ký thất bại");
+        toast.error(
+          getErrorMessage(resultAction.payload, "Đăng ký thất bại"),
+        );
       }
     } catch (error) {
       console.error("Register error:", error);
-      toast.error("Đăng ký thất bại");
+      toast.error(getErrorMessage(error, "Đăng ký thất bại"));
     }
   };
 

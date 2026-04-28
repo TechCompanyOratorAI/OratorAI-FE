@@ -32,6 +32,7 @@ import {
   finalizeDistribution,
   DistributionStatus,
 } from "@/services/features/groupGrade/groupGradeSlice";
+import { getErrorMessage, getResponseMessage } from "@/lib/toast";
 
 const { Text } = Typography;
 
@@ -70,21 +71,27 @@ const GradeDistributionList: React.FC<GradeDistributionListProps> = ({
 
   const handleReopen = async (distributionId: number) => {
     try {
-      await dispatch(reopenDistribution({ groupId, distributionId })).unwrap();
-      void message.success("Đã mở lại cho leader chỉnh sửa!");
+      const result = await dispatch(
+        reopenDistribution({ groupId, distributionId }),
+      ).unwrap();
+      void message.success(
+        getResponseMessage(result, "Đã mở lại cho leader chỉnh sửa!"),
+      );
       void dispatch(fetchGradeDistributionsByGroup(groupId));
-    } catch (e: any) {
-      void message.error(e?.message || "Không thể mở lại");
+    } catch (error: unknown) {
+      void message.error(getErrorMessage(error, "Không thể mở lại"));
     }
   };
 
   const handleFinalize = async (distributionId: number, reportId: number) => {
     try {
-      await dispatch(finalizeDistribution({ groupId, distributionId, reportId })).unwrap();
-      void message.success("Đã chốt điểm thành công!");
+      const result = await dispatch(
+        finalizeDistribution({ groupId, distributionId, reportId }),
+      ).unwrap();
+      void message.success(getResponseMessage(result, "Đã chốt điểm thành công!"));
       void dispatch(fetchGradeDistributionsByGroup(groupId));
-    } catch (e: any) {
-      void message.error(e?.message || "Không thể chốt điểm");
+    } catch (error: unknown) {
+      void message.error(getErrorMessage(error, "Không thể chốt điểm"));
     }
   };
 

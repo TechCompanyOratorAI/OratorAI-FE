@@ -42,7 +42,7 @@ import {
   TeamOutlined,
   CrownOutlined,
 } from "@ant-design/icons";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassScores } from "@/services/features/classScore/classScoreSlice";

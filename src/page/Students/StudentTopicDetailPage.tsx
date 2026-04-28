@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 import {
   Card,
   Button,
@@ -140,24 +140,24 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
   const handlePickTopicForGroup = async () => {
     if (!topicIdNumber || !myGroupId) return;
     try {
-      await dispatch(
+      const result = await dispatch(
         pickGroupTopic({ groupId: myGroupId, topicId: topicIdNumber }),
       ).unwrap();
-      toast.success("Đã chọn chủ đề cho nhóm.");
+      toast.success(getResponseMessage(result, "Đã chọn chủ đề cho nhóm."));
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Chọn chủ đề thất bại");
+      toast.error(getErrorMessage(err, "Chọn chủ đề thất bại"));
     }
   };
 
   const handleClearGroupTopic = async () => {
     if (!myGroupId) return;
     try {
-      await dispatch(clearGroupTopic(myGroupId)).unwrap();
-      toast.success("Đã hủy chọn chủ đề cho nhóm.");
+      const result = await dispatch(clearGroupTopic(myGroupId)).unwrap();
+      toast.success(getResponseMessage(result, "Đã hủy chọn chủ đề cho nhóm."));
       await dispatch(fetchGroupTopic(myGroupId));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Hủy chủ đề thất bại");
+      toast.error(getErrorMessage(err, "Hủy chủ đề thất bại"));
     }
   };
 
@@ -726,7 +726,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             if (!topicIdNumber || !classIdNumber) return;
             const groupCode =
               myGroupForClass?.groupName || myGroupForClass?.name || undefined;
-            await dispatch(
+            const result = await dispatch(
               createPresentation({
                 classId: classIdNumber,
                 topicId: topicIdNumber,
@@ -735,7 +735,9 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
                 groupCode,
               }),
             ).unwrap();
-            toast.success("Tạo bài thuyết trình thành công!");
+            toast.success(
+              getResponseMessage(result, "Tạo bài thuyết trình thành công!"),
+            );
             dispatch(
               fetchPresentationsByClassAndTopic({
                 classId: classIdNumber,

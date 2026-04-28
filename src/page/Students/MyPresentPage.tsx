@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { getErrorMessage, toast } from "@/lib/toast";
 import {
   Card,
   Row,
@@ -94,7 +94,7 @@ const MyPresentationsPage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error(String(error));
+      toast.error(getErrorMessage(error));
       dispatch(clearError());
     }
   }, [error, dispatch]);

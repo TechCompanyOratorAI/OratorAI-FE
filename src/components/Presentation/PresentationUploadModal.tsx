@@ -17,6 +17,7 @@ import {
   Tag,
   Spin,
 } from "antd";
+import { getErrorMessage, getResponseMessage } from "@/lib/toast";
 import {
   InboxOutlined,
   FilePdfOutlined,
@@ -70,7 +71,7 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
 
   useEffect(() => {
     if (error) {
-      void message.error(String(error));
+      void message.error(getErrorMessage(error));
     }
   }, [error]);
 
@@ -165,11 +166,11 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
           size: result.slide.fileSizeBytes,
         });
         setSlideConfirmed(false);
-        void message.success("Tải lên slides thành công!");
-      } catch (err: unknown) {
-        void message.error(
-          err instanceof Error ? err.message : "Tải lên slides thất bại",
+        void message.success(
+          getResponseMessage(result, "Tải lên slides thành công!"),
         );
+      } catch (err: unknown) {
+        void message.error(getErrorMessage(err, "Tải lên slides thất bại"));
       } finally {
         setSlideUploading(false);
         setSlideUploadPct(0);
@@ -224,11 +225,11 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
           size: result.audioRecord.fileSizeBytes,
         });
         setMediaConfirmed(false);
-        void message.success("Tải lên video thành công!");
-      } catch (err: unknown) {
-        void message.error(
-          err instanceof Error ? err.message : "Tải lên video thất bại",
+        void message.success(
+          getResponseMessage(result, "Tải lên video thành công!"),
         );
+      } catch (err: unknown) {
+        void message.error(getErrorMessage(err, "Tải lên video thất bại"));
       } finally {
         setMediaUploading(false);
         setMediaUploadPct(0);
@@ -250,13 +251,13 @@ const PresentationUploadModal: React.FC<PresentationUploadModalProps> = ({
     }
     setIsSubmitting(true);
     try {
-      await dispatch(submitPresentation(presentationId)).unwrap();
-      void message.success("Nộp bài thuyết trình thành công!");
+      const result = await dispatch(submitPresentation(presentationId)).unwrap();
+      void message.success(
+        getResponseMessage(result, "Nộp bài thuyết trình thành công!"),
+      );
       handleClose();
     } catch (err: unknown) {
-      void message.error(
-        err instanceof Error ? err.message : "Nộp bài thất bại.",
-      );
+      void message.error(getErrorMessage(err, "Nộp bài thất bại."));
     } finally {
       setIsSubmitting(false);
     }

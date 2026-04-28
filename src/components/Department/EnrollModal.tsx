@@ -8,7 +8,7 @@ import {
   previewClassByKey,
   type ClassPreview,
 } from "@/services/features/enrollment/enrollmentSlice";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 
 const { Text } = Typography;
 

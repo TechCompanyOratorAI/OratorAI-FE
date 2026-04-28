@@ -31,6 +31,7 @@ import {
   approvePresentation,
   unapprovePresentation,
 } from "@/services/features/instructor/instructorApprovalSlice";
+import { getErrorMessage, getResponseMessage } from "@/lib/toast";
 
 const { Text } = Typography;
 
@@ -90,19 +91,23 @@ const InstructorApprovalPage: React.FC = () => {
 
   const handleApprove = async (presentationId: number) => {
     try {
-      await dispatch(approvePresentation({ presentationId })).unwrap();
-      message.success("Duyệt thành công!");
-    } catch {
-      // Error handled in slice
+      const result = await dispatch(
+        approvePresentation({ presentationId }),
+      ).unwrap();
+      message.success(getResponseMessage(result, "Duyệt thành công!"));
+    } catch (error) {
+      message.error(getErrorMessage(error, "Duyệt thất bại"));
     }
   };
 
   const handleUnapprove = async (presentationId: number) => {
     try {
-      await dispatch(unapprovePresentation(presentationId)).unwrap();
-      message.success("Đã huỷ duyệt!");
-    } catch {
-      // Error handled in slice
+      const result = await dispatch(
+        unapprovePresentation(presentationId),
+      ).unwrap();
+      message.success(getResponseMessage(result, "Đã huỷ duyệt!"));
+    } catch (error) {
+      message.error(getErrorMessage(error, "Huỷ duyệt thất bại"));
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import {
   ArrowLeft,
   Clock,
@@ -235,10 +235,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
       container.scrollTo({ top: elTop - container.clientHeight / 2 + el.offsetHeight / 2, behavior: "smooth" });
     }
   }, [playerCurrentTime, reportTab]);
-
-  useEffect(() => {
-    if (reportError) toast.error(reportError);
-  }, [reportError]);
 
   useEffect(() => {
     if (showReport && currentReport?.reportId) {
