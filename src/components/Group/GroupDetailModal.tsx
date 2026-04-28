@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getErrorMessage, getResponseMessage } from "@/lib/toast";
 import {
   Avatar,
   Tag,
@@ -111,14 +112,12 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         void dispatch(fetchGroupsByClass(classId));
         void dispatch(fetchMyGroupByClass(classId));
       }
-      void message.success(result?.message || "Đã rời nhóm thành công.");
+      void message.success(getResponseMessage(result, "Đã rời nhóm thành công."));
       setTimeout(() => {
         onClose();
       }, 600);
     } catch (err: unknown) {
-      void message.error(
-        err instanceof Error ? err.message : "Không thể rời nhóm.",
-      );
+      void message.error(getErrorMessage(err, "Không thể rời nhóm."));
     }
   };
 
@@ -136,7 +135,9 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     if (!Number.isFinite(userId) || userId <= 0) return;
 
     try {
-      await dispatch(changeLeaderOfGroup({ groupId, userId })).unwrap();
+      const result = await dispatch(
+        changeLeaderOfGroup({ groupId, userId }),
+      ).unwrap();
       await dispatch(fetchGroupDetail(groupId)).unwrap();
       const classId = Number(
         groupDetail?.classId ?? groupDetail?.class?.classId ?? 0,
@@ -144,11 +145,11 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       if (Number.isFinite(classId) && classId > 0) {
         await dispatch(fetchGroupsByClass(classId)).unwrap();
       }
-      void message.success("Đã chuyển trưởng nhóm thành công.");
-    } catch (err: unknown) {
-      void message.error(
-        err instanceof Error ? err.message : "Không thể chuyển trưởng nhóm.",
+      void message.success(
+        getResponseMessage(result, "Đã chuyển trưởng nhóm thành công."),
       );
+    } catch (err: unknown) {
+      void message.error(getErrorMessage(err, "Không thể chuyển trưởng nhóm."));
     }
   };
 

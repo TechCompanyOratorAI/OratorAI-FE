@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { Input, Button, Typography, Segmented, Tag, ConfigProvider } from "antd";
 import type { SegmentedProps } from "antd";
 import { SearchOutlined, ReadOutlined, CopyOutlined, PlusOutlined } from "@ant-design/icons";

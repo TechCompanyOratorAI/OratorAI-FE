@@ -40,6 +40,7 @@ import {
   DistributionStatus,
 } from "@/services/features/groupGrade/groupGradeSlice";
 import { GroupStudent } from "@/services/features/group/groupSlice";
+import { getResponseMessage } from "@/lib/toast";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -253,7 +254,9 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
           })),
         }),
       ).unwrap();
-      void message.success("Đã nộp phân chia điểm thành công!");
+      void message.success(
+        getResponseMessage(result, "Đã nộp phân chia điểm thành công!"),
+      );
       setHasChanges(false);
       // Refresh data first, then close modal
       await dispatch(fetchGradeDistributionByReport(reportId));
@@ -271,14 +274,16 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
       return;
     }
     try {
-      await dispatch(
+      const result = await dispatch(
         submitMemberFeedback({
           groupId,
           distributionId: currentDistribution.id,
           feedback: myFeedback,
         }),
       ).unwrap();
-      void message.success("Đã gửi phản hồi thành công!");
+      void message.success(
+        getResponseMessage(result, "Đã gửi phản hồi thành công!"),
+      );
       setFeedbackSent(true);
       void dispatch(fetchGradeDistributionByReport(reportId));
     } catch {

@@ -65,7 +65,7 @@ import GroupDetailModal from "@/components/Group/GroupDetailModal";
 import RubricModal from "@/components/Rubric/RubricModal";
 import RubricTemplateConfigModal from "@/components/Rubric/RubricTemplateConfigModal";
 import DeleteConfirmModal from "@/components/common/DeleteConfirmModal";
-import Toast from "@/components/Toast/Toast";
+import { toast } from "@/lib/toast";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
 import {
   fetchGroupsByClass,
@@ -240,10 +240,13 @@ const ClassDetailPage: React.FC = () => {
     maxDurationMinutes?: number;
     requirements?: string;
   } | null>(null);
-  const [toast, setToast] = useState<{
+  const setToast = (payload: {
     message: string;
     type: "success" | "error" | "info";
-  } | null>(null);
+  } | null) => {
+    if (!payload) return;
+    toast[payload.type](payload.message);
+  };
 
   useEffect(() => {
     if (classIdNumber) {
@@ -1675,16 +1678,6 @@ const ClassDetailPage: React.FC = () => {
         isLoading={false}
       />
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        </div>
-      )}
     </div>
   );
 };

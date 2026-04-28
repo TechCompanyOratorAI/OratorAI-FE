@@ -9,7 +9,7 @@ import {
   Divider,
 } from "antd";
 import { SaveOutlined, EditOutlined } from "@ant-design/icons";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import {
   createCriterionFeedback,
@@ -99,7 +99,7 @@ const CriterionFeedbackRubricForm: React.FC<CriterionFeedbackRubricFormProps> = 
     setSaving(true);
     try {
       if (!exists) {
-        await dispatch(
+        const result = await dispatch(
           createCriterionFeedback({
             reportId,
             classRubricCriteriaId: criteriaId,
@@ -107,9 +107,9 @@ const CriterionFeedbackRubricForm: React.FC<CriterionFeedbackRubricFormProps> = 
             comment: commentVal,
           }),
         ).unwrap();
-        toast.success("Đã tạo feedback cho tiêu chí");
+        toast.success(getResponseMessage(result, "Đã tạo feedback cho tiêu chí"));
       } else {
-        await dispatch(
+        const result = await dispatch(
           upsertCriterionFeedback({
             reportId,
             classRubricCriteriaId: criteriaId,
@@ -117,16 +117,12 @@ const CriterionFeedbackRubricForm: React.FC<CriterionFeedbackRubricFormProps> = 
             comment: commentVal,
           }),
         ).unwrap();
-        toast.success("Đã cập nhật feedback");
+        toast.success(getResponseMessage(result, "Đã cập nhật feedback"));
       }
       await syncAfterMutation();
       setEditing(false);
     } catch (err: unknown) {
-      toast.error(
-        typeof err === "string"
-          ? err
-          : (err as { message?: string })?.message || "Thao tác thất bại",
-      );
+      toast.error(getErrorMessage(err, "Thao tác thất bại"));
     } finally {
       setSaving(false);
     }
@@ -135,20 +131,16 @@ const CriterionFeedbackRubricForm: React.FC<CriterionFeedbackRubricFormProps> = 
   const handleDelete = async () => {
     setSaving(true);
     try {
-      await dispatch(
+      const result = await dispatch(
         deleteCriterionFeedback({ reportId, classRubricCriteriaId: criteriaId }),
       ).unwrap();
-      toast.success("Đã xóa feedback");
+      toast.success(getResponseMessage(result, "Đã xóa feedback"));
       setScore("");
       setComment("");
       setEditing(false);
       await syncAfterMutation();
     } catch (err: unknown) {
-      toast.error(
-        typeof err === "string"
-          ? err
-          : (err as { message?: string })?.message || "Xóa thất bại",
-      );
+      toast.error(getErrorMessage(err, "Xóa thất bại"));
     } finally {
       setSaving(false);
     }

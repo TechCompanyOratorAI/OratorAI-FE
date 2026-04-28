@@ -295,7 +295,7 @@ export const verifyEmail = createAsyncThunk<
     if (response.data && response.data.success === false) {
       return rejectWithValue({
         message:
-          response.data.message ?? "Invalid or expired verification token",
+          response.data.message ?? "Token xác thực không hợp lệ hoặc đã hết hạn",
       });
     }
     return response.data;
@@ -307,7 +307,7 @@ export const verifyEmail = createAsyncThunk<
     const msg =
       error.response?.data?.message ??
       error.message ??
-      "Invalid or expired verification token";
+      "Token xác thực không hợp lệ hoặc đã hết hạn";
     return rejectWithValue({ message: msg });
   }
 });
@@ -322,7 +322,7 @@ export const resetPassword = createAsyncThunk<
     if (response.data && response.data.success === false) {
       return rejectWithValue({
         message:
-          response.data.message ?? "Invalid or expired password reset token",
+          response.data.message ?? "Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
       });
     }
     return response.data;
@@ -334,7 +334,7 @@ export const resetPassword = createAsyncThunk<
     const msg =
       error.response?.data?.message ??
       error.message ??
-      "Invalid or expired password reset token";
+      "Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn";
     return rejectWithValue({ message: msg });
   }
 });
@@ -360,7 +360,7 @@ export const uploadAvatar = createAsyncThunk<
 
     if (response.data && response.data.success === false) {
       return rejectWithValue({
-        message: response.data.message ?? "Upload avatar thất bại",
+        message: response.data.message ?? "Tải ảnh đại diện thất bại",
       });
     }
 
@@ -373,7 +373,7 @@ export const uploadAvatar = createAsyncThunk<
     const errorMessage =
       error.response?.data?.message ||
       error.message ||
-      "Upload avatar thất bại";
+      "Tải ảnh đại diện thất bại";
     return rejectWithValue({ message: errorMessage });
   }
 });
@@ -600,7 +600,7 @@ const authSlice = createSlice({
       })
       .addCase(uploadAvatar.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Upload avatar thất bại";
+        state.error = action.payload?.message || "Tải ảnh đại diện thất bại";
       });
   },
 });

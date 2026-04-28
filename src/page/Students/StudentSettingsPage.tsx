@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 import { Button, Avatar as AntAvatar, Upload, DatePicker } from "antd";
 import type { UploadProps } from "antd";
 import dayjs from "dayjs";
@@ -136,7 +136,7 @@ const StudentSettingsPage: React.FC = () => {
 
     setIsSavingProfile(true);
     try {
-      await dispatch(
+      const result = await dispatch(
         updateProfile({
           firstName: profileForm.firstName.trim(),
           lastName: profileForm.lastName.trim(),
@@ -144,10 +144,9 @@ const StudentSettingsPage: React.FC = () => {
           studyMajor: profileForm.studyMajor.trim() || null,
         }),
       ).unwrap();
-      toast.success("Cập nhật hồ sơ thành công!");
+      toast.success(getResponseMessage(result, "Cập nhật hồ sơ thành công!"));
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error?.message || "Cập nhật hồ sơ thất bại.");
+      toast.error(getErrorMessage(err, "Cập nhật hồ sơ thất bại."));
     } finally {
       setIsSavingProfile(false);
     }
@@ -174,16 +173,17 @@ const StudentSettingsPage: React.FC = () => {
 
     setIsChangingPwd(true);
     try {
-      await dispatch(changePassword({ currentPassword, newPassword })).unwrap();
-      toast.success("Đổi mật khẩu thành công!");
+      const result = await dispatch(
+        changePassword({ currentPassword, newPassword }),
+      ).unwrap();
+      toast.success(getResponseMessage(result, "Đổi mật khẩu thành công!"));
       setPasswordSuccess(true);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error?.message || "Đổi mật khẩu thất bại.");
+      toast.error(getErrorMessage(err, "Đổi mật khẩu thất bại."));
     } finally {
       setIsChangingPwd(false);
     }

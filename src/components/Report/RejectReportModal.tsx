@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Modal } from "antd";
 import { useAppDispatch } from "@/services/store/store";
 import { rejectPresentationReport, fetchPresentationReport } from "@/services/features/report/reportSlice";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 
 interface RejectReportModalProps {
   isOpen: boolean;
@@ -23,16 +23,12 @@ const RejectReportModal: React.FC<RejectReportModalProps> = ({
   const handleConfirm = async () => {
     try {
       setLoading(true);
-      await dispatch(rejectPresentationReport(reportId)).unwrap();
+      const result = await dispatch(rejectPresentationReport(reportId)).unwrap();
       await dispatch(fetchPresentationReport(presentationId)).unwrap();
-      toast.success("Đã từ chối AI report");
+      toast.success(getResponseMessage(result, "Đã từ chối AI report"));
       onClose();
     } catch (err: unknown) {
-      const msg =
-        typeof err === "string"
-          ? err
-          : (err as { message?: string })?.message || "Không thể từ chối AI report";
-      toast.error(msg);
+      toast.error(getErrorMessage(err, "Không thể từ chối AI report"));
       throw err;
     } finally {
       setLoading(false);

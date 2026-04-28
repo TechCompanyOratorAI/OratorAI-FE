@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { Select } from "antd";
-import { toast } from "react-toastify";
+import { getErrorMessage, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { registerInstructor } from "@/services/features/auth/authSlice";
 import { fetchDepartments } from "@/services/features/admin/adminSlice";
@@ -99,11 +99,13 @@ const InstructorRegisterForm: React.FC = () => {
           navigate("/login");
         }, 1200);
       } else if (registerInstructor.rejected.match(resultAction)) {
-        toast.error(resultAction.payload?.message || "Đăng ký thất bại");
+        toast.error(
+          getErrorMessage(resultAction.payload, "Đăng ký thất bại"),
+        );
       }
     } catch (error) {
       console.error("Register instructor error:", error);
-      toast.error("Đăng ký thất bại");
+      toast.error(getErrorMessage(error, "Đăng ký thất bại"));
     }
   };
 

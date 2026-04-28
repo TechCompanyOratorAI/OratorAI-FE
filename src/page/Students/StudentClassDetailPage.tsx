@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 import {
   Button,
   Typography,
@@ -216,11 +216,11 @@ const StudentClassDetailPage: React.FC = () => {
     async (groupId: string | number | undefined) => {
       if (!groupId) return;
       try {
-        await dispatch(joinGroup(groupId)).unwrap();
-        toast.success("Tham gia nhóm thành công!");
+        const result = await dispatch(joinGroup(groupId)).unwrap();
+        toast.success(getResponseMessage(result, "Tham gia nhóm thành công!"));
         refreshGroups();
       } catch (err: any) {
-        toast.error(err?.message || "Tham gia nhóm thất bại.");
+        toast.error(getErrorMessage(err, "Tham gia nhóm thất bại."));
       }
     },
     [dispatch, refreshGroups],
@@ -230,13 +230,13 @@ const StudentClassDetailPage: React.FC = () => {
     async (topicId: number) => {
       if (!myGroupId) return;
       try {
-        await dispatch(
+        const result = await dispatch(
           pickGroupTopic({ groupId: myGroupId, topicId }),
         ).unwrap();
-        toast.success("Đã chọn chủ đề cho nhóm.");
+        toast.success(getResponseMessage(result, "Đã chọn chủ đề cho nhóm."));
         await dispatch(fetchGroupTopic(myGroupId));
       } catch (err: any) {
-        toast.error(err?.message || "Chọn chủ đề thất bại.");
+        toast.error(getErrorMessage(err, "Chọn chủ đề thất bại."));
       }
     },
     [myGroupId, dispatch],
@@ -822,14 +822,14 @@ const StudentClassDetailPage: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={async (groupName, description) => {
           if (!classIdNumber) return;
-          await dispatch(
+          const result = await dispatch(
             createGroup({
               classId: classIdNumber,
               groupName,
               description,
             }),
           ).unwrap();
-          toast.success("Tạo nhóm thành công!");
+          toast.success(getResponseMessage(result, "Tạo nhóm thành công!"));
           refreshGroups();
         }}
         isLoading={groupActionLoading}

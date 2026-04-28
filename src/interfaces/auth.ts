@@ -91,6 +91,7 @@ export interface ProfileUser {
 
 export interface ProfileResponse {
   success: boolean;
+  message: string;
   data: ProfileUser;
 }
 

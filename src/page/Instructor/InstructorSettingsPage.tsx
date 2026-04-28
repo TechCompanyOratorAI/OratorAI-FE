@@ -15,7 +15,7 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EyeOutlined, PlusOutlined } from "@ant-design/icons";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import { useAppSelector } from "@/services/store/store";
 import axiosInstance from "@/services/constant/axiosInstance";
@@ -105,10 +105,7 @@ const InstructorSettingsPage: React.FC = () => {
     try {
       await Promise.all([fetchCatalogs(), fetchInstructorCompetencies()]);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        err?.response?.data?.message || "Không thể tải dữ liệu năng lực.",
-      );
+      toast.error(getErrorMessage(error, "Không thể tải dữ liệu năng lực."));
     } finally {
       setPageLoading(false);
     }
@@ -169,7 +166,7 @@ const InstructorSettingsPage: React.FC = () => {
       }));
 
     try {
-      await axiosInstance.post(
+      const response = await axiosInstance.post(
         INSTRUCTOR_COMPETENCIES_ENDPOINT(String(instructorId)),
         {
           competencies: [
@@ -180,13 +177,14 @@ const InstructorSettingsPage: React.FC = () => {
           ],
         },
       );
-      toast.success("Khai báo năng lực thành công.");
+      toast.success(
+        getResponseMessage(response?.data, "Khai báo năng lực thành công."),
+      );
 
       handleModalClose();
       await fetchInstructorCompetencies();
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err?.response?.data?.message || "Thao tác năng lực thất bại.");
+      toast.error(getErrorMessage(error, "Thao tác năng lực thất bại."));
     } finally {
       setSubmitLoading(false);
     }

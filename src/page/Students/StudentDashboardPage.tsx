@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/lib/toast";
 import { Input, Tag, Typography, ConfigProvider, Pagination } from "antd";
 import {
   Search,

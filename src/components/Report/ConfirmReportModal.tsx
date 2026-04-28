@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Modal, InputNumber, Input, Typography, Space } from "antd";
 import { useAppDispatch } from "@/services/store/store";
 import { confirmPresentationReport } from "@/services/features/report/reportSlice";
-import { toast } from "react-toastify";
+import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -44,21 +44,17 @@ const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
     }
     try {
       setLoading(true);
-      await dispatch(
+      const result = await dispatch(
         confirmPresentationReport({
           reportId,
           gradeForInstructor: grade,
           feedbackOfInstructor: feedback.trim() || undefined,
         }),
       ).unwrap();
-      toast.success("Đã xác nhận AI report");
+      toast.success(getResponseMessage(result, "Đã xác nhận AI report"));
       handleClose();
     } catch (err: unknown) {
-      const msg =
-        typeof err === "string"
-          ? err
-          : (err as { message?: string })?.message || "Không thể xác nhận AI report";
-      toast.error(msg);
+      toast.error(getErrorMessage(err, "Không thể xác nhận AI report"));
       throw err;
     } finally {
       setLoading(false);

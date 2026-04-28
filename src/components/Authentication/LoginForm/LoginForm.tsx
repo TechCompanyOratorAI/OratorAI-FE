@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { loginUser } from "@/services/features/auth/authSlice";
 import Button from "@/components/yoodli/Button";
 import ScrollAnimation from "@/components/yoodli/ScrollAnimation";
+import { getErrorMessage, getResponseMessage } from "@/lib/toast";
 import { App } from "antd";
 
 type SelectedRole = "Student" | "Instructor" | "Admin" | null;
@@ -53,7 +54,7 @@ const LoginForm: React.FC = () => {
         // Show success notification
         notification.success({
           message: "Đăng nhập thành công",
-          description: "Chào mừng bạn đã quay lại!",
+          description: getResponseMessage(payload, "Chào mừng bạn đã quay lại!"),
           placement: "topRight",
         });
 
@@ -75,10 +76,14 @@ const LoginForm: React.FC = () => {
           navigate("/");
         }
       } else if (loginUser.rejected.match(resultAction)) {
-        // Handle rejected case
+        const backendMessage = getErrorMessage(
+          resultAction.payload ?? resultAction.error,
+          "Đăng nhập thất bại",
+        );
+
         notification.error({
           message: "Đăng nhập thất bại",
-          
+          description: backendMessage,
           placement: "topRight",
         });
       }
