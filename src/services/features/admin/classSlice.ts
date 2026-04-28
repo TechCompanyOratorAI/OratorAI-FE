@@ -14,6 +14,7 @@ import {
   CLASS_UPLOAD_PERMISSION_ENDPOINT,
   ENROLL_KEYS_ENDPOINT,
   ENROLL_KEYS_BY_CLASS_ENDPOINT,
+  ENROLL_KEYS_ROTATE_ENDPOINT,
   CLASS_EMAIL_WHITELIST_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
@@ -29,6 +30,7 @@ export interface EnrollKey {
 export interface CreateEnrollKeyResult {
   keyValue: string | null;
   alreadyExists: boolean;
+  keyId?: number | null;
   expiresAt?: string;
   maxUses?: number;
   usedCount?: number;
@@ -109,8 +111,7 @@ export interface ClassResponse {
 export interface CreateClassPayload {
   courseId: number;
   classCode: string;
-  startDate: string;
-  endDate: string;
+  academicBlockIds: number[];
   maxStudents: number;
   status: "active" | "inactive" | "archived";
 }
@@ -197,6 +198,7 @@ export const createEnrollKey = createAsyncThunk<
         return {
           keyValue: data?.key?.keyValue ?? data?.keyValue ?? null,
           alreadyExists: false,
+          keyId: data?.key?.keyId ?? null,
           expiresAt: data?.key?.expiresAt,
           maxUses: data?.key?.maxUses,
           usedCount: data?.key?.usedCount ?? 0,
@@ -208,6 +210,7 @@ export const createEnrollKey = createAsyncThunk<
         return {
           keyValue: data.existingKey.keyValue ?? null,
           alreadyExists: true,
+          keyId: data.existingKey.keyId ?? null,
           expiresAt: data.existingKey.expiresAt,
           maxUses: data.existingKey.maxUses,
           usedCount: data.existingKey.usedCount,
@@ -222,6 +225,7 @@ export const createEnrollKey = createAsyncThunk<
         return {
           keyValue: data.existingKey.keyValue ?? null,
           alreadyExists: true,
+          keyId: data.existingKey.keyId ?? null,
           expiresAt: data.existingKey.expiresAt,
           maxUses: data.existingKey.maxUses,
           usedCount: data.existingKey.usedCount,
@@ -229,6 +233,40 @@ export const createEnrollKey = createAsyncThunk<
       }
       return rejectWithValue(
         data?.message || "Failed to create enroll key",
+      );
+    }
+  },
+);
+
+export const rotateEnrollKey = createAsyncThunk<
+  CreateEnrollKeyResult,
+  { classId: number; keyId: number },
+  { rejectValue: string }
+>(
+  "class/rotateEnrollKey",
+  async ({ classId, keyId }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(
+        ENROLL_KEYS_ROTATE_ENDPOINT(classId.toString()),
+        { keyId },
+      );
+      const data = response.data;
+      const key =
+        data?.key ||
+        data?.data?.key ||
+        data?.data ||
+        data;
+      return {
+        keyValue: key?.keyValue ?? null,
+        keyId: key?.keyId ?? null,
+        alreadyExists: false,
+        expiresAt: key?.expiresAt,
+        maxUses: key?.maxUses,
+        usedCount: key?.usedCount ?? 0,
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể đổi mã đăng ký",
       );
     }
   },
@@ -244,7 +282,12 @@ export const fetchActiveKeysByClass = createAsyncThunk<
   async (classId) => {
     try {
       const response = await api.get(ENROLL_KEYS_BY_CLASS_ENDPOINT(classId.toString()));
-      const keys: EnrollKey[] = response.data?.keys ?? response.data ?? [];
+      const payload = response.data as
+        | { success?: boolean; data?: EnrollKey[]; keys?: EnrollKey[] }
+        | EnrollKey[];
+      const keys: EnrollKey[] = Array.isArray(payload)
+        ? payload
+        : payload?.data ?? payload?.keys ?? [];
       const now = new Date();
       const active = keys.find(
         (k) =>
@@ -423,13 +466,13 @@ export const deleteClass = createAsyncThunk(
 export const addInstructorToClass = createAsyncThunk(
   "class/addInstructorToClass",
   async (
-    { classId, userId }: { classId: number; userId: number },
+    { classId, userIds }: { classId: number; userIds: number[] },
     { rejectWithValue },
   ) => {
     try {
       const response = await api.post(
         ADD_INSTRUCTOR_TO_CLASS_ENDPOINT(classId.toString()),
-        { instructorIds: [userId] },
+        { instructorIds: userIds },
       );
       return response.data;
     } catch (error: any) {
@@ -808,6 +851,17 @@ const classSlice = createSlice({
         }
       })
       .addCase(createEnrollKey.rejected, (state) => {
+        state.lastCreatedKey = null;
+      });
+
+    builder
+      .addCase(rotateEnrollKey.fulfilled, (state, action) => {
+        state.lastCreatedKey = action.payload.keyValue;
+        if (action.meta.arg.classId) {
+          state.keysByClass[action.meta.arg.classId] = action.payload.keyValue;
+        }
+      })
+      .addCase(rotateEnrollKey.rejected, (state) => {
         state.lastCreatedKey = null;
       });
 

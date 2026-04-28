@@ -20,9 +20,11 @@ interface EnrollKeyModalProps {
   isOpen: boolean;
   classData: { classId: number; classCode: string; className: string } | null;
   /** Nếu lớp đã có key active, truyền vào đây — modal sẽ hiện key thay vì form tạo */
-  existingKey?: string | null;
+  existingKey?: { keyId?: number; keyValue: string } | null;
   onClose: () => void;
   onSubmit: (data: { expiresAt?: Dayjs; maxUses?: number }) => Promise<void>;
+  onRevoke?: (keyId: number) => Promise<void>;
+  onRotate?: (keyId: number) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -32,6 +34,8 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
   existingKey,
   onClose,
   onSubmit,
+  onRevoke,
+  onRotate,
   isLoading,
 }) => {
   const [form] = Form.useForm();
@@ -61,15 +65,15 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
   };
 
   const handleCopy = () => {
-    if (!existingKey) return;
-    navigator.clipboard.writeText(existingKey).then(() => {
+    if (!existingKey?.keyValue) return;
+    navigator.clipboard.writeText(existingKey.keyValue).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
   // ── Lớp đã có key: hiển thị key, không có form tạo ───────────────────────
-  if (existingKey) {
+  if (existingKey?.keyValue) {
     return (
       <Modal
         title={
@@ -80,11 +84,7 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
         }
         open={isOpen}
         onCancel={handleClose}
-        footer={
-          <Button onClick={handleClose} style={{ borderRadius: 8 }}>
-            Đóng
-          </Button>
-        }
+        footer={null}
         width={440}
         styles={{ content: { borderRadius: 14 } }}
       >
@@ -120,7 +120,7 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
                 userSelect: "all",
               }}
             >
-              {existingKey}
+              {existingKey.keyValue}
             </span>
             <Tooltip title="Sao chép">
               {copied ? (
@@ -157,6 +157,43 @@ const EnrollKeyModal: React.FC<EnrollKeyModalProps> = ({
               }}
             >
               {copied ? "Đã sao chép!" : "Sao chép mã"}
+            </Button>
+          </div>
+
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <Button
+              onClick={async () => {
+                if (!existingKey?.keyId || !onRotate) return;
+                setSubmitting(true);
+                try {
+                  await onRotate(existingKey.keyId);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              loading={submitting || isLoading}
+              disabled={!existingKey?.keyId || !onRotate}
+            >
+              Đổi key
+            </Button>
+            <Button
+              danger
+              onClick={async () => {
+                if (!existingKey?.keyId || !onRevoke) return;
+                setSubmitting(true);
+                try {
+                  await onRevoke(existingKey.keyId);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              loading={submitting || isLoading}
+              disabled={!existingKey?.keyId || !onRevoke}
+            >
+              Thu hồi key
+            </Button>
+            <Button onClick={handleClose} style={{ borderRadius: 8 }}>
+              Đóng
             </Button>
           </div>
 

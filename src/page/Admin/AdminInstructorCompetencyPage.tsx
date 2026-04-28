@@ -103,6 +103,7 @@ const AdminInstructorCompetencyPage: React.FC = () => {
   const [reviewTarget, setReviewTarget] = useState<InstructorCompetency | null>(null);
 
   const [reviewForm] = Form.useForm<ReviewFormValues>();
+  const isApproveAction = Form.useWatch("approved", reviewForm);
 
   const instructorOptions = useMemo(() => {
     return users
@@ -364,9 +365,9 @@ const AdminInstructorCompetencyPage: React.FC = () => {
           setIsReviewModalOpen(false);
           setReviewTarget(null);
         }}
-        title={reviewForm.getFieldValue("approved") ? "Duyệt chứng chỉ" : "Từ chối chứng chỉ"}
+        title={isApproveAction ? "Duyệt chứng chỉ" : "Từ chối chứng chỉ"}
         onOk={() => reviewForm.submit()}
-        okText="Xác nhận"
+        okText={isApproveAction ? "Phê duyệt" : "Từ chối"}
         cancelText="Hủy"
         confirmLoading={modalLoading}
         destroyOnHidden

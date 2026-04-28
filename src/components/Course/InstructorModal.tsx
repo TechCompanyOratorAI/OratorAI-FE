@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Select, Button, Space, List, Typography } from "antd";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { Modal, Checkbox, Button, List, Typography } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 import { InstructorInfo } from "@/services/features/admin/classSlice";
 
 const { Text } = Typography;
@@ -10,7 +10,7 @@ interface InstructorModalProps {
   onClose: () => void;
   currentInstructors: InstructorInfo[];
   availableInstructors: InstructorInfo[];
-  onAddInstructor: (userId: number) => void;
+  onAddInstructor: (userIds: number[]) => void;
   onRemoveInstructor: (userId: number) => void;
   isLoading?: boolean;
 }
@@ -24,41 +24,29 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
   onRemoveInstructor,
   isLoading = false,
 }) => {
-  const [selectedInstructorId, setSelectedInstructorId] = useState<
-    number | null
-  >(null);
-  const [instructorList, setInstructorList] = useState<InstructorInfo[]>([]);
-
-  useEffect(() => {
-    setInstructorList(currentInstructors);
-  }, [currentInstructors, isOpen]);
+  const [selectedInstructorIds, setSelectedInstructorIds] = useState<number[]>([]);
 
   const availableForSelection = availableInstructors.filter(
-    (instructor) => !instructorList.find((i) => i.userId === instructor.userId),
+    (instructor) => !currentInstructors.find((i) => i.userId === instructor.userId),
   );
 
   const handleAddInstructor = () => {
-    if (selectedInstructorId === null) return;
-
-    const instructor = availableInstructors.find(
-      (i) => i.userId === selectedInstructorId,
+    if (selectedInstructorIds.length === 0) return;
+    const selectedSet = new Set(selectedInstructorIds);
+    const selectedInstructors = availableForSelection.filter((i) =>
+      selectedSet.has(i.userId),
     );
-    if (instructor) {
-      const newList = [...instructorList, instructor];
-      setInstructorList(newList);
-      onAddInstructor(selectedInstructorId);
-      setSelectedInstructorId(null);
-    }
+    if (selectedInstructors.length === 0) return;
+    onAddInstructor(selectedInstructorIds);
+    setSelectedInstructorIds([]);
   };
 
   const handleRemoveInstructor = (userId: number) => {
-    const newList = instructorList.filter((i) => i.userId !== userId);
-    setInstructorList(newList);
     onRemoveInstructor(userId);
   };
 
   const handleClose = () => {
-    setSelectedInstructorId(null);
+    setSelectedInstructorIds([]);
     onClose();
   };
 
@@ -79,51 +67,53 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
           <Text strong className="block mb-3">
             Danh sách giảng viên của môn học ({availableForSelection.length})
           </Text>
-          <Space.Compact style={{ width: "100%" }}>
-            <Select
-              placeholder="Chọn giảng viên..."
-              value={selectedInstructorId}
-              onChange={(val) => setSelectedInstructorId(val)}
-              disabled={isLoading || availableForSelection.length === 0}
-              style={{ flex: 1 }}
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={availableForSelection.map((i) => ({
-                value: i.userId,
-                label: `${i.firstName} ${i.lastName} (${i.email})`,
-              }))}
-              notFoundContent={
-                availableForSelection.length === 0
-                  ? "Không có giảng viên khả dụng"
-                  : null
-              }
-            />
+          {availableForSelection.length === 0 ? (
+            <div className="text-gray-400 py-4 text-center border rounded-md">
+              Không có giảng viên khả dụng
+            </div>
+          ) : (
+            <Checkbox.Group
+              className="w-full"
+              value={selectedInstructorIds}
+              onChange={(vals) => setSelectedInstructorIds(vals as number[])}
+              disabled={isLoading}
+            >
+              <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                {availableForSelection.map((instructor) => (
+                  <Checkbox
+                    key={instructor.userId}
+                    value={instructor.userId}
+                    className="truncate"
+                  >
+                    <span className="inline-block max-w-full truncate align-bottom">
+                      {instructor.firstName} {instructor.lastName} ({instructor.email})
+                    </span>
+                  </Checkbox>
+                ))}
+              </div>
+            </Checkbox.Group>
+          )}
+          <div className="flex justify-end mt-3">
             <Button
               type="primary"
-              icon={<PlusOutlined />}
               onClick={handleAddInstructor}
               disabled={
                 isLoading ||
-                selectedInstructorId === null ||
+                selectedInstructorIds.length === 0 ||
                 availableForSelection.length === 0
               }
             >
-              Thêm
+              Thêm đã chọn
             </Button>
-          </Space.Compact>
+          </div>
         </div>
 
         {/* Current Instructors */}
         <div>
           <Text strong className="block mb-3">
-            Giảng viên hiện tại ({instructorList.length})
+            Giảng viên hiện tại ({currentInstructors.length})
           </Text>
-          {instructorList.length === 0 ? (
+          {currentInstructors.length === 0 ? (
             <div className="text-gray-400 py-4 text-center">
               Chưa có giảng viên nào
             </div>
@@ -131,7 +121,7 @@ const InstructorModal: React.FC<InstructorModalProps> = ({
             <List
               size="small"
               bordered
-              dataSource={instructorList}
+              dataSource={currentInstructors}
               renderItem={(instructor) => (
                 <List.Item
                   actions={[

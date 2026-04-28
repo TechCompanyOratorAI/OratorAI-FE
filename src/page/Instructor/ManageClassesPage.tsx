@@ -39,7 +39,8 @@ import {
   updateClass,
   createEnrollKey,
   clearLastCreatedKey,
-  fetchActiveKeysByClass,
+  revokeEnrollKey,
+  rotateEnrollKey,
   ClassData,
 } from "@/services/features/admin/classSlice";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
@@ -58,7 +59,7 @@ const isClassExpired = (endDate: string): boolean => {
 const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { classes: apiClasses, loading, lastCreatedKey, keysByClass } =
+  const { classes: apiClasses, loading, lastCreatedKey } =
     useAppSelector((state) => state.class);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,15 +92,23 @@ const ManageClassesPage: React.FC = () => {
     dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
   }, [dispatch]);
 
-  // After classes load, fetch active key for each class in parallel
-  useEffect(() => {
-    if (apiClasses.length === 0) return;
-    apiClasses.forEach((c) => {
-      if (keysByClass[c.classId] === undefined) {
-        void dispatch(fetchActiveKeysByClass(c.classId));
-      }
-    });
-  }, [apiClasses, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+  const getClassEnrollKey = (
+    record: ClassData,
+  ): { keyId?: number; keyValue: string } | null => {
+    const fromActive = record.activeKeys?.find(
+      (k) => k.isActive && !((k as any).isRevoked),
+    );
+    const fromEnrollKeys = record.enrollKeys?.find(
+      (k) => k.isActive && !((k as any).isRevoked),
+    );
+    const fromLegacy = (record as any).enrollkey as string | undefined;
+    if (fromActive?.keyValue) return { keyId: fromActive.keyId, keyValue: fromActive.keyValue };
+    if (fromEnrollKeys?.keyValue) {
+      return { keyId: fromEnrollKeys.keyId, keyValue: fromEnrollKeys.keyValue };
+    }
+    if (fromLegacy) return { keyValue: fromLegacy };
+    return null;
+  };
 
   const filteredCourses = useMemo(() => {
     return apiClasses.filter((course) => {
@@ -170,6 +179,22 @@ const ManageClassesPage: React.FC = () => {
     },
   ];
 
+  const getCourseTermDisplay = (course?: ClassData["course"]) => {
+    if (!course) return "—";
+    const blocks = Array.isArray((course as any).academicBlocks)
+      ? ((course as any).academicBlocks as Array<{ term?: string }>)
+      : [];
+    const terms = Array.from(
+      new Set(
+        blocks
+          .map((block) => block.term)
+          .filter((term): term is string => Boolean(term)),
+      ),
+    );
+    if (terms.length > 0) return terms.join(", ");
+    return course.semester || "—";
+  };
+
   const columns: ColumnsType<ClassData> = [
     {
       title: "Class",
@@ -189,7 +214,7 @@ const ManageClassesPage: React.FC = () => {
       key: "semester",
       render: (_, record) => (
         <span>
-          {record.course?.semester || "—"} {record.course?.academicYear || ""}
+          {getCourseTermDisplay(record.course)} {record.course?.academicYear || ""}
         </span>
       ),
     },
@@ -229,12 +254,8 @@ const ManageClassesPage: React.FC = () => {
       key: "enrollKey",
       width: 220,
       render: (_, record) => {
-        const keyValue = keysByClass[record.classId];
-        // undefined = not fetched yet (loading), null = no key
-        if (keyValue === undefined) {
-          return <span className="text-gray-300 text-xs">...</span>;
-        }
-        if (!keyValue) {
+        const keyValue = getClassEnrollKey(record);
+        if (!keyValue?.keyValue) {
           return (
             <Button
               size="small"
@@ -273,7 +294,7 @@ const ManageClassesPage: React.FC = () => {
                 userSelect: "text",
               }}
             >
-              {keyValue}
+              {keyValue.keyValue}
             </span>
             <Tooltip title="Sao chép">
               <Button
@@ -282,7 +303,7 @@ const ManageClassesPage: React.FC = () => {
                 icon={<CopyOutlined style={{ fontSize: 11 }} />}
                 style={{ padding: 2, minWidth: 20, height: 20 }}
                 onClick={() => {
-                  navigator.clipboard.writeText(keyValue);
+                  navigator.clipboard.writeText(keyValue.keyValue);
                   antdMessage.success("Đã sao chép mã!");
                 }}
               />
@@ -324,7 +345,7 @@ const ManageClassesPage: React.FC = () => {
             }}
             title="Chỉnh sửa"
           />
-          <Tooltip title={keysByClass[record.classId] ? "Xem mã" : "Tạo mã đăng ký"}>
+          <Tooltip title={getClassEnrollKey(record)?.keyValue ? "Xem mã" : "Tạo mã đăng ký"}>
             <Button
               type="text"
               icon={<KeyOutlined />}
@@ -385,6 +406,29 @@ const ManageClassesPage: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleRevokeKey = async (keyId: number) => {
+    if (!keyTargetClass) return;
+    await dispatch(revokeEnrollKey({ classId: keyTargetClass.classId, keyId })).unwrap();
+    antdMessage.success("Đã thu hồi mã đăng ký");
+    setKeyModalOpen(false);
+    setKeyTargetClass(null);
+    await dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
+  };
+
+  const handleRotateKey = async (keyId: number) => {
+    if (!keyTargetClass) return;
+    const result = await dispatch(
+      rotateEnrollKey({ classId: keyTargetClass.classId, keyId }),
+    ).unwrap();
+    antdMessage.success("Đã đổi mã đăng ký");
+    setKeyModalOpen(false);
+    setKeyTargetClass(null);
+    setDisplayKey(result.keyValue);
+    setKeyAlreadyExisted(false);
+    setKeyResultOpen(true);
+    await dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
   };
 
   return (
@@ -527,12 +571,14 @@ const ManageClassesPage: React.FC = () => {
               }
             : null
         }
-        existingKey={keyTargetClass ? (keysByClass[keyTargetClass.classId] ?? null) : null}
+        existingKey={keyTargetClass ? getClassEnrollKey(keyTargetClass) : null}
         onClose={() => {
           setKeyModalOpen(false);
           setKeyTargetClass(null);
         }}
         onSubmit={handleCreateKey}
+        onRevoke={handleRevokeKey}
+        onRotate={handleRotateKey}
         isLoading={loading}
       />
 
