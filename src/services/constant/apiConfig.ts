@@ -153,7 +153,7 @@ export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
 
 // Filter for admin endpoints
 export const FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT = (courseId: string) =>
-  `${BASE_URL}/api/v1/courses/${courseId}/available-instructors`;
+  `${BASE_URL}/api/v1/courses/${courseId}/eligible-instructors`;
 export const FILTER_INSTRUCTORS_BY_CLASS_ENDPOINT = (courseId: string) =>
   `${BASE_URL}/api/v1/courses/${courseId}/instructors`;
 
@@ -323,6 +323,13 @@ export const SUBJECT_AREA_DETAIL_ENDPOINT = (subjectAreaId: string) =>
 
 // Competency endpoints
 export const COMPETENCIES_ENDPOINT = `${BASE_URL}/api/v1/competencies`;
+export const INSTRUCTOR_COMPETENCIES_ENDPOINT = (instructorId: string) =>
+  `${BASE_URL}/api/v1/instructors/${instructorId}/competencies`;
+export const INSTRUCTOR_COMPETENCY_DETAIL_ENDPOINT = (
+  instructorId: string,
+  instructorCompetencyId: string,
+) =>
+  `${BASE_URL}/api/v1/instructors/${instructorId}/competencies/${instructorCompetencyId}`;
 
 // Validate enroll key (preview class info before joining)
 export const VALIDATE_ENROLL_KEY_ENDPOINT = `${BASE_URL}/api/v1/enroll-keys/validate`;

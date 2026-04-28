@@ -192,7 +192,18 @@ const AdminCoursePage: React.FC = () => {
       const detailedCourse = await dispatch(
         fetchCourseDetail(course.courseId),
       ).unwrap();
-      setSelectedCourse(detailedCourse);
+      setSelectedCourse((prev) => ({
+        ...(prev || course),
+        ...detailedCourse,
+        departmentId:
+          detailedCourse?.departmentId ??
+          prev?.departmentId ??
+          course.departmentId,
+        subjectAreaId:
+          detailedCourse?.subjectAreaId ??
+          prev?.subjectAreaId ??
+          course.subjectAreaId,
+      }));
     } catch {
       // Keep basic row data if detail fetch fails.
     }

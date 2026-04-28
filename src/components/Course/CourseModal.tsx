@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Modal,
   Form,
@@ -69,9 +69,17 @@ const CourseModal: React.FC<CourseModalProps> = ({
 }) => {
   const [form] = Form.useForm<CourseFormData>();
   const selectedDepartmentId = Form.useWatch("departmentId", form);
-  const initialAcademicBlockIds =
-    initialData?.academicBlocks?.map((item) => item.academicBlockId) ||
-    (initialData?.academicBlockId ? [initialData.academicBlockId] : []);
+  const defaultDepartmentId = useMemo(
+    () => departments[0]?.departmentId,
+    [departments],
+  );
+
+  const initialAcademicBlockIds = useMemo(
+    () =>
+      initialData?.academicBlocks?.map((item) => item.academicBlockId) ||
+      (initialData?.academicBlockId ? [initialData.academicBlockId] : []),
+    [initialData],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -79,12 +87,12 @@ const CourseModal: React.FC<CourseModalProps> = ({
     form.setFieldsValue({
       courseCode: initialData?.courseCode || "",
       courseName: initialData?.courseName || "",
-      departmentId: initialData?.departmentId || departments[0]?.departmentId,
+      departmentId: initialData?.departmentId || defaultDepartmentId,
       subjectAreaId: initialData?.subjectAreaId || undefined,
       academicBlockIds: initialAcademicBlockIds,
       description: initialData?.description || "",
     });
-  }, [isOpen, initialData, departments, form, initialAcademicBlockIds]);
+  }, [isOpen, initialData, defaultDepartmentId, form, initialAcademicBlockIds]);
 
   const handleFinish = (values: CourseFormData) => {
     onSubmit({

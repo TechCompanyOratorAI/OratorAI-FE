@@ -12,6 +12,7 @@ import {
   LogOut,
   ClipboardList,
   ChevronRight,
+  BadgeCheck,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -39,6 +40,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeItem }) => {
     { id: "ai-configuration", label: "Cấu hình AI", icon: Cog, path: "/admin/ai-configuration" },
     { id: "manage-classes", label: "Quản lý lớp học", icon: Shapes, path: "/admin/manage-classes" },
     { id: "manage-courses", label: "Quản lý môn học", icon: Book, path: "/admin/manage-courses" },
+    { id: "instructor-competencies", label: "Chứng chỉ Instructor", icon: BadgeCheck, path: "/admin/instructor-competencies" },
     { id: "manage-departments", label: "Quản lý chuyên ngành", icon: FolderCog, path: "/admin/manage-departments" },
     { id: "manage-academic-years", label: "Quản lý niên khóa", icon: CalendarRange, path: "/admin/manage-academic-years" },
     { id: "rubric-templates", label: "Mẫu tiêu chí", icon: ClipboardList, path: "/admin/rubric-templates" },
