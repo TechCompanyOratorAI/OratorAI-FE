@@ -96,14 +96,30 @@ export const fetchInstructorByCourse = createAsyncThunk<AdminUser[], string>(
       .get(FILTER_INSTRUCTORS_BY_COURSE_ENDPOINT(courseId))
       .then((res) => {
         const raw = res.data as unknown;
-        // Normalize possible API shapes: array or { data: [...] }
+        // Normalize possible API shapes:
+        // - legacy: array or { data: AdminUser[] }
+        // - eligible endpoint: { data: [{ instructor, eligibility }] }
         if (Array.isArray(raw)) return raw as AdminUser[];
         if (
           raw &&
           typeof raw === "object" &&
           Array.isArray((raw as any).data)
         ) {
-          return (raw as any).data as AdminUser[];
+          const data = (raw as any).data as any[];
+          const mapped = data
+            .map((item) => {
+              if (item && typeof item === "object" && item.instructor) {
+                return item.instructor as AdminUser;
+              }
+              return item as AdminUser;
+            })
+            .filter(
+              (item) =>
+                item &&
+                typeof item === "object" &&
+                Number.isInteger((item as AdminUser).userId),
+            );
+          return mapped;
         }
         return [] as AdminUser[];
       })

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -38,11 +38,26 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
   const [collapsed, setCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const hasBootstrappedNotifications = useRef(false);
 
   const expanded = !collapsed || isHovered;
 
   // Fetch classes + their report stats for the notification badge
   useEffect(() => {
+    if (hasBootstrappedNotifications.current) return;
+
+    // Reuse cached data to avoid re-requesting on each page navigation.
+    if (teachingClasses.length > 0) {
+      const hasAnyReportStats = teachingClasses.some(
+        (cls) => typeof classStats[cls.classId]?.totalReports === "number",
+      );
+      if (hasAnyReportStats) {
+        hasBootstrappedNotifications.current = true;
+        return;
+      }
+    }
+
+    hasBootstrappedNotifications.current = true;
     dispatch(fetchTeachingClasses()).then((action) => {
       if (fetchTeachingClasses.fulfilled.match(action)) {
         const classes = action.payload;
@@ -51,7 +66,7 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
         }
       }
     });
-  }, [dispatch]);
+  }, [dispatch, teachingClasses, classStats]);
 
   const { totalNeedsFeedback, classFeedbackList } = useMemo(() => {
     let total = 0;
@@ -220,7 +235,7 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
               trigger="click"
               placement={expanded ? "bottomRight" : "right"}
               arrow={false}
-              overlayInnerStyle={{ padding: 12, borderRadius: 14, minWidth: 320 }}
+              styles={{ body: { padding: 12, borderRadius: 14, minWidth: 320 } }}
               content={notifContent}
             >
               <button

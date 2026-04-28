@@ -68,6 +68,24 @@ export interface AIRReportSummary {
   } | null;
 }
 
+interface AIRReportsByClassPayload {
+  reports: AIRReportSummary[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface AIRReportsByClassResponse {
+  success: boolean;
+  data: AIRReportSummary[] | AIRReportsByClassPayload;
+  pagination?: {
+    total?: number;
+  };
+}
+
 export interface ClassStudentSummary {
   enrollmentId: number;
   enrolledAt: string;
@@ -137,15 +155,18 @@ export const fetchClassAIRReports = createAsyncThunk(
   "instructorDashboard/fetchClassAIRReports",
   async (classId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get<{
-        success: boolean;
-        data: AIRReportSummary[];
-        pagination?: { total: number };
-      }>(
+      const response = await api.get<AIRReportsByClassResponse>(
         AI_REPORTS_BY_CLASS_ENDPOINT(classId.toString()),
         { params: { page: 1, limit: 100 } },
       );
-      return { classId, reports: response.data.data || [], total: response.data.pagination?.total || 0 };
+      const payload = response.data.data;
+      const reports = Array.isArray(payload) ? payload : payload.reports || [];
+      const total =
+        (Array.isArray(payload) ? undefined : payload.pagination?.total) ??
+        response.data.pagination?.total ??
+        reports.length;
+
+      return { classId, reports, total };
     } catch {
       return rejectWithValue("");
     }

@@ -31,10 +31,12 @@ import InstructorStudentsPage from "@/page/Instructor/InstructorStudentsPage";
 import InstructorClassStudentsPage from "@/page/Instructor/InstructorClassStudentsPage";
 import InstructorApprovalPage from "@/page/Instructor/InstructorApprovalPage";
 import InstructorPresentationsPage from "@/page/Instructor/InstructorPresentationsPage";
+import InstructorSettingsPage from "@/page/Instructor/InstructorSettingsPage";
 import AdminDepartmentPage from "@/page/Admin/AdminDepartmentPage";
 import AdminRubricTemplePage from "@/page/Admin/AdminRubricTemplePage";
 import SharePage from "@/page/Share/SharePage";
 import AdminAcademicYearPage from "@/page/Admin/AdminAcademicYearPage";
+import AdminInstructorCompetencyPage from "@/page/Admin/AdminInstructorCompetencyPage";
 
 const AppRouter = () => {
   return (
@@ -99,6 +101,7 @@ const AppRouter = () => {
           path="/instructor/class/:classId/students"
           element={<InstructorClassStudentsPage />}
         />
+        <Route path="/instructor/settings" element={<InstructorSettingsPage />} />
       </Route>
 
       {/* Protected Student routes */}
@@ -140,6 +143,10 @@ const AppRouter = () => {
         <Route path="/admin/user-management" element={<UserManagementPage />} />
         <Route path="/admin/manage-classes" element={<AdminClassPage />} />
         <Route path="/admin/manage-courses" element={<AdminCoursePage />} />
+        <Route
+          path="/admin/instructor-competencies"
+          element={<AdminInstructorCompetencyPage />}
+        />
         <Route
           path="/admin/manage-departments"
           element={<AdminDepartmentPage />}
