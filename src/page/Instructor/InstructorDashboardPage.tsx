@@ -35,6 +35,7 @@ import {
 } from "@/services/features/instructor/instructorDashboardSlice";
 
 const { Text, Title } = Typography;
+const CLASS_MAX_STUDENTS = 35;
 
 const COLORS = {
   primary: "#4f46e5",
@@ -145,16 +146,44 @@ const InstructorDashboardPage: React.FC = () => {
                 <Card>
                   <div className="flex items-center gap-2 mb-3">
                     <Users size={16} color={COLORS.sky} />
-                    <Text strong>Sinh viên theo lớp</Text>
+                    <Text strong>Sinh viên theo lớp (tối đa 35)</Text>
                   </div>
                   {charts?.studentsByClass?.length ? (
                     <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={charts.studentsByClass} layout="vertical" margin={{ left: 10, right: 10 }}>
+                      <BarChart
+                        data={charts.studentsByClass.map((item: any) => {
+                          const enrolled = Number(item.count) || 0;
+                          return {
+                            ...item,
+                            enrolled,
+                            remaining: Math.max(CLASS_MAX_STUDENTS - enrolled, 0),
+                          };
+                        })}
+                        layout="vertical"
+                        margin={{ left: 10, right: 10 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" allowDecimals={false} />
+                        <XAxis
+                          type="number"
+                          allowDecimals={false}
+                          domain={[0, CLASS_MAX_STUDENTS]}
+                        />
                         <YAxis type="category" dataKey="label" width={70} tick={{ fontSize: 10 }} />
-                        <RechartsTooltip />
-                        <Bar dataKey="count" fill={COLORS.sky} radius={[0, 4, 4, 0]} />
+                        <RechartsTooltip formatter={(value: any) => [`${value} sinh viên`, ""]} />
+                        <Bar
+                          dataKey="enrolled"
+                          stackId="capacity"
+                          name="Đã đăng ký"
+                          fill={COLORS.sky}
+                          radius={[0, 4, 4, 0]}
+                        />
+                        <Bar
+                          dataKey="remaining"
+                          stackId="capacity"
+                          name="Còn trống"
+                          fill="#E5E7EB"
+                          radius={[0, 4, 4, 0]}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <Empty description="Chưa có dữ liệu" image={Empty.PRESENTED_IMAGE_SIMPLE} />}

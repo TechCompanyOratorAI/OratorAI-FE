@@ -123,10 +123,14 @@ export interface InstructorDashboardState {
 
 export const fetchTeachingClasses = createAsyncThunk(
   "instructorDashboard/fetchTeachingClasses",
-  async (_, { rejectWithValue }) => {
+  async (
+    params: { page?: number; limit?: number } = { page: 1, limit: 10 },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.get<{ success: boolean; data: TeachingClassInfo[] }>(
         GET_CLASSES_BY_INSTRUCTOR_ENDPOINT,
+        { params },
       );
       return response.data.data || [];
     } catch (error: any) {

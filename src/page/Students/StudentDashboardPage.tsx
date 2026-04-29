@@ -23,11 +23,12 @@ const { Title, Text } = Typography;
 const StudentDashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
 
-  const { departments, loading: deptLoading } = useAppSelector((state) => state.admin);
+  const { departments, departmentPagination, loading: deptLoading } = useAppSelector(
+    (state) => state.admin,
+  );
   const {
     courses,
     error: courseError,
-    pagination: coursePagination,
   } = useAppSelector((state) => state.course);
   const { classes: apiClasses, loading: classLoading, coursePagination: classPagination } =
     useAppSelector((state) => state.class);
@@ -50,10 +51,13 @@ const StudentDashboardPage: React.FC = () => {
   const [quickJoinOpen, setQuickJoinOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchDepartments());
-    dispatch(fetchCourses({ page: currentPage, limit: 10 }));
+    dispatch(fetchDepartments({ page: currentPage, limit: 10 }));
     dispatch(fetchEnrolledClasses());
   }, [dispatch, currentPage]);
+
+  useEffect(() => {
+    dispatch(fetchCourses({ page: 1, limit: 100 }));
+  }, [dispatch]);
 
   useEffect(() => {
     if (courseError) toast.error(courseError);
@@ -120,13 +124,13 @@ const StudentDashboardPage: React.FC = () => {
                 Khóa học
               </Title>
               <Text style={{ color: "#6B7280", fontSize: 15 }}>
-                Khám phá các bộ môn và khóa học phù hợp với bạn
+                Khám phá các chuyên ngành và môn học phù hợp với bạn
               </Text>
             </div>
 
             <Input
               size="large"
-              placeholder="Tìm kiếm bộ môn, khóa học..."
+              placeholder="Tìm kiếm chuyên ngành, môn học..."
               prefix={<Search style={{ color: "#1da9e6", width: 18, height: 18 }} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -212,7 +216,7 @@ const StudentDashboardPage: React.FC = () => {
 
             <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
               <Text style={{ fontSize: 18, fontWeight: 700, color: "#1F2937" }}>
-                Các bộ môn gần đây
+                Các chuyên ngành
               </Text>
               <Tag
                 style={{
@@ -225,7 +229,7 @@ const StudentDashboardPage: React.FC = () => {
                   fontWeight: 600,
                 }}
               >
-                {filteredDepts.length} bộ môn
+                {filteredDepts.length} chuyên ngành
               </Tag>
             </div>
 
@@ -263,7 +267,7 @@ const StudentDashboardPage: React.FC = () => {
                   style={{ width: 40, height: 40, color: "#D1D5DB", margin: "0 auto 10px" }}
                 />
                 <Text style={{ fontSize: 14, color: "#9CA3AF", display: "block" }}>
-                  Không tìm thấy bộ môn nào
+                  Không tìm thấy chuyên ngành nào
                 </Text>
               </div>
             ) : (
@@ -333,7 +337,7 @@ const StudentDashboardPage: React.FC = () => {
                               color: "white",
                             }}
                           >
-                            {deptCoursesCount} khóa
+                            {deptCoursesCount} môn
                           </div>
                         </div>
 
@@ -362,7 +366,7 @@ const StudentDashboardPage: React.FC = () => {
                               fontWeight: 600,
                             }}
                           >
-                            Bộ môn
+                            Chuyên ngành
                           </Tag>
                         </div>
                       </div>
@@ -370,14 +374,14 @@ const StudentDashboardPage: React.FC = () => {
                   })}
                 </div>
 
-                {coursePagination.total > 10 && (
+                {departmentPagination.total > 10 && (
                   <Pagination
                     current={currentPage}
                     pageSize={10}
-                    total={coursePagination.total}
+                    total={departmentPagination.total}
                     onChange={(p) => setCurrentPage(p)}
                     showSizeChanger={false}
-                    showTotal={(total) => `Tổng ${total} khóa học`}
+                    showTotal={(total) => `Tổng ${total} chuyên ngành`}
                     style={{ textAlign: "center", marginTop: 24 }}
                   />
                 )}

@@ -476,12 +476,6 @@ const PresentationDetailPage: React.FC = () => {
   }, [presentationIdNumber, dispatch]);
 
   useEffect(() => {
-    if (presentationIdNumber) {
-      void dispatch(fetchPresentationReport(presentationIdNumber));
-    }
-  }, [presentationIdNumber, dispatch]);
-
-  useEffect(() => {
     dispatch(clearCurrentReport());
     dispatch(clearCurrentDistribution());
     dispatch(clearTranscript());

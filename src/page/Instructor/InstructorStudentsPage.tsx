@@ -32,15 +32,15 @@ const InstructorStudentsPage: React.FC = () => {
     (state) => state.class,
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortByCreatedAt, setSortByCreatedAt] = useState<"newest" | "oldest">(
     "newest",
   );
 
   useEffect(() => {
-    dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
-  }, [dispatch]);
+    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
 
   const processedClasses = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -64,11 +64,10 @@ const InstructorStudentsPage: React.FC = () => {
       });
   }, [classes, searchTerm, sortByCreatedAt]);
 
-  const totalItems = processedClasses.length || pagination?.total || 0;
-  const paginatedClasses = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return processedClasses.slice(start, start + pageSize);
-  }, [processedClasses, currentPage, pageSize]);
+  const totalItems =
+    searchTerm.trim() || sortByCreatedAt !== "newest"
+      ? processedClasses.length
+      : pagination?.total || 0;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -91,7 +90,7 @@ const InstructorStudentsPage: React.FC = () => {
             <Button
               icon={<RefreshCw size={14} />}
               onClick={() =>
-                dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }))
+                dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }))
               }
               loading={loading}
             >
@@ -148,7 +147,7 @@ const InstructorStudentsPage: React.FC = () => {
           {processedClasses.length > 0 && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {paginatedClasses.map((cls) => (
+                {processedClasses.map((cls) => (
                   <Card
                     key={cls.classId}
                     hoverable
@@ -210,7 +209,7 @@ const InstructorStudentsPage: React.FC = () => {
                       total={totalItems}
                       showSizeChanger
                       showQuickJumper={false}
-                      pageSizeOptions={["9", "18", "45"]}
+                      pageSizeOptions={["10", "20", "50"]}
                       showTotal={(total, range) =>
                         `${range[0]}-${range[1]} trên ${total} lớp`
                       }

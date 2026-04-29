@@ -220,7 +220,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     {department.departmentName}
                   </Text>
                   <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
-                    {department.departmentCode} · {deptCourses.length} khóa học
+                    {department.departmentCode} · {deptCourses.length} môn học
                   </Text>
                 </div>
               </div>
@@ -302,7 +302,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     placeholder={
                       selectedCourseId
                         ? "Tìm lớp theo mã, tên lớp hoặc giảng viên..."
-                        : "Tìm khóa học theo mã hoặc tên..."
+                        : "Tìm môn học theo mã hoặc tên..."
                     }
                     allowClear
                     prefix={<Search style={{ width: 14, height: 14, color: "#9CA3AF" }} />}
@@ -312,7 +312,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     filteredDeptCourses.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "40px 0" }}>
                         <Text style={{ color: "#9CA3AF" }}>
-                          {normalizedKeyword ? "Không tìm thấy khóa học phù hợp" : "Không có khóa học"}
+                          {normalizedKeyword ? "Không tìm thấy môn học phù hợp" : "Không có môn học"}
                         </Text>
                       </div>
                     ) : (
@@ -425,7 +425,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     {department.departmentName}
                   </Text>
                   <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, display: "block" }}>
-                    {department.departmentCode} · {deptCourses.length} khóa học
+                    {department.departmentCode} · {deptCourses.length} môn học
                   </Text>
                 </div>
               </div>
@@ -465,7 +465,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     }}
                   >
                     <BookText style={{ width: 15, height: 15, flexShrink: 0 }} />
-                    Khóa học
+                    Môn học
                   </div>
 
                   {selectedCourseId && (
@@ -506,7 +506,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     placeholder={
                       selectedCourseId
                         ? "Tìm lớp theo mã, tên lớp hoặc giảng viên..."
-                        : "Tìm khóa học theo mã hoặc tên..."
+                        : "Tìm môn học theo mã hoặc tên..."
                     }
                     allowClear
                     prefix={<Search style={{ width: 14, height: 14, color: "#9CA3AF" }} />}
@@ -516,7 +516,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                     filteredDeptCourses.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "40px 0" }}>
                         <Text style={{ color: "#9CA3AF" }}>
-                          {normalizedKeyword ? "Không tìm thấy khóa học phù hợp" : "Không có khóa học"}
+                          {normalizedKeyword ? "Không tìm thấy môn học phù hợp" : "Không có môn học"}
                         </Text>
                       </div>
                     ) : (
@@ -596,7 +596,7 @@ const DepartmentBrowserModal: React.FC<DepartmentBrowserModalProps> = ({
                                 >
                                   {course.isActive ? "Đang mở" : "Đã đóng"}
                                 </Tag>
-                                <Text style={{ fontSize: 10, color: "#9CA3AF" }}>Khóa học</Text>
+                                <Text style={{ fontSize: 10, color: "#9CA3AF" }}>Môn học</Text>
                               </div>
                             </div>
                           </div>

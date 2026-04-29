@@ -19,7 +19,6 @@ import { useAppSelector, useAppDispatch } from "@/services/store/store";
 import { logout } from "@/services/features/auth/authSlice";
 import {
   fetchTeachingClasses,
-  fetchClassAIRReports,
 } from "@/services/features/instructor/instructorDashboardSlice";
 import AppLogo from "@/components/AppLogo/AppLogo";
 
@@ -39,12 +38,18 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
   const [isHovered, setIsHovered] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const hasBootstrappedNotifications = useRef(false);
+  const isManageClassesRoute = location.pathname.includes("/instructor/manage-classes");
+  const isStudentsRoute = location.pathname.includes("/instructor/students");
 
   const expanded = !collapsed || isHovered;
 
-  // Fetch classes + their report stats for the notification badge
+  // Fetch teaching classes once for sidebar context.
   useEffect(() => {
     if (hasBootstrappedNotifications.current) return;
+    if (isManageClassesRoute || isStudentsRoute) {
+      hasBootstrappedNotifications.current = true;
+      return;
+    }
 
     // Reuse cached data to avoid re-requesting on each page navigation.
     if (teachingClasses.length > 0) {
@@ -58,15 +63,8 @@ const SidebarInstructor: React.FC<SidebarInstructorProps> = ({ activeItem }) => 
     }
 
     hasBootstrappedNotifications.current = true;
-    dispatch(fetchTeachingClasses()).then((action) => {
-      if (fetchTeachingClasses.fulfilled.match(action)) {
-        const classes = action.payload;
-        if (Array.isArray(classes)) {
-          classes.forEach((cls) => dispatch(fetchClassAIRReports(cls.classId)));
-        }
-      }
-    });
-  }, [dispatch, teachingClasses, classStats]);
+    dispatch(fetchTeachingClasses({ page: 1, limit: 10 }));
+  }, [dispatch, teachingClasses, classStats, isManageClassesRoute, isStudentsRoute]);
 
   const { totalNeedsFeedback, classFeedbackList } = useMemo(() => {
     let total = 0;
