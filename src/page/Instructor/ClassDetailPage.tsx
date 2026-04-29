@@ -69,7 +69,6 @@ import { toast } from "@/lib/toast";
 import { fetchCourseDetail } from "@/services/features/course/courseSlice";
 import {
   fetchGroupsByClass,
-  fetchGroupDetail,
   Group,
   GroupStudent,
 } from "@/services/features/group/groupSlice";

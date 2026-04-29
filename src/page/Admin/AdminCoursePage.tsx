@@ -485,23 +485,6 @@ const AdminCoursePage: React.FC = () => {
 
   const semesters = Array.from(new Set(courses.map((c) => c.semester)));
 
-  const getBlockDisplaySuffix = (block: any) => {
-    const isPrimary = Boolean(block?.CourseAcademicBlock?.isPrimary);
-    const suffix =
-      block?.blockType === "BLOCK3" ? "BLOCK3" : (block?.half ?? "H1");
-    const code = `${block?.term}-${suffix}`;
-    return isPrimary ? `${code} (Primary)` : code;
-  };
-
-  const getCourseTermsDisplay = (course: CourseData) => {
-    if (!course.academicBlocks || course.academicBlocks.length === 0) {
-      return course.semester || "-";
-    }
-    return course.academicBlocks
-      .map((block) => getBlockDisplaySuffix(block))
-      .join(", ");
-  };
-
   const getCourseTermItems = (course: CourseData) => {
     if (!course.academicBlocks || course.academicBlocks.length === 0) {
       return [{ term: course.semester || "-", details: [] as string[] }];
