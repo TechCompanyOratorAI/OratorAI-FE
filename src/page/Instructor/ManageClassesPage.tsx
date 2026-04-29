@@ -59,7 +59,7 @@ const isClassExpired = (endDate: string): boolean => {
 const ManageClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { classes: apiClasses, loading, lastCreatedKey } =
+  const { classes: apiClasses, loading, lastCreatedKey, pagination } =
     useAppSelector((state) => state.class);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,8 +89,8 @@ const ManageClassesPage: React.FC = () => {
   const { message: antdMessage } = App.useApp();
 
   useEffect(() => {
-    dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
-  }, [dispatch]);
+    dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
+  }, [dispatch, currentPage, pageSize]);
 
   const getClassEnrollKey = (
     record: ClassData,
@@ -132,11 +132,6 @@ const ManageClassesPage: React.FC = () => {
       return matchesSearch;
     });
   }, [apiClasses, searchQuery, selectedFilter]);
-
-  const paginatedCourses = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredCourses.slice(start, start + pageSize);
-  }, [filteredCourses, currentPage, pageSize]);
 
   // Zebra stripe: đổi màu xen kẽ theo hàng + hover effect
   const getRowClassName = (_: any, index: number) => {
@@ -414,7 +409,7 @@ const ManageClassesPage: React.FC = () => {
     antdMessage.success("Đã thu hồi mã đăng ký");
     setKeyModalOpen(false);
     setKeyTargetClass(null);
-    await dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
+    await dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
   };
 
   const handleRotateKey = async (keyId: number) => {
@@ -428,7 +423,7 @@ const ManageClassesPage: React.FC = () => {
     setDisplayKey(result.keyValue);
     setKeyAlreadyExisted(false);
     setKeyResultOpen(true);
-    await dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }));
+    await dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }));
   };
 
   return (
@@ -450,7 +445,7 @@ const ManageClassesPage: React.FC = () => {
             <Button
               icon={<RefreshCw size={14} />}
               onClick={() =>
-                dispatch(fetchClassesByInstructor({ page: 1, limit: 1000 }))
+                dispatch(fetchClassesByInstructor({ page: currentPage, limit: pageSize }))
               }
               loading={loading}
             >
@@ -501,7 +496,7 @@ const ManageClassesPage: React.FC = () => {
               <Tooltip title="Click to view class details" placement="top">
                 <Table
                   columns={columns}
-                  dataSource={paginatedCourses}
+                  dataSource={filteredCourses}
                   rowKey="classId"
                   loading={loading}
                   onRow={(record, index) => ({
@@ -523,7 +518,10 @@ const ManageClassesPage: React.FC = () => {
                       ? {
                           current: currentPage,
                           pageSize,
-                          total: filteredCourses.length,
+                          total:
+                            searchQuery || selectedFilter !== "all"
+                              ? filteredCourses.length
+                              : pagination.total,
                           showSizeChanger: true,
                           pageSizeOptions: ["10", "20", "50"],
                           showTotal: (total, range) =>

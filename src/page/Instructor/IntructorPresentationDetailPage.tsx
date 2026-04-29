@@ -181,13 +181,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
     );
   }, [currentReport]);
 
-  // Auto-fetch report on mount so the floating button can appear
-  useEffect(() => {
-    if (isValidPresentationId && presentationIdNumber) {
-      dispatch(fetchPresentationReport(presentationIdNumber));
-    }
-  }, [isValidPresentationId, presentationIdNumber, dispatch]);
-
   const scrollToReportSection = () => {
     window.requestAnimationFrame(() => {
       if (!reportSectionRef.current) return;

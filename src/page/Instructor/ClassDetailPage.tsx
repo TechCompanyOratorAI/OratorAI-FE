@@ -1076,7 +1076,6 @@ const ClassDetailPage: React.FC = () => {
                             onClick={() => {
                               if (!Number.isFinite(groupId)) return;
                               setSelectedGroupId(groupId);
-                              dispatch(fetchGroupDetail(groupId));
                               setShowGroupDetail(true);
                             }}
                             className={`cursor-pointer rounded-2xl border border-slate-200 p-4 hover:border-sky-300 hover:bg-sky-50/50 hover:shadow-md transition-all group relative ${isEven ? "bg-slate-50" : "bg-white"

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
-import { Input, Button, Typography, Segmented, Tag, ConfigProvider } from "antd";
-import type { SegmentedProps } from "antd";
+import { Input, Button, Typography, Tag, ConfigProvider } from "antd";
 import { SearchOutlined, ReadOutlined, CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { GraduationCap, CheckCircle2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
@@ -14,8 +13,6 @@ const { Title, Text } = Typography;
 
 const BRAND_GRADIENT = "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)";
 
-type FilterType = "all" | "active" | "inactive";
-
 const StudentMyClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -24,7 +21,6 @@ const StudentMyClassesPage: React.FC = () => {
   );
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [quickJoinOpen, setQuickJoinOpen] = useState(false);
 
@@ -62,25 +58,8 @@ const StudentMyClassesPage: React.FC = () => {
       courseCode.includes(searchLower) ||
       instructorName.includes(searchLower);
 
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "active" && cls.class.status === "active") ||
-      (filter === "inactive" && cls.class.status !== "active");
-
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
-
-  const totalClasses = enrolledClasses.length;
-  const activeClasses = enrolledClasses.filter(
-    (c) => c.class.status === "active",
-  ).length;
-  const inactiveClasses = totalClasses - activeClasses;
-
-  const segmentedOptions: SegmentedProps["options"] = [
-    { label: `Tất cả (${totalClasses})`, value: "all" },
-    { label: `Đang mở (${activeClasses})`, value: "active" },
-    { label: `Đã đóng (${inactiveClasses})`, value: "inactive" },
-  ];
 
   return (
     <StudentLayout>
@@ -119,7 +98,7 @@ const StudentMyClassesPage: React.FC = () => {
             </div>
             </div>
 
-            {/* Search + filter row */}
+            {/* Search row */}
             <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 28, flexWrap: "wrap" }}>
               <Input
                 size="large"
@@ -137,18 +116,6 @@ const StudentMyClassesPage: React.FC = () => {
                   flex: 1,
                   minWidth: 240,
                 }}
-              />
-              <Segmented
-                size="large"
-                value={filter}
-                onChange={(val) => setFilter(val as FilterType)}
-                options={segmentedOptions}
-                style={{
-                  borderRadius: 12,
-                  background: "#F3F4F6",
-                  padding: "4px",
-                }}
-                className="[&_.ant-segmented-item]:!rounded-lg [&_.ant-segmented-item]:!px-4 [&_.ant-segmented-item]:!min-h-[40px]"
               />
             </div>
 

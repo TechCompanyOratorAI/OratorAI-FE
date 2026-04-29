@@ -502,6 +502,27 @@ const AdminCoursePage: React.FC = () => {
       .join(", ");
   };
 
+  const getCourseTermItems = (course: CourseData) => {
+    if (!course.academicBlocks || course.academicBlocks.length === 0) {
+      return [{ term: course.semester || "-", details: [] as string[] }];
+    }
+
+    const termMap = new Map<string, string[]>();
+    course.academicBlocks.forEach((block) => {
+      const term = block?.term || "-";
+      const suffix =
+        block?.blockType === "BLOCK3" ? "BLOCK3" : (block?.half ?? "H1");
+      const details = termMap.get(term) || [];
+      details.push(Boolean(block?.CourseAcademicBlock?.isPrimary) ? `${suffix} (Primary)` : suffix);
+      termMap.set(term, details);
+    });
+
+    return Array.from(termMap.entries()).map(([term, details]) => ({
+      term,
+      details,
+    }));
+  };
+
   const getCourseAcademicYearsDisplay = (course: CourseData) => {
     if (!course.academicBlocks || course.academicBlocks.length === 0) {
       return course.academicYear ? String(course.academicYear) : "-";
@@ -573,7 +594,16 @@ const AdminCoursePage: React.FC = () => {
     {
       title: "Học kỳ",
       key: "semester",
-      render: (_, record) => <Tag>{getCourseTermsDisplay(record)}</Tag>,
+      render: (_, record) => (
+        <div className="flex flex-col gap-1">
+          {getCourseTermItems(record).map((item, index) => (
+            <Tag key={`${record.courseId}-term-${index}`} className="w-fit !m-0">
+              {item.term}
+              {item.details.length > 0 ? `: ${item.details.join(", ")}` : ""}
+            </Tag>
+          ))}
+        </div>
+      ),
     },
     {
       title: "Năm học",

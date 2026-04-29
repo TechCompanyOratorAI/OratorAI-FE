@@ -46,6 +46,12 @@ export interface AdminUser {
 export interface AdminState {
   users: AdminUser[];
   departments: Department[];
+  departmentPagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   loading: boolean;
   error: string | null;
 }
@@ -63,6 +69,12 @@ export interface Department {
 const initialState: AdminState = {
   users: [],
   departments: [],
+  departmentPagination: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  },
   loading: false,
   error: null,
 };
@@ -154,23 +166,72 @@ export const fetchInstructorByClass = createAsyncThunk<AdminUser[], string>(
       ),
 );
 //Department fetch
-export const fetchDepartments = createAsyncThunk<Department[]>(
+interface DepartmentPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface FetchDepartmentsResponse {
+  data: Department[];
+  pagination: DepartmentPagination;
+}
+
+export const fetchDepartments = createAsyncThunk<
+  FetchDepartmentsResponse,
+  { page?: number; limit?: number; search?: string; isActive?: boolean } | undefined
+>(
   "admin/fetchDepartments",
-  async (_, { rejectWithValue }) =>
+  async (params, { rejectWithValue }) =>
     api
-      .get(DEPARTMENTS_ENDPOINT)
+      .get(DEPARTMENTS_ENDPOINT, { params })
       .then((res) => {
         const raw = res.data as unknown;
-        // Normalize possible API shapes: array or { data: [...] }
-        if (Array.isArray(raw)) return raw as Department[];
+        // Normalize possible API shapes:
+        // - array
+        // - { data: [...] }
+        // - { data: [...], pagination: {...} }
+        if (Array.isArray(raw)) {
+          const data = raw as Department[];
+          return {
+            data,
+            pagination: {
+              total: data.length,
+              page: params?.page || 1,
+              limit: params?.limit || data.length || 10,
+              totalPages: 1,
+            },
+          };
+        }
         if (
           raw &&
           typeof raw === "object" &&
           Array.isArray((raw as any).data)
         ) {
-          return (raw as any).data as Department[];
+          const data = (raw as any).data as Department[];
+          const pagination = (raw as any).pagination as
+            | DepartmentPagination
+            | undefined;
+          return {
+            data,
+            pagination: pagination || {
+              total: data.length,
+              page: params?.page || 1,
+              limit: params?.limit || data.length || 10,
+              totalPages: 1,
+            },
+          };
         }
-        return [] as Department[];
+        return {
+          data: [] as Department[],
+          pagination: {
+            total: 0,
+            page: params?.page || 1,
+            limit: params?.limit || 10,
+            totalPages: 0,
+          },
+        };
       })
       .catch((err) =>
         rejectWithValue(
@@ -286,9 +347,10 @@ const adminSlice = createSlice({
       })
       .addCase(
         fetchDepartments.fulfilled,
-        (state, action: PayloadAction<Department[]>) => {
+        (state, action: PayloadAction<FetchDepartmentsResponse>) => {
           state.loading = false;
-          state.departments = action.payload;
+          state.departments = action.payload.data;
+          state.departmentPagination = action.payload.pagination;
         },
       )
       .addCase(fetchDepartments.rejected, (state, action) => {

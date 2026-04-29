@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { Modal, Input, Typography, Spin, Tag } from "antd";
-import { KeyRound, CheckCircle, BookOpen, Users, GraduationCap } from "lucide-react";
+import {
+  KeyRound,
+  CheckCircle,
+  BookOpen,
+  Users,
+  GraduationCap,
+  X,
+} from "lucide-react";
 import { useAppDispatch } from "@/services/store/store";
 import {
   enrollClassByKey,
@@ -120,6 +127,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
     <Modal
       open={open}
       onCancel={handleClose}
+      closable={false}
       footer={null}
       centered
       width={460}
@@ -127,14 +135,40 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
       styles={{
         content: {
           borderRadius: 20,
-          padding: "28px 24px 24px",
+          padding: "18px 16px 16px",
           fontFamily: "'Poppins', sans-serif",
           boxShadow: "0 20px 60px rgba(29,169,230,0.15)",
         },
         header: { display: "none" },
       }}
     >
-      <div className="space-y-5">
+      <div className="space-y-5 relative">
+        <button
+          onClick={handleClose}
+          disabled={enrolling || previewing}
+          aria-label="Đóng"
+          style={{
+            position: "absolute",
+            top: -14,
+            right: -6,
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            border: "1px solid #E2E8F0",
+            background: "rgba(248, 250, 252, 0.95)",
+            color: "#64748B",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: enrolling || previewing ? "not-allowed" : "pointer",
+            opacity: enrolling || previewing ? 0.6 : 1,
+            boxShadow: "0 2px 8px rgba(15, 23, 42, 0.12)",
+            transition: "all 0.18s ease",
+            zIndex: 2,
+          }}
+        >
+          <X style={{ width: 18, height: 18 }} />
+        </button>
         {/* Header */}
         <div
           className="flex items-center gap-3 rounded-xl p-4"
