@@ -266,10 +266,11 @@ export const updateCriteriaByInstructor = createAsyncThunk<
     try {
       const response = await axiosInstance.put<{
         success: boolean;
-        data?: ClassRubricCriteria[];
+        data?: ClassRubricCriteria[] | { updated?: number; created?: number };
       }>(UPDATE_CRITERIA_BY_INSTRUCTOR_ENDPOINT(classId.toString()), criteriaData);
 
-      return response.data?.data || null;
+      const responseData = response.data?.data;
+      return Array.isArray(responseData) ? responseData : null;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update criteria by instructor",
@@ -386,7 +387,7 @@ const rubricSlice = createSlice({
       })
       .addCase(updateCriteriaByInstructor.fulfilled, (state, action) => {
         state.actionLoading = false;
-        if (action.payload) {
+        if (Array.isArray(action.payload)) {
           state.criteria = action.payload;
         }
       })

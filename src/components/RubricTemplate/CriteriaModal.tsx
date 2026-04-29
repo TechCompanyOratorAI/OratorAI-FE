@@ -645,7 +645,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả tiêu chi tiết
+                  Mô tả tiêu chí 
                   <RequiredAsterisk />
                 </label>
                 <textarea
