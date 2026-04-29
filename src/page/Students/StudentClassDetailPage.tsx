@@ -34,7 +34,6 @@ import { fetchClassDetail } from "@/services/features/admin/classSlice";
 import {
   fetchGroupsByClass,
   fetchMyGroupByClass,
-  fetchGroupDetail,
   fetchGroupTopic,
   pickGroupTopic,
   createGroup,
@@ -242,13 +241,9 @@ const StudentClassDetailPage: React.FC = () => {
     [myGroupId, dispatch],
   );
 
-  const openGroupDetail = useCallback(
-    (groupId: number) => {
-      dispatch(fetchGroupDetail(groupId));
-      setShowGroupDetail(true);
-    },
-    [dispatch],
-  );
+  const openGroupDetail = useCallback(() => {
+    setShowGroupDetail(true);
+  }, []);
 
   /* ── Loading ── */
   if (loading) {
@@ -449,7 +444,7 @@ const StudentClassDetailPage: React.FC = () => {
                   <Button
                     block
                     className="!rounded-xl"
-                    onClick={() => openGroupDetail(Number(myGroupForClass.groupId))}
+                    onClick={openGroupDetail}
                   >
                     Xem chi tiết nhóm của bạn
                   </Button>
@@ -667,8 +662,7 @@ const StudentClassDetailPage: React.FC = () => {
                       icon={<Users size={14} />}
                       className="!rounded-xl"
                       onClick={() => {
-                        if (myGroupForClass.groupId)
-                          openGroupDetail(Number(myGroupForClass.groupId));
+                        if (myGroupForClass.groupId) openGroupDetail();
                       }}
                     >
                       Nhóm của bạn
@@ -730,7 +724,7 @@ const StudentClassDetailPage: React.FC = () => {
                                 : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
                             }`}
                             onClick={() => {
-                              if (isMyGroup && groupId) openGroupDetail(Number(groupId));
+                              if (isMyGroup && groupId) openGroupDetail();
                             }}
                           >
                             <div className="flex items-start justify-between gap-2 mb-2">
