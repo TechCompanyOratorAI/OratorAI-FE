@@ -145,7 +145,7 @@ export const UPDATE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
 ) =>
   `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classRubricCriteriaId}`;
 export const UPDATE_CRITERIA_BY_INSTRUCTOR_ENDPOINT = (classId: string) =>
-  `${BASE_URL}/api/v1/instructor/classesRubricCriteria/${classId}/rubric/criteria`;
+  `${BASE_URL}/api/v1/classesRubricCriteria/class-rubric-criteria/${classId}`;
 export const DELETE_CLASS_RUBRIC_CRITERIA_ENDPOINT = (
   classRubricCriteriaId: string,
 ) =>

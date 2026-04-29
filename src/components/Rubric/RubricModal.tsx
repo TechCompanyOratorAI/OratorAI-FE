@@ -32,7 +32,6 @@ type RubricCriterionItem = {
   weight: number | string;
   maxScore: number | string;
   displayOrder: number;
-  evaluationGuide?: string;
   isActive?: number | boolean;
 };
 
@@ -42,14 +41,15 @@ interface RubricFormState {
   weight: string;
   maxScore: string;
   displayOrder: string;
-  evaluationGuide: string;
   isActive?: boolean;
 }
 
 interface RubricModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (rubricData: RubricCriteriaPayload, criterionId?: number) => void;
+  onSubmit: (
+    criteriaData: Array<RubricCriteriaPayload & { classRubricCriteriaId?: number }>,
+  ) => Promise<void> | void;
   isLoading?: boolean;
   mode?: "create" | "edit";
   initialData?: Partial<RubricCriteriaPayload>;
@@ -59,7 +59,6 @@ interface RubricModalProps {
   activeCriteriaId?: number;
   onSelectCriteria?: (criterionId: number) => void;
   onDeleteCriteria?: (criterionId: number) => Promise<void>;
-  onReorderCriteria?: (criteria: RubricCriterionItem[]) => Promise<void>;
 }
 
 type SortableCriterionItemProps = {
@@ -180,7 +179,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
   activeCriteriaId,
   onSelectCriteria,
   onDeleteCriteria,
-  onReorderCriteria,
 }) => {
   const WEIGHT_SUGGESTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
   const [formData, setFormData] = useState<RubricFormState>({
@@ -189,7 +187,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
     weight: "1",
     maxScore: "100",
     displayOrder: String(defaultDisplayOrder),
-    evaluationGuide: "",
   });
   const [errors, setErrors] = useState<
     Partial<Record<keyof RubricCriteriaPayload, string>>
@@ -202,6 +199,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const [originalCriteria, setOriginalCriteria] = useState<
     RubricCriterionItem[]
   >([]);
+  const [tempCriterionIdSeed, setTempCriterionIdSeed] = useState(-1);
   const [deletingCriterion, setDeletingCriterion] =
     useState<RubricCriterionItem | null>(null);
   const [showWeightSuggestions, setShowWeightSuggestions] = useState(false);
@@ -213,12 +211,14 @@ const RubricModal: React.FC<RubricModalProps> = ({
   );
 
   useEffect(() => {
+    if (!isOpen) return;
     const sorted = [...criteriaList].sort(
       (a, b) => a.displayOrder - b.displayOrder,
     );
     setLocalCriteria(sorted);
     setOriginalCriteria(sorted);
-  }, [criteriaList]);
+    setTempCriterionIdSeed(-1);
+  }, [isOpen, criteriaList]);
 
   // Calculate total percentage of all criteria
   const totalActivePercentage = useMemo(() => {
@@ -227,6 +227,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
       0,
     );
   }, [localCriteria]);
+
+  const normalizedTotalActivePercentage = useMemo(() => {
+    return Math.round((totalActivePercentage + Number.EPSILON) * 100) / 100;
+  }, [totalActivePercentage]);
 
   // Calculate what the total would be if current form is submitted
   const potentialTotalPercentage = useMemo(() => {
@@ -248,8 +252,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
   }, [selectedCriterionId, formData, localCriteria, totalActivePercentage]);
 
   const isPercentageComplete = useMemo(() => {
-    return totalActivePercentage >= 100;
-  }, [totalActivePercentage]);
+    return normalizedTotalActivePercentage >= 99.5;
+  }, [normalizedTotalActivePercentage]);
 
   const isPercentageExceeded = useMemo(() => {
     return potentialTotalPercentage > 100;
@@ -263,11 +267,9 @@ const RubricModal: React.FC<RubricModalProps> = ({
         weight: String(Number(criterion.weight)),
         maxScore: "100",
         displayOrder: String(criterion.displayOrder),
-        evaluationGuide:
-          criterion.evaluationGuide || initialData?.evaluationGuide || "",
       });
     },
-    [initialData?.evaluationGuide],
+    [],
   );
 
   useEffect(() => {
@@ -287,7 +289,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
         weight: "1",
         maxScore: "100",
         displayOrder: String(defaultDisplayOrder),
-        evaluationGuide: "",
         isActive: true,
       });
       setErrors({});
@@ -313,7 +314,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
         displayOrder: String(
           Number(initialData?.displayOrder ?? defaultDisplayOrder),
         ),
-        evaluationGuide: initialData?.evaluationGuide ?? "",
       });
     }
 
@@ -340,12 +340,21 @@ const RubricModal: React.FC<RubricModalProps> = ({
     });
   }, [localCriteria, searchTerm]);
 
-  const isOrderChanged = useMemo(() => {
+  const hasCriteriaChanged = useMemo(() => {
     if (localCriteria.length !== originalCriteria.length) return true;
     return localCriteria.some(
-      (criterion, index) =>
-        criterion.classRubricCriteriaId !==
-        originalCriteria[index]?.classRubricCriteriaId,
+      (criterion, index) => {
+        const original = originalCriteria[index];
+        if (!original) return true;
+        return (
+          criterion.classRubricCriteriaId !== original.classRubricCriteriaId ||
+          criterion.criteriaName !== original.criteriaName ||
+          criterion.criteriaDescription !== original.criteriaDescription ||
+          Number(criterion.weight) !== Number(original.weight) ||
+          Number(criterion.maxScore) !== Number(original.maxScore) ||
+          criterion.displayOrder !== original.displayOrder
+        );
+      },
     );
   }, [localCriteria, originalCriteria]);
 
@@ -367,7 +376,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
   }, [nextOrder, selectedCriterionId]);
 
-  const normalizeNumberValue = (field: "persen" | "displayOrder", raw: string) => {
+  const normalizeNumberValue = (field: "weight" | "displayOrder", raw: string) => {
     if (raw.trim() === "") {
       setFormData((prev) => ({ ...prev, [field]: "" }));
       return;
@@ -384,38 +393,58 @@ const RubricModal: React.FC<RubricModalProps> = ({
     setFormData((prev) => ({ ...prev, [field]: String(parsed) }));
   };
 
-  const validateForm = () => {
-    const newErrors: Partial<Record<keyof RubricCriteriaPayload, string>> = {};
-    const weight = Number(formData.weight);
-    const displayOrder = Number(formData.displayOrder);
+  const normalizeCriteriaOrder = useCallback((criteria: RubricCriterionItem[]) => {
+    return [...criteria]
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      }));
+  }, []);
 
-    if (!formData.criteriaName.trim()) {
-      newErrors.criteriaName = "Tên tiêu chí không được để trống";
-    }
-    if (!Number.isFinite(weight) || weight <= 0) {
-      newErrors.weight = "Trọng số phải lớn hơn 0";
-    }
-    if (!Number.isFinite(displayOrder) || displayOrder <= 0) {
-      newErrors.displayOrder = "Thứ tự hiển thị phải lớn hơn 0";
-    }
-
-    // Check if total percentage exceeds 100% when this is marked as active
-    if (formData.isActive && potentialTotalPercentage > 100) {
-      newErrors.weight = `Tổng tỷ lệ sẽ vượt quá 100%`;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const applyFormToSelectedCriterion = useCallback(
+    (nextForm: RubricFormState) => {
+      if (selectedCriterionId === null) return;
+      setLocalCriteria((previous) => {
+        const updated = previous.map((criterion) => {
+          if (criterion.classRubricCriteriaId !== selectedCriterionId) {
+            return criterion;
+          }
+          const parsedWeight = Number(nextForm.weight);
+          const parsedDisplayOrder = Number(nextForm.displayOrder);
+          return {
+            ...criterion,
+            criteriaName: nextForm.criteriaName,
+            criteriaDescription: nextForm.criteriaDescription,
+            weight: Number.isFinite(parsedWeight) && parsedWeight > 0
+              ? parsedWeight
+              : criterion.weight,
+            displayOrder:
+              Number.isFinite(parsedDisplayOrder) && parsedDisplayOrder > 0
+                ? Math.trunc(parsedDisplayOrder)
+                : criterion.displayOrder,
+          };
+        });
+        return normalizeCriteriaOrder(updated);
+      });
+    },
+    [normalizeCriteriaOrder, selectedCriterionId],
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+      if (name !== "displayOrder") {
+        applyFormToSelectedCriterion(next);
+      }
+      return next;
+    });
 
     if (errors[name as keyof RubricCriteriaPayload]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -435,26 +464,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
       );
 
       if (oldIndex < 0 || newIndex < 0) return previous;
-      return arrayMove(previous, oldIndex, newIndex);
+      return arrayMove(previous, oldIndex, newIndex).map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      }));
     });
   }, []);
-
-  const handleSaveReorder = useCallback(async () => {
-    if (!onReorderCriteria || !isOrderChanged) return;
-
-    const reorderedCriteria = localCriteria.map((criterion, index) => ({
-      ...criterion,
-      displayOrder: index + 1,
-    }));
-
-    await onReorderCriteria(reorderedCriteria);
-    setLocalCriteria(reorderedCriteria);
-    setOriginalCriteria(reorderedCriteria);
-  }, [isOrderChanged, localCriteria, onReorderCriteria]);
-
-  const handleCancelReorder = useCallback(() => {
-    setLocalCriteria(originalCriteria);
-  }, [originalCriteria]);
 
   const handleSelectCriterion = useCallback(
     (criterion: RubricCriterionItem) => {
@@ -466,26 +481,77 @@ const RubricModal: React.FC<RubricModalProps> = ({
     [onSelectCriteria, setFormFromCriterion],
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleSubmitAllChanges = async () => {
+    const changedCriteria = localCriteria
+      .map((criterion, index) => {
+        const normalized = {
+          ...(criterion.classRubricCriteriaId > 0
+            ? { classRubricCriteriaId: criterion.classRubricCriteriaId }
+            : {}),
+          criteriaName: criterion.criteriaName,
+          criteriaDescription: criterion.criteriaDescription,
+          weight: Number(criterion.weight),
+          maxScore: Number(criterion.maxScore),
+          displayOrder: index + 1,
+          evaluationGuide: "",
+        };
+        const original = originalCriteria.find(
+          (item) =>
+            item.classRubricCriteriaId === criterion.classRubricCriteriaId,
+        );
+        if (!original) return normalized;
 
-    onSubmit(
-      {
-        criteriaName: formData.criteriaName.trim(),
-        criteriaDescription: formData.criteriaDescription.trim(),
-        weight: Number(formData.weight),
-        maxScore: 100,
-        displayOrder: Math.trunc(Number(formData.displayOrder)),
-        evaluationGuide: formData.evaluationGuide.trim(),
-      },
-      selectedCriterionId ?? undefined,
+        const isChanged =
+          criterion.criteriaName !== original.criteriaName ||
+          criterion.criteriaDescription !== original.criteriaDescription ||
+          Number(criterion.weight) !== Number(original.weight) ||
+          Number(criterion.maxScore) !== Number(original.maxScore) ||
+          index + 1 !== original.displayOrder;
+        return isChanged ? normalized : null;
+      })
+      .filter((criterion) => criterion !== null);
+
+    if (changedCriteria.length === 0) return;
+    await onSubmit(changedCriteria);
+    setOriginalCriteria(
+      localCriteria.map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      })),
     );
   };
 
   const handleDeleteCriterion = async () => {
-    if (!onDeleteCriteria || !deletingCriterion) return;
+    if (!deletingCriterion) return;
 
+    // Draft criterion (temporary id) exists only in modal state.
+    if (deletingCriterion.classRubricCriteriaId <= 0) {
+      setLocalCriteria((previous) =>
+        normalizeCriteriaOrder(
+          previous.filter(
+            (item) =>
+              item.classRubricCriteriaId !==
+              deletingCriterion.classRubricCriteriaId,
+          ),
+        ),
+      );
+      if (selectedCriterionId === deletingCriterion.classRubricCriteriaId) {
+        const nextOrderAfterDelete = Math.max(1, localCriteria.length);
+        setSelectedCriterionId(null);
+        setFormData({
+          criteriaName: "",
+          criteriaDescription: "",
+          weight: "1",
+          maxScore: "100",
+          displayOrder: String(nextOrderAfterDelete),
+        });
+        setErrors({});
+      }
+      setDeletingCriterion(null);
+      return;
+    }
+
+    if (!onDeleteCriteria) return;
     await onDeleteCriteria(deletingCriterion.classRubricCriteriaId);
     setDeletingCriterion(null);
   };
@@ -541,14 +607,14 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     Phần trăm
                   </p>
                   <p
-                    className={`text-lg font-bold ${isPercentageComplete
-                      ? "text-emerald-700"
-                      : "text-rose-700"
+                    className={`text-lg font-bold ${normalizedTotalActivePercentage > 100
+                      ? "text-rose-700"
+                      : isPercentageComplete
+                        ? "text-emerald-700"
+                        : "text-rose-700"
                       }`}
                   >
-                    {totalActivePercentage % 1 === 0
-                      ? Math.floor(totalActivePercentage)
-                      : totalActivePercentage.toFixed(1)}
+                    {Math.round(normalizedTotalActivePercentage)}
                     %
                   </p>
                 </div>
@@ -561,6 +627,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
               <p className="text-lg font-bold text-slate-900">{nextOrder}</p>
             </div>
           </div>
+
         </div>
 
         <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[1.1fr_1fr]">
@@ -572,14 +639,27 @@ const RubricModal: React.FC<RubricModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedCriterionId(null);
+                  const nextTempId = tempCriterionIdSeed;
+                  const draftCriterion: RubricCriterionItem = {
+                    classRubricCriteriaId: nextTempId,
+                    criteriaName: "",
+                    criteriaDescription: "",
+                    weight: 1,
+                    maxScore: 100,
+                    displayOrder: nextOrder,
+                    isActive: 1,
+                  };
+                  setLocalCriteria((previous) =>
+                    normalizeCriteriaOrder([...previous, draftCriterion]),
+                  );
+                  setSelectedCriterionId(nextTempId);
+                  setTempCriterionIdSeed((previous) => previous - 1);
                   setFormData({
                     criteriaName: "",
                     criteriaDescription: "",
                     weight: "1",
                     maxScore: "100",
                     displayOrder: String(nextOrder),
-                    evaluationGuide: "",
                   });
                   setErrors({});
                 }}
@@ -595,7 +675,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm theo tên, mô tả, hướng dẫn..."
+                placeholder="Tìm theo tên, mô tả..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-300 focus:bg-white"
               />
             </div>
@@ -639,28 +719,9 @@ const RubricModal: React.FC<RubricModalProps> = ({
               )}
             </div>
 
-            {isOrderChanged && (
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveReorder}
-                  disabled={isLoading || !onReorderCriteria}
-                  className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isLoading ? "Đang lưu..." : "Lưu thứ tự"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelReorder}
-                  disabled={isLoading}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Hủy
-                </button>
-              </div>
-            )}
           </section>
 
+          <div className="self-start">
           <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
@@ -672,13 +733,13 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 </h4>
                 <p className="text-xs text-slate-500">
                   {selectedCriterionId
-                    ? "Cập nhật chi tiết tiêu chí và hướng dẫn đánh giá"
+                    ? "Cập nhật chi tiết tiêu chí"
                     : "Tạo tiêu chí đánh giá cho lớp học"}
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={(event) => event.preventDefault()} className="space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
                   Tên tiêu chí
@@ -700,7 +761,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả tiêu chi tiết
+                  Mô tả tiêu chí 
                 </label>
                 <textarea
                   rows={2}
@@ -720,12 +781,19 @@ const RubricModal: React.FC<RubricModalProps> = ({
                   <div className="relative">
                     <input
                       type="number"
-                      step="0.1"
+                      step="1"
                       name="weight"
                       value={formData.weight}
+                      onWheel={(event) => event.preventDefault()}
                       onFocus={() => setShowWeightSuggestions(true)}
                       onBlur={() => {
-                        normalizeNumberValue("persen", formData.weight);
+                        normalizeNumberValue("weight", formData.weight);
+                        applyFormToSelectedCriterion({
+                          ...formData,
+                          weight: String(
+                            Math.trunc(Number(formData.weight || 0)) || 1,
+                          ),
+                        });
                         setTimeout(() => setShowWeightSuggestions(false), 120);
                       }}
                       onChange={handleChange}
@@ -786,10 +854,13 @@ const RubricModal: React.FC<RubricModalProps> = ({
                     value={formData.displayOrder}
                     onChange={handleChange}
                     onBlur={() =>
-                      normalizeNumberValue(
-                        "displayOrder",
-                        formData.displayOrder,
-                      )
+                      (() => {
+                        normalizeNumberValue(
+                          "displayOrder",
+                          formData.displayOrder,
+                        );
+                        applyFormToSelectedCriterion(formData);
+                      })()
                     }
                     className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.displayOrder
                       ? "border-rose-300"
@@ -804,42 +875,36 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Hướng dẫn đánh giá
-                </label>
-                <textarea
-                  rows={3}
-                  name="evaluationGuide"
-                  value={formData.evaluationGuide}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
-                  placeholder="Nhập hướng dẫn đánh giá..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-1">
+            </form>
+            
+          </section>
+          <div className="mt-2">
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Đóng
+              </button>
+              {normalizedTotalActivePercentage >= 99.5 && (
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
+                  onClick={handleSubmitAllChanges}
+                  disabled={isLoading || !hasCriteriaChanged}
                   className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading
-                    ? "Đang lưu..."
-                    : !selectedCriterionId
-                      ? "Tạo tiêu chí"
-                      : "Cập nhật tiêu chí"}
+                  {isLoading ? "Đang cập nhật..." : "Cập nhật tất cả"}
                 </button>
-              </div>
-            </form>
-          </section>
+              )}
+            </div>
+            {hasCriteriaChanged && (
+              <p className="mt-1 text-xs font-medium text-sky-700 text-right">
+                Có thay đổi chưa lưu. Nhấn "Cập nhật tất cả".
+              </p>
+            )}
+          </div>
+          </div>
         </div>
       </div>
 
@@ -856,7 +921,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 </h4>
                 <p className="mt-1 text-sm text-slate-600">
                   Bạn có chắc muốn xóa{" "}
-                  {deletingCriterion.criteriaName}?
+                  <span className="font-semibold">{deletingCriterion.criteriaName}</span>?<br /> Thao tác này không thể khôi phục.
                 </p>
               </div>
             </div>
