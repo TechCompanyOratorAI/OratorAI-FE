@@ -28,6 +28,10 @@ import {
   CheckOutlined,
   CloseOutlined,
   UpOutlined,
+  FileExcelOutlined,
+  ReloadOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import {
   Calendar,
@@ -52,7 +56,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
-import { fetchClassDetail } from "@/services/features/admin/classSlice";
+import {
+  fetchClassDetail,
+  fetchEmailWhitelist,
+} from "@/services/features/admin/classSlice";
 import {
   setUploadPermissionByClass as setUploadPermissionByClassAction,
 } from "@/services/features/uploadPermission/uploadPermissionSlice";
@@ -193,6 +200,11 @@ const ClassDetailPage: React.FC = () => {
   const uploadPermission = useAppSelector((state) => state.uploadPermission.permissions[classIdNumber ?? -1]);
   const isUploadEnabled = uploadPermission?.isUploadEnabled ?? selectedClass?.isUploadEnabled ?? false;
 
+  // Whitelist state
+  const [whitelistLoading, setWhitelistLoading] = useState(false);
+  const [whitelistData, setWhitelistData] = useState<{ hasWhitelist: boolean; total: number; emails: string[] } | null>(null);
+  const [showWhitelistEmails, setShowWhitelistEmails] = useState(false);
+
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
   const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
@@ -247,6 +259,29 @@ const ClassDetailPage: React.FC = () => {
       dispatch(fetchRubricTemplatesForInstructor());
     }
   }, [classIdNumber, dispatch]);
+
+  const loadWhitelist = async () => {
+    if (!classIdNumber) return;
+    setWhitelistLoading(true);
+    try {
+      const result = await dispatch(fetchEmailWhitelist(classIdNumber)).unwrap();
+      setWhitelistData({
+        hasWhitelist: result.hasWhitelist ?? false,
+        total: result.total ?? 0,
+        emails: result.emails ?? [],
+      });
+    } catch {
+      setWhitelistData({ hasWhitelist: false, total: 0, emails: [] });
+    } finally {
+      setWhitelistLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (classIdNumber) {
+      loadWhitelist();
+    }
+  }, [classIdNumber]);
 
   useEffect(() => {
     if (!selectedTemplateId) return;
@@ -861,6 +896,84 @@ const ClassDetailPage: React.FC = () => {
               </div>
             </div>
           </section> */}
+
+          {/* Email Whitelist Card - Danh sách sinh viên được phép vào lớp */}
+          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-700 to-emerald-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20">
+                  <FileExcelOutlined className="text-xl text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Danh sách sinh viên được phép tham gia</h3>
+                  <p className="text-xs text-white/70">
+                    {whitelistData?.hasWhitelist
+                      ? `Whitelist đang bật — ${whitelistData.total} email được phép join`
+                      : "Chưa có whitelist — tất cả sinh viên đều có thể tham gia bằng mã đăng ký"
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AntButton
+                  type="text"
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  loading={whitelistLoading}
+                  onClick={loadWhitelist}
+                  className="!text-white hover:!bg-white/20 !rounded-lg"
+                  title="Làm mới"
+                />
+                {whitelistData?.hasWhitelist && (
+                  <AntButton
+                    type="text"
+                    size="small"
+                    icon={showWhitelistEmails ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                    onClick={() => setShowWhitelistEmails((v) => !v)}
+                    className="!text-white hover:!bg-white/20 !rounded-lg"
+                  >
+                    {showWhitelistEmails ? "Ẩn" : "Xem danh sách"}
+                  </AntButton>
+                )}
+              </div>
+            </div>
+
+            {whitelistLoading && (
+              <div className="px-6 py-3 bg-emerald-50 border-t border-emerald-100 flex items-center gap-2">
+                <Spin size="small" />
+                <span className="text-sm text-emerald-700">Đang tải danh sách...</span>
+              </div>
+            )}
+
+            {!whitelistLoading && whitelistData?.hasWhitelist && showWhitelistEmails && (
+              <div className="px-6 py-4 border-t border-emerald-100">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                  Danh sách email ({whitelistData.total} sinh viên)
+                </p>
+                <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 flex flex-wrap gap-1.5">
+                  {whitelistData.emails.slice(0, 200).map((email) => (
+                    <Tag key={email} color="green" className="text-xs mb-0 font-mono">
+                      {email}
+                    </Tag>
+                  ))}
+                  {whitelistData.total > 200 && (
+                    <Tag color="default" className="text-xs">
+                      +{whitelistData.total - 200} email khác
+                    </Tag>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!whitelistLoading && !whitelistData?.hasWhitelist && (
+              <div className="px-6 py-3 bg-slate-50 border-t border-emerald-100 flex items-center gap-2">
+                <ExclamationCircleOutlined className="text-emerald-500 text-sm" />
+                <span className="text-sm text-slate-600">
+                  Admin chưa import danh sách sinh viên. Tất cả sinh viên có mã đăng ký đều có thể tham gia.
+                </span>
+              </div>
+            )}
+          </section>
 
           {/* Upload Permission Card */}
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

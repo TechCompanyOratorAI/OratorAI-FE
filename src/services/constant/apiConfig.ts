@@ -316,6 +316,12 @@ export const TRANSCRIPT_BY_PRESENTATION_ENDPOINT = (presentationId: string) =>
 // Email Whitelist endpoints
 export const CLASS_EMAIL_WHITELIST_ENDPOINT = (classId: string) =>
   `${BASE_URL}/api/v1/classes/${classId}/email-whitelist`;
+export const CLASS_EMAIL_WHITELIST_ADD_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/email-whitelist/add`;
+export const CLASS_EMAIL_WHITELIST_UPDATE_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/email-whitelist/update`;
+export const CLASS_EMAIL_WHITELIST_SINGLE_ENDPOINT = (classId: string) =>
+  `${BASE_URL}/api/v1/classes/${classId}/email-whitelist/single`;
 
 
 // Subject area endpoints
