@@ -16,6 +16,9 @@ import {
   ENROLL_KEYS_BY_CLASS_ENDPOINT,
   ENROLL_KEYS_ROTATE_ENDPOINT,
   CLASS_EMAIL_WHITELIST_ENDPOINT,
+  CLASS_EMAIL_WHITELIST_ADD_ENDPOINT,
+  CLASS_EMAIL_WHITELIST_UPDATE_ENDPOINT,
+  CLASS_EMAIL_WHITELIST_SINGLE_ENDPOINT,
 } from "@/services/constant/apiConfig";
 
 export interface EnrollKey {
@@ -559,6 +562,60 @@ export const deleteEmailWhitelist = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể xóa danh sách email",
+      );
+    }
+  },
+);
+
+export const addEmailToWhitelist = createAsyncThunk(
+  "class/addEmailToWhitelist",
+  async ({ classId, email }: { classId: number; email: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(
+        CLASS_EMAIL_WHITELIST_ADD_ENDPOINT(classId.toString()),
+        { email },
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể thêm email",
+      );
+    }
+  },
+);
+
+export const updateEmailInWhitelist = createAsyncThunk(
+  "class/updateEmailInWhitelist",
+  async (
+    { classId, oldEmail, newEmail }: { classId: number; oldEmail: string; newEmail: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.patch(
+        CLASS_EMAIL_WHITELIST_UPDATE_ENDPOINT(classId.toString()),
+        { oldEmail, newEmail },
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể cập nhật email",
+      );
+    }
+  },
+);
+
+export const removeEmailFromWhitelist = createAsyncThunk(
+  "class/removeEmailFromWhitelist",
+  async ({ classId, email }: { classId: number; email: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(
+        CLASS_EMAIL_WHITELIST_SINGLE_ENDPOINT(classId.toString()),
+        { data: { email } },
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể xóa email",
       );
     }
   },
