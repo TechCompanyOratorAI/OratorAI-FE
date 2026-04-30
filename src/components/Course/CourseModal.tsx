@@ -10,6 +10,7 @@ import {
   Typography,
 } from "antd";
 import { CourseData } from "@/services/features/course/courseSlice";
+import dayjs from "dayjs";
 
 const { Text } = Typography;
 
@@ -149,6 +150,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     .map((item) => ({
       value: item.academicBlockId,
       label: formatAcademicBlockLabel(item),
+      startDate: item.startDate,
       endDate: item.endDate,
       term: item.term,
       sortHalf:
@@ -174,6 +176,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
       Array<{
         value: number;
         label: string;
+        startDate: string;
         endDate: string;
         term: string;
         sortHalf: number;
@@ -318,7 +321,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                         <Checkbox
                           key={option.value}
                           value={option.value}
-                          disabled={new Date(option.endDate).getTime() < Date.now()}
+                          disabled={dayjs(option.startDate).isBefore(dayjs(), "day")}
                         >
                           {option.label}
                         </Checkbox>
