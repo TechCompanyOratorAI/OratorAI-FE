@@ -133,6 +133,9 @@ const AdminAcademicYearPage: React.FC = () => {
   const [includeB3, setIncludeB3] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const today = dayjs().startOf("day");
+  const disablePastDate = (current: dayjs.Dayjs) =>
+    current.isBefore(today, "day");
 
   const notifySuccess = (title: string, description: string) => {
     notification.success({
@@ -992,6 +995,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeH1}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
             <Form.Item
@@ -1012,6 +1016,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeH1}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
           </div>
@@ -1055,6 +1060,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeH2}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
             <Form.Item
@@ -1075,6 +1081,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeH2}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
           </div>
@@ -1118,6 +1125,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeB3}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
             <Form.Item
@@ -1138,6 +1146,7 @@ const AdminAcademicYearPage: React.FC = () => {
                 className="w-full"
                 format="YYYY-MM-DD"
                 disabled={!includeB3}
+                disabledDate={disablePastDate}
               />
             </Form.Item>
           </div>
@@ -1211,9 +1220,25 @@ const AdminAcademicYearPage: React.FC = () => {
           <Form.Item
             name="startDate"
             label="Ngày bắt đầu"
-            rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu." }]}
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày bắt đầu." },
+              {
+                validator: (_, value: dayjs.Dayjs) => {
+                  if (!value) return Promise.resolve();
+                  return value.isBefore(today, "day")
+                    ? Promise.reject(
+                        new Error("Không thể chọn ngày bắt đầu trong quá khứ."),
+                      )
+                    : Promise.resolve();
+                },
+              },
+            ]}
           >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
+            <DatePicker
+              className="w-full"
+              format="YYYY-MM-DD"
+              disabledDate={disablePastDate}
+            />
           </Form.Item>
           <Form.Item
             name="endDate"
@@ -1225,6 +1250,11 @@ const AdminAcademicYearPage: React.FC = () => {
                 validator(_, value: dayjs.Dayjs) {
                   const start = getFieldValue("startDate");
                   if (!value || !start) return Promise.resolve();
+                  if (value.isBefore(today, "day")) {
+                    return Promise.reject(
+                      new Error("Không thể chọn ngày kết thúc trong quá khứ."),
+                    );
+                  }
                   return value.isAfter(start, "day")
                     ? Promise.resolve()
                     : Promise.reject(
@@ -1234,7 +1264,11 @@ const AdminAcademicYearPage: React.FC = () => {
               }),
             ]}
           >
-            <DatePicker className="w-full" format="YYYY-MM-DD" />
+            <DatePicker
+              className="w-full"
+              format="YYYY-MM-DD"
+              disabledDate={disablePastDate}
+            />
           </Form.Item>
           <Form.Item name="isActive" label="Kích hoạt" valuePropName="checked" initialValue>
             <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
