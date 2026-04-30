@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Edit,
@@ -59,6 +59,7 @@ interface RubricModalProps {
   activeCriteriaId?: number;
   onSelectCriteria?: (criterionId: number) => void;
   onDeleteCriteria?: (criterionId: number) => Promise<void>;
+  addNewTrigger?: number;
 }
 
 type SortableCriterionItemProps = {
@@ -179,6 +180,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
   activeCriteriaId,
   onSelectCriteria,
   onDeleteCriteria,
+  addNewTrigger = 0,
 }) => {
   const WEIGHT_SUGGESTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
   const [formData, setFormData] = useState<RubricFormState>({
@@ -203,6 +205,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const [deletingCriterion, setDeletingCriterion] =
     useState<RubricCriterionItem | null>(null);
   const [showWeightSuggestions, setShowWeightSuggestions] = useState(false);
+  const lastHandledAddTriggerRef = useRef(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -234,7 +237,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
   // Calculate what the total would be if current form is submitted
   const potentialTotalPercentage = useMemo(() => {
-    if (selectedCriterionId) {
+    if (selectedCriterionId !== null) {
       // If editing, replace the old weight with new weight
       const oldCriterion = localCriteria.find(
         (item) => item.classRubricCriteriaId === selectedCriterionId,
@@ -361,6 +364,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const activeCount = localCriteria.filter(
     (item) => Number(item.isActive ?? 1) === 1,
   ).length;
+  const isExistingCriterionSelected =
+    selectedCriterionId !== null && selectedCriterionId > 0;
   const nextOrder =
     localCriteria.length > 0
       ? Math.max(...localCriteria.map((item) => item.displayOrder)) + 1
@@ -401,6 +406,58 @@ const RubricModal: React.FC<RubricModalProps> = ({
         displayOrder: index + 1,
       }));
   }, []);
+
+  const handleAddNewCriterion = useCallback(() => {
+    const existingDraft = localCriteria.find(
+      (criterion) => criterion.classRubricCriteriaId <= 0,
+    );
+
+    if (existingDraft) {
+      setSelectedCriterionId(existingDraft.classRubricCriteriaId);
+      setFormData({
+        criteriaName: existingDraft.criteriaName || "",
+        criteriaDescription: existingDraft.criteriaDescription || "",
+        weight: String(Number(existingDraft.weight) || 1),
+        maxScore: String(Number(existingDraft.maxScore) || 100),
+        displayOrder: String(existingDraft.displayOrder),
+      });
+      setErrors({});
+      return;
+    }
+
+    const nextTempId = tempCriterionIdSeed;
+    const draftCriterion: RubricCriterionItem = {
+      classRubricCriteriaId: nextTempId,
+      criteriaName: "",
+      criteriaDescription: "",
+      weight: 1,
+      maxScore: 100,
+      displayOrder: nextOrder,
+      isActive: 1,
+    };
+    setLocalCriteria((previous) =>
+      normalizeCriteriaOrder([...previous, draftCriterion]),
+    );
+    setSelectedCriterionId(nextTempId);
+    setTempCriterionIdSeed((previous) => previous - 1);
+    setFormData({
+      criteriaName: "",
+      criteriaDescription: "",
+      weight: "1",
+      maxScore: "100",
+      displayOrder: String(nextOrder),
+    });
+    setErrors({});
+  }, [localCriteria, nextOrder, normalizeCriteriaOrder, tempCriterionIdSeed]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (addNewTrigger <= 0) return;
+    if (mode !== "create") return;
+    if (lastHandledAddTriggerRef.current === addNewTrigger) return;
+    lastHandledAddTriggerRef.current = addNewTrigger;
+    handleAddNewCriterion();
+  }, [addNewTrigger, handleAddNewCriterion, isOpen, mode]);
 
   const applyFormToSelectedCriterion = useCallback(
     (nextForm: RubricFormState) => {
@@ -638,31 +695,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
               </h4>
               <button
                 type="button"
-                onClick={() => {
-                  const nextTempId = tempCriterionIdSeed;
-                  const draftCriterion: RubricCriterionItem = {
-                    classRubricCriteriaId: nextTempId,
-                    criteriaName: "",
-                    criteriaDescription: "",
-                    weight: 1,
-                    maxScore: 100,
-                    displayOrder: nextOrder,
-                    isActive: 1,
-                  };
-                  setLocalCriteria((previous) =>
-                    normalizeCriteriaOrder([...previous, draftCriterion]),
-                  );
-                  setSelectedCriterionId(nextTempId);
-                  setTempCriterionIdSeed((previous) => previous - 1);
-                  setFormData({
-                    criteriaName: "",
-                    criteriaDescription: "",
-                    weight: "1",
-                    maxScore: "100",
-                    displayOrder: String(nextOrder),
-                  });
-                  setErrors({});
-                }}
+                onClick={handleAddNewCriterion}
                 className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
               >
                 + Thêm mới
@@ -726,13 +759,13 @@ const RubricModal: React.FC<RubricModalProps> = ({
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <h4
-                  className={`text-base font-semibold ${selectedCriterionId ? "text-slate-800" : "text-slate-700"
+                  className={`text-base font-semibold ${isExistingCriterionSelected ? "text-slate-800" : "text-slate-700"
                     }`}
                 >
-                  {selectedCriterionId ? "Sửa tiêu chí" : "Tiêu chí mới"}
+                  {isExistingCriterionSelected ? "Sửa tiêu chí" : "Tiêu chí mới"}
                 </h4>
                 <p className="text-xs text-slate-500">
-                  {selectedCriterionId
+                  {isExistingCriterionSelected
                     ? "Cập nhật chi tiết tiêu chí"
                     : "Tạo tiêu chí đánh giá cho lớp học"}
                 </p>

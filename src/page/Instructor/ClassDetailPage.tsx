@@ -88,12 +88,12 @@ import {
   ClassRubricCriteria,
   PickRubricTemplatePayload,
   RubricCriteriaPayload,
+  createRubricCriteria,
   deleteRubricCriteria,
   fetchRubricTemplatesForInstructor,
   fetchRubricByClass,
   pickRubricTemplateForClass,
-  UpdateCriteriaByInstructorPayload,
-  updateCriteriaByInstructor,
+  updateRubricCriteria,
 } from "@/services/features/rubric/rubricSilce";
 
 type SortableCriterionItemProps = {
@@ -211,6 +211,7 @@ const ClassDetailPage: React.FC = () => {
   const [showGroupDetail, setShowGroupDetail] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
+  const [openRubricModalAddCounter, setOpenRubricModalAddCounter] = useState(0);
   const [isDeleteRubricModalOpen, setIsDeleteRubricModalOpen] = useState(false);
   const [editingRubric, setEditingRubric] =
     useState<ClassRubricCriteria | null>(null);
@@ -442,6 +443,23 @@ const ClassDetailPage: React.FC = () => {
       ),
     [rubricCriteria],
   );
+  const [draftRubricCriteria, setDraftRubricCriteria] = useState<
+    ClassRubricCriteria[]
+  >([]);
+
+  useEffect(() => {
+    setDraftRubricCriteria(sortedRubricCriteria);
+  }, [sortedRubricCriteria]);
+
+  const hasPendingRubricOrderChanges = useMemo(() => {
+    if (draftRubricCriteria.length !== sortedRubricCriteria.length) return true;
+    return draftRubricCriteria.some(
+      (criterion, index) =>
+        criterion.classRubricCriteriaId !==
+          sortedRubricCriteria[index]?.classRubricCriteriaId ||
+        criterion.displayOrder !== sortedRubricCriteria[index]?.displayOrder,
+    );
+  }, [draftRubricCriteria, sortedRubricCriteria]);
 
   const totalRubricPercentage = useMemo(() => {
     return sortedRubricCriteria
@@ -463,45 +481,61 @@ const ClassDetailPage: React.FC = () => {
     }),
   );
 
-  const handleRubricDragEnd = useCallback(async (event: DragEndEvent) => {
-    if (!classIdNumber) return;
+  const handleRubricDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = sortedRubricCriteria.findIndex(
-      (item) => item.classRubricCriteriaId === Number(active.id),
-    );
-    const newIndex = sortedRubricCriteria.findIndex(
-      (item) => item.classRubricCriteriaId === Number(over.id),
-    );
-    if (oldIndex < 0 || newIndex < 0) return;
+    setDraftRubricCriteria((previous) => {
+      const oldIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(active.id),
+      );
+      const newIndex = previous.findIndex(
+        (item) => item.classRubricCriteriaId === Number(over.id),
+      );
+      if (oldIndex < 0 || newIndex < 0) return previous;
 
-    const reordered = arrayMove(sortedRubricCriteria, oldIndex, newIndex);
-    const changedCriteria = reordered.reduce<UpdateCriteriaByInstructorPayload[]>(
-      (accumulator, criterion, index) => {
-        const nextOrder = index + 1;
-        if (criterion.displayOrder === nextOrder) return accumulator;
-        accumulator.push({
-          classRubricCriteriaId: criterion.classRubricCriteriaId,
-          criteriaName: criterion.criteriaName,
-          criteriaDescription: criterion.criteriaDescription,
-          weight: Number(criterion.weight),
-          maxScore: Number(criterion.maxScore),
-          displayOrder: nextOrder,
-        });
-        return accumulator;
-      },
-      [],
-    );
-    if (changedCriteria.length === 0) return;
+      return arrayMove(previous, oldIndex, newIndex).map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      }));
+    });
+  }, []);
+
+  const handleSaveRubricOrder = useCallback(async () => {
+    if (!classIdNumber) return;
+
+    const changedCriteria = draftRubricCriteria.filter((criterion, index) => {
+      const original = sortedRubricCriteria[index];
+      return (
+        !original ||
+        original.classRubricCriteriaId !== criterion.classRubricCriteriaId ||
+        original.displayOrder !== criterion.displayOrder
+      );
+    });
+
+    if (changedCriteria.length === 0) {
+      setToast({ message: "Không có thay đổi thứ tự để cập nhật.", type: "info" });
+      return;
+    }
 
     try {
-      await dispatch(
-        updateCriteriaByInstructor({
-          classId: classIdNumber,
-          criteriaData: changedCriteria,
-        }),
-      ).unwrap();
+      await Promise.all(
+        changedCriteria.map((criterion) =>
+          dispatch(
+            updateRubricCriteria({
+              classRubricCriteriaId: criterion.classRubricCriteriaId,
+              rubricData: {
+                criteriaName: criterion.criteriaName,
+                criteriaDescription: criterion.criteriaDescription,
+                weight: Number(criterion.weight),
+                maxScore: Number(criterion.maxScore),
+                displayOrder: criterion.displayOrder,
+                evaluationGuide: criterion.evaluationGuide || "",
+              },
+            }),
+          ).unwrap(),
+        ),
+      );
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
       setToast({ message: "Đã cập nhật thứ tự tiêu chí.", type: "success" });
     } catch (error: unknown) {
@@ -514,7 +548,7 @@ const ClassDetailPage: React.FC = () => {
         type: "error",
       });
     }
-  }, [classIdNumber, dispatch, setToast, sortedRubricCriteria]);
+  }, [classIdNumber, dispatch, draftRubricCriteria, setToast, sortedRubricCriteria]);
 
   const openEditRubricModal = (criterion: ClassRubricCriteria) => {
     setEditingRubric(criterion);
@@ -578,28 +612,68 @@ const ClassDetailPage: React.FC = () => {
   ) => {
     if (!classIdNumber) return;
     try {
-      const criteriaData: UpdateCriteriaByInstructorPayload[] = criteriaPayload.map(
-        (payload) => ({
-          ...(payload.classRubricCriteriaId
-            ? { classRubricCriteriaId: payload.classRubricCriteriaId }
-            : {}),
-          criteriaName: payload.criteriaName,
-          criteriaDescription: payload.criteriaDescription,
-          weight: Number(payload.weight),
-          maxScore: Number(payload.maxScore),
-          displayOrder: payload.displayOrder,
-        }),
-      );
-      if (criteriaData.length === 0) {
+      if (criteriaPayload.length === 0) {
         setToast({ message: "Không có thay đổi để cập nhật.", type: "info" });
         return;
       }
-      await dispatch(
-        updateCriteriaByInstructor({
-          classId: classIdNumber,
-          criteriaData,
-        }),
-      ).unwrap();
+
+      const updatePayloads = criteriaPayload.filter(
+        (payload): payload is RubricCriteriaPayload & { classRubricCriteriaId: number } =>
+          Boolean(payload.classRubricCriteriaId),
+      );
+      const createPayloads = criteriaPayload.filter(
+        (payload) => !payload.classRubricCriteriaId,
+      );
+
+      const currentWeightById = new Map(
+        sortedRubricCriteria.map((criterion) => [
+          criterion.classRubricCriteriaId,
+          Number(criterion.weight),
+        ]),
+      );
+
+      // Update sequentially in a safe order: decreases first, increases later.
+      // This helps avoid backend validation failures on intermediate total % states.
+      const orderedUpdatePayloads = [...updatePayloads].sort((a, b) => {
+        const deltaA =
+          Number(a.weight) - (currentWeightById.get(a.classRubricCriteriaId) ?? 0);
+        const deltaB =
+          Number(b.weight) - (currentWeightById.get(b.classRubricCriteriaId) ?? 0);
+        return deltaA - deltaB;
+      });
+
+      for (const payload of orderedUpdatePayloads) {
+        await dispatch(
+          updateRubricCriteria({
+            classRubricCriteriaId: payload.classRubricCriteriaId,
+            rubricData: {
+              criteriaName: payload.criteriaName,
+              criteriaDescription: payload.criteriaDescription,
+              weight: Number(payload.weight),
+              maxScore: Number(payload.maxScore),
+              displayOrder: payload.displayOrder,
+              evaluationGuide: payload.evaluationGuide || "",
+            },
+          }),
+        ).unwrap();
+      }
+
+      for (const payload of createPayloads) {
+        await dispatch(
+          createRubricCriteria({
+            classId: classIdNumber,
+            rubricData: {
+              criteriaName: payload.criteriaName,
+              criteriaDescription: payload.criteriaDescription,
+              weight: Number(payload.weight),
+              maxScore: Number(payload.maxScore),
+              displayOrder: payload.displayOrder,
+              evaluationGuide: payload.evaluationGuide || "",
+            },
+          }),
+        ).unwrap();
+      }
+
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
       setToast({
         message: "Đã cập nhật tiêu chí thành công.",
@@ -644,7 +718,7 @@ const ClassDetailPage: React.FC = () => {
   };
 
   const handleSelectRubricFromModal = (criterionId: number) => {
-    const criterion = sortedRubricCriteria.find(
+    const criterion = draftRubricCriteria.find(
       (item) => item.classRubricCriteriaId === criterionId,
     );
 
@@ -1209,25 +1283,27 @@ const ClassDetailPage: React.FC = () => {
                           size="small"
                         />
                       </Tooltip>
-                      {selectedTemplateId && (
+                      {(selectedTemplateId || draftRubricCriteria.length > 0) && (
                         <AntButton
-                          type="primary"
+                          type="default"
                           shape="round"
                           size="small"
                           icon={<PlusOutlined />}
+                          className="!h-9 !rounded-full !border-slate-300 !bg-white !px-4 !font-semibold !text-slate-700 hover:!border-slate-400 hover:!bg-slate-50"
                           onClick={() => {
                             setEditingRubric(null);
+                            setOpenRubricModalAddCounter((previous) => previous + 1);
                             setIsRubricModalOpen(true);
                           }}
                         >
-                          Thêm
+                          Thêm mới
                         </AntButton>
                       )}
                     </div>
                   </div>
                 }
               >
-                {!selectedTemplateId && (
+                {!selectedTemplateId && draftRubricCriteria.length === 0 && (
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -1368,7 +1444,7 @@ const ClassDetailPage: React.FC = () => {
                   <div className="flex items-center justify-center py-8">
                     <Spin size="small" />
                   </div>
-                ) : sortedRubricCriteria.length > 0 ? (
+                ) : draftRubricCriteria.length > 0 ? (
                   <div className="p-3 pt-2 space-y-2">
                     {normalizedTotalRubricPercentage < 99.5 && (
                       <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2">
@@ -1387,13 +1463,13 @@ const ClassDetailPage: React.FC = () => {
                     onDragEnd={handleRubricDragEnd}
                   >
                     <SortableContext
-                      items={sortedRubricCriteria.map(
+                      items={draftRubricCriteria.map(
                         (criterion) => criterion.classRubricCriteriaId,
                       )}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="space-y-2">
-                        {sortedRubricCriteria.map((criterion) => (
+                        {draftRubricCriteria.map((criterion) => (
                           <SortableCriterionItem
                             key={criterion.classRubricCriteriaId}
                             criterion={criterion}
@@ -1407,6 +1483,20 @@ const ClassDetailPage: React.FC = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
+                    {hasPendingRubricOrderChanges && (
+                      <div className="flex justify-end pt-2">
+                        <AntButton
+                          type="primary"
+                          shape="round"
+                          size="middle"
+                          onClick={handleSaveRubricOrder}
+                          loading={rubricActionLoading}
+                          className="!h-9 !rounded-full !border-0 !bg-sky-600 !px-5 !font-semibold hover:!bg-sky-700"
+                        >
+                          Cập nhật thứ tự
+                        </AntButton>
+                      </div>
+                    )}
                   </div>
                 ) : selectedTemplateId ? (
                   <div className="p-4 text-center">
@@ -1580,6 +1670,7 @@ const ClassDetailPage: React.FC = () => {
         onDeleteCriteria={handleDeleteRubricById}
         onSelectCriteria={handleSelectRubricFromModal}
         isLoading={rubricActionLoading}
+        addNewTrigger={openRubricModalAddCounter}
         mode={editingRubric ? "edit" : "create"}
         initialData={
           editingRubric
@@ -1593,9 +1684,9 @@ const ClassDetailPage: React.FC = () => {
             }
             : undefined
         }
-        defaultDisplayOrder={sortedRubricCriteria.length + 1}
+        defaultDisplayOrder={draftRubricCriteria.length + 1}
         templateName={selectedClass.classCode}
-        criteriaList={sortedRubricCriteria}
+        criteriaList={draftRubricCriteria}
         activeCriteriaId={editingRubric?.classRubricCriteriaId}
       />
 
