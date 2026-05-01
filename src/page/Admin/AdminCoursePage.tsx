@@ -199,10 +199,12 @@ const AdminCoursePage: React.FC = () => {
           detailedCourse?.departmentId ??
           prev?.departmentId ??
           course.departmentId,
-        subjectAreaId:
-          detailedCourse?.subjectAreaId ??
-          prev?.subjectAreaId ??
-          course.subjectAreaId,
+        subjectAreaIds:
+          detailedCourse?.subjectAreaIds ??
+          (detailedCourse?.subjectAreaId
+            ? [detailedCourse.subjectAreaId]
+            : prev?.subjectAreaIds ??
+              (prev?.subjectAreaId ? [prev.subjectAreaId] : [])),
       }));
     } catch {
       // Keep basic row data if detail fetch fails.

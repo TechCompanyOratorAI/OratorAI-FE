@@ -28,8 +28,10 @@ interface TopicModalProps {
 const initialFormData: CreateTopicData = {
   topicName: "",
   description: "",
-  sequenceNumber: 1,
-  dueDate: "",
+  submissionStartDate: "",
+  submissionDeadline: "",
+  minGroups: 1,
+  maxGroups: 1,
   maxDurationMinutes: 20,
   requirements: "",
 };
@@ -71,14 +73,39 @@ const TopicModal: React.FC<TopicModalProps> = ({
     if (!formData.description.trim()) {
       newErrors.description = "Mô tả không được để trống";
     }
-    if (!formData.dueDate) {
-      newErrors.dueDate = "Hạn nộp không được để trống";
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const classEnd = selectedClass?.endDate ? new Date(selectedClass.endDate) : null;
+
+    if (!formData.submissionStartDate) {
+      newErrors.submissionStartDate = "Ngày bắt đầu nộp không được để trống";
+    } else if (new Date(formData.submissionStartDate) < now) {
+      newErrors.submissionStartDate = "Ngày bắt đầu không được là ngày trong quá khứ";
+    } else if (classEnd && new Date(formData.submissionStartDate) > classEnd) {
+      newErrors.submissionStartDate = `Ngày bắt đầu không được vượt quá ngày kết thúc lớp (${classEnd.toLocaleDateString("vi-VN")})`;
+    }
+    if (!formData.submissionDeadline) {
+      newErrors.submissionDeadline = "Hạn nộp không được để trống";
+    } else if (new Date(formData.submissionDeadline) < now) {
+      newErrors.submissionDeadline = "Hạn nộp không được là ngày trong quá khứ";
+    } else if (classEnd && new Date(formData.submissionDeadline) > classEnd) {
+      newErrors.submissionDeadline = `Hạn nộp không được vượt quá ngày kết thúc lớp (${classEnd.toLocaleDateString("vi-VN")})`;
+    }
+    if (
+      formData.submissionStartDate &&
+      formData.submissionDeadline &&
+      new Date(formData.submissionDeadline) <= new Date(formData.submissionStartDate)
+    ) {
+      newErrors.submissionDeadline = "Hạn nộp phải sau ngày bắt đầu";
+    }
+    if ((formData.minGroups ?? 0) <= 0) {
+      newErrors.minGroups = "Số nhóm tối thiểu phải lớn hơn 0";
+    }
+    if ((formData.maxGroups ?? 0) < (formData.minGroups ?? 0)) {
+      newErrors.maxGroups = "Số nhóm tối đa phải ≥ số nhóm tối thiểu";
     }
     if ((formData.maxDurationMinutes ?? 0) <= 0) {
       newErrors.maxDurationMinutes = "Thời lượng phải lớn hơn 0";
-    }
-    if ((formData.sequenceNumber ?? 0) <= 0) {
-      newErrors.sequenceNumber = "Thứ tự phải lớn hơn 0";
     }
 
     if (classOptions?.length && selectedClassId == null) {
@@ -104,21 +131,19 @@ const TopicModal: React.FC<TopicModalProps> = ({
     }
   };
 
+  const toISO = (val: string) => {
+    if (!val) return "";
+    if (val.includes("Z") || val.includes("+")) return val;
+    return new Date(val).toISOString();
+  };
+
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    let dueDateISO = formData.dueDate;
-    if (
-      formData.dueDate &&
-      !formData.dueDate.includes("Z") &&
-      !formData.dueDate.includes("+")
-    ) {
-      dueDateISO = new Date(formData.dueDate).toISOString();
-    }
-
     const submitData: CreateTopicData = {
       ...formData,
-      dueDate: dueDateISO,
+      submissionStartDate: toISO(formData.submissionStartDate),
+      submissionDeadline: toISO(formData.submissionDeadline),
       requirements: formData.requirements || undefined,
     };
 
@@ -130,7 +155,23 @@ const TopicModal: React.FC<TopicModalProps> = ({
     onSubmit(submitData);
   };
 
-  const dueDateValue = formData.dueDate ? dayjs(formData.dueDate) : null;
+  const selectedClass = classOptions?.find((c) => c.classId === selectedClassId);
+  const classEndDate = selectedClass?.endDate
+    ? dayjs(selectedClass.endDate)
+    : null;
+
+  const disabledDate = (current: Dayjs): boolean => {
+    if (current < dayjs().startOf("day")) return true;
+    if (classEndDate && current > classEndDate.endOf("day")) return true;
+    return false;
+  };
+
+  const startDateValue = formData.submissionStartDate
+    ? dayjs(formData.submissionStartDate)
+    : null;
+  const deadlineValue = formData.submissionDeadline
+    ? dayjs(formData.submissionDeadline)
+    : null;
 
   return (
     <Modal
@@ -214,19 +255,83 @@ const TopicModal: React.FC<TopicModalProps> = ({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Thứ tự <RequiredStar />
+              Ngày bắt đầu nộp <RequiredStar />
+            </label>
+            <DatePicker
+              showTime={{ format: "HH:mm" }}
+              format="YYYY-MM-DD HH:mm"
+              className="w-full"
+              value={startDateValue && startDateValue.isValid() ? startDateValue : null}
+              onChange={(value: Dayjs | null) =>
+                updateField("submissionStartDate", value ? value.toISOString() : "")
+              }
+              disabledDate={disabledDate}
+              status={errors.submissionStartDate ? "error" : undefined}
+            />
+            {errors.submissionStartDate && (
+              <p className="mt-1 text-sm text-red-600">{errors.submissionStartDate}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Hạn nộp <RequiredStar />
+            </label>
+            <DatePicker
+              showTime={{ format: "HH:mm" }}
+              format="YYYY-MM-DD HH:mm"
+              className="w-full"
+              value={deadlineValue && deadlineValue.isValid() ? deadlineValue : null}
+              onChange={(value: Dayjs | null) =>
+                updateField("submissionDeadline", value ? value.toISOString() : "")
+              }
+              disabledDate={disabledDate}
+              status={errors.submissionDeadline ? "error" : undefined}
+            />
+            {errors.submissionDeadline && (
+              <p className="mt-1 text-sm text-red-600">{errors.submissionDeadline}</p>
+            )}
+          </div>
+        </div>
+        {classEndDate && (
+          <p className="text-xs text-gray-400 -mt-2">
+            Giới hạn theo ngày kết thúc lớp học:{" "}
+            <span className="font-medium">
+              {classEndDate.format("DD/MM/YYYY")}
+            </span>
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Số nhóm tối thiểu <RequiredStar />
             </label>
             <InputNumber
               className="w-full"
               min={1}
-              value={formData.sequenceNumber}
-              onChange={(value) => updateField("sequenceNumber", Number(value || 0))}
-              status={errors.sequenceNumber ? "error" : undefined}
+              value={formData.minGroups}
+              onChange={(value) => updateField("minGroups", Number(value || 1))}
+              status={errors.minGroups ? "error" : undefined}
             />
-            {errors.sequenceNumber && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.sequenceNumber}
-              </p>
+            {errors.minGroups && (
+              <p className="mt-1 text-sm text-red-600">{errors.minGroups}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Số nhóm tối đa <RequiredStar />
+            </label>
+            <InputNumber
+              className="w-full"
+              min={1}
+              value={formData.maxGroups}
+              onChange={(value) => updateField("maxGroups", Number(value || 1))}
+              status={errors.maxGroups ? "error" : undefined}
+            />
+            {errors.maxGroups && (
+              <p className="mt-1 text-sm text-red-600">{errors.maxGroups}</p>
             )}
           </div>
 
@@ -249,25 +354,6 @@ const TopicModal: React.FC<TopicModalProps> = ({
               </p>
             )}
           </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Hạn nộp <RequiredStar />
-          </label>
-          <DatePicker
-            showTime={{ format: "HH:mm" }}
-            format="YYYY-MM-DD HH:mm"
-            className="w-full"
-            value={dueDateValue && dueDateValue.isValid() ? dueDateValue : null}
-            onChange={(value: Dayjs | null) =>
-              updateField("dueDate", value ? value.toISOString() : "")
-            }
-            status={errors.dueDate ? "error" : undefined}
-          />
-          {errors.dueDate && (
-            <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
-          )}
         </div>
 
         <div>

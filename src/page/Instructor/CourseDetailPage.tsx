@@ -69,9 +69,11 @@ const CourseDetailPage: React.FC = () => {
   const [editingTopic, setEditingTopic] = useState<{
     topicId: number;
     topicName: string;
-    sequenceNumber: number;
     description?: string;
-    dueDate?: string;
+    submissionStartDate?: string;
+    submissionDeadline?: string;
+    minGroups?: number;
+    maxGroups?: number;
     maxDurationMinutes?: number;
     requirements?: string;
   } | null>(null);
@@ -165,8 +167,13 @@ const CourseDetailPage: React.FC = () => {
     try {
       const payload = {
         topicName: data.topicName,
+        description: data.description,
+        submissionStartDate: data.submissionStartDate,
+        submissionDeadline: data.submissionDeadline,
+        minGroups: data.minGroups,
+        maxGroups: data.maxGroups,
         maxDurationMinutes: data.maxDurationMinutes,
-        dueDate: data.dueDate,
+        requirements: data.requirements,
       };
       await dispatch(
         updateTopic({ topicId: editingTopic.topicId, topicData: payload }),
@@ -316,7 +323,7 @@ const CourseDetailPage: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <Space>
                             <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 font-bold flex items-center justify-center">
-                              {topic.sequenceNumber}
+                              {topic.topicId}
                             </div>
                             <div>
                               <Text strong>{topic.topicName}</Text>
@@ -326,8 +333,8 @@ const CourseDetailPage: React.FC = () => {
                             </div>
                           </Space>
                           <Space>
-                            {topic.dueDate && (
-                              <Tag icon={<Calendar size={12} />}>{formatDate(topic.dueDate)}</Tag>
+                            {topic.submissionDeadline && (
+                              <Tag icon={<Calendar size={12} />}>{formatDate(topic.submissionDeadline)}</Tag>
                             )}
                             {topic.maxDurationMinutes && (
                               <Tag>{topic.maxDurationMinutes} phút</Tag>
@@ -451,10 +458,16 @@ const CourseDetailPage: React.FC = () => {
         isLoading={topicLoading}
         title="Sửa chủ đề"
         submitText="Lưu thay đổi"
+        classEndDate={course?.endDate}
         initialData={{
           topicName: editingTopic?.topicName,
-          dueDate: editingTopic?.dueDate,
+          description: editingTopic?.description,
+          submissionStartDate: editingTopic?.submissionStartDate,
+          submissionDeadline: editingTopic?.submissionDeadline,
+          minGroups: editingTopic?.minGroups,
+          maxGroups: editingTopic?.maxGroups,
           maxDurationMinutes: editingTopic?.maxDurationMinutes || 20,
+          requirements: editingTopic?.requirements,
         }}
       />
     </div>

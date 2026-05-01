@@ -30,8 +30,8 @@ export type ApiResponseBase = {
 };
 
 type UnknownError = {
-  response?: { data?: { message?: string } };
-  data?: { message?: string };
+  response?: { data?: { message?: string; error?: string } };
+  data?: { message?: string; error?: string };
   payload?: ApiResponseBase;
   message?: string;
 };
@@ -45,10 +45,13 @@ export const getResponseMessage = (
 };
 
 export const getErrorMessage = (error: unknown, fallback = "Có lỗi xảy ra") => {
+  if (typeof error === "string") return error || fallback;
   const maybe = error as UnknownError;
   return (
     maybe?.response?.data?.message ||
+    maybe?.response?.data?.error ||
     maybe?.data?.message ||
+    maybe?.data?.error ||
     maybe?.payload?.message ||
     maybe?.message ||
     fallback

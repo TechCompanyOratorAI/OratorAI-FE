@@ -685,19 +685,6 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   }}
                 >
                   {currentReport &&
-                    currentReport.reportStatus === "confirmed" &&
-                    !isGradeFinalized && (
-                      <Button
-                        danger
-                        type="default"
-                        icon={<XCircle className="w-4 h-4" />}
-                        loading={rejectLoading}
-                        onClick={() => setReportDecisionModal("reject")}
-                      >
-                        Từ chối
-                      </Button>
-                    )}
-                  {currentReport &&
                     currentReport.reportStatus !== "confirmed" &&
                     currentReport.reportStatus !== "rejected" &&
                     !isGradeFinalized &&

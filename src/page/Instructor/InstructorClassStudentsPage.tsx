@@ -711,20 +711,19 @@ const InstructorClassStudentsPage: React.FC = () => {
                 </Button>
               </Space>
 
-              <Button
-                icon={<RefreshCw size={14} />}
-                onClick={() => {
-                  dispatch(fetchClassScores(numericClassId!));
-                  void dispatch(fetchGradeDistributionsByClass(numericClassId!));
-                  void dispatch(fetchGroupsByClass(numericClassId!));
-                }}
-                loading={scoresLoading || groupLoading}
-                className="rounded-xl"
-              >
-                Làm mới
-              </Button>
-
               <Space size={8}>
+                <Button
+                  icon={<RefreshCw size={14} />}
+                  onClick={() => {
+                    dispatch(fetchClassScores(numericClassId!));
+                    void dispatch(fetchGradeDistributionsByClass(numericClassId!));
+                    void dispatch(fetchGroupsByClass(numericClassId!));
+                  }}
+                  loading={scoresLoading || groupLoading}
+                  className="!rounded-xl"
+                >
+                  Làm mới
+                </Button>
                 <Button
                   icon={<Shuffle size={14} />}
                   type="primary"
@@ -738,18 +737,6 @@ const InstructorClassStudentsPage: React.FC = () => {
                   }}
                 >
                   Phân nhóm tự động
-                </Button>
-                <Button
-                  icon={<RefreshCw size={14} />}
-                  onClick={() => {
-                    dispatch(fetchClassScores(numericClassId!));
-                    void dispatch(fetchGradeDistributionsByClass(numericClassId!));
-                    void dispatch(fetchGroupsByClass(numericClassId!));
-                  }}
-                  loading={scoresLoading || groupLoading}
-                  className="rounded-lg"
-                >
-                  Làm mới
                 </Button>
               </Space>
             </div>

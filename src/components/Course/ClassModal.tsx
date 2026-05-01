@@ -142,9 +142,12 @@ const ClassModal: React.FC<ClassModalProps> = ({
             endDate: initialData?.endDate,
             maxStudents: initialData?.maxStudents,
             academicBlockIds:
-              values.academicBlockIds ||
-              ((initialData as any)?.academicBlockIds as number[]) ||
-              [],
+              ((initialData as any)?.academicBlockIds as number[] | undefined) ||
+              (Array.isArray((initialData as any)?.course?.academicBlocks)
+                ? ((initialData as any).course.academicBlocks as Array<{ academicBlockId: number }>).map(
+                    (b) => b.academicBlockId,
+                  )
+                : []),
             maxGroupMembers: values.maxGroupMembers ?? null,
           }
           : {
@@ -355,7 +358,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
           </Form.Item>
         )}
 
-        {(isEditMode || !isInstructorEditMode) && (
+        {!isInstructorEditMode && (
           <Form.Item
             name="academicBlockIds"
             label={<Text strong>Kỳ học (Academic Blocks)</Text>}

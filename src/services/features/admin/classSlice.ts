@@ -62,9 +62,12 @@ export interface TopicInfo {
   topicId: number;
   topicName: string;
   description?: string;
-  sequenceNumber: number;
-  dueDate?: string;
+  submissionStartDate?: string;
+  submissionDeadline?: string;
+  minGroups?: number;
+  maxGroups?: number;
   maxDurationMinutes?: number;
+  requirements?: string;
 }
 
 export interface ClassData {

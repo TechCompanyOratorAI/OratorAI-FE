@@ -108,10 +108,10 @@ const TopicDetailPage: React.FC = () => {
             <Space direction="vertical" className="w-full" size={4}>
               <Space>
                 <div className="w-12 h-12 rounded-full bg-white/20 text-white font-bold flex items-center justify-center text-lg">
-                  {topic.sequenceNumber}
+                  #{topic.topicId}
                 </div>
                 <Tag style={{ background: "rgba(255,255,255,0.2)", borderColor: "rgba(255,255,255,0.3)", color: "white" }}>
-                  Chủ đề #{topic.sequenceNumber}
+                  Chủ đề #{topic.topicId}
                 </Tag>
               </Space>
               <Title level={3} style={{ color: "white", margin: 0 }}>
@@ -123,9 +123,9 @@ const TopicDetailPage: React.FC = () => {
                 </Text>
               )}
               <Space>
-                {topic.dueDate && (
+                {topic.submissionDeadline && (
                   <Tag style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)", color: "white" }}>
-                    <Calendar size={12} /> Hạn nộp: {formatDate(topic.dueDate)}
+                    <Calendar size={12} /> Hạn nộp: {formatDate(topic.submissionDeadline)}
                   </Tag>
                 )}
                 {topic.maxDurationMinutes && (
@@ -138,7 +138,7 @@ const TopicDetailPage: React.FC = () => {
             <Row gutter={16} className="mt-4">
               <Col span={6}>
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Hạn nộp</Text>
-                <div><Text strong style={{ color: "white" }}>{topic.dueDate ? formatDate(topic.dueDate) : "Không có hạn"}</Text></div>
+                <div><Text strong style={{ color: "white" }}>{topic.submissionDeadline ? formatDate(topic.submissionDeadline) : "Không có hạn"}</Text></div>
               </Col>
               <Col span={6}>
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Thời lượng</Text>

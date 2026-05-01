@@ -52,7 +52,7 @@ interface CourseFormData {
   courseCode: string;
   courseName: string;
   departmentId: number;
-  subjectAreaId?: number;
+  subjectAreaIds: number[];
   academicBlockIds: number[];
   description: string;
 }
@@ -81,6 +81,16 @@ const CourseModal: React.FC<CourseModalProps> = ({
     [initialData],
   );
 
+  const initialSubjectAreaIds = useMemo(
+    () =>
+      initialData?.subjectAreaIds?.length
+        ? initialData.subjectAreaIds
+        : initialData?.subjectAreaId
+          ? [initialData.subjectAreaId]
+          : [],
+    [initialData],
+  );
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -88,18 +98,18 @@ const CourseModal: React.FC<CourseModalProps> = ({
       courseCode: initialData?.courseCode || "",
       courseName: initialData?.courseName || "",
       departmentId: initialData?.departmentId || defaultDepartmentId,
-      subjectAreaId: initialData?.subjectAreaId || undefined,
+      subjectAreaIds: initialSubjectAreaIds,
       academicBlockIds: initialAcademicBlockIds,
       description: initialData?.description || "",
     });
-  }, [isOpen, initialData, defaultDepartmentId, form, initialAcademicBlockIds]);
+  }, [isOpen, initialData, defaultDepartmentId, form, initialAcademicBlockIds, initialSubjectAreaIds]);
 
   const handleFinish = (values: CourseFormData) => {
     onSubmit({
       courseCode: values.courseCode,
       courseName: values.courseName,
       departmentId: values.departmentId,
-      subjectAreaId: values.subjectAreaId,
+      subjectAreaIds: values.subjectAreaIds,
       academicBlockIds: values.academicBlockIds,
       description: values.description,
     });
@@ -227,7 +237,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           courseName: initialData?.courseName || "",
           departmentId:
             initialData?.departmentId || departments[0]?.departmentId,
-          subjectAreaId: initialData?.subjectAreaId || undefined,
+          subjectAreaIds: initialSubjectAreaIds,
           academicBlockIds: initialAcademicBlockIds,
           description: initialData?.description || "",
         }}
@@ -252,7 +262,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
             placeholder="Chọn chuyên ngành..."
             options={departmentOptions}
             onChange={() => {
-              form.setFieldValue("subjectAreaId", undefined);
+              form.setFieldValue("subjectAreaIds", []);
             }}
             showSearch
             optionFilterProp="label"
@@ -268,24 +278,36 @@ const CourseModal: React.FC<CourseModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="subjectAreaId"
+          name="subjectAreaIds"
           label={<Text strong>Lĩnh vực môn học</Text>}
           rules={[
-            { required: true, message: "Vui lòng chọn lĩnh vực môn học" },
+            {
+              validator: (_, value) =>
+                Array.isArray(value) && value.length > 0
+                  ? Promise.resolve()
+                  : Promise.reject(
+                      new Error("Vui lòng chọn ít nhất một lĩnh vực môn học"),
+                    ),
+            },
           ]}
         >
-          <Select
-            placeholder="Chọn lĩnh vực môn học..."
-            options={subjectAreaOptions}
-            showSearch
-            optionFilterProp="label"
-            filterOption={(input, option) =>
-              (option?.label ?? "")
-                .toString()
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
-          />
+          <Checkbox.Group className="w-full">
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              {subjectAreaOptions.length === 0 ? (
+                <p className="text-sm text-gray-400 col-span-2">
+                  {selectedDepartmentId
+                    ? "Không có lĩnh vực nào cho chuyên ngành này"
+                    : "Vui lòng chọn chuyên ngành trước"}
+                </p>
+              ) : (
+                subjectAreaOptions.map((option) => (
+                  <Checkbox key={option.value} value={option.value}>
+                    {option.label}
+                  </Checkbox>
+                ))
+              )}
+            </div>
+          </Checkbox.Group>
         </Form.Item>
 
         <Form.Item

@@ -9,10 +9,13 @@ import {
 export interface Topic {
   topicId: number;
   topicName: string;
-  sequenceNumber: number;
   description?: string;
-  dueDate?: string;
+  submissionStartDate?: string;
+  submissionDeadline?: string;
+  minGroups?: number;
+  maxGroups?: number;
   maxDurationMinutes?: number;
+  requirements?: string;
 }
 
 export interface Instructor {
@@ -29,6 +32,7 @@ export interface CourseData {
   courseName: string;
   departmentId: number;
   subjectAreaId?: number | null;
+  subjectAreaIds?: number[];
   description: string;
   instructorId: number;
   semester: string;
@@ -74,13 +78,9 @@ export interface CreateCourseData {
   courseCode: string;
   courseName: string;
   departmentId: number;
-  subjectAreaId?: number;
+  subjectAreaIds?: number[];
   academicBlockIds?: number[];
   description: string;
-  semester?: string;
-  academicYear?: number;
-  startDate?: string;
-  endDate?: string;
 }
 
 export interface CoursesResponse {
@@ -219,7 +219,7 @@ export const updateCourse = createAsyncThunk(
       data,
     }: {
       courseId: number;
-      data: Partial<CourseData>;
+      data: Partial<CreateCourseData>;
     },
     { rejectWithValue },
   ) => {
