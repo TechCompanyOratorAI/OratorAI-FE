@@ -241,7 +241,7 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             <div className="space-y-3">
               <Space wrap>
                 <Tag className="!bg-slate-100 !border-slate-200 !text-slate-700 !font-semibold">
-                  Chủ đề #{topic.sequenceNumber}
+                  Chủ đề #{topic.topicId}
                 </Tag>
                 {isEnrolled && (
                   <Tag
@@ -264,14 +264,14 @@ const StudentTopicDetailPage: React.FC<TopicStudentDetailPageProps> = ({
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-              {topic.dueDate && (
+              {topic.submissionDeadline && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                   <div className="flex items-center gap-2 text-slate-500 text-xs">
                     <CalendarOutlined />
                     Hạn nộp
                   </div>
                   <div className="text-sm font-semibold text-slate-900 mt-1">
-                    {new Date(topic.dueDate).toLocaleDateString("vi-VN")}
+                    {new Date(topic.submissionDeadline).toLocaleDateString("vi-VN")}
                   </div>
                 </div>
               )}

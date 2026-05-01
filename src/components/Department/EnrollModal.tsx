@@ -102,7 +102,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
       if (result.alreadyEnrolled) {
         toast.info(`Bạn đã tham gia lớp "${name}" rồi.`);
       } else {
-        toast.success(`Đã tham gia thành công lớp "${name}"!`);
+        toast.success(`Đã tham gia thành công lớp!`);
       }
       handleClose();
     } catch (err: unknown) {

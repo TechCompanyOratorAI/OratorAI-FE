@@ -501,8 +501,12 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
             }}
             disabled={!leaderCanEdit}
             maxLength={500}
-            showCount
           />
+          <div className="flex justify-end mt-0.5">
+            <Text type="secondary" className="text-xs">
+              {overallReason.length} / 500
+            </Text>
+          </div>
         </div>
 
         <Divider className="!my-4" />
@@ -578,14 +582,20 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Slider (leader edit mode) */}
+                  {/* Slider — edit mode */}
                   {leaderCanEdit && (
-                    <div className="mb-2">
+                    <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
                         <Text type="secondary" className="text-xs">
                           Phần trăm đóng góp
                         </Text>
-                        <Text strong className="text-sm">
+                        <Text
+                          strong
+                          className="text-sm"
+                          style={{
+                            color: member.isLeader ? "#d97706" : "#0ea5e9",
+                          }}
+                        >
                           {member.percentage}%
                         </Text>
                       </div>
@@ -597,27 +607,36 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                           handlePercentageChange(member.studentId, val)
                         }
                         tooltip={{ formatter: (val) => `${val}%` }}
-                        marks={{ 0: "0%", 50: "50%", 100: "100%" }}
+                        trackStyle={{
+                          background: member.isLeader ? "#f59e0b" : "#0ea5e9",
+                        }}
                       />
+                    </div>
+                  )}
+
+                  {/* Progress bar — read-only */}
+                  {!leaderCanEdit && hasDistribution && (
+                    <div className="mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <Text type="secondary" className="text-xs">
+                          Phần trăm đóng góp
+                        </Text>
+                        <Text
+                          strong
+                          className="text-sm"
+                          style={{
+                            color: member.isLeader ? "#d97706" : "#0ea5e9",
+                          }}
+                        >
+                          {member.percentage}%
+                        </Text>
+                      </div>
                       <Progress
                         percent={member.percentage}
                         showInfo={false}
                         strokeColor={member.isLeader ? "#f59e0b" : "#0ea5e9"}
                         trailColor="#e2e8f0"
                         size="small"
-                      />
-                    </div>
-                  )}
-
-                  {/* Percentage display (read-only) */}
-                  {!leaderCanEdit && hasDistribution && (
-                    <div className="mb-2 flex items-center gap-2">
-                      <Progress
-                        percent={member.percentage}
-                        showInfo
-                        strokeColor={member.isLeader ? "#f59e0b" : "#0ea5e9"}
-                        size="small"
-                        format={(p) => `${p}%`}
                       />
                     </div>
                   )}
@@ -629,16 +648,20 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                         Lý do (tùy chọn)
                       </Text>
                       <TextArea
-                        rows={1}
+                        rows={2}
                         placeholder="Nhập lý do..."
                         value={member.reason}
                         onChange={(e) =>
                           handleReasonChange(member.studentId, e.target.value)
                         }
                         maxLength={300}
-                        showCount
                         style={{ fontSize: "13px" }}
                       />
+                      <div className="flex justify-end mt-0.5">
+                        <Text type="secondary" className="text-xs">
+                          {member.reason.length} / 300
+                        </Text>
+                      </div>
                     </div>
                   ) : (
                     distMember?.reason && (
@@ -651,7 +674,7 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                     )
                   )}
 
-                  {/* Member feedback (shown to all, editable by that member) */}
+                  {/* Member feedback */}
                   {hasDistribution && !isFinalized && isMe && !isLeader && (
                     <div className="mt-3 pt-2 border-t border-slate-100">
                       <Text strong className="text-xs block mb-1">
@@ -668,19 +691,22 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
                         value={myFeedback}
                         onChange={(e) => setMyFeedback(e.target.value)}
                         maxLength={500}
-                        showCount
                         disabled={actionLoading}
                       />
-                      <Button
-                        size="small"
-                        type={feedbackSent ? "default" : "primary"}
-                        icon={<SendOutlined />}
-                        loading={actionLoading}
-                        onClick={handleSendFeedback}
-                        className="mt-2"
-                      >
-                        {feedbackSent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
-                      </Button>
+                      <div className="flex items-center justify-between mt-1">
+                        <Text type="secondary" className="text-xs">
+                          {myFeedback.length} / 500
+                        </Text>
+                        <Button
+                          size="small"
+                          type={feedbackSent ? "default" : "primary"}
+                          icon={<SendOutlined />}
+                          loading={actionLoading}
+                          onClick={handleSendFeedback}
+                        >
+                          {feedbackSent ? "Cập nhật phản hồi" : "Gửi phản hồi"}
+                        </Button>
+                      </div>
                     </div>
                   )}
 

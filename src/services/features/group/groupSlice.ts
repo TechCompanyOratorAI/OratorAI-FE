@@ -358,7 +358,9 @@ export const pickGroupTopic = createAsyncThunk<
     };
   } catch (error: any) {
     return rejectWithValue(
-      error.response?.data?.message || "Failed to pick topic for group",
+      error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Chọn chủ đề thất bại",
     );
   }
 });

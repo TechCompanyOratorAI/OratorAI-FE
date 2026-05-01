@@ -529,7 +529,7 @@ const StudentClassDetailPage: React.FC = () => {
                     const isTopicSelected = Boolean(
                       myGroupForClass && groupTopic?.topicId === topic.topicId,
                     );
-                    const urgency = getDeadlineUrgency(topic.dueDate);
+                    const urgency = getDeadlineUrgency(topic.submissionDeadline);
                     return (
                       <motion.li
                         key={topic.topicId}
@@ -542,7 +542,7 @@ const StudentClassDetailPage: React.FC = () => {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1.5">
                               <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-slate-200 text-xs font-semibold text-slate-700">
-                                {topic.sequenceNumber}
+                                {idx + 1}
                               </span>
                               <h3 className="m-0 text-sm sm:text-base font-semibold text-slate-900 truncate">
                                 {topic.topicName}

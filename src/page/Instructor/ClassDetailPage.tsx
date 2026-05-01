@@ -238,9 +238,11 @@ const ClassDetailPage: React.FC = () => {
   const [editingTopic, setEditingTopic] = useState<{
     topicId: number;
     topicName: string;
-    sequenceNumber: number;
     description?: string;
-    dueDate?: string;
+    submissionStartDate?: string;
+    submissionDeadline?: string;
+    minGroups?: number;
+    maxGroups?: number;
     maxDurationMinutes?: number;
     requirements?: string;
   } | null>(null);
@@ -373,8 +375,13 @@ const ClassDetailPage: React.FC = () => {
     try {
       const payload = {
         topicName: data.topicName,
+        description: data.description,
+        submissionStartDate: data.submissionStartDate,
+        submissionDeadline: data.submissionDeadline,
+        minGroups: data.minGroups,
+        maxGroups: data.maxGroups,
         maxDurationMinutes: data.maxDurationMinutes,
-        dueDate: data.dueDate,
+        requirements: data.requirements,
       };
       await dispatch(
         updateTopic({ topicId: editingTopic.topicId, topicData: payload }),
@@ -406,9 +413,11 @@ const ClassDetailPage: React.FC = () => {
     setEditingTopic((prev) => ({
       topicId: topic.topicId,
       topicName: topic.topicName,
-      sequenceNumber: prev?.sequenceNumber || 0,
       description: prev?.description,
-      dueDate: prev?.dueDate,
+      submissionStartDate: prev?.submissionStartDate,
+      submissionDeadline: prev?.submissionDeadline,
+      minGroups: prev?.minGroups,
+      maxGroups: prev?.maxGroups,
       maxDurationMinutes: prev?.maxDurationMinutes,
       requirements: prev?.requirements,
     }));
@@ -1569,7 +1578,7 @@ const ClassDetailPage: React.FC = () => {
                           >
                             <div className="flex items-start gap-3">
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-bold text-white">
-                                {topic.sequenceNumber}
+                                {index + 1}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-2">
@@ -1580,10 +1589,10 @@ const ClassDetailPage: React.FC = () => {
                                     ›
                                   </span>
                                 </div>
-                                {topic.dueDate && (
+                                {topic.submissionDeadline && (
                                   <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                                     <Calendar className="w-3 h-3" />
-                                    Hạn {formatDate(topic.dueDate)}
+                                    Hạn {formatDate(topic.submissionDeadline)}
                                   </p>
                                 )}
                                 <div className="mt-3 flex items-center justify-end gap-2">
@@ -1644,6 +1653,18 @@ const ClassDetailPage: React.FC = () => {
         onClose={() => setIsTopicModalOpen(false)}
         onSubmit={handleCreateTopicSubmit}
         isLoading={topicLoading}
+        classOptions={
+          selectedClass
+            ? [
+                {
+                  classId: selectedClass.classId,
+                  className: selectedClass.className,
+                  classCode: selectedClass.classCode,
+                  endDate: selectedClass.endDate,
+                },
+              ]
+            : undefined
+        }
       />
 
       {showGroupDetail && selectedGroupId && (
@@ -1726,10 +1747,16 @@ const ClassDetailPage: React.FC = () => {
         isLoading={topicLoading}
         title="Sửa chủ đề"
         submitText="Lưu thay đổi"
+        classEndDate={selectedClass?.endDate}
         initialData={{
           topicName: editingTopic?.topicName,
-          dueDate: editingTopic?.dueDate,
+          description: editingTopic?.description,
+          submissionStartDate: editingTopic?.submissionStartDate,
+          submissionDeadline: editingTopic?.submissionDeadline,
+          minGroups: editingTopic?.minGroups,
+          maxGroups: editingTopic?.maxGroups,
           maxDurationMinutes: editingTopic?.maxDurationMinutes || 20,
+          requirements: editingTopic?.requirements,
         }}
       />
 

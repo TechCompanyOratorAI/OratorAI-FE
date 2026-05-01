@@ -279,7 +279,7 @@ const IntructorTopicDetailPage: React.FC = () => {
               {/* Left: identity */}
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-black shadow shrink-0">
-                  #{topic.sequenceNumber}
+                  #{topic.topicId}
                 </div>
                 <div>
                   <Text
@@ -308,7 +308,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                   {
                     icon: <CalendarOutlined />,
                     label: "Hạn nộp",
-                    value: topic.dueDate ? formatDate(topic.dueDate) : "Không có hạn",
+                    value: topic.submissionDeadline ? formatDate(topic.submissionDeadline) : "Không có hạn",
                   },
                   {
                     icon: <ClockCircleOutlined />,
@@ -512,7 +512,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                       Thứ tự
                     </Text>
                     <Tag color="blue" style={{ borderRadius: 20 }}>
-                      #{topic.sequenceNumber}
+                      #{topic.topicId}
                     </Tag>
                   </div>
                   <div className="flex items-center justify-between">
@@ -520,7 +520,7 @@ const IntructorTopicDetailPage: React.FC = () => {
                       Hạn nộp
                     </Text>
                     <Text strong className="text-sm text-right max-w-[160px]">
-                      {topic.dueDate ? formatDate(topic.dueDate) : "—"}
+                      {topic.submissionDeadline ? formatDate(topic.submissionDeadline) : "—"}
                     </Text>
                   </div>
                   <div className="flex items-center justify-between">

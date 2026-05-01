@@ -31,8 +31,10 @@ export interface TopicDetail {
   courseId: number;
   topicName: string;
   description: string;
-  sequenceNumber: number;
-  dueDate: string;
+  submissionStartDate: string;
+  submissionDeadline: string;
+  minGroups: number;
+  maxGroups: number;
   maxDurationMinutes: number;
   requirements?: string;
   course: TopicCourse;
@@ -44,8 +46,10 @@ export interface TopicDetail {
 export interface CreateTopicData {
   topicName: string;
   description: string;
-  sequenceNumber: number;
-  dueDate: string;
+  submissionStartDate: string;
+  submissionDeadline: string;
+  minGroups: number;
+  maxGroups: number;
   maxDurationMinutes: number;
   requirements?: string;
 }

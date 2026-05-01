@@ -103,14 +103,19 @@ const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
             Nhận xét tổng kết của giảng viên
           </Text>
           <TextArea
-            rows={3}
+            rows={4}
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Nhập nhận xét tổng kết cho bài thuyết trình này..."
             maxLength={2000}
-            showCount
             disabled={loading}
+            style={{ paddingBottom: 8 }}
           />
+          <div className="flex justify-end mt-1">
+            <Text type="secondary" className="text-xs">
+              {feedback.length} / 2000
+            </Text>
+          </div>
         </div>
       </Space>
     </Modal>
