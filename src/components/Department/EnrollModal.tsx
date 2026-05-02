@@ -97,7 +97,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
       const result = await dispatch(enrollClassByKey({ enrollKey: trimmed })).unwrap();
       await dispatch(fetchEnrolledClasses());
 
-      const name = preview?.className || classData?.className || "lớp học";
+      const name = preview?.classCode || "lớp học";
 
       if (result.alreadyEnrolled) {
         toast.info(`Bạn đã tham gia lớp "${name}" rồi.`);
@@ -206,8 +206,8 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
               {step === "preview"
                 ? "Kiểm tra thông tin lớp trước khi tham gia"
                 : isQuickJoin
-                ? "Nhập mã do giảng viên cung cấp để vào lớp nhanh"
-                : classData?.className}
+                  ? "Nhập mã do giảng viên cung cấp để vào lớp nhanh"
+                  : classData?.className}
             </Text>
           </div>
         </div>

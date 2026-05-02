@@ -317,17 +317,17 @@ const allStudentColumns: ColumnsType<StudentScoreData> = [
       </div>
     ),
   },
-  {
-    title: "Bài thuyết trình",
-    key: "presentations",
-    align: "center" as const,
-    width: 140,
-    render: (_, record) => (
-      <Text style={{ color: colors.gray[600] }}>
-        {record.totalPresentations ?? 0}
-      </Text>
-    ),
-  },
+  // {
+  //   title: "Bài thuyết trình",
+  //   key: "presentations",
+  //   align: "center" as const,
+  //   width: 140,
+  //   render: (_, record) => (
+  //     <Text style={{ color: colors.gray[600] }}>
+  //       {record.totalPresentations ?? 0}
+  //     </Text>
+  //   ),
+  // },
   {
     title: "Điểm của AI",
     key: "overallAverage",
