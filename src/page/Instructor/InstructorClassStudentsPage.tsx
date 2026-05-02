@@ -21,6 +21,7 @@ import {
   Input,
   Switch,
   Alert,
+  Tabs,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -46,6 +47,7 @@ import { toast } from "@/lib/toast";
 import SidebarInstructor from "@/components/Sidebar/SidebarInstructor/SidebarInstructor";
 import { useAppDispatch, useAppSelector } from "@/services/store/store";
 import { fetchClassScores } from "@/services/features/classScore/classScoreSlice";
+import type { StudentScoreData } from "@/services/features/classScore/classScoreSlice";
 import {
   fetchGradeDistributionsByClass,
   DistributionStatus,
@@ -110,8 +112,8 @@ const scoreBg = (score: number | null): string => {
 // ─────────────────────────────────────────────────────────────────────────────
 const groupStatusConfig: Record<DistributionStatus, { label: string; color: string; bg: string }> = {
   submitted: { label: "Đã nộp", color: colors.warning, bg: colors.warningLight },
-  reopened:  { label: "Đang sửa", color: colors.info, bg: colors.infoLight },
-  finalized:  { label: "Đã chốt", color: colors.success, bg: colors.successLight },
+  reopened: { label: "Đang sửa", color: colors.info, bg: colors.infoLight },
+  finalized: { label: "Đã chốt", color: colors.success, bg: colors.successLight },
 };
 
 interface GroupRow {
@@ -267,6 +269,105 @@ const GroupStatusBadge: React.FC<{ status: DistributionStatus | undefined }> = (
   );
 };
 
+const ScorePill: React.FC<{ value: number }> = ({ value }) => (
+  <div
+    className="inline-flex items-center justify-center px-3 py-1 rounded-full font-semibold text-sm"
+    style={{ background: scoreBg(value), color: scoreColor(value), minWidth: 48 }}
+  >
+    {value.toFixed(1)}
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// All-students Table Columns (shown when no groups exist)
+// ─────────────────────────────────────────────────────────────────────────────
+const allStudentColumns: ColumnsType<StudentScoreData> = [
+  {
+    title: "#",
+    key: "index",
+    width: 44,
+    render: (_, __, idx) => (
+      <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center">
+        <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>{idx + 1}</Text>
+      </div>
+    ),
+  },
+  {
+    title: "Sinh viên",
+    key: "student",
+    render: (_, record) => (
+      <div className="flex items-center gap-3">
+        <Avatar
+          src={record.student.avatar || undefined}
+          size={36}
+          style={{
+            background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          {record.student.firstName?.charAt(0).toUpperCase() ?? "?"}
+        </Avatar>
+        <div>
+          <Text strong className="text-sm block" style={{ color: colors.gray[800] }}>
+            {record.student.firstName} {record.student.lastName}
+          </Text>
+          <Text type="secondary" className="text-xs">{record.student.email}</Text>
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Bài thuyết trình",
+    key: "presentations",
+    align: "center" as const,
+    width: 140,
+    render: (_, record) => (
+      <Text style={{ color: colors.gray[600] }}>
+        {record.totalPresentations ?? 0}
+      </Text>
+    ),
+  },
+  {
+    title: "Điểm của AI",
+    key: "overallAverage",
+    align: "center" as const,
+    width: 120,
+    render: (_, record) =>
+      record.overallAverageScore !== null ? (
+        <ScorePill value={record.overallAverageScore} />
+      ) : (
+        <Text type="secondary">—</Text>
+      ),
+  },
+  {
+    title: "Điểm của giáo viên",
+    key: "instructorAverage",
+    align: "center" as const,
+    width: 140,
+    render: (_, record) =>
+      record.instructorAverageScore !== null ? (
+        <ScorePill value={record.instructorAverageScore} />
+      ) : (
+        <Text type="secondary">—</Text>
+      ),
+  },
+  {
+    title: "Điểm tổng kết",
+    key: "finalGrade",
+    align: "center" as const,
+    width: 120,
+    render: (_, record) =>
+      record.finalGrade !== null ? (
+        <ScorePill value={record.finalGrade} />
+      ) : (
+        <Tag className="rounded-full text-xs border-0" style={{ background: colors.gray[100], color: colors.gray[400] }}>
+          Chưa có
+        </Tag>
+      ),
+  },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Member Table Columns
 // ─────────────────────────────────────────────────────────────────────────────
@@ -321,28 +422,16 @@ const memberColumns: ColumnsType<GroupRow["members"][0]> = [
     ),
   },
   {
-    title: "Điểm nhận",
+    title: "Điểm tổng kết",
     key: "receivedGrade",
     align: "center" as const,
-    width: 160,
-    render: (_, record) => (
-      <div className="flex flex-col items-center">
-        <div className="relative inline-flex items-center justify-center">
-          <ProgressRing
-            value={record.receivedGrade}
-            max={record.instructorGrade || 10}
-            size={52}
-            strokeWidth={4}
-          />
-          <Text strong className="absolute text-sm" style={{ color: scoreColor(record.receivedGrade) }}>
-            {record.receivedGrade.toFixed(1)}
-          </Text>
-        </div>
-        <Text type="secondary" className="text-xs mt-1">
-          / {record.instructorGrade.toFixed(1)}
-        </Text>
-      </div>
-    ),
+    width: 120,
+    render: (_, record) =>
+      record.receivedGrade > 0 ? (
+        <ScorePill value={record.receivedGrade} />
+      ) : (
+        <Text type="secondary">—</Text>
+      ),
   },
 ];
 
@@ -621,18 +710,13 @@ const InstructorClassStudentsPage: React.FC = () => {
       ),
     },
     {
-      title: "Điểm gốc",
+      title: "Điểm giáo viên",
       key: "instructorGrade",
       align: "center" as const,
-      width: 110,
+      width: 130,
       render: (_, record) =>
         record.distribution ? (
-          <div className="flex flex-col items-center">
-            <Text strong className="text-base" style={{ color: colors.info }}>
-              {record.distribution.instructorGrade.toFixed(1)}
-            </Text>
-            <Text type="secondary" className="text-xs">/ 10</Text>
-          </div>
+          <ScorePill value={record.distribution.instructorGrade} />
         ) : (
           <Text type="secondary">—</Text>
         ),
@@ -854,117 +938,129 @@ const InstructorClassStudentsPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* ── Group Table ──────────────────────────────────────────── */}
+          {/* ── Tabs: Students / Groups ───────────────────────────────── */}
           <Card
             className="border-0 shadow-sm"
             styles={{ body: { padding: 0 } }}
           >
-            {/* Table header */}
-            <div
-              className="px-6 py-4 border-b flex items-center justify-between"
-              style={{ borderColor: colors.gray[100] }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: colors.warningLight }}
-                >
-                  <TrophyOutlined style={{ color: colors.warning, fontSize: 16 }} />
-                </div>
-                <div>
-                  <Text strong className="text-base" style={{ color: colors.gray[800] }}>
-                    Điểm nhóm
-                  </Text>
-                  <Text type="secondary" className="text-xs block">
-                    Click dòng để xem thành viên và điểm chốt
-                  </Text>
-                </div>
-              </div>
-              <Tag
-                className="rounded-full text-xs font-medium border-0"
-                style={{ background: colors.gray[100], color: colors.gray[600] }}
-              >
-                {groupRows.length} nhóm
-              </Tag>
-            </div>
-
-            <Table
-              columns={groupColumns}
-              dataSource={groupRows}
-              rowKey="groupId"
-              loading={groupLoading || scoresLoading}
-              pagination={false}
+            <Tabs
+              defaultActiveKey="students"
               size="middle"
-              rowClassName={() => "cursor-pointer hover:bg-indigo-50/30 transition-colors duration-150"}
-              locale={{
-                emptyText: (
-                  <div className="py-16 text-center">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                      style={{ background: colors.gray[100] }}
-                    >
-                      <TeamOutlined style={{ fontSize: 28, color: colors.gray[300] }} />
-                    </div>
-                    <Text type="secondary">Chưa có nhóm nào trong lớp này</Text>
-                  </div>
-                ),
-              }}
-              expandable={{
-                expandedRowKeys: expandedGroup !== null ? [expandedGroup] : [],
-                onExpand: (expanded, record) => {
-                  setExpandedGroup(expanded ? record.groupId : null);
-                },
-                expandedRowRender: (record) => (
-                  <div
-                    className="mx-4 my-2 rounded-2xl overflow-hidden"
-                    style={{ background: colors.gray[50], border: `1px solid ${colors.gray[100]}` }}
-                  >
-                    {/* Group member header */}
-                    <div
-                      className="px-5 py-3 flex items-center justify-between"
-                      style={{ background: colors.primaryLight }}
-                    >
-                      <Space>
-                        <MemberAvatar
-                          firstName={record.members[0]?.firstName ?? "?"}
-                          avatar={record.members[0]?.avatar ?? null}
-                          isLeader={false}
-                          size={28}
-                        />
-                        <div>
-                          <Text strong className="text-sm" style={{ color: colors.primary }}>
-                            Thành viên nhóm — {record.groupName}
-                          </Text>
-                          <Text type="secondary" className="text-xs block ml-1">
-                            {record.memberCount} thành viên
-                          </Text>
-                        </div>
-                      </Space>
-                      {record.distribution && (
-                        <Tag
-                          color="gold"
-                          className="rounded-full text-xs font-medium border-0"
-                          style={{ background: colors.warningLight, color: colors.warning }}
-                        >
-                          <Trophy size={10} className="inline mr-1" />
-                          Điểm gốc: {record.distribution.instructorGrade.toFixed(2)} / 10
-                        </Tag>
-                      )}
-                    </div>
-
-                    {/* Members table */}
+              style={{ padding: "0 24px" }}
+              items={[
+                {
+                  key: "students",
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <TeamOutlined />
+                      Danh sách sinh viên
+                      <Tag className="rounded-full text-xs border-0 ml-1" style={{ background: colors.primaryLight, color: colors.primary }}>
+                        {data.students.length}
+                      </Tag>
+                    </span>
+                  ),
+                  children: (
                     <Table
-                      columns={memberColumns}
-                      dataSource={record.members}
-                      rowKey="studentId"
-                      pagination={false}
-                      size="small"
-                      className="border-0"
-                      rowClassName={() => "hover:bg-white transition-colors duration-100"}
+                      columns={allStudentColumns}
+                      dataSource={data.students}
+                      rowKey={(r) => r.enrollmentId}
+                      loading={scoresLoading}
+                      pagination={data.students.length > 20 ? { pageSize: 20, showSizeChanger: false } : false}
+                      size="middle"
+                      rowClassName={() => "hover:bg-indigo-50/30 transition-colors duration-150"}
                     />
-                  </div>
-                ),
-              }}
+                  ),
+                },
+                {
+                  key: "groups",
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <TrophyOutlined />
+                      Điểm nhóm
+                      <Tag className="rounded-full text-xs border-0 ml-1" style={{ background: colors.warningLight, color: colors.warning }}>
+                        {groupRows.length}
+                      </Tag>
+                    </span>
+                  ),
+                  children: (
+                    <Table
+                      columns={groupColumns}
+                      dataSource={groupRows}
+                      rowKey="groupId"
+                      loading={groupLoading || scoresLoading}
+                      pagination={false}
+                      size="middle"
+                      rowClassName={() => "cursor-pointer hover:bg-indigo-50/30 transition-colors duration-150"}
+                      locale={{
+                        emptyText: (
+                          <div className="py-16 text-center">
+                            <div
+                              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                              style={{ background: colors.gray[100] }}
+                            >
+                              <TeamOutlined style={{ fontSize: 28, color: colors.gray[300] }} />
+                            </div>
+                            <Text type="secondary">Chưa có nhóm nào trong lớp này</Text>
+                          </div>
+                        ),
+                      }}
+                      expandable={{
+                        expandedRowKeys: expandedGroup !== null ? [expandedGroup] : [],
+                        onExpand: (expanded, record) => {
+                          setExpandedGroup(expanded ? record.groupId : null);
+                        },
+                        expandedRowRender: (record) => (
+                          <div
+                            className="mx-4 my-2 rounded-2xl overflow-hidden"
+                            style={{ background: colors.gray[50], border: `1px solid ${colors.gray[100]}` }}
+                          >
+                            <div
+                              className="px-5 py-3 flex items-center justify-between"
+                              style={{ background: colors.primaryLight }}
+                            >
+                              <Space>
+                                <MemberAvatar
+                                  firstName={record.members[0]?.firstName ?? "?"}
+                                  avatar={record.members[0]?.avatar ?? null}
+                                  isLeader={false}
+                                  size={28}
+                                />
+                                <div>
+                                  <Text strong className="text-sm" style={{ color: colors.primary }}>
+                                    Thành viên nhóm — {record.groupName}
+                                  </Text>
+                                  <Text type="secondary" className="text-xs block ml-1">
+                                    {record.memberCount} thành viên
+                                  </Text>
+                                </div>
+                              </Space>
+                              {record.distribution && (
+                                <Tag
+                                  color="gold"
+                                  className="rounded-full text-xs font-medium border-0"
+                                  style={{ background: colors.warningLight, color: colors.warning }}
+                                >
+                                  <Trophy size={10} className="inline mr-1" />
+                                  Điểm giáo viên: {record.distribution.instructorGrade.toFixed(1)}
+                                </Tag>
+                              )}
+                            </div>
+                            <Table
+                              columns={memberColumns}
+                              dataSource={record.members}
+                              rowKey="studentId"
+                              pagination={false}
+                              size="small"
+                              className="border-0"
+                              rowClassName={() => "hover:bg-white transition-colors duration-100"}
+                            />
+                          </div>
+                        ),
+                      }}
+                    />
+                  ),
+                },
+              ]}
             />
           </Card>
         </div>
