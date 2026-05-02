@@ -674,7 +674,7 @@ const PresentationDetailPage: React.FC = () => {
   // ── Derived values ────────────────────────────────────────────────────────────
   const studentName = presentation?.student
     ? `${presentation.student.firstName || ""} ${presentation.student.lastName || ""}`.trim() ||
-      "Student"
+    "Student"
     : "Unknown";
   const presentationGroupName =
     group?.groupName || group?.name || "Nhóm thuyết trình";
@@ -900,11 +900,11 @@ const PresentationDetailPage: React.FC = () => {
                   dot
                   status={
                     sc.dot as
-                      | "success"
-                      | "error"
-                      | "default"
-                      | "processing"
-                      | "warning"
+                    | "success"
+                    | "error"
+                    | "default"
+                    | "processing"
+                    | "warning"
                   }
                 >
                   <Tag
@@ -1525,12 +1525,12 @@ const PresentationDetailPage: React.FC = () => {
                                 value={
                                   aiOverallOutOf10 !== null
                                     ? Math.min(
-                                        5,
-                                        Math.max(
-                                          0,
-                                          parseFloat(aiOverallOutOf10) / 2,
-                                        ),
-                                      )
+                                      5,
+                                      Math.max(
+                                        0,
+                                        parseFloat(aiOverallOutOf10) / 2,
+                                      ),
+                                    )
                                     : 0
                                 }
                                 style={{ fontSize: 18 }}
@@ -1650,7 +1650,7 @@ const PresentationDetailPage: React.FC = () => {
                                     {isCurrentUserLeader &&
                                       hasDistribution &&
                                       currentDistribution?.status ===
-                                        "submitted" && (
+                                      "submitted" && (
                                         <Tag
                                           icon={<LockOutlined />}
                                           color="orange"
@@ -1660,13 +1660,13 @@ const PresentationDetailPage: React.FC = () => {
                                             borderRadius: 20,
                                           }}
                                         >
-                                          Đã nộp — chờ instructor xem xét
+                                          Đã nộp — chờ giảng viên xem xét
                                         </Tag>
                                       )}
                                     {isCurrentUserLeader &&
                                       hasDistribution &&
                                       currentDistribution?.status ===
-                                        "reopened" && (
+                                      "reopened" && (
                                         <Button
                                           type="primary"
                                           size="large"
@@ -1686,7 +1686,7 @@ const PresentationDetailPage: React.FC = () => {
                                     {isCurrentUserLeader &&
                                       hasDistribution &&
                                       currentDistribution?.status ===
-                                        "finalized" && (
+                                      "finalized" && (
                                         <Tag
                                           icon={<LockOutlined />}
                                           color="success"
@@ -1839,7 +1839,7 @@ const PresentationDetailPage: React.FC = () => {
                                             marginBottom: 2,
                                           }}
                                         >
-                                          Điểm cá nhân của bạn
+                                          Điểm của leader phân chia
                                         </Text>
                                         <div
                                           style={{
@@ -1921,12 +1921,12 @@ const PresentationDetailPage: React.FC = () => {
                                     )}
                                     {!isCurrentUserLeader &&
                                       currentDistribution?.status !==
-                                        "finalized" && (
+                                      "finalized" && (
                                         <MemberFeedbackInline
                                           groupId={Number(
                                             groupDetail?.groupId ??
-                                              group?.groupId ??
-                                              0,
+                                            group?.groupId ??
+                                            0,
                                           )}
                                           distributionId={
                                             currentDistribution?.id ?? 0
@@ -1939,7 +1939,7 @@ const PresentationDetailPage: React.FC = () => {
                                       )}
                                     {!isCurrentUserLeader &&
                                       currentDistribution?.status ===
-                                        "finalized" && (
+                                      "finalized" && (
                                         <div
                                           style={{
                                             marginTop: 10,
@@ -2153,10 +2153,10 @@ const PresentationDetailPage: React.FC = () => {
                                                         <Tag
                                                           color={
                                                             feedbackStatus ===
-                                                            "accepted"
+                                                              "accepted"
                                                               ? "success"
                                                               : feedbackStatus ===
-                                                                  "rejected"
+                                                                "rejected"
                                                                 ? "error"
                                                                 : "warning"
                                                           }
