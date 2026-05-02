@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
@@ -28,10 +28,12 @@ import {
   CheckOutlined,
   CloseOutlined,
   UpOutlined,
+  DownOutlined,
   FileExcelOutlined,
   ReloadOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import {
   Calendar,
@@ -226,6 +228,27 @@ const ClassDetailPage: React.FC = () => {
   const [selectedTemplateOptionId, setSelectedTemplateOptionId] = useState<
     number | null
   >(null);
+  const rubricTemplateSelectRef = useRef<HTMLDivElement>(null);
+  const [rubricTemplateSelectOpen, setRubricTemplateSelectOpen] =
+    useState(false);
+  const [rubricTemplatePopupAbove, setRubricTemplatePopupAbove] =
+    useState(false);
+
+  const updateRubricTemplatePopupPlacement = useCallback(() => {
+    const root = rubricTemplateSelectRef.current;
+    if (!root) return;
+    const trigger = root.querySelector<HTMLElement>(".ant-select-selector");
+    const dropdown = document.querySelector<HTMLElement>(
+      ".rubric-template-select-popup:not(.ant-select-dropdown-hidden)",
+    );
+    if (!trigger || !dropdown) return;
+    const dRect = dropdown.getBoundingClientRect();
+    const tRect = trigger.getBoundingClientRect();
+    if (dRect.height < 1 || tRect.height < 1) return;
+    setRubricTemplatePopupAbove(
+      dRect.top + dRect.height / 2 < tRect.top + tRect.height / 2,
+    );
+  }, []);
   const [pickSettings, setPickSettings] = useState<PickRubricTemplatePayload>({
     rubricTemplateId: 0,
     feedbackLanguage: "vi",
@@ -321,8 +344,8 @@ const ClassDetailPage: React.FC = () => {
         rubricTemplateId: templateId,
         feedbackLanguage: pickSettings.feedbackLanguage,
         reportFormat: pickSettings.reportFormat,
-        allowInstructorEdit: pickSettings.allowInstructorEdit,
-        includeCriterionComments: pickSettings.includeCriterionComments,
+        allowInstructorEdit: true,
+        includeCriterionComments: true,
         includeOverallSummary: pickSettings.includeOverallSummary,
         includeSuggestions: pickSettings.includeSuggestions,
       };
@@ -641,17 +664,30 @@ const ClassDetailPage: React.FC = () => {
         ]),
       );
 
-      // Update sequentially in a safe order: decreases first, increases later.
-      // This helps avoid backend validation failures on intermediate total % states.
-      const orderedUpdatePayloads = [...updatePayloads].sort((a, b) => {
-        const deltaA =
-          Number(a.weight) - (currentWeightById.get(a.classRubricCriteriaId) ?? 0);
-        const deltaB =
-          Number(b.weight) - (currentWeightById.get(b.classRubricCriteriaId) ?? 0);
-        return deltaA - deltaB;
-      });
+      const deltaOf = (
+        payload: RubricCriteriaPayload & { classRubricCriteriaId: number },
+      ) =>
+        Number(payload.weight) -
+        (currentWeightById.get(payload.classRubricCriteriaId) ?? 0);
 
-      for (const payload of orderedUpdatePayloads) {
+      // Tránh tổng % vượt 100 ở trạng thái trung gian khi backend validate từng bước:
+      // 1) Giảm trọng số (delta < 0), trước tiên delta âm lớn nhất để giải phóng %.
+      // 2) Cập nhật không đổi weight (delta === 0): chỉ tên/mô tả/thứ tự.
+      // 3) Tạo tiêu chí mới (chiếm %).
+      // 4) Tăng trọng số (delta > 0), tăng nhỏ trước để giảm rủi ro vượt trần.
+      const decreaseUpdates = updatePayloads
+        .filter((p) => deltaOf(p) < 0)
+        .sort((a, b) => deltaOf(a) - deltaOf(b));
+      const neutralUpdates = updatePayloads
+        .filter((p) => deltaOf(p) === 0)
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+      const increaseUpdates = updatePayloads
+        .filter((p) => deltaOf(p) > 0)
+        .sort((a, b) => deltaOf(a) - deltaOf(b));
+
+      const runOneUpdate = async (
+        payload: RubricCriteriaPayload & { classRubricCriteriaId: number },
+      ) => {
         await dispatch(
           updateRubricCriteria({
             classRubricCriteriaId: payload.classRubricCriteriaId,
@@ -665,9 +701,19 @@ const ClassDetailPage: React.FC = () => {
             },
           }),
         ).unwrap();
+      };
+
+      for (const payload of decreaseUpdates) {
+        await runOneUpdate(payload);
+      }
+      for (const payload of neutralUpdates) {
+        await runOneUpdate(payload);
       }
 
-      for (const payload of createPayloads) {
+      const orderedCreates = [...createPayloads].sort(
+        (a, b) => a.displayOrder - b.displayOrder,
+      );
+      for (const payload of orderedCreates) {
         await dispatch(
           createRubricCriteria({
             classId: classIdNumber,
@@ -681,6 +727,10 @@ const ClassDetailPage: React.FC = () => {
             },
           }),
         ).unwrap();
+      }
+
+      for (const payload of increaseUpdates) {
+        await runOneUpdate(payload);
       }
 
       await dispatch(fetchRubricByClass(classIdNumber)).unwrap();
@@ -1297,15 +1347,21 @@ const ClassDetailPage: React.FC = () => {
                           type="default"
                           shape="round"
                           size="small"
-                          icon={<PlusOutlined />}
+                          icon={<SettingOutlined />}
                           className="!h-9 !rounded-full !border-slate-300 !bg-white !px-4 !font-semibold !text-slate-700 hover:!border-slate-400 hover:!bg-slate-50"
                           onClick={() => {
+                            const firstCriterion = [...draftRubricCriteria]
+                              .sort((a, b) => a.displayOrder - b.displayOrder)[0];
+                            if (firstCriterion) {
+                              openEditRubricModal(firstCriterion);
+                              return;
+                            }
                             setEditingRubric(null);
                             setOpenRubricModalAddCounter((previous) => previous + 1);
                             setIsRubricModalOpen(true);
                           }}
                         >
-                          Thêm mới
+                          Quản lý tiêu chí
                         </AntButton>
                       )}
                     </div>
@@ -1336,15 +1392,43 @@ const ClassDetailPage: React.FC = () => {
                       <div className="space-y-3">
                         <div className="rounded-xl border border-slate-200 bg-white p-3">
                           <div className="grid w-full grid-cols-[minmax(0,1fr)_132px] items-stretch gap-2">
-                            <div className="min-w-0">
+                            <div className="min-w-0" ref={rubricTemplateSelectRef}>
                               <Select
-                                className="w-full"
+                                size="middle"
+                                className="w-full [&_.ant-select-selector]:flex [&_.ant-select-selector]:!h-auto [&_.ant-select-selector]:!min-h-[48px] [&_.ant-select-selector]:items-center [&_.ant-select-selector]:py-2 [&_.ant-select-selection-item]:flex [&_.ant-select-selection-item]:items-center"
                                 placeholder="Chọn mẫu cho lớp học"
                                 style={{ width: "100%" }}
-                                suffixIcon={<UpOutlined />}
+                                classNames={{
+                                  popup: {
+                                    root: "rubric-template-select-popup",
+                                  },
+                                }}
+                                suffixIcon={
+                                  rubricTemplateSelectOpen &&
+                                  rubricTemplatePopupAbove ? (
+                                    <UpOutlined />
+                                  ) : (
+                                    <DownOutlined />
+                                  )
+                                }
                                 loading={rubricTemplatesLoading}
                                 disabled={rubricPickLoading || rubricTemplatesLoading}
                                 value={selectedTemplateOptionId ?? undefined}
+                                onOpenChange={(open) => {
+                                  setRubricTemplateSelectOpen(open);
+                                  if (open) {
+                                    setRubricTemplatePopupAbove(false);
+                                    requestAnimationFrame(() => {
+                                      requestAnimationFrame(() => {
+                                        updateRubricTemplatePopupPlacement();
+                                        window.setTimeout(
+                                          updateRubricTemplatePopupPlacement,
+                                          50,
+                                        );
+                                      });
+                                    });
+                                  }
+                                }}
                                 onChange={(val) => {
                                   setSelectedTemplateOptionId(val);
                                   setExpandedTemplateId(val);
@@ -1352,11 +1436,11 @@ const ClassDetailPage: React.FC = () => {
                                 options={rubricTemplates.map((t) => ({
                                   value: t.rubricTemplateId,
                                   label: (
-                                    <div className="leading-tight">
+                                    <div className="py-0.5 leading-snug">
                                       <div className="font-semibold text-sm">
                                         {t.templateName}
                                       </div>
-                                      <div className="text-[11px] text-slate-500">
+                                      <div className="mt-0.5 text-[11px] text-slate-500">
                                         {t.assignmentType}
                                       </div>
                                     </div>
@@ -1370,7 +1454,7 @@ const ClassDetailPage: React.FC = () => {
                               icon={<PlusOutlined />}
                               loading={rubricPickLoading}
                               disabled={!selectedTemplateOptionId}
-                              className="h-full whitespace-nowrap rounded-xl px-3"
+                              className="h-full min-h-[48px] whitespace-nowrap rounded-xl px-3"
                               onClick={() => {
                                 if (!selectedTemplateOptionId) return;
                                 handleChooseTemplate(selectedTemplateOptionId);
@@ -1405,7 +1489,7 @@ const ClassDetailPage: React.FC = () => {
                                       {(expandedTemplate.criteria || []).length} tiêu chí
                                     </span>
                                   </div>
-                                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                                  <div className="space-y-1.5">
                                     {expandedTemplate.criteria?.length ? (
                                       expandedTemplate.criteria
                                         .slice()
@@ -1419,10 +1503,17 @@ const ClassDetailPage: React.FC = () => {
                                             className="rounded-lg border border-slate-200 bg-white px-2.5 py-2"
                                           >
                                             <div className="flex items-start justify-between gap-2">
-                                              <p className="text-xs font-medium text-slate-800 leading-5">
-                                                {criterion.displayOrder}.{" "}
-                                                {criterion.criteriaName}
-                                              </p>
+                                              <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-medium text-slate-800 leading-5">
+                                                  {criterion.displayOrder}.{" "}
+                                                  {criterion.criteriaName}
+                                                </p>
+                                                {criterion.criteriaDescription?.trim() ? (
+                                                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                                                    {criterion.criteriaDescription}
+                                                  </p>
+                                                ) : null}
+                                              </div>
                                               <span className="text-[11px] text-slate-600 shrink-0 rounded-full bg-slate-100 px-2 py-0.5">
                                                 {Number(criterion.weight).toFixed(0)}%
                                               </span>

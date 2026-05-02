@@ -25,6 +25,33 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { RubricCriteriaPayload } from "@/services/features/rubric/rubricSilce";
 
+const RequiredMark = () => (
+  <span className="text-red-500" aria-hidden="true">
+    *
+  </span>
+);
+
+function validateCriterionFields(
+  criterion: RubricCriterionItem,
+): Partial<Record<keyof RubricCriteriaPayload, string>> {
+  const next: Partial<Record<keyof RubricCriteriaPayload, string>> = {};
+  if (!criterion.criteriaName.trim()) {
+    next.criteriaName = "Vui lòng nhập tên tiêu chí.";
+  }
+  if (!criterion.criteriaDescription.trim()) {
+    next.criteriaDescription = "Vui lòng nhập mô tả tiêu chí.";
+  }
+  const w = Number(criterion.weight);
+  if (!Number.isFinite(w) || w <= 0) {
+    next.weight = "Vui lòng nhập phần trăm lớn hơn 0.";
+  }
+  const d = Number(criterion.displayOrder);
+  if (!Number.isFinite(d) || d <= 0) {
+    next.displayOrder = "Vui lòng nhập thứ tự hiển thị lớn hơn 0.";
+  }
+  return next;
+}
+
 type RubricCriterionItem = {
   classRubricCriteriaId: number;
   criteriaName: string;
@@ -256,6 +283,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
   const isPercentageComplete = useMemo(() => {
     return normalizedTotalActivePercentage >= 99.5;
+  }, [normalizedTotalActivePercentage]);
+
+  /** Chỉ cho phép lưu khi tổng đủ ~100% và không vượt 100%. */
+  const canShowUpdateAllButton = useMemo(() => {
+    const t = normalizedTotalActivePercentage;
+    return t >= 99.5 && t <= 100.01;
   }, [normalizedTotalActivePercentage]);
 
   const isPercentageExceeded = useMemo(() => {
@@ -538,8 +571,54 @@ const RubricModal: React.FC<RubricModalProps> = ({
     [onSelectCriteria, setFormFromCriterion],
   );
 
+  const mergeFormIntoLocalCriteria = useCallback((): RubricCriterionItem[] => {
+    return localCriteria.map((c) => {
+      if (
+        selectedCriterionId === null ||
+        c.classRubricCriteriaId !== selectedCriterionId
+      ) {
+        return c;
+      }
+      const parsedWeight = Number(formData.weight);
+      const parsedDisplayOrder = Number(formData.displayOrder);
+      return {
+        ...c,
+        criteriaName: formData.criteriaName,
+        criteriaDescription: formData.criteriaDescription,
+        weight:
+          formData.weight.trim() === ""
+            ? 0
+            : Number.isFinite(parsedWeight)
+              ? parsedWeight
+              : 0,
+        displayOrder:
+          formData.displayOrder.trim() === ""
+            ? 0
+            : Number.isFinite(parsedDisplayOrder)
+              ? Math.trunc(parsedDisplayOrder)
+              : 0,
+      };
+    });
+  }, [localCriteria, selectedCriterionId, formData]);
+
   const handleSubmitAllChanges = async () => {
-    const changedCriteria = localCriteria
+    const merged = mergeFormIntoLocalCriteria();
+
+    for (const criterion of merged) {
+      const fieldErrors = validateCriterionFields(criterion);
+      if (Object.keys(fieldErrors).length === 0) continue;
+
+      setSelectedCriterionId(criterion.classRubricCriteriaId);
+      if (criterion.classRubricCriteriaId !== selectedCriterionId) {
+        setFormFromCriterion(criterion);
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
+
+    const changedCriteria = merged
       .map((criterion, index) => {
         const normalized = {
           ...(criterion.classRubricCriteriaId > 0
@@ -569,9 +648,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
       .filter((criterion) => criterion !== null);
 
     if (changedCriteria.length === 0) return;
+
+    setLocalCriteria(merged);
+
     await onSubmit(changedCriteria);
     setOriginalCriteria(
-      localCriteria.map((criterion, index) => ({
+      merged.map((criterion, index) => ({
         ...criterion,
         displayOrder: index + 1,
       })),
@@ -775,7 +857,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
             <form onSubmit={(event) => event.preventDefault()} className="space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Tên tiêu chí
+                  Tên tiêu chí <RequiredMark />
                 </label>
                 <input
                   name="criteriaName"
@@ -794,22 +876,28 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả tiêu chí 
+                  Mô tả tiêu chí <RequiredMark />
                 </label>
                 <textarea
                   rows={2}
                   name="criteriaDescription"
                   value={formData.criteriaDescription}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaDescription ? "border-rose-300" : "border-slate-300"
+                    }`}
                   placeholder="Đánh giá độ rõ ràng và chiều sâu của tiêu chi tiết"
                 />
+                {errors.criteriaDescription && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors.criteriaDescription}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Phần trăm (%)
+                    Phần trăm (%) <RequiredMark />
                   </label>
                   <div className="relative">
                     <input
@@ -879,7 +967,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Thứ tự hiển thị
+                    Thứ tự hiển thị <RequiredMark />
                   </label>
                   <input
                     type="number"
@@ -920,7 +1008,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
               >
                 Đóng
               </button>
-              {normalizedTotalActivePercentage >= 99.5 && (
+              {canShowUpdateAllButton && (
                 <button
                   type="button"
                   onClick={handleSubmitAllChanges}
@@ -931,7 +1019,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 </button>
               )}
             </div>
-            {hasCriteriaChanged && (
+            {hasCriteriaChanged && canShowUpdateAllButton && (
               <p className="mt-1 text-xs font-medium text-sky-700 text-right">
                 Có thay đổi chưa lưu. Nhấn "Cập nhật tất cả".
               </p>

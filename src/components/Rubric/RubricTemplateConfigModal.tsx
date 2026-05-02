@@ -101,22 +101,6 @@ const RubricTemplateConfigModal: React.FC<RubricTemplateConfigModalProps> = ({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                 <Checkbox
-                  checked={!!pickSettings.allowInstructorEdit}
-                  onChange={(e) =>
-                    onSettingsChange({ ...pickSettings, allowInstructorEdit: e.target.checked })
-                  }
-                >
-                  Cho phép giảng viên chỉnh sửa
-                </Checkbox>
-                <Checkbox
-                  checked={!!pickSettings.includeCriterionComments}
-                  onChange={(e) =>
-                    onSettingsChange({ ...pickSettings, includeCriterionComments: e.target.checked })
-                  }
-                >
-                  Bao gồm nhận xét theo tiêu chí
-                </Checkbox>
-                <Checkbox
                   checked={!!pickSettings.includeOverallSummary}
                   onChange={(e) =>
                     onSettingsChange({ ...pickSettings, includeOverallSummary: e.target.checked })
