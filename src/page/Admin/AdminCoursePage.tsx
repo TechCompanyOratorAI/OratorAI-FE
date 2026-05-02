@@ -498,7 +498,7 @@ const AdminCoursePage: React.FC = () => {
       const suffix =
         block?.blockType === "BLOCK3" ? "BLOCK3" : (block?.half ?? "H1");
       const details = termMap.get(term) || [];
-      details.push(Boolean(block?.CourseAcademicBlock?.isPrimary) ? `${suffix} (Primary)` : suffix);
+      details.push(block?.CourseAcademicBlock?.isPrimary ? `${suffix} (Primary)` : suffix);
       termMap.set(term, details);
     });
 
