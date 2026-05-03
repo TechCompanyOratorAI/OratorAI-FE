@@ -134,10 +134,10 @@ const SortableCriteriaItem = ({
         }
       }}
       className={`w-full rounded-3xl border p-3 text-left transition-all cursor-grab active:cursor-grabbing ${isDragging
-          ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
-          : isEditing
-            ? "border-sky-300 bg-sky-50/70 shadow-sm"
-            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+        ? "border-sky-300 bg-sky-50/80 shadow-md opacity-80"
+        : isEditing
+          ? "border-sky-300 bg-sky-50/70 shadow-sm"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
         }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -148,7 +148,9 @@ const SortableCriteriaItem = ({
 
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              {criterion.displayOrder}. {criterion.criteriaName}
+              {criterion.criteriaName
+                ? `${criterion.displayOrder}. ${criterion.criteriaName}`
+                : "Tiêu chí mới"}
             </p>
             <p className="mt-1 text-xs text-slate-600 line-clamp-2">
               {criterion.criteriaDescription}
@@ -163,8 +165,8 @@ const SortableCriteriaItem = ({
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 ${criterion.isActive
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-rose-100 text-rose-700"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-rose-100 text-rose-700"
                   }`}
               >
                 {criterion.isActive ? "Đang hoạt động" : "Không hoạt động"}
@@ -505,9 +507,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                 Tỷ lệ hiện tại
               </p>
               <p
-                className={`text-lg font-bold ${
-                  isPercentageComplete ? "text-emerald-700" : "text-rose-700"
-                }`}
+                className={`text-lg font-bold ${isPercentageComplete ? "text-emerald-700" : "text-rose-700"
+                  }`}
               >
                 {totalActivePercentage % 1 === 0
                   ? Math.floor(totalActivePercentage)
@@ -631,9 +632,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                       criteriaName: e.target.value,
                     }))
                   }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.criteriaName ? "border-rose-300" : "border-slate-300"
-                  }`}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                    }`}
                   placeholder="Chất lượng nội dung"
                 />
                 {errors.criteriaName && (
@@ -645,7 +645,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả tiêu chí 
+                  Mô tả tiêu chí
                   <RequiredAsterisk />
                 </label>
                 <textarea
@@ -657,11 +657,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                       criteriaDescription: e.target.value,
                     }))
                   }
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                    errors.criteriaDescription
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaDescription
                       ? "border-rose-300"
                       : "border-slate-300"
-                  }`}
+                    }`}
                   placeholder="Đánh giá độ rõ ràng và chiều sâu nội dung"
                 />
                 {errors.criteriaDescription && (
@@ -708,9 +707,8 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                           return { ...prev, weight: String(next) };
                         })
                       }
-                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                        errors.weight ? "border-rose-300" : "border-slate-300"
-                      }`}
+                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+                        }`}
                     />
                     {showWeightSuggestions && (
                       <div className="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
@@ -719,27 +717,26 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         </p>
                         <div className="max-h-24 overflow-y-auto pr-1">
                           <div className="grid grid-cols-5 gap-2">
-                          {WEIGHT_SUGGESTIONS.map((value) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  weight: value,
-                                }));
-                                setShowWeightSuggestions(false);
-                              }}
-                              className={`flex h-8 w-full items-center justify-center rounded-full border text-[11px] font-semibold leading-none transition ${
-                                Number(formState.weight) === Number(value)
-                                  ? "border-sky-300 bg-sky-100 text-sky-700"
-                                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-200 hover:bg-white hover:text-sky-700"
-                              }`}
-                            >
-                              {value}%
-                            </button>
-                          ))}
+                            {WEIGHT_SUGGESTIONS.map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    weight: value,
+                                  }));
+                                  setShowWeightSuggestions(false);
+                                }}
+                                className={`flex h-8 w-full items-center justify-center rounded-full border text-[11px] font-semibold leading-none transition ${Number(formState.weight) === Number(value)
+                                    ? "border-sky-300 bg-sky-100 text-sky-700"
+                                    : "border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-200 hover:bg-white hover:text-sky-700"
+                                  }`}
+                              >
+                                {value}%
+                              </button>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -752,7 +749,7 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                   )}
                   {isPercentageExceeded && !errors.weight && (
                     <p className="mt-1 text-xs font-semibold text-amber-600">
-                      ⚠️ Tổng sẽ vượt 100%
+                      ⚠️ Tổng tiêu chí đánh giá sẽ vượt 100%
                     </p>
                   )}
                 </div>
@@ -771,11 +768,10 @@ const CriteriaModal: React.FC<CriteriaModalProps> = ({
                         displayOrder: e.target.value,
                       }))
                     }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${
-                      errors.displayOrder
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.displayOrder
                         ? "border-rose-300"
                         : "border-slate-300"
-                    }`}
+                      }`}
                   />
                   {errors.displayOrder && (
                     <p className="mt-1 text-xs text-rose-600">

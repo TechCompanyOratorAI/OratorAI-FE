@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Edit,
@@ -86,7 +86,6 @@ interface RubricModalProps {
   activeCriteriaId?: number;
   onSelectCriteria?: (criterionId: number) => void;
   onDeleteCriteria?: (criterionId: number) => Promise<void>;
-  addNewTrigger?: number;
 }
 
 type SortableCriterionItemProps = {
@@ -148,7 +147,9 @@ const SortableCriterionItem = ({
 
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              {criterion.displayOrder}. {criterion.criteriaName}
+              {criterion.criteriaName
+                ? `${criterion.displayOrder}. ${criterion.criteriaName}`
+                : "Tiêu chí mới"}
             </p>
             <p className="mt-1 text-xs text-slate-600 line-clamp-2">
               {criterion.criteriaDescription || "Không có mô tả"}
@@ -157,16 +158,7 @@ const SortableCriterionItem = ({
               <span className="rounded-full bg-slate-100 px-2 py-0.5">
                 Phần trăm: {Number(criterion.weight).toFixed(0)}%
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 ${Number(criterion.isActive ?? 1) === 1
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-rose-100 text-rose-700"
-                  }`}
-              >
-                {Number(criterion.isActive ?? 1) === 1
-                  ? "Đang hoạt động"
-                  : "Không hoạt động"}
-              </span>
+
             </div>
           </div>
         </div>
@@ -207,7 +199,6 @@ const RubricModal: React.FC<RubricModalProps> = ({
   activeCriteriaId,
   onSelectCriteria,
   onDeleteCriteria,
-  addNewTrigger = 0,
 }) => {
   const WEIGHT_SUGGESTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
   const [formData, setFormData] = useState<RubricFormState>({
@@ -232,7 +223,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
   const [deletingCriterion, setDeletingCriterion] =
     useState<RubricCriterionItem | null>(null);
   const [showWeightSuggestions, setShowWeightSuggestions] = useState(false);
-  const lastHandledAddTriggerRef = useRef(0);
+  const [isAddingNew, setIsAddingNew] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -258,42 +249,34 @@ const RubricModal: React.FC<RubricModalProps> = ({
     );
   }, [localCriteria]);
 
-  const normalizedTotalActivePercentage = useMemo(() => {
-    return Math.round((totalActivePercentage + Number.EPSILON) * 100) / 100;
-  }, [totalActivePercentage]);
-
-  // Calculate what the total would be if current form is submitted
   const potentialTotalPercentage = useMemo(() => {
-    if (selectedCriterionId !== null) {
-      // If editing, replace the old weight with new weight
-      const oldCriterion = localCriteria.find(
-        (item) => item.classRubricCriteriaId === selectedCriterionId,
-      );
-      if (!oldCriterion) return totalActivePercentage;
+    const baseTotal = totalActivePercentage;
+    const currentWeight = Number(formData.weight) || 0;
 
-      const oldWeight = Number(oldCriterion.weight);
-      const newWeight = Number(formData.weight);
-      return totalActivePercentage - oldWeight + newWeight;
-    } else {
-      // If creating new, add the new weight
-      const newWeight = Number(formData.weight);
-      return totalActivePercentage + newWeight;
+    if (isAddingNew) {
+      return baseTotal + currentWeight;
     }
-  }, [selectedCriterionId, formData, localCriteria, totalActivePercentage]);
 
-  const isPercentageComplete = useMemo(() => {
-    return normalizedTotalActivePercentage >= 99.5;
-  }, [normalizedTotalActivePercentage]);
+    const selected = localCriteria.find(
+      (c) => c.classRubricCriteriaId === selectedCriterionId,
+    );
+    if (selected) {
+      return baseTotal - (Number(selected.weight) || 0) + currentWeight;
+    }
 
-  /** Chỉ cho phép lưu khi tổng đủ ~100% và không vượt 100%. */
-  const canShowUpdateAllButton = useMemo(() => {
-    const t = normalizedTotalActivePercentage;
-    return t >= 99.5 && t <= 100.01;
-  }, [normalizedTotalActivePercentage]);
+    return baseTotal;
+  }, [
+    totalActivePercentage,
+    formData.weight,
+    isAddingNew,
+    selectedCriterionId,
+    localCriteria,
+  ]);
 
   const isPercentageExceeded = useMemo(() => {
-    return potentialTotalPercentage > 100;
+    return potentialTotalPercentage > 100.01;
   }, [potentialTotalPercentage]);
+
 
   const setFormFromCriterion = useCallback(
     (criterion: RubricCriterionItem) => {
@@ -319,6 +302,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
 
     if (mode === "create") {
       setSelectedCriterionId(null);
+      setIsAddingNew(true);
       setFormData({
         criteriaName: "",
         criteriaDescription: "",
@@ -331,13 +315,14 @@ const RubricModal: React.FC<RubricModalProps> = ({
       return;
     }
 
-    const initialSelectedId =
-      activeCriteriaId ?? criteriaList[0]?.classRubricCriteriaId ?? null;
+    const initialSelectedId = activeCriteriaId ?? null;
     setSelectedCriterionId(initialSelectedId);
 
-    const selectedCriterion = criteriaList.find(
-      (item) => item.classRubricCriteriaId === initialSelectedId,
-    );
+    const selectedCriterion = initialSelectedId
+      ? criteriaList.find(
+        (item) => item.classRubricCriteriaId === initialSelectedId,
+      )
+      : null;
 
     if (selectedCriterion) {
       setFormFromCriterion(selectedCriterion);
@@ -376,27 +361,9 @@ const RubricModal: React.FC<RubricModalProps> = ({
     });
   }, [localCriteria, searchTerm]);
 
-  const hasCriteriaChanged = useMemo(() => {
-    if (localCriteria.length !== originalCriteria.length) return true;
-    return localCriteria.some(
-      (criterion, index) => {
-        const original = originalCriteria[index];
-        if (!original) return true;
-        return (
-          criterion.classRubricCriteriaId !== original.classRubricCriteriaId ||
-          criterion.criteriaName !== original.criteriaName ||
-          criterion.criteriaDescription !== original.criteriaDescription ||
-          Number(criterion.weight) !== Number(original.weight) ||
-          Number(criterion.maxScore) !== Number(original.maxScore) ||
-          criterion.displayOrder !== original.displayOrder
-        );
-      },
-    );
-  }, [localCriteria, originalCriteria]);
 
-  const activeCount = localCriteria.filter(
-    (item) => Number(item.isActive ?? 1) === 1,
-  ).length;
+
+
   const isExistingCriterionSelected =
     selectedCriterionId !== null && selectedCriterionId > 0;
   const nextOrder =
@@ -414,22 +381,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
   }, [nextOrder, selectedCriterionId]);
 
-  const normalizeNumberValue = (field: "weight" | "displayOrder", raw: string) => {
-    if (raw.trim() === "") {
-      setFormData((prev) => ({ ...prev, [field]: "" }));
-      return;
-    }
 
-    const parsed = Number(raw);
-    if (Number.isNaN(parsed)) return;
-
-    if (field === "displayOrder") {
-      setFormData((prev) => ({ ...prev, [field]: String(Math.trunc(parsed)) }));
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, [field]: String(parsed) }));
-  };
 
   const normalizeCriteriaOrder = useCallback((criteria: RubricCriterionItem[]) => {
     return [...criteria]
@@ -441,38 +393,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
   }, []);
 
   const handleAddNewCriterion = useCallback(() => {
-    const existingDraft = localCriteria.find(
-      (criterion) => criterion.classRubricCriteriaId <= 0,
-    );
-
-    if (existingDraft) {
-      setSelectedCriterionId(existingDraft.classRubricCriteriaId);
-      setFormData({
-        criteriaName: existingDraft.criteriaName || "",
-        criteriaDescription: existingDraft.criteriaDescription || "",
-        weight: String(Number(existingDraft.weight) || 1),
-        maxScore: String(Number(existingDraft.maxScore) || 100),
-        displayOrder: String(existingDraft.displayOrder),
-      });
-      setErrors({});
-      return;
-    }
-
-    const nextTempId = tempCriterionIdSeed;
-    const draftCriterion: RubricCriterionItem = {
-      classRubricCriteriaId: nextTempId,
-      criteriaName: "",
-      criteriaDescription: "",
-      weight: 1,
-      maxScore: 100,
-      displayOrder: nextOrder,
-      isActive: 1,
-    };
-    setLocalCriteria((previous) =>
-      normalizeCriteriaOrder([...previous, draftCriterion]),
-    );
-    setSelectedCriterionId(nextTempId);
-    setTempCriterionIdSeed((previous) => previous - 1);
+    setIsAddingNew(true);
+    setSelectedCriterionId(null);
     setFormData({
       criteriaName: "",
       criteriaDescription: "",
@@ -481,16 +403,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
       displayOrder: String(nextOrder),
     });
     setErrors({});
-  }, [localCriteria, nextOrder, normalizeCriteriaOrder, tempCriterionIdSeed]);
+  }, [nextOrder]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (addNewTrigger <= 0) return;
-    if (mode !== "create") return;
-    if (lastHandledAddTriggerRef.current === addNewTrigger) return;
-    lastHandledAddTriggerRef.current = addNewTrigger;
-    handleAddNewCriterion();
-  }, [addNewTrigger, handleAddNewCriterion, isOpen, mode]);
 
   const applyFormToSelectedCriterion = useCallback(
     (nextForm: RubricFormState) => {
@@ -521,6 +435,30 @@ const RubricModal: React.FC<RubricModalProps> = ({
     [normalizeCriteriaOrder, selectedCriterionId],
   );
 
+  const normalizeNumberValue = (name: keyof RubricFormState, value: string) => {
+    if (!value) return;
+    let numericValue = parseFloat(value);
+    if (isNaN(numericValue)) return;
+
+    if (name === "weight") {
+      // Round up to nearest integer if it has decimals to avoid .9999 issues
+      numericValue = Math.ceil(numericValue);
+    } else if (name === "maxScore" || name === "displayOrder") {
+      numericValue = Math.round(numericValue);
+    }
+
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: String(numericValue),
+      };
+      if (name !== "displayOrder" && !isAddingNew) {
+        applyFormToSelectedCriterion(next);
+      }
+      return next;
+    });
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -530,7 +468,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
         ...prev,
         [name]: value,
       };
-      if (name !== "displayOrder") {
+      if (name !== "displayOrder" && !isAddingNew) {
         applyFormToSelectedCriterion(next);
       }
       return next;
@@ -541,10 +479,54 @@ const RubricModal: React.FC<RubricModalProps> = ({
     }
   };
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const saveCriteriaState = useCallback(async (updatedList: RubricCriterionItem[]) => {
+    const changedCriteria = updatedList
+      .map((criterion, index) => {
+        const normalized = {
+          ...(criterion.classRubricCriteriaId > 0
+            ? { classRubricCriteriaId: criterion.classRubricCriteriaId }
+            : {}),
+          criteriaName: criterion.criteriaName,
+          criteriaDescription: criterion.criteriaDescription,
+          weight: Number(criterion.weight),
+          maxScore: Number(criterion.maxScore),
+          displayOrder: index + 1,
+          evaluationGuide: "",
+        };
+        const original = originalCriteria.find(
+          (item) =>
+            item.classRubricCriteriaId === criterion.classRubricCriteriaId,
+        );
+        if (!original) return normalized;
+
+        const isChanged =
+          criterion.criteriaName !== original.criteriaName ||
+          criterion.criteriaDescription !== original.criteriaDescription ||
+          Number(criterion.weight) !== Number(original.weight) ||
+          Number(criterion.maxScore) !== Number(original.maxScore) ||
+          index + 1 !== original.displayOrder;
+        return isChanged ? normalized : null;
+      })
+      .filter((criterion) => criterion !== null);
+
+    if (changedCriteria.length === 0) return;
+
+    setLocalCriteria(updatedList);
+    await onSubmit(changedCriteria);
+    setOriginalCriteria(
+      updatedList.map((criterion, index) => ({
+        ...criterion,
+        displayOrder: index + 1,
+      })),
+    );
+  }, [originalCriteria, onSubmit]);
+
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    let nextList: RubricCriterionItem[] = [];
     setLocalCriteria((previous) => {
       const oldIndex = previous.findIndex(
         (item) => item.classRubricCriteriaId === Number(active.id),
@@ -554,15 +536,19 @@ const RubricModal: React.FC<RubricModalProps> = ({
       );
 
       if (oldIndex < 0 || newIndex < 0) return previous;
-      return arrayMove(previous, oldIndex, newIndex).map((criterion, index) => ({
-        ...criterion,
-        displayOrder: index + 1,
-      }));
+      const moved = arrayMove(previous, oldIndex, newIndex);
+      nextList = normalizeCriteriaOrder(moved);
+      return nextList;
     });
-  }, []);
+
+    if (nextList.length > 0) {
+      await saveCriteriaState(nextList);
+    }
+  }, [normalizeCriteriaOrder, saveCriteriaState]);
 
   const handleSelectCriterion = useCallback(
     (criterion: RubricCriterionItem) => {
+      setIsAddingNew(false);
       setSelectedCriterionId(criterion.classRubricCriteriaId);
       setFormFromCriterion(criterion);
       setErrors({});
@@ -601,63 +587,48 @@ const RubricModal: React.FC<RubricModalProps> = ({
     });
   }, [localCriteria, selectedCriterionId, formData]);
 
-  const handleSubmitAllChanges = async () => {
-    const merged = mergeFormIntoLocalCriteria();
 
-    for (const criterion of merged) {
-      const fieldErrors = validateCriterionFields(criterion);
-      if (Object.keys(fieldErrors).length === 0) continue;
 
-      setSelectedCriterionId(criterion.classRubricCriteriaId);
-      if (criterion.classRubricCriteriaId !== selectedCriterionId) {
-        setFormFromCriterion(criterion);
+
+
+  const handleUpdateCurrentCriterion = async () => {
+    const updated = mergeFormIntoLocalCriteria();
+    const current = updated.find((c) => c.classRubricCriteriaId === selectedCriterionId);
+    if (current) {
+      const fieldErrors = validateCriterionFields(current);
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        return;
       }
+    }
+    setErrors({});
+    await saveCriteriaState(updated);
+  };
+
+
+  const handleConfirmAddNew = async () => {
+    const dummyCriterion: RubricCriterionItem = {
+      classRubricCriteriaId: tempCriterionIdSeed,
+      criteriaName: formData.criteriaName,
+      criteriaDescription: formData.criteriaDescription,
+      weight: formData.weight,
+      maxScore: formData.maxScore,
+      displayOrder: Number(formData.displayOrder),
+      isActive: 1,
+    };
+    const fieldErrors = validateCriterionFields(dummyCriterion);
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
     }
 
     setErrors({});
+    const nextList = normalizeCriteriaOrder([...localCriteria, dummyCriterion]);
+    await saveCriteriaState(nextList);
 
-    const changedCriteria = merged
-      .map((criterion, index) => {
-        const normalized = {
-          ...(criterion.classRubricCriteriaId > 0
-            ? { classRubricCriteriaId: criterion.classRubricCriteriaId }
-            : {}),
-          criteriaName: criterion.criteriaName,
-          criteriaDescription: criterion.criteriaDescription,
-          weight: Number(criterion.weight),
-          maxScore: Number(criterion.maxScore),
-          displayOrder: index + 1,
-          evaluationGuide: "",
-        };
-        const original = originalCriteria.find(
-          (item) =>
-            item.classRubricCriteriaId === criterion.classRubricCriteriaId,
-        );
-        if (!original) return normalized;
-
-        const isChanged =
-          criterion.criteriaName !== original.criteriaName ||
-          criterion.criteriaDescription !== original.criteriaDescription ||
-          Number(criterion.weight) !== Number(original.weight) ||
-          Number(criterion.maxScore) !== Number(original.maxScore) ||
-          index + 1 !== original.displayOrder;
-        return isChanged ? normalized : null;
-      })
-      .filter((criterion) => criterion !== null);
-
-    if (changedCriteria.length === 0) return;
-
-    setLocalCriteria(merged);
-
-    await onSubmit(changedCriteria);
-    setOriginalCriteria(
-      merged.map((criterion, index) => ({
-        ...criterion,
-        displayOrder: index + 1,
-      })),
-    );
+    setSelectedCriterionId(tempCriterionIdSeed);
+    setTempCriterionIdSeed((prev) => prev - 1);
+    setIsAddingNew(false);
   };
 
   const handleDeleteCriterion = async () => {
@@ -722,48 +693,36 @@ const RubricModal: React.FC<RubricModalProps> = ({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Tổng
+                Tổng tiêu chí
               </p>
               <p className="text-lg font-bold text-slate-900">
                 {localCriteria.length}
-              </p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Đang hoạt động
-              </p>
-              <p className="text-lg font-bold text-emerald-700">
-                {activeCount}
               </p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2 relative">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    Phần trăm
+                    Phần trăm tổng
                   </p>
                   <p
-                    className={`text-lg font-bold ${normalizedTotalActivePercentage > 100
-                      ? "text-rose-700"
-                      : isPercentageComplete
-                        ? "text-emerald-700"
-                        : "text-rose-700"
+                    className={`text-lg font-bold ${potentialTotalPercentage > 100
+                      ? "text-rose-600"
+                      : potentialTotalPercentage >= 99.5
+                        ? "text-emerald-600"
+                        : "text-amber-600"
                       }`}
                   >
-                    {Math.round(normalizedTotalActivePercentage)}
+                    {potentialTotalPercentage % 1 === 0
+                      ? Math.floor(potentialTotalPercentage)
+                      : potentialTotalPercentage.toFixed(1)}
                     %
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Thứ tự tiếp theo
-              </p>
-              <p className="text-lg font-bold text-slate-900">{nextOrder}</p>
             </div>
           </div>
 
@@ -837,194 +796,168 @@ const RubricModal: React.FC<RubricModalProps> = ({
           </section>
 
           <div className="self-start">
-          <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="mb-3 flex items-start justify-between gap-2">
-              <div>
-                <h4
-                  className={`text-base font-semibold ${isExistingCriterionSelected ? "text-slate-800" : "text-slate-700"
-                    }`}
-                >
-                  {isExistingCriterionSelected ? "Sửa tiêu chí" : "Tiêu chí mới"}
-                </h4>
-                <p className="text-xs text-slate-500">
-                  {isExistingCriterionSelected
-                    ? "Cập nhật chi tiết tiêu chí"
-                    : "Tạo tiêu chí đánh giá cho lớp học"}
+            {!isExistingCriterionSelected && !isAddingNew ? (
+              <div className="flex h-[440px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center">
+                <div className="mb-4 rounded-full bg-white p-4 shadow-sm">
+                  <Edit className="h-8 w-8 text-slate-300" />
+                </div>
+                <h4 className="text-base font-semibold text-slate-900">Chưa chọn tiêu chí</h4>
+                <p className="mt-2 text-sm text-slate-500 max-w-[240px]">
+                  Chọn một tiêu chí từ danh sách bên trái để chỉnh sửa hoặc nhấn
+                  <span className="font-semibold text-sky-600"> + Thêm mới </span>
+                  để tạo tiêu chí mới.
                 </p>
               </div>
-            </div>
-
-            <form onSubmit={(event) => event.preventDefault()} className="space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Tên tiêu chí <RequiredMark />
-                </label>
-                <input
-                  name="criteriaName"
-                  value={formData.criteriaName}
-                  onChange={handleChange}
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaName ? "border-rose-300" : "border-slate-300"
-                    }`}
-                  placeholder="Chất lượng nội dung"
-                />
-                {errors.criteriaName && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.criteriaName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Mô tả tiêu chí <RequiredMark />
-                </label>
-                <textarea
-                  rows={2}
-                  name="criteriaDescription"
-                  value={formData.criteriaDescription}
-                  onChange={handleChange}
-                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaDescription ? "border-rose-300" : "border-slate-300"
-                    }`}
-                  placeholder="Đánh giá độ rõ ràng và chiều sâu của tiêu chi tiết"
-                />
-                {errors.criteriaDescription && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.criteriaDescription}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Phần trăm (%) <RequiredMark />
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="1"
-                      name="weight"
-                      value={formData.weight}
-                      onWheel={(event) => event.preventDefault()}
-                      onFocus={() => setShowWeightSuggestions(true)}
-                      onBlur={() => {
-                        normalizeNumberValue("weight", formData.weight);
-                        applyFormToSelectedCriterion({
-                          ...formData,
-                          weight: String(
-                            Math.trunc(Number(formData.weight || 0)) || 1,
-                          ),
-                        });
-                        setTimeout(() => setShowWeightSuggestions(false), 120);
-                      }}
-                      onChange={handleChange}
-                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+            ) : (
+              <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <div>
+                    <h4
+                      className={`text-base font-semibold ${isExistingCriterionSelected ? "text-slate-800" : "text-slate-700"
                         }`}
+                    >
+                      {isExistingCriterionSelected ? "Sửa tiêu chí" : "Tiêu chí mới"}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      {isExistingCriterionSelected
+                        ? "Cập nhật chi tiết tiêu chí"
+                        : "Tạo tiêu chí đánh giá cho lớp học"}
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={(event) => event.preventDefault()} className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                      Tên tiêu chí <RequiredMark />
+                    </label>
+                    <input
+                      name="criteriaName"
+                      value={formData.criteriaName}
+                      onChange={handleChange}
+                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaName ? "border-rose-300" : "border-slate-300"
+                        }`}
+                      placeholder="Chất lượng nội dung"
                     />
-                    {showWeightSuggestions && (
-                      <div className="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                          Gợi ý nhanh
-                        </p>
-                        <div className="grid grid-cols-5 gap-2">
-                          {WEIGHT_SUGGESTIONS.map((value) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  weight: String(value),
-                                }));
-                                setShowWeightSuggestions(false);
-                              }}
-                              className={`flex h-8 w-full items-center justify-center rounded-full border text-[11px] font-semibold leading-none transition ${
-                                Number(formData.weight) === value
-                                  ? "border-sky-300 bg-sky-100 text-sky-700"
-                                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-200 hover:bg-white hover:text-sky-700"
-                              }`}
-                            >
-                              {value}%
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    {errors.criteriaName && (
+                      <p className="mt-1 text-xs text-rose-600">
+                        {errors.criteriaName}
+                      </p>
                     )}
                   </div>
-                  {errors.weight && (
-                    <p className="mt-1 text-xs text-rose-600">
-                      {errors.weight}
-                    </p>
-                  )}
-                  {isPercentageExceeded && (
-                    <p className="mt-1 text-xs text-amber-600 font-semibold">
-                      ⚠️ Tổng sẽ vượt 100%
 
-                    </p>
-                  )}
-                </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                      Mô tả tiêu chí <RequiredMark />
+                    </label>
+                    <textarea
+                      rows={2}
+                      name="criteriaDescription"
+                      value={formData.criteriaDescription}
+                      onChange={handleChange}
+                      className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.criteriaDescription ? "border-rose-300" : "border-slate-300"
+                        }`}
+                      placeholder="Đánh giá độ rõ ràng và chiều sâu của tiêu chi tiết"
+                    />
+                    {errors.criteriaDescription && (
+                      <p className="mt-1 text-xs text-rose-600">
+                        {errors.criteriaDescription}
+                      </p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                    Thứ tự hiển thị <RequiredMark />
-                  </label>
-                  <input
-                    type="number"
-                    name="displayOrder"
-                    value={formData.displayOrder}
-                    onChange={handleChange}
-                    onBlur={() =>
-                      (() => {
-                        normalizeNumberValue(
-                          "displayOrder",
-                          formData.displayOrder,
-                        );
-                        applyFormToSelectedCriterion(formData);
-                      })()
-                    }
-                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.displayOrder
-                      ? "border-rose-300"
-                      : "border-slate-300"
-                      }`}
-                  />
-                  {errors.displayOrder && (
-                    <p className="mt-1 text-xs text-rose-600">
-                      {errors.displayOrder}
-                    </p>
-                  )}
-                </div>
-              </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                      Phần trăm (%) <RequiredMark />
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="weight"
+                        value={formData.weight}
+                        onChange={handleChange}
+                        onFocus={() => setShowWeightSuggestions(true)}
+                        onBlur={() => {
+                          setTimeout(() => setShowWeightSuggestions(false), 200);
+                          normalizeNumberValue("weight", formData.weight);
+                          applyFormToSelectedCriterion(formData);
+                        }}
+                        className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 ${errors.weight ? "border-rose-300" : "border-slate-300"
+                          }`}
+                        placeholder="30"
+                      />
+                      {showWeightSuggestions && (
+                        <div className="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Gợi ý nhanh
+                          </p>
+                          <div className="max-h-24 overflow-y-auto pr-1">
+                            <div className="grid grid-cols-5 gap-2">
+                              {WEIGHT_SUGGESTIONS.map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      weight: String(value),
+                                    }));
+                                    setShowWeightSuggestions(false);
+                                  }}
+                                  className={`flex h-8 w-full items-center justify-center rounded-full border text-[11px] font-semibold leading-none transition ${Number(formData.weight) === value
+                                    ? "border-sky-300 bg-sky-100 text-sky-700"
+                                    : "border-slate-200 bg-slate-50 text-slate-600 hover:border-sky-200 hover:bg-white hover:text-sky-700"
+                                    }`}
+                                >
+                                  {value}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {errors.weight && (
+                      <p className="mt-1 text-xs text-rose-600">
+                        {errors.weight}
+                      </p>
+                    )}
+                    {isPercentageExceeded && (
+                      <p className="mt-1 text-xs text-amber-600 font-semibold">
+                        ⚠️ Tổng các tiêu chí đánh giá sẽ vượt 100%
+                      </p>
+                    )}
+                  </div>
 
-            </form>
-            
-          </section>
-          <div className="mt-2">
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Đóng
-              </button>
-              {canShowUpdateAllButton && (
-                <button
-                  type="button"
-                  onClick={handleSubmitAllChanges}
-                  disabled={isLoading || !hasCriteriaChanged}
-                  className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isLoading ? "Đang cập nhật..." : "Cập nhật tất cả"}
-                </button>
-              )}
-            </div>
-            {hasCriteriaChanged && canShowUpdateAllButton && (
-              <p className="mt-1 text-xs font-medium text-sky-700 text-right">
-                Có thay đổi chưa lưu. Nhấn "Cập nhật tất cả".
-              </p>
+                  {isAddingNew ? (
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleConfirmAddNew}
+                        disabled={isLoading}
+                        className="rounded-2xl bg-sky-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 hover:shadow-sky-300 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {isLoading ? "Đang xử lý..." : "Lưu tiêu chí mới"}
+                      </button>
+                    </div>
+                  ) : isExistingCriterionSelected ? (
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleUpdateCurrentCriterion}
+                        disabled={isLoading}
+                        className="rounded-2xl bg-sky-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 hover:shadow-sky-300 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {isLoading ? "Đang xử lý..." : "Lưu thay đổi"}
+                      </button>
+                    </div>
+                  ) : null}
+                </form>
+
+              </section>
             )}
-          </div>
+
           </div>
         </div>
       </div>
