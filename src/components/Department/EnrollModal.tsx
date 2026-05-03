@@ -43,7 +43,6 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [enrollKey, setEnrollKey] = useState("");
-  const [enrollError, setEnrollError] = useState("");
   const [enrolling, setEnrolling] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [step, setStep] = useState<Step>("input");
@@ -53,7 +52,6 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
 
   const handleClose = () => {
     setEnrollKey("");
-    setEnrollError("");
     setEnrolling(false);
     setPreviewing(false);
     setStep("input");
@@ -65,20 +63,19 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
   const handlePreview = async () => {
     const trimmed = enrollKey.trim().toUpperCase();
     if (!trimmed) {
-      setEnrollError("Vui lòng nhập mã tham gia");
+      toast.error("Vui lòng nhập mã tham gia");
       return;
     }
 
     try {
       setPreviewing(true);
-      setEnrollError("");
       const result = await dispatch(previewClassByKey(trimmed)).unwrap();
       setPreview(result.class);
       setStep("preview");
     } catch (err: unknown) {
       const message =
         typeof err === "string" ? err : "Mã đăng ký không hợp lệ hoặc đã hết hạn.";
-      setEnrollError(message);
+      toast.error(message);
     } finally {
       setPreviewing(false);
     }
@@ -87,13 +84,12 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
   const handleSubmit = async () => {
     const trimmed = enrollKey.trim().toUpperCase();
     if (!trimmed) {
-      setEnrollError("Vui lòng nhập mã tham gia");
+      toast.error("Vui lòng nhập mã tham gia");
       return;
     }
 
     try {
       setEnrolling(true);
-      setEnrollError("");
       const result = await dispatch(enrollClassByKey({ enrollKey: trimmed })).unwrap();
       await dispatch(fetchEnrolledClasses());
 
@@ -110,8 +106,7 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
         typeof err === "string"
           ? err
           : "Tham gia thất bại. Vui lòng thử lại.";
-      setEnrollError(message);
-      // Go back to input step so user can retry
+      toast.error(message);
       setStep("input");
     } finally {
       setEnrolling(false);
@@ -234,10 +229,8 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
               value={enrollKey}
               onChange={(e) => {
                 setEnrollKey(e.target.value.toUpperCase());
-                if (enrollError) setEnrollError("");
               }}
               onPressEnter={isQuickJoin ? handlePreview : handleSubmit}
-              status={enrollError ? "error" : undefined}
               style={{
                 borderRadius: 12,
                 height: 48,
@@ -247,14 +240,6 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
                 border: "1.5px solid #E5E7EB",
               }}
             />
-            {enrollError && (
-              <Text
-                type="danger"
-                style={{ fontSize: 13, marginTop: 6, display: "block" }}
-              >
-                {enrollError}
-              </Text>
-            )}
             {isQuickJoin && (
               <Text
                 type="secondary"
@@ -350,14 +335,6 @@ const EnrollModal: React.FC<EnrollModalProps> = ({
               </Text>
             </div>
 
-            {enrollError && (
-              <Text
-                type="danger"
-                style={{ fontSize: 13, marginTop: 10, display: "block" }}
-              >
-                {enrollError}
-              </Text>
-            )}
           </div>
         )}
 
