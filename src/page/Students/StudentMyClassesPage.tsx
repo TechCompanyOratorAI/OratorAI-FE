@@ -16,7 +16,7 @@ const BRAND_GRADIENT = "linear-gradient(135deg, #1da9e6 0%, #6966fe 100%)";
 const StudentMyClassesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { enrolledClasses, loading, error } = useAppSelector(
+  const { enrolledClasses, loading } = useAppSelector(
     (state) => state.enrollment,
   );
 
@@ -28,9 +28,6 @@ const StudentMyClassesPage: React.FC = () => {
     dispatch(fetchEnrolledClasses());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (error) toast.error(error);
-  }, [error]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
