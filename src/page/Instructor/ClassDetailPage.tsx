@@ -40,6 +40,7 @@ import {
   CheckCircle2,
   Edit,
   Trash2,
+  GripVertical,
 } from "lucide-react";
 import {
   DndContext,
@@ -129,23 +130,31 @@ const SortableCriterionItem = React.memo(
         {...attributes}
         {...listeners}
         onClick={() => onEdit(criterion)}
-        className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition-shadow ${isDragging
-          ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing"
-          : "cursor-grab hover:border-sky-300"
-          }`}
+        className={`rounded-2xl border transition-all ${isDragging
+          ? "opacity-80 shadow-xl ring-2 ring-sky-200 cursor-grabbing bg-sky-50/50 border-sky-300"
+          : "cursor-grab border-slate-200 bg-white hover:border-sky-300 hover:bg-slate-50/50"
+          } px-4 py-3.5`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
+        <div className="flex items-start gap-4">
+          <div className="mt-1 flex-shrink-0 text-slate-300">
+            <GripVertical className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-50 text-[11px] font-bold text-sky-700 ring-1 ring-inset ring-sky-700/10">
                 {criterion.displayOrder}
               </span>
-              <p className="font-semibold text-slate-900">
+              <p className="text-sm font-bold text-slate-900 truncate">
                 {criterion.criteriaName}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold mt-2 ml-8">
-              <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-slate-600">
+            {criterion.criteriaDescription && (
+              <p className="mt-1.5 text-xs text-slate-500 leading-relaxed line-clamp-2">
+                {criterion.criteriaDescription}
+              </p>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
                 Phần trăm: {Number(criterion.weight).toFixed(0)}%
               </span>
             </div>
@@ -153,20 +162,24 @@ const SortableCriterionItem = React.memo(
           <div className="flex items-center gap-1 shrink-0">
             <AntButton
               type="text"
-              icon={<EditOutlined style={{ color: "#0284c7" }} />}
+              size="small"
+              icon={<EditOutlined style={{ color: "#0284c7", fontSize: 16 }} />}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(criterion);
               }}
+              className="!flex !items-center !justify-center !w-8 !h-8 !rounded-lg hover:!bg-sky-50"
             />
             <AntButton
               type="text"
+              size="small"
               danger
-              icon={<DeleteOutlined />}
+              icon={<DeleteOutlined style={{ fontSize: 16 }} />}
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(criterion);
               }}
+              className="!flex !items-center !justify-center !w-8 !h-8 !rounded-lg hover:!bg-rose-50"
             />
           </div>
         </div>
@@ -213,7 +226,6 @@ const ClassDetailPage: React.FC = () => {
   const [showGroupDetail, setShowGroupDetail] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [isRubricModalOpen, setIsRubricModalOpen] = useState(false);
-  const [openRubricModalAddCounter, setOpenRubricModalAddCounter] = useState(0);
   const [isDeleteRubricModalOpen, setIsDeleteRubricModalOpen] = useState(false);
   const [editingRubric, setEditingRubric] =
     useState<ClassRubricCriteria | null>(null);
@@ -488,7 +500,7 @@ const ClassDetailPage: React.FC = () => {
     return draftRubricCriteria.some(
       (criterion, index) =>
         criterion.classRubricCriteriaId !==
-          sortedRubricCriteria[index]?.classRubricCriteriaId ||
+        sortedRubricCriteria[index]?.classRubricCriteriaId ||
         criterion.displayOrder !== sortedRubricCriteria[index]?.displayOrder,
     );
   }, [draftRubricCriteria, sortedRubricCriteria]);
@@ -504,7 +516,7 @@ const ClassDetailPage: React.FC = () => {
   }, [totalRubricPercentage]);
 
   const isRubricActive = useMemo(() => {
-    return normalizedTotalRubricPercentage >= 99.5;
+    return normalizedTotalRubricPercentage >= 99.5 && normalizedTotalRubricPercentage <= 100.5;
   }, [normalizedTotalRubricPercentage]);
 
   const sensors = useSensors(
@@ -576,7 +588,7 @@ const ClassDetailPage: React.FC = () => {
           typeof error === "string"
             ? error
             : (error as { message?: string })?.message ||
-              "Không thể cập nhật thứ tự tiêu chí.",
+            "Không thể cập nhật thứ tự tiêu chí.",
         type: "error",
       });
     }
@@ -1130,28 +1142,41 @@ const ClassDetailPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <Switch
-                checked={isUploadEnabled}
-                onChange={(checked) => {
-                  if (selectedClass.classId) {
-                    dispatch(setUploadPermissionByClassAction({
-                      classId: selectedClass.classId,
-                      isUploadEnabled: checked,
-                    }));
-                  }
-                }}
-                checkedChildren={<CheckOutlined />}
-                unCheckedChildren={<CloseOutlined />}
-                className={`${isUploadEnabled ? "bg-sky-400" : "bg-slate-300"}`}
-              />
+              <Tooltip title={!isRubricActive ? "Cần thiết lập Rubric đủ 100% để có thể bật quyền này" : ""}>
+                <div className="flex items-center">
+                  <Switch
+                    checked={isRubricActive && isUploadEnabled}
+                    disabled={!isRubricActive}
+                    onChange={(checked) => {
+                      if (selectedClass.classId) {
+                        dispatch(setUploadPermissionByClassAction({
+                          classId: selectedClass.classId,
+                          isUploadEnabled: checked,
+                        }));
+                      }
+                    }}
+                    checkedChildren={<CheckOutlined />}
+                    unCheckedChildren={<CloseOutlined />}
+                    className={`${isUploadEnabled ? "bg-sky-400" : "bg-slate-300"} ${!isRubricActive ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+              </Tooltip>
             </div>
-            {isUploadEnabled && (
+            {!isRubricActive && (
+              <div className="px-6 py-3 bg-amber-50 border-t border-amber-100 flex items-center gap-2">
+                <ExclamationCircleOutlined className="text-amber-500 text-sm" />
+                <span className="text-sm text-amber-700 font-medium">
+                  Tính năng bị khóa: Bạn cần hoàn thiện Rubric đủ 100% (Hiện tại: {Math.round(normalizedTotalRubricPercentage)}%)
+                </span>
+              </div>
+            )}
+            {isRubricActive && isUploadEnabled && (
               <div className="px-6 py-3 bg-sky-50 border-t border-sky-100 flex items-center gap-2">
                 <CheckCircleOutlined className="text-sky-500 text-sm" />
                 <span className="text-sm text-sky-700">Tính năng upload đang hoạt động</span>
               </div>
             )}
-            {!isUploadEnabled && (
+            {isRubricActive && !isUploadEnabled && (
               <div className="px-6 py-3 bg-slate-50 border-t border-sky-100 flex items-center gap-2">
                 <ExclamationCircleOutlined className="text-sky-500 text-sm" />
                 <span className="text-sm text-sky-700">Tính năng upload đang bị tắt</span>
@@ -1350,14 +1375,7 @@ const ClassDetailPage: React.FC = () => {
                           icon={<SettingOutlined />}
                           className="!h-9 !rounded-full !border-slate-300 !bg-white !px-4 !font-semibold !text-slate-700 hover:!border-slate-400 hover:!bg-slate-50"
                           onClick={() => {
-                            const firstCriterion = [...draftRubricCriteria]
-                              .sort((a, b) => a.displayOrder - b.displayOrder)[0];
-                            if (firstCriterion) {
-                              openEditRubricModal(firstCriterion);
-                              return;
-                            }
                             setEditingRubric(null);
-                            setOpenRubricModalAddCounter((previous) => previous + 1);
                             setIsRubricModalOpen(true);
                           }}
                         >
@@ -1405,7 +1423,7 @@ const ClassDetailPage: React.FC = () => {
                                 }}
                                 suffixIcon={
                                   rubricTemplateSelectOpen &&
-                                  rubricTemplatePopupAbove ? (
+                                    rubricTemplatePopupAbove ? (
                                     <UpOutlined />
                                   ) : (
                                     <DownOutlined />
@@ -1552,37 +1570,37 @@ const ClassDetailPage: React.FC = () => {
                         <p className="text-xs font-medium text-amber-700">
                           Tổng phần trăm tiêu chí hiện tại là{" "}
                           {Math.round(normalizedTotalRubricPercentage)}%. Vui lòng cập nhật
-                          đủ 100% để rubric hoạt động đầy đủ.
+                          đủ 100% để có thể bật quyền upload presentation.
                         </p>
                       </div>
                     )}
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    modifiers={[restrictToVerticalAxis]}
-                    onDragEnd={handleRubricDragEnd}
-                  >
-                    <SortableContext
-                      items={draftRubricCriteria.map(
-                        (criterion) => criterion.classRubricCriteriaId,
-                      )}
-                      strategy={verticalListSortingStrategy}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      modifiers={[restrictToVerticalAxis]}
+                      onDragEnd={handleRubricDragEnd}
                     >
-                      <div className="space-y-2">
-                        {draftRubricCriteria.map((criterion) => (
-                          <SortableCriterionItem
-                            key={criterion.classRubricCriteriaId}
-                            criterion={criterion}
-                            onEdit={openEditRubricModal}
-                            onDelete={(selectedCriterion) => {
-                              setEditingRubric(selectedCriterion);
-                              setIsDeleteRubricModalOpen(true);
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                      <SortableContext
+                        items={draftRubricCriteria.map(
+                          (criterion) => criterion.classRubricCriteriaId,
+                        )}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-2">
+                          {draftRubricCriteria.map((criterion) => (
+                            <SortableCriterionItem
+                              key={criterion.classRubricCriteriaId}
+                              criterion={criterion}
+                              onEdit={openEditRubricModal}
+                              onDelete={(selectedCriterion) => {
+                                setEditingRubric(selectedCriterion);
+                                setIsDeleteRubricModalOpen(true);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                     {hasPendingRubricOrderChanges && (
                       <div className="flex justify-end pt-2">
                         <AntButton
@@ -1614,7 +1632,7 @@ const ClassDetailPage: React.FC = () => {
                 <div className="bg-gradient-to-r from-sky-700 to-sky-600 px-5 py-4 text-white">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      
+
                       <h3 className="mt-1 text-xl font-bold">Chủ đề</h3>
                       <p className="mt-1 text-sm text-white/80">
                         Nhấn vào chủ đề để mở trang chi tiết.
@@ -1747,13 +1765,13 @@ const ClassDetailPage: React.FC = () => {
         classOptions={
           selectedClass
             ? [
-                {
-                  classId: selectedClass.classId,
-                  className: selectedClass.className,
-                  classCode: selectedClass.classCode,
-                  endDate: selectedClass.endDate,
-                },
-              ]
+              {
+                classId: selectedClass.classId,
+                className: selectedClass.className,
+                classCode: selectedClass.classCode,
+                endDate: selectedClass.endDate,
+              },
+            ]
             : undefined
         }
       />
@@ -1782,7 +1800,6 @@ const ClassDetailPage: React.FC = () => {
         onDeleteCriteria={handleDeleteRubricById}
         onSelectCriteria={handleSelectRubricFromModal}
         isLoading={rubricActionLoading}
-        addNewTrigger={openRubricModalAddCounter}
         mode={editingRubric ? "edit" : "create"}
         initialData={
           editingRubric
