@@ -591,8 +591,7 @@ const SharePage: React.FC = () => {
                           {criterion.criteriaName}
                         </h3>
                         <span className="text-sm font-semibold text-sky-700">
-                          {criterion.score}/{criterion.maxScore} | Trọng số{" "}
-                          {criterion.weight}%
+                          {criterion.score}/{criterion.maxScore}
                         </span>
                       </div>
                       <p className="text-sm text-slate-600 mb-3">

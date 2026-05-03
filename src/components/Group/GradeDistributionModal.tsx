@@ -241,6 +241,10 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
       );
       return;
     }
+    if (!overallReason.trim()) {
+      void message.warning("Vui lòng nhập lý do phân chia điểm (tổng quát).");
+      return;
+    }
 
     try {
       const result = await dispatch(
@@ -489,7 +493,7 @@ const GradeDistributionModal: React.FC<GradeDistributionModalProps> = ({
         {/* ── Overall reason (editable by leader when allowed) ── */}
         <div className="mb-4">
           <Text strong className="block mb-1">
-            Lý do phân chia điểm (tổng quát)
+            Lý do phân chia điểm (tổng quát) <span className="text-red-500">*</span>
           </Text>
           <TextArea
             rows={2}

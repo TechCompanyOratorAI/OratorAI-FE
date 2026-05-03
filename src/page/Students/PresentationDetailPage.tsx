@@ -1539,6 +1539,168 @@ const PresentationDetailPage: React.FC = () => {
                           </Row>
                         </Card>
 
+                        {/* Criteria Scores */}
+                        {criteriaScores.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <Title
+                              level={5}
+                              style={{
+                                fontWeight: 700,
+                                marginBottom: 12,
+                                fontSize: 15,
+                              }}
+                            >
+                              <BarChartOutlined style={{ marginRight: 8 }} />
+                              Chi tiết theo tiêu chí
+                            </Title>
+                            <Collapse
+                              ghost
+                              expandIconPosition="end"
+                              style={{ background: "transparent" }}
+                            >
+                              {criteriaScores.map((criterion) => {
+                                const hasInstructorFeedback =
+                                  syncedFeedbacks.some(
+                                    (fb) =>
+                                      fb.classRubricCriteriaId ===
+                                      criterion.criteriaId,
+                                  );
+                                return (
+                                  <Panel
+                                    key={criterion.criteriaId}
+                                    header={
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          width: "100%",
+                                          paddingRight: 8,
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 8,
+                                          }}
+                                        >
+                                          <Target
+                                            size={14}
+                                            color={PALETTE.primary}
+                                          />
+                                          <Text strong style={{ fontSize: 14 }}>
+                                            {criterion.criteriaName}
+                                          </Text>
+                                          {hasInstructorFeedback && (
+                                            <Tag
+                                              color="success"
+                                              style={{
+                                                fontSize: 10,
+                                                padding: "0 6px",
+                                                borderRadius: 10,
+                                                border: "none",
+                                              }}
+                                            >
+                                              Có phản hồi GV
+                                            </Tag>
+                                          )}
+                                        </div>
+                                        <ScoreBadge
+                                          score={criterion.score}
+                                          max={criterion.maxScore}
+                                          size="small"
+                                        />
+                                      </div>
+                                    }
+                                    style={{
+                                      background: PALETTE.white,
+                                      borderRadius: 12,
+                                      marginBottom: 8,
+                                      border: "1px solid #F1F5F9",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <Paragraph
+                                      style={{
+                                        fontSize: 13,
+                                        color: PALETTE.slate,
+                                        marginBottom: 8,
+                                      }}
+                                    >
+                                      {criterion.comment}
+                                    </Paragraph>
+                                    {criterion.suggestions?.length > 0 && (
+                                      <Card
+                                        size="small"
+                                        style={{
+                                          background: PALETTE.warningLight,
+                                          border: `1px solid ${PALETTE.warningLight}`,
+                                          borderRadius: 10,
+                                        }}
+                                        styles={{ body: { padding: "12px" } }}
+                                      >
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            marginBottom: 8,
+                                          }}
+                                        >
+                                          <Lightbulb
+                                            size={13}
+                                            color={PALETTE.warning}
+                                          />
+                                          <Text
+                                            strong
+                                            style={{
+                                              fontSize: 11,
+                                              color: PALETTE.warning,
+                                              textTransform: "uppercase",
+                                              letterSpacing: 0.5,
+                                            }}
+                                          >
+                                            Đề xuất cải thiện
+                                          </Text>
+                                        </div>
+                                        <ul
+                                          style={{ margin: 0, paddingLeft: 16 }}
+                                        >
+                                          {criterion.suggestions.map(
+                                            (suggestion, index) => (
+                                              <li
+                                                key={index}
+                                                style={{
+                                                  fontSize: 13,
+                                                  color: PALETTE.slate,
+                                                  marginBottom: 4,
+                                                }}
+                                              >
+                                                {suggestion}
+                                              </li>
+                                            ),
+                                          )}
+                                        </ul>
+                                      </Card>
+                                    )}
+                                  </Panel>
+                                );
+                              })}
+                            </Collapse>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {reportTab === "instructor" && (
+                      <motion.div
+                        key="instructor-tab"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.25 }}
+                      >
                         {/* Confirmed Grade & Distribution */}
                         {currentReport?.reportStatus === "confirmed" &&
                           currentReport.gradeForInstructor !== null &&
@@ -2251,168 +2413,6 @@ const PresentationDetailPage: React.FC = () => {
                             </motion.div>
                           )}
 
-                        {/* Criteria Scores */}
-                        {criteriaScores.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            <Title
-                              level={5}
-                              style={{
-                                fontWeight: 700,
-                                marginBottom: 12,
-                                fontSize: 15,
-                              }}
-                            >
-                              <BarChartOutlined style={{ marginRight: 8 }} />
-                              Chi tiết theo tiêu chí
-                            </Title>
-                            <Collapse
-                              ghost
-                              expandIconPosition="end"
-                              style={{ background: "transparent" }}
-                            >
-                              {criteriaScores.map((criterion) => {
-                                const hasInstructorFeedback =
-                                  syncedFeedbacks.some(
-                                    (fb) =>
-                                      fb.classRubricCriteriaId ===
-                                      criterion.criteriaId,
-                                  );
-                                return (
-                                  <Panel
-                                    key={criterion.criteriaId}
-                                    header={
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "space-between",
-                                          width: "100%",
-                                          paddingRight: 8,
-                                        }}
-                                      >
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 8,
-                                          }}
-                                        >
-                                          <Target
-                                            size={14}
-                                            color={PALETTE.primary}
-                                          />
-                                          <Text strong style={{ fontSize: 14 }}>
-                                            {criterion.criteriaName}
-                                          </Text>
-                                          {hasInstructorFeedback && (
-                                            <Tag
-                                              color="success"
-                                              style={{
-                                                fontSize: 10,
-                                                padding: "0 6px",
-                                                borderRadius: 10,
-                                                border: "none",
-                                              }}
-                                            >
-                                              Có phản hồi GV
-                                            </Tag>
-                                          )}
-                                        </div>
-                                        <ScoreBadge
-                                          score={criterion.score}
-                                          max={criterion.maxScore}
-                                          size="small"
-                                        />
-                                      </div>
-                                    }
-                                    style={{
-                                      background: PALETTE.white,
-                                      borderRadius: 12,
-                                      marginBottom: 8,
-                                      border: "1px solid #F1F5F9",
-                                      overflow: "hidden",
-                                    }}
-                                  >
-                                    <Paragraph
-                                      style={{
-                                        fontSize: 13,
-                                        color: PALETTE.slate,
-                                        marginBottom: 8,
-                                      }}
-                                    >
-                                      {criterion.comment}
-                                    </Paragraph>
-                                    {criterion.suggestions?.length > 0 && (
-                                      <Card
-                                        size="small"
-                                        style={{
-                                          background: PALETTE.warningLight,
-                                          border: `1px solid ${PALETTE.warningLight}`,
-                                          borderRadius: 10,
-                                        }}
-                                        styles={{ body: { padding: "12px" } }}
-                                      >
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 6,
-                                            marginBottom: 8,
-                                          }}
-                                        >
-                                          <Lightbulb
-                                            size={13}
-                                            color={PALETTE.warning}
-                                          />
-                                          <Text
-                                            strong
-                                            style={{
-                                              fontSize: 11,
-                                              color: PALETTE.warning,
-                                              textTransform: "uppercase",
-                                              letterSpacing: 0.5,
-                                            }}
-                                          >
-                                            Đề xuất cải thiện
-                                          </Text>
-                                        </div>
-                                        <ul
-                                          style={{ margin: 0, paddingLeft: 16 }}
-                                        >
-                                          {criterion.suggestions.map(
-                                            (suggestion, index) => (
-                                              <li
-                                                key={index}
-                                                style={{
-                                                  fontSize: 13,
-                                                  color: PALETTE.slate,
-                                                  marginBottom: 4,
-                                                }}
-                                              >
-                                                {suggestion}
-                                              </li>
-                                            ),
-                                          )}
-                                        </ul>
-                                      </Card>
-                                    )}
-                                  </Panel>
-                                );
-                              })}
-                            </Collapse>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-
-                    {reportTab === "instructor" && (
-                      <motion.div
-                        key="instructor-tab"
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.25 }}
-                      >
                         {/* Criteria Scores */}
                         {reportTab === "instructor" && (
                           <div style={{ marginTop: 8 }}>

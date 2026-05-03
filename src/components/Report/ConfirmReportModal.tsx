@@ -1,11 +1,8 @@
 import React, { useState } from "react";
-import { Modal, InputNumber, Input, Typography, Space } from "antd";
+import { Modal, InputNumber, Input } from "antd";
 import { useAppDispatch } from "@/services/store/store";
 import { confirmPresentationReport } from "@/services/features/report/reportSlice";
 import { getErrorMessage, getResponseMessage, toast } from "@/lib/toast";
-
-const { Text } = Typography;
-const { TextArea } = Input;
 
 interface ConfirmReportModalProps {
   isOpen: boolean;
@@ -25,37 +22,18 @@ const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setGrade(initialGrade ?? null);
-      setFeedback("");
-    }
-  }, [isOpen, initialGrade]);
-
-  const handleClose = () => {
-    setFeedback("");
-    onClose();
-  };
-
   const handleConfirm = async () => {
-    if (grade === null) {
-      toast.error("Vui lòng nhập điểm cuối cùng");
-      return;
-    }
+    if (grade === null) { toast.error("Vui lòng nhập điểm cuối cùng"); return; }
+    if (!feedback.trim()) { toast.error("Vui lòng nhập nhận xét tổng kết của giảng viên"); return; }
     try {
       setLoading(true);
       const result = await dispatch(
-        confirmPresentationReport({
-          reportId,
-          gradeForInstructor: grade,
-          feedbackOfInstructor: feedback.trim() || undefined,
-        }),
+        confirmPresentationReport({ reportId, gradeForInstructor: grade, feedbackOfInstructor: feedback.trim() }),
       ).unwrap();
       toast.success(getResponseMessage(result, "Đã xác nhận AI report"));
-      handleClose();
+      onClose();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Không thể xác nhận AI report"));
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -64,33 +42,30 @@ const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
   return (
     <Modal
       open={isOpen}
-      title="Xác nhận báo cáo AI"
+      title="Chốt điểm bài thuyết trình"
       centered
       width={520}
       okText="Xác nhận"
       cancelText="Hủy"
-      onCancel={handleClose}
+      onCancel={onClose}
       onOk={handleConfirm}
       confirmLoading={loading}
       maskClosable={!loading}
       destroyOnClose
       okButtonProps={{ style: { background: "#059669", borderColor: "#059669" } }}
     >
-      <Space direction="vertical" size="middle" className="w-full">
+      <div className="space-y-4 mt-2">
         <p className="text-slate-600 leading-relaxed">
-          Nhập <strong>điểm cuối cùng</strong> và <strong>nhận xét tổng kết</strong> để xác nhận
-          báo cáo đánh giá AI này.
+          Nhập <strong>điểm cuối cùng</strong> và <strong>nhận xét tổng kết</strong> để chốt điểm bài thuyết trình này.
         </p>
 
         <div>
-          <Text strong className="text-sm block mb-1">
+          <label className="text-sm font-semibold block mb-1">
             Điểm cuối cùng (thang 10) <span className="text-red-500">*</span>
-          </Text>
+          </label>
           <InputNumber
             className="w-full"
-            min={0}
-            max={10}
-            step={0.5}
+            min={0} max={10} step={0.5}
             value={grade}
             onChange={(v) => setGrade(v)}
             placeholder="VD: 8.5"
@@ -99,25 +74,20 @@ const ConfirmReportModal: React.FC<ConfirmReportModalProps> = ({
         </div>
 
         <div>
-          <Text strong className="text-sm block mb-1">
-            Nhận xét tổng kết của giảng viên
-          </Text>
-          <TextArea
+          <label className="text-sm font-semibold block mb-1">
+            Nhận xét tổng kết <span className="text-red-500">*</span>
+          </label>
+          <Input.TextArea
             rows={4}
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Nhập nhận xét tổng kết cho bài thuyết trình này..."
             maxLength={2000}
             disabled={loading}
-            style={{ paddingBottom: 8 }}
+            showCount
           />
-          <div className="flex justify-end mt-1">
-            <Text type="secondary" className="text-xs">
-              {feedback.length} / 2000
-            </Text>
-          </div>
         </div>
-      </Space>
+      </div>
     </Modal>
   );
 };

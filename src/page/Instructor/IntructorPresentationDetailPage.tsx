@@ -297,13 +297,14 @@ const IntructorPresentationDetailPage: React.FC = () => {
     return (sum / validFeedbacks.length / 10).toFixed(1);
   }, [syncedFeedbacks]);
 
-  /** Đủ feedback GV cho mọi tiêu chí AI → mới cho phép Xác nhận / Từ chối báo cáo */
-  const instructorFeedbackComplete = useMemo(() => {
-    if (criteriaScores.length === 0) return false;
-    return criteriaScores.every((c) =>
-      syncedFeedbacks.some((f) => f.classRubricCriteriaId === c.criteriaId),
-    );
-  }, [criteriaScores, syncedFeedbacks]);
+  /** Số tiêu chí đã có feedback GV */
+  const feedbackCount = useMemo(
+    () =>
+      criteriaScores.filter((c) =>
+        syncedFeedbacks.some((f) => f.classRubricCriteriaId === c.criteriaId),
+      ).length,
+    [criteriaScores, syncedFeedbacks],
+  );
 
   /** Điểm tổng AI: overallScore (0–1) → thang 10 (ví dụ 0.66 → 6.6/10) */
   const aiOverallOutOf10 = useMemo(() => {
@@ -680,8 +681,7 @@ const IntructorPresentationDetailPage: React.FC = () => {
                   {currentReport &&
                     currentReport.reportStatus !== "confirmed" &&
                     currentReport.reportStatus !== "rejected" &&
-                    !isGradeFinalized &&
-                    instructorFeedbackComplete && (
+                    !isGradeFinalized && (
                       <>
                         <Button
                           danger
@@ -707,20 +707,19 @@ const IntructorPresentationDetailPage: React.FC = () => {
               {currentReport &&
                 currentReport.reportStatus !== "confirmed" &&
                 currentReport.reportStatus !== "rejected" &&
-                !instructorFeedbackComplete &&
                 criteriaScores.length > 0 && (
                   <Alert
                     style={{ marginBottom: 16, borderRadius: 12 }}
-                    type="warning"
+                    type="info"
                     showIcon
                     message={
-                      <>
-                        <span style={{ fontWeight: 600 }}>Lưu ý: </span>
-                        Vui lòng hoàn thành phản hồi giảng viên cho{" "}
-                        <strong>tất cả {criteriaScores.length} tiêu chí</strong>{" "}
-                        (tab &quot;Feedback giảng viên&quot;) trước khi có thể xác
-                        nhận hoặc từ chối báo cáo AI.
-                      </>
+                      feedbackCount === 0
+                        ? "Chưa có feedback nào — khi xác nhận sẽ dùng toàn bộ điểm AI."
+                        : feedbackCount < criteriaScores.length
+                          ? <>
+                              Đã chấm <strong>{feedbackCount}/{criteriaScores.length}</strong> tiêu chí — các tiêu chí chưa chấm sẽ giữ nguyên điểm AI khi xác nhận.
+                            </>
+                          : `Đã chấm đủ ${criteriaScores.length}/${criteriaScores.length} tiêu chí.`
                     }
                   />
                 )}
@@ -928,7 +927,27 @@ const IntructorPresentationDetailPage: React.FC = () => {
                                   ))}
                                 </ul>
                               )}
-                              {currentReport && (
+                              {currentReport && currentReport.reportStatus === "confirmed" ? (
+                                existingFb ? (
+                                  <div className="mt-3 rounded-lg bg-slate-50 border border-slate-100 p-3">
+                                    <Typography.Text type="secondary" className="text-xs block mb-2 font-medium uppercase tracking-wide">
+                                      Điểm giảng viên
+                                    </Typography.Text>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      {existingFb.score !== null && existingFb.score !== "" && (
+                                        <Typography.Text strong className="text-indigo-700 text-base">
+                                          {Number(existingFb.score).toFixed(0)} / 100
+                                        </Typography.Text>
+                                      )}
+                                      {existingFb.comment && (
+                                        <Typography.Text className="text-sm text-slate-600 flex-1">
+                                          {existingFb.comment}
+                                        </Typography.Text>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : null
+                              ) : currentReport && (
                                 <CriterionFeedbackRubricForm
                                   key={`${currentReport.reportId}-${criterion.criteriaId}`}
                                   reportId={currentReport.reportId}
